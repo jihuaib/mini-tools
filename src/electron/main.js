@@ -103,4 +103,4 @@ ipcMain.handle('get-network-info', async () => {
     let interfaces;
     interfaces = os.networkInterfaces();
     return interfaces;
-})
+}) 
