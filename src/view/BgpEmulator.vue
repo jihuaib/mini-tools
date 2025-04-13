@@ -42,15 +42,30 @@
           </a-col>
         </a-row>
 
+        <a-row>
+          <a-col :span="12">
+            <a-form-item label="Router ID" name="routerId" :rules="[{ required: true, message: '请输入Router ID' }]">
+              <a-input v-model:value="bgpData.routerId"/>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Keepalive" name="keepalive"
+                         :rules="[{ required: true, message: '请输入Keepalive时间' },
+                                  { pattern: /^\d+$/, message: '请输入数字' }]">
+              <a-input v-model:value="bgpData.keepalive"/>
+            </a-form-item>
+          </a-col>
+        </a-row>
+
         <a-form-item label="Open协商能力" name="openCap">
           <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
         </a-form-item>
 
         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-          <a-space>
+          <a-space size="middle">
             <a-button type="primary" html-type="submit">启动</a-button>
+            <a-button type="primary" html-type="submit">停止</a-button>
           </a-space>
-          <a-button type="primary" html-type="submit">停止</a-button>
         </a-form-item>
       </a-form>
     </a-col>
@@ -58,7 +73,7 @@
     <a-col :span="8">
       <ScrollTextarea
           v-model:modelValue="bgpLog"
-          :height="700"
+          :height="680"
       />
     </a-col>
   </a-row>
@@ -87,6 +102,8 @@ const bgpData = ref({
   localAs:'65535',
   peerIp:'192.168.56.11',
   peerAs:'100',
+  routerId: '',
+  keepalive: '60',
   openCap:['Apple']
 });
 

@@ -11,20 +11,20 @@
         </a-form-item>
 
         <!-- 参数配置行 -->
-        <a-row>
-          <a-col :span="8">
+        <a-row :gutter="20">
+          <a-col :span="7">
             <a-form-item label="占位符" name="placeholder" :rules="[{ required: true, message: '请输入占位符' }]">
               <a-input v-model:value="formState.placeholder"/>
             </a-form-item>
           </a-col>
-          <a-col :span="8">
+          <a-col :span="7">
             <a-form-item label="开始" name="start"
                          :rules="[{ required: true, message: '请输入开始数值' },
                                   { pattern: /^\d+$/, message: '请输入数字' }]">
               <a-input v-model:value="formState.start"/>
             </a-form-item>
           </a-col>
-          <a-col :span="8">
+          <a-col :span="7">
             <a-form-item label="结束" name="end"
                          :rules="[{ required: true, message: '请输入结束数值' },
                                   { pattern: /^\d+$/, message: '请输入数字' }]">

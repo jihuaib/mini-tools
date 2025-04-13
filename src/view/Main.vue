@@ -46,9 +46,18 @@ const handleSelect = ({ key }) => {
 <style scoped>
 .content-area {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 20px;
-  width: 1000px;
+  flex-direction: column;
+  margin: 20px auto;
+  padding: 0 20px;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+.main-layout {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 </style>
