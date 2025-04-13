@@ -5,12 +5,20 @@ import BgpEmulator from "../view/BgpEmulator.vue";
 
 const routes = [
     {
-        path: "/",
+        path: '/',
         component: Main,
         children: [
             { path: '/', redirect: '/string-generator' },
-            { path: '/string-generator', component: StringGenerator },
-            { path: '/bgp-emulator', component: BgpEmulator },
+            {
+                path: '/string-generator',
+                name: 'StringGenerator',
+                component: StringGenerator
+            },
+            {
+                path: '/bgp-emulator',
+                name: 'BgpEmulator',
+                component: BgpEmulator
+            }
         ]
     }
 ]

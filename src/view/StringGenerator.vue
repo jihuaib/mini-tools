@@ -51,8 +51,12 @@
 
 <script setup>
 import ScrollTextarea from "../components/ScrollTextarea.vue";
-import { ref } from 'vue';
+import {ref, toRaw} from 'vue';
 import {message} from "ant-design-vue";
+
+defineOptions({
+  name: 'StringGenerator'
+})
 
 const labelCol = { style: { width: '120px' } };
 const wrapperCol = { span: 21 };
@@ -68,22 +72,18 @@ const result = ref('');
 
 const handleFinish = async () => {
   try {
-    let resultStr = '';
-    const payload = JSON.parse(JSON.stringify(formState.value));
-    const resp = await window.stringGeneratorApi.generateTemplateString(payload);
-    console.log(result);
+    // 使用兼容性写法
+    const payload = JSON.parse(JSON.stringify(toRaw(formState.value)))
+    const resp = await window.stringGeneratorApi.generateTemplateString(payload)
+
     if (resp.status === 'success') {
-      for (let i = 0; i < resp.data.length; i++) {
-        resultStr += resp.data[i] + '\r\n';
-      }
-      result.value = resultStr;
-    }
-    else {
-      message.error(resp.msg);
+      result.value = resp.data.join('\r\n')
+    } else {
+      message.error(resp.msg || '生成失败')
     }
   } catch (e) {
-    console.error(e);
-    message.error(e);
+    message.error(e.message || String(e)) // 显示更友好的错误信息
+    console.error('生成错误:', e)
   }
 };
 

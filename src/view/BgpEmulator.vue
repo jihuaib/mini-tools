@@ -69,6 +69,10 @@ import {onMounted, ref} from 'vue'
 import ScrollTextarea from "../components/ScrollTextarea.vue";
 import {message} from "ant-design-vue";
 
+defineOptions({
+  name: 'BgpEmulator'
+})
+
 const labelCol = { style: { width: '100px' } };
 const wrapperCol = { span: 40 };
 

@@ -3,7 +3,11 @@
     <!-- 顶部菜单导航 -->
     <a-menu v-model:selectedKeys="current" mode="horizontal" :items="items" @select="handleSelect"/>
     <div class="content-area">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <keep-alive :include="['StringGenerator', 'BgpEmulator']">
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </div>
   </div>
 </template>
@@ -34,7 +38,7 @@ const items = ref([
 const handleSelect = ({ key }) => {
   const selectedItem = items.value.find(item => item.key === key)
   if (selectedItem) {
-    router.push(selectedItem.route) // 使用 router.push 跳转到对应的路由
+    router.push(selectedItem.route);
   }
 }
 </script>
