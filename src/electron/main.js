@@ -12,7 +12,9 @@ function createWindow() {
         height: 800,
         resizable: false, // 固定大小，不允许调整
         autoHideMenuBar: true, // 隐藏菜单栏
-        frame: true, // 如果你想要一个原生边框，保留为 true；设置为 false 是无边框窗口
+        frame: true, // 保持原生边框
+        center: true, // 窗口居中显示
+        backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
             contextIsolation: true, // 启用 contextIsolation 更好地隔离上下文
