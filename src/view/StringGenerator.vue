@@ -33,17 +33,17 @@
           </a-col>
         </a-row>
 
+        <!-- 操作按钮 -->
+        <a-form-item :wrapper-col="{ offset: 12, span: 20 }">
+            <a-button type="primary" html-type="submit">立即生成</a-button>
+        </a-form-item>
+
         <!-- 结果显示 -->
         <a-form-item label="生成结果">
           <ScrollTextarea
               v-model:modelValue="result"
               :height="400"
           />
-        </a-form-item>
-
-        <!-- 操作按钮 -->
-        <a-form-item :wrapper-col="{ offset: 12, span: 20 }">
-            <a-button type="primary" html-type="submit">立即生成</a-button>
         </a-form-item>
       </a-form>
   </div>

@@ -49,15 +49,15 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="Keepalive" name="keepalive"
-                         :rules="[{ required: true, message: '请输入Keepalive时间' },
+            <a-form-item label="Hold Time" name="holdTime"
+                         :rules="[{ required: true, message: '请输入holdTime时间' },
                                   { pattern: /^\d+$/, message: '请输入数字' }]">
-              <a-input v-model:value="bgpData.keepalive"/>
+              <a-input v-model:value="bgpData.holdTime"/>
             </a-form-item>
           </a-col>
         </a-row>
 
-        <a-form-item label="Open协商能力" name="openCap">
+        <a-form-item label="Open能力" name="openCap">
           <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
         </a-form-item>
 
@@ -92,9 +92,11 @@ const labelCol = { style: { width: '100px' } };
 const wrapperCol = { span: 40 };
 
 const openCapOptions = [
-  { label: 'Apple', value: 'Apple' },
-  { label: 'Pear', value: 'Pear' },
-  { label: 'Orange', value: 'Orange' },
+  { label: 'Ipv4-UNC', value: 'Ipv4-UNC' },
+  { label: 'Route-Refresh', value: 'Route-Refresh' },
+  { label: 'AS4', value: 'AS4' },
+  { label: 'Ipv6-UNC', value: 'Ipv6-UNC' },
+  { label: 'Role', value: 'Role' },
 ];
 
 const bgpData = ref({
@@ -103,8 +105,8 @@ const bgpData = ref({
   peerIp:'192.168.56.11',
   peerAs:'100',
   routerId: '',
-  keepalive: '60',
-  openCap:['Apple']
+  holdTime: '180',
+  openCap:['Ipv4-UNC', 'Route-Refresh', 'AS4']
 });
 
 const bgpLog = ref('')
@@ -124,6 +126,7 @@ const networkInfo = ref([])
 const networkValue = ref('')
 const handleNetworkChange = (name) => {
   bgpData.value.localIp = networkList.find(item => item.name === name).ip;
+  bgpData.value.routerId = networkList.find(item => item.name === name).ip;
 }
 
 onMounted(async () => {

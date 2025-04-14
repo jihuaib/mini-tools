@@ -42,18 +42,18 @@ function handleStartBgp(event, bgpData){
 
     // 持续接收 BGP 线程的消息
     worker.on('message', (result) => {
-        console.log(`[Worker ${worker.threadId}] 处理成功`, result);
+        console.log(`[Worker ${worker.threadId}] recv msg`, result);
         sendBgpDataTime(webContents, 'update-bgp-data', { status: 'success', msg: '', data:result });
     });
 
     worker.on('error', (err) => {
-        console.error(`[Worker ${worker.threadId}] 发生错误:`, err);
+        console.error(`[Worker ${worker.threadId}] err:`, err);
         webContents.send('update-bgp-data', { status: 'error', msg: err.message });
     });
 
     worker.on('exit', (code) => {
         if (code !== 0) {
-            console.error(`[Worker ${worker.threadId}] 退出异常，退出码:`, code);
+            console.error(`[Worker ${worker.threadId}] exit, exit code:`, code);
             webContents.send('update-bgp-data', {
                 status: 'error',
                 msg: `Worker stopped with exit code ${code}`,
