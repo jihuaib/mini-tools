@@ -10,4 +10,6 @@ contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     getNetworkInfo: () => ipcRenderer.invoke('get-network-info'),
     startBgp: (bgpData) => ipcRenderer.send('start-bgp', bgpData),
     updateBgpData: (callback) => ipcRenderer.on('update-bgp-data', (_event, data) => callback(data)),
+    saveBgpConfig: (config) => ipcRenderer.invoke('save-bgp-config', config),
+    loadBgpConfig: () => ipcRenderer.invoke('load-bgp-config'),
 })

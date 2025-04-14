@@ -8,6 +8,7 @@
     "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\""
   },
   "dependencies": {
+    "lodash-es": "^4.17.21",
     "vue": "^3.3.4"
   },
   "devDependencies": {

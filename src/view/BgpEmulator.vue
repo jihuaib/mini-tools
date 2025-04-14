@@ -35,7 +35,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="Peer AS" name="peerAs"
-                         :rules="[{ required: true, message: '请输入开始数值' },
+                         :rules="[{ required: true, message: '请输入Peer AS' },
                                   { pattern: /^\d+$/, message: '请输入数字' }]">
               <a-input v-model:value="bgpData.peerAs"/>
             </a-form-item>
@@ -58,8 +58,34 @@
         </a-row>
 
         <a-form-item label="Open能力" name="openCap">
-          <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
+          <a-space>
+            <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
+            <a-button type="primary" @click="showCustomOpenCap">自定义</a-button>
+          </a-space>
         </a-form-item>
+
+        <a-row>
+          <a-col :span="12">
+            <a-form-item label="Address Family" name="addressFamily">
+              <a-select
+                v-model:value="bgpData.addressFamily"
+                mode="multiple"
+                style="width: 100%"
+                :options="addressFamilyOptions"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Role" name="role">
+              <a-select
+                v-model:value="bgpData.role"
+                style="width: 100%"
+                :options="roleOptions"
+                :disabled="!bgpData.openCap.includes('Role')"
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
 
         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
           <a-space size="middle">
@@ -77,12 +103,20 @@
       />
     </a-col>
   </a-row>
+
+  <CustomPktDrawer
+    v-model:visible="customOpenCapVisible"
+    v-model:inputValue="bgpData.openCapCustom"
+    @submit="handleCustomOpenCapSubmit"
+  />
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
+import {onMounted, ref, toRaw, watch } from 'vue'
 import ScrollTextarea from "../components/ScrollTextarea.vue";
+import CustomPktDrawer from "../components/CustomPktDrawer.vue";
 import {message} from "ant-design-vue";
+import { debounce } from 'lodash-es'
 
 defineOptions({
   name: 'BgpEmulator'
@@ -92,11 +126,20 @@ const labelCol = { style: { width: '100px' } };
 const wrapperCol = { span: 40 };
 
 const openCapOptions = [
-  { label: 'Ipv4-UNC', value: 'Ipv4-UNC' },
+  { label: 'Address Family', value: 'Address Family', disabled: true },
   { label: 'Route-Refresh', value: 'Route-Refresh' },
   { label: 'AS4', value: 'AS4' },
-  { label: 'Ipv6-UNC', value: 'Ipv6-UNC' },
   { label: 'Role', value: 'Role' },
+];
+
+const roleOptions = [
+  { label: 'Provider', value: 'provider' },
+  { label: 'Customer', value: 'customer' },
+];
+
+const addressFamilyOptions = [
+  { label: 'Ipv4-UNC', value: 'Ipv4-UNC', disabled: true },
+  { label: 'Ipv6-UNC', value: 'Ipv6-UNC' },
 ];
 
 const bgpData = ref({
@@ -106,7 +149,10 @@ const bgpData = ref({
   peerAs:'100',
   routerId: '',
   holdTime: '180',
-  openCap:['Ipv4-UNC', 'Route-Refresh', 'AS4']
+  openCap:['Address Family', 'Route-Refresh', 'AS4'],
+  addressFamily: ['Ipv4-UNC'],
+  role: '',
+  openCapCustom: ''
 });
 
 const bgpLog = ref('')
@@ -128,6 +174,41 @@ const handleNetworkChange = (name) => {
   bgpData.value.localIp = networkList.find(item => item.name === name).ip;
   bgpData.value.routerId = networkList.find(item => item.name === name).ip;
 }
+
+const saveBgpConfig = {
+  networkValue: '',
+  localAs: '',
+  peerIp: '',
+  peerAs: '',
+  routerId: '',
+  holdTime: '',
+  openCap: [],
+  addressFamily: [],
+  role: '',
+  openCapCustom: ''
+}
+
+const saveDebounced = debounce((data) => {
+  window.bgpEmulatorApi.saveBgpConfig(data);
+}, 300)
+
+watch(bgpData, (newValue) => {
+  // 转换为saveBgpConfig
+  saveBgpConfig.networkValue = networkValue.value;
+  saveBgpConfig.localAs = newValue.localAs;
+  saveBgpConfig.peerIp = newValue.peerIp;
+  saveBgpConfig.peerAs = newValue.peerAs;
+  saveBgpConfig.routerId = newValue.routerId;
+  saveBgpConfig.holdTime = newValue.holdTime;
+  saveBgpConfig.openCap = [...newValue.openCap];
+  saveBgpConfig.addressFamily = [...newValue.addressFamily];
+  saveBgpConfig.role = newValue.role;
+  saveBgpConfig.openCapCustom = newValue.openCapCustom;
+  console.log(saveBgpConfig);
+  const raw = toRaw(saveBgpConfig);
+  console.log(raw);
+  saveDebounced(raw)
+}, { deep: true, immediate: true })
 
 onMounted(async () => {
   const result = await window.bgpEmulatorApi.getNetworkInfo()
@@ -166,9 +247,40 @@ onMounted(async () => {
       console.error(data.msg);
       message.error(data.msg);
     }
-
   })
+
+  // 加载保存的配置
+  const savedConfig = await window.bgpEmulatorApi.loadBgpConfig();
+  if (savedConfig.status === 'success' && savedConfig.data) {
+    console.log('Loading saved config:', savedConfig.data)
+    networkValue.value = savedConfig.data.networkValue;
+    handleNetworkChange(networkValue.value);
+    bgpData.value.localAs = savedConfig.data.localAs;
+    bgpData.value.peerIp = savedConfig.data.peerIp;
+    bgpData.value.peerAs = savedConfig.data.peerAs;
+    if (savedConfig.data.routerId) {
+      bgpData.value.routerId = savedConfig.data.routerId;
+    }
+    bgpData.value.holdTime = savedConfig.data.holdTime;
+    bgpData.value.openCap = Array.isArray(savedConfig.data.openCap) ? [...savedConfig.data.openCap] : [];
+    bgpData.value.addressFamily = Array.isArray(savedConfig.data.addressFamily) ? [...savedConfig.data.addressFamily] : [];
+    bgpData.value.role = savedConfig.data.role || '';
+    bgpData.value.openCapCustom = savedConfig.data.openCapCustom || '';
+    console.log('Loaded bgpData:', savedConfig.data.openCapCustom);
+    console.log('Loaded bgpData:', bgpData.value);
+    console.log('Loaded bgpData:', bgpData.value.openCapCustom);
+  }
 })
+
+const customOpenCapVisible = ref(false)
+const showCustomOpenCap = () => {
+  customOpenCapVisible.value = true
+}
+
+const handleCustomOpenCapSubmit = (data) => {
+  console.log(data)
+  bgpData.value.openCapCustom = data
+}
 </script>
 
 <style scoped>

@@ -76,7 +76,6 @@ function handleBgpPacket(socket, buffer) {
 
 function buildOpenMsg() {
     const version = 4;
-    const optParamLen = 0;
     
     // 构建消息体部分
     const openBody = [];
@@ -89,10 +88,27 @@ function buildOpenMsg() {
     openBody.push(writeUInt16(bgpData.holdTime));
     // routerID
     openBody.push(ipToBytes(bgpData.routerId));
-    // 可选参数
-    bgpData.openCap.forEach((cap)=> {
-        console.log(cap);
-    });
+
+    // 构建可选参数部分
+    const optParams = [];
+    if (bgpData.openCap && bgpData.openCap.length > 0) {
+        // 遍历每个能力
+        bgpData.openCap.forEach(cap => {
+            // 参数类型 (2 = Capabilities)
+            optParams.push(0x02);
+            // 参数长度 (1 + 1 + 1 + 1 = 4 bytes for basic capability)
+            optParams.push(0x04);
+            // 能力代码
+            optParams.push(cap.value);
+            // 能力长度 (0 for basic capabilities)
+            optParams.push(0x00);
+        });
+    }
+
+    // 可选参数长度
+    openBody.push(optParams.length);
+    // 添加可选参数
+    openBody.push(...optParams);
 
     const totalLength = BGP_HEAD_LEN + openBody.length;
     const buffer = Buffer.alloc(totalLength);
