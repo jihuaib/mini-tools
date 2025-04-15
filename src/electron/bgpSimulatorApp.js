@@ -1,7 +1,8 @@
-const { BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const { Worker } = require('worker_threads');
 const path = require('path');
 const os = require("os");
+const fs = require('fs');
 
 let bgpStart = false;
 
@@ -14,10 +15,48 @@ function sendBgpDataTime(webContents, channel, payload) {
 
     webContents.send(channel, payload);
 }
+
 async function handleGetNetworkInfo(event) {
     let interfaces;
     interfaces = os.networkInterfaces();
     return interfaces;
+}
+
+// 获取配置文件路径
+function getConfigPath() {
+    return path.join(app.getPath('userData'), 'bgp-simulator-config.json');
+}
+
+// 保存配置
+async function handleSaveBgpConfig(event, config) {
+    try {
+        const configPath = getConfigPath();
+        const configDir = path.dirname(configPath);
+        // 确保目录存在
+        if (!fs.existsSync(configDir)) {
+            await fs.promises.mkdir(configDir, { recursive: true });
+        }
+        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+        return { status: 'success' };
+    } catch (error) {
+        console.error('Error saving config:', error);
+        return { status: 'error', message: error.message };
+    }
+}
+
+// 加载配置
+async function handleLoadBgpConfig() {
+    try {
+        const configPath = getConfigPath();
+        if (!fs.existsSync(configPath)) {
+            return { status: 'success', data: null };
+        }
+        const data = await fs.promises.readFile(configPath, 'utf8');
+        return { status: 'success', data: JSON.parse(data) };
+    } catch (error) {
+        console.error('Error loading config:', error);
+        return { status: 'error', message: error.message };
+    }
 }
 
 function handleStartBgp(event, bgpData){
@@ -66,5 +105,7 @@ function handleStartBgp(event, bgpData){
 
 module.exports = {
     handleStartBgp,
-    handleGetNetworkInfo
+    handleGetNetworkInfo,
+    handleSaveBgpConfig,
+    handleLoadBgpConfig
 };

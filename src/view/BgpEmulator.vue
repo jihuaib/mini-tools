@@ -116,7 +116,7 @@ import {onMounted, ref, toRaw, watch } from 'vue'
 import ScrollTextarea from "../components/ScrollTextarea.vue";
 import CustomPktDrawer from "../components/CustomPktDrawer.vue";
 import {message} from "ant-design-vue";
-import { debounce } from 'lodash-es'
+import { debounce } from 'lodash-es';
 
 defineOptions({
   name: 'BgpEmulator'
@@ -134,7 +134,10 @@ const openCapOptions = [
 
 const roleOptions = [
   { label: 'Provider', value: 'provider' },
+  { label: 'RS', value: 'RS' },
+  { label: 'RS-Client', value: 'RS-Client' },
   { label: 'Customer', value: 'customer' },
+  { label: 'Lateral Peer', value: 'Lateral Peer' },
 ];
 
 const addressFamilyOptions = [
@@ -204,9 +207,7 @@ watch(bgpData, (newValue) => {
   saveBgpConfig.addressFamily = [...newValue.addressFamily];
   saveBgpConfig.role = newValue.role;
   saveBgpConfig.openCapCustom = newValue.openCapCustom;
-  console.log(saveBgpConfig);
   const raw = toRaw(saveBgpConfig);
-  console.log(raw);
   saveDebounced(raw)
 }, { deep: true, immediate: true })
 
@@ -252,7 +253,7 @@ onMounted(async () => {
   // 加载保存的配置
   const savedConfig = await window.bgpEmulatorApi.loadBgpConfig();
   if (savedConfig.status === 'success' && savedConfig.data) {
-    console.log('Loading saved config:', savedConfig.data)
+    console.log('Loading saved config:', savedConfig.data);
     networkValue.value = savedConfig.data.networkValue;
     handleNetworkChange(networkValue.value);
     bgpData.value.localAs = savedConfig.data.localAs;
@@ -266,9 +267,6 @@ onMounted(async () => {
     bgpData.value.addressFamily = Array.isArray(savedConfig.data.addressFamily) ? [...savedConfig.data.addressFamily] : [];
     bgpData.value.role = savedConfig.data.role || '';
     bgpData.value.openCapCustom = savedConfig.data.openCapCustom || '';
-    console.log('Loaded bgpData:', savedConfig.data.openCapCustom);
-    console.log('Loaded bgpData:', bgpData.value);
-    console.log('Loaded bgpData:', bgpData.value.openCapCustom);
   }
 })
 

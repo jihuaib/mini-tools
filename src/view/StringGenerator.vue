@@ -51,8 +51,9 @@
 
 <script setup>
 import ScrollTextarea from "../components/ScrollTextarea.vue";
-import {ref, toRaw} from 'vue';
+import {ref, toRaw, watch, onMounted} from 'vue';
 import {message} from "ant-design-vue";
+import { debounce } from 'lodash-es';
 
 defineOptions({
   name: 'StringGenerator'
@@ -68,11 +69,19 @@ const formState = ref({
   end: '2'
 });
 
+const saveDebounced = debounce((data) => {
+  window.stringGeneratorApi.saveStringGeneratorConfig(data);
+}, 300)
+
+watch(formState, (newValue) => {
+  const raw = toRaw(newValue);
+  saveDebounced(raw)
+}, { deep: true, immediate: true })
+
 const result = ref('');
 
 const handleFinish = async () => {
   try {
-    // 使用兼容性写法
     const payload = JSON.parse(JSON.stringify(toRaw(formState.value)))
     const resp = await window.stringGeneratorApi.generateTemplateString(payload)
 
@@ -82,10 +91,19 @@ const handleFinish = async () => {
       message.error(resp.msg || '生成失败')
     }
   } catch (e) {
-    message.error(e.message || String(e)) // 显示更友好的错误信息
+    message.error(e.message || String(e))
     console.error('生成错误:', e)
   }
 };
+
+onMounted(async () => {
+  // 加载保存的配置
+  const savedConfig = await window.stringGeneratorApi.loadStringGeneratorConfig();
+  if (savedConfig.status === 'success' && savedConfig.data) {
+    console.log('Loading saved config:', savedConfig.data);
+    formState.value = savedConfig.data
+  }
+})
 
 </script>
 

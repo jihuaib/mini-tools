@@ -1,7 +1,7 @@
 const { parentPort } = require('worker_threads');
 const net = require('net');
-const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BGP_MAX_PKT_SIZE, BgpState, BgpPacketType } = require('../../const/bgpConst');
-const { writeUInt16, ipToBytes } = require('../utils/bgpUtils');
+const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BgpState, BgpPacketType, BgpOpenCapMap, BgpAfiType, BgpSAfiType, BgpRoleValueMap } = require('../../const/bgpConst');
+const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
 
 let bgpState = BgpState.IDLE;
 
@@ -51,7 +51,9 @@ function handleBgpPacket(socket, buffer) {
             message: `recv keepalive message`
         });
         sendKeepAliveMsg(socket);
-        changeBgpFsmState(BgpState.ESTABLISHED);
+        if (bgpState != BgpState.ESTABLISHED) {
+            changeBgpFsmState(BgpState.ESTABLISHED);
+        }
     } else if (header.type == BgpPacketType.NOTIFICATION) {
         console.log("recv notification message, body:", messageBody.toString('hex'));
         parentPort.postMessage({
@@ -83,26 +85,59 @@ function buildOpenMsg() {
     // 版本号
     openBody.push(version);
     // 本地AS号
-    openBody.push(writeUInt16(bgpData.localAs));
+    openBody.push(...writeUInt16(bgpData.localAs));
     // holdTime
-    openBody.push(writeUInt16(bgpData.holdTime));
+    openBody.push(...writeUInt16(bgpData.holdTime));
     // routerID
-    openBody.push(ipToBytes(bgpData.routerId));
+    openBody.push(...ipToBytes(bgpData.routerId));
 
     // 构建可选参数部分
     const optParams = [];
     if (bgpData.openCap && bgpData.openCap.length > 0) {
         // 遍历每个能力
-        bgpData.openCap.forEach(cap => {
-            // 参数类型 (2 = Capabilities)
-            optParams.push(0x02);
-            // 参数长度 (1 + 1 + 1 + 1 = 4 bytes for basic capability)
-            optParams.push(0x04);
-            // 能力代码
-            optParams.push(cap.value);
-            // 能力长度 (0 for basic capabilities)
-            optParams.push(0x00);
+        bgpData.openCap.forEach((cap) => {
+            const capInfo = BgpOpenCapMap.get(cap);
+            if (cap === 'Address Family') {
+                bgpData.addressFamily.forEach((addr)=>{
+                    if (addr === 'Ipv4-UNC') {
+                        optParams.push(0x02);
+                        optParams.push(0x06);
+                        optParams.push(capInfo);
+                        optParams.push(0x04);
+                        optParams.push(...writeUInt16(BgpAfiType.AFI_IPV4));
+                        optParams.push(...writeUInt16(BgpSAfiType.SAFI_UNICAST));
+                    } else if (addr === 'Ipv6-UNC') {
+                        optParams.push(0x02);
+                        optParams.push(0x06);
+                        optParams.push(capInfo);
+                        optParams.push(0x04);
+                        optParams.push(...writeUInt16(BgpAfiType.AFI_IPV6));
+                        optParams.push(...writeUInt16(BgpSAfiType.SAFI_UNICAST));
+                    }
+                });
+            } else if (cap === 'Route-Refresh') {
+                optParams.push(0x02);
+                optParams.push(0x02);
+                optParams.push(capInfo);
+                optParams.push(0x00);
+            } else if (cap === 'AS4') {
+                optParams.push(0x02);
+                optParams.push(0x06);
+                optParams.push(capInfo);
+                optParams.push(0x04);
+                optParams.push(...writeUInt32(bgpData.localAs));
+            } else if (cap === 'Role') {
+                optParams.push(0x02);
+                optParams.push(0x03);
+                optParams.push(capInfo);
+                optParams.push(0x01);
+                optParams.push(BgpRoleValueMap.get(bgpData.role));
+            }
         });
+    }
+
+    if (bgpData.openCapCustom != '') {
+        console.log(bgpData.openCapCustom);
     }
 
     // 可选参数长度
@@ -149,7 +184,7 @@ function buildKeepAliveMsg() {
 
 function sendKeepAliveMsg(socket) {
     const buf = buildKeepAliveMsg();
-    socket.write(buf.toString('hex'));
+    socket.write(buf);
     parentPort.postMessage({
         op: 'log',
         message: `send keepalive msg`
@@ -158,7 +193,7 @@ function sendKeepAliveMsg(socket) {
 
 function sendOpenMsg(socket) {
     const buf = buildOpenMsg();
-    socket.write(buf.toString('hex'));
+    socket.write(buf);
     parentPort.postMessage({
         op: 'log',
         message: `send open msg`
