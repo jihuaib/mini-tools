@@ -23,7 +23,7 @@ const BgpPacketType = Object.freeze({
 });
 
 const BgpOpenCap = [
-    { name: 'Address Family', code: 0x01 },
+    { name: 'Addr Family', code: 0x01 },
     { name: 'Route-Refresh', code: 0x02 },
     { name: 'AS4', code: 0x41 },
     { name: 'Role', code: 0x09 }
