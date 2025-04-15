@@ -5,6 +5,7 @@ const os = require("os");
 const fs = require('fs');
 
 let bgpStart = false;
+let worker;
 
 function sendBgpDataTime(webContents, channel, payload) {
     const now = new Date();
@@ -59,6 +60,21 @@ async function handleLoadBgpConfig() {
     }
 }
 
+async function handleStopBgp() {
+    if (!bgpStart) {
+        return;
+    }
+
+    try {
+        // 退出work
+        await worker.terminate();
+        bgpStart = false;
+    } catch (error) {
+        console.error('Error loading config:', error);
+        return { status: 'error', message: error.message };
+    }
+}
+
 function handleStartBgp(event, bgpData){
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
@@ -71,18 +87,27 @@ function handleStartBgp(event, bgpData){
     console.log('[Main] handleStartBgp', bgpData);
 
     const workerPath = path.join(__dirname, './worker/bgpSimulatorWorker.js');
-    const worker = new Worker(workerPath);
+    worker = new Worker(workerPath);
 
     console.log(`[Worker ${worker.threadId}] 启动`);
 
     bgpStart = true;
 
-    worker.postMessage(bgpData);
+    const msg = {
+        op: 'start-bgp',
+        data: bgpData
+    }
+
+    worker.postMessage(msg);
 
     // 持续接收 BGP 线程的消息
     worker.on('message', (result) => {
         console.log(`[Worker ${worker.threadId}] recv msg`, result);
-        sendBgpDataTime(webContents, 'update-bgp-data', { status: 'success', msg: '', data:result });
+        if (result.op === 'log') {
+            sendBgpDataTime(webContents, 'update-bgp-data', { status: 'success', msg: '', data:result });
+        } else {
+            webContents.send('update-bgp-data', { status: 'success', msg: '', data:result });
+        }
     });
 
     worker.on('error', (err) => {
@@ -107,5 +132,6 @@ module.exports = {
     handleStartBgp,
     handleGetNetworkInfo,
     handleSaveBgpConfig,
-    handleLoadBgpConfig
+    handleLoadBgpConfig,
+    handleStopBgp
 };

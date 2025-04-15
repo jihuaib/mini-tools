@@ -60,7 +60,7 @@
         <a-form-item label="Open能力" name="openCap">
           <a-space>
             <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
-            <a-button type="primary" @click="showCustomOpenCap">自定义</a-button>
+            <a-button type="primary" @click="showCustomOpenCap">自定义能力</a-button>
           </a-space>
         </a-form-item>
 
@@ -87,10 +87,18 @@
           </a-col>
         </a-row>
 
+        <a-row>
+          <a-col :span="12">
+            <a-form-item label="Peer state" name="peerState">
+              <a-input v-model:value="bgpData.peerState" disabled/>
+            </a-form-item>
+          </a-col>
+        </a-row>
+
         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
           <a-space size="middle">
             <a-button type="primary" html-type="submit">启动</a-button>
-            <a-button type="primary" html-type="submit">停止</a-button>
+            <a-button type="primary" danger @click="stopBgp">停止</a-button>
           </a-space>
         </a-form-item>
       </a-form>
@@ -133,10 +141,10 @@ const openCapOptions = [
 ];
 
 const roleOptions = [
-  { label: 'Provider', value: 'provider' },
+  { label: 'Provider', value: 'Provider' },
   { label: 'RS', value: 'RS' },
   { label: 'RS-Client', value: 'RS-Client' },
-  { label: 'Customer', value: 'customer' },
+  { label: 'Customer', value: 'Customer' },
   { label: 'Lateral Peer', value: 'Lateral Peer' },
 ];
 
@@ -154,6 +162,7 @@ const bgpData = ref({
   holdTime: '180',
   openCap:['Address Family', 'Route-Refresh', 'AS4'],
   addressFamily: ['Ipv4-UNC'],
+  peerState:'',
   role: '',
   openCapCustom: ''
 });
@@ -169,6 +178,11 @@ const startBgp = () => {
     message.error(e);
   }
 }
+
+const stopBgp = async () => {
+  const result = await window.bgpEmulatorApi.stopBgp();
+  console.log(result);
+};
 
 const networkList = []
 const networkInfo = ref([])
@@ -213,7 +227,7 @@ watch(bgpData, (newValue) => {
 
 onMounted(async () => {
   const result = await window.bgpEmulatorApi.getNetworkInfo()
-  console.log(result)
+  console.log(result);
 
   for (const [name, addresses] of Object.entries(result)) {
     addresses.forEach((addr) => {
@@ -243,6 +257,8 @@ onMounted(async () => {
       const response = data.data;
       if (response.op === 'log') {
         bgpLog.value += response.message + '\r\n';
+      } else if (response.op === 'peer-state') {
+        bgpData.value.peerState = response.message;
       }
     } else {
       console.error(data.msg);

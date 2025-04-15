@@ -14,4 +14,5 @@ contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     updateBgpData: (callback) => ipcRenderer.on('update-bgp-data', (_event, data) => callback(data)),
     saveBgpConfig: (config) => ipcRenderer.invoke('save-bgp-config', config),
     loadBgpConfig: () => ipcRenderer.invoke('load-bgp-config'),
+    stopBgp: () => ipcRenderer.invoke('stop-bgp'),
 })

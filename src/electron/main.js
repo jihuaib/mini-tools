@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig } = require("./bgpSimulatorApp");
+const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp } = require("./bgpSimulatorApp");
 const {handleGenerateTemplateString, handleSaveStringGeneratorConfig, handleLoadStringGeneratorConfig} = require("./stringGeneratorApp");
 
 const isDev = !app.isPackaged;
@@ -39,6 +39,7 @@ app.whenReady().then(() => {
     ipcMain.handle('load-bgp-config', handleLoadBgpConfig);
     ipcMain.handle('save-string-generator-config', handleSaveStringGeneratorConfig);
     ipcMain.handle('load-string-generator-config', handleLoadStringGeneratorConfig);
+    ipcMain.handle('stop-bgp', handleStopBgp);
     createWindow();
 
     app.on('activate', () => {

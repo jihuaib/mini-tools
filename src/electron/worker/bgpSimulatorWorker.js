@@ -13,6 +13,10 @@ function changeBgpFsmState(_bgpState) {
         message: `bgp fsm state ${bgpState} -> ${_bgpState}`
     });
 
+    parentPort.postMessage({
+        op: 'peer-state',
+        message: `${_bgpState}`
+    });
     bgpState = _bgpState;
 }
 
@@ -200,6 +204,10 @@ function sendOpenMsg(socket) {
     });
 }
 
+function stopBgp() {
+    
+}
+
 function startTcpServer() {
     const server = net.createServer((socket) => {
         const clientAddress = socket.remoteAddress;
@@ -241,15 +249,20 @@ function startTcpServer() {
     });
 }
 
-parentPort.on('message', (_bgpData) => {
+parentPort.on('message', (msg) => {
     try {
-        bgpData = _bgpData;
-        startTcpServer();
+        if (msg.op === 'start-bgp') {
+            bgpData = msg.data;
+            startTcpServer();
+    
+            parentPort.postMessage({
+                op: 'log',
+                message: `bgp server start.`
+            });
+        } else if (msg.op === 'stop-bgp') {
+            stopBgp();
+        }
 
-        parentPort.postMessage({
-            op: 'log',
-            message: `bgp server start.`
-        });
     } catch (err) {
         throw new Error(err.message);
     }
