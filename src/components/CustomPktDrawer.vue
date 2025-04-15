@@ -58,7 +58,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: '请输入16进制数字，每行16个数字，用空格分隔，例如：11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF 00'
+    default: '请输入16进制数字，每行16个数字，用空格分隔，需要携带0x前缀，例如：0x11 0x22 0x33 0x44 0x55 0x66 0x77'
   }
 })
 
@@ -92,10 +92,10 @@ const validationRule = (value) => {
     
     // 检查每个数字的格式
     for (const num of numbers) {
-      if (!/^[0-9A-Fa-f]{1,2}$/.test(num)) {
+      if (!/^(0x)[0-9A-Fa-f]{1,2}$/.test(num)) {
         return {
           status: 'error',
-          message: `第 ${i + 1} 行包含无效的16进制数字: "${num}"，请输入1-2位的16进制数字`
+          message: `第 ${i + 1} 行包含无效的16进制数字: "${num}"，请输入1-2位的16进制数字，需要携带0x前缀`
         }
       }
     }

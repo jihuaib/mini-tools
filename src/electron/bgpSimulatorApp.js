@@ -128,10 +128,15 @@ function handleStartBgp(event, bgpData){
     });
 }
 
+function getBgpState() {
+    return bgpStart;
+}
+
 module.exports = {
     handleStartBgp,
     handleGetNetworkInfo,
     handleSaveBgpConfig,
     handleLoadBgpConfig,
-    handleStopBgp
+    handleStopBgp,
+    getBgpState
 };

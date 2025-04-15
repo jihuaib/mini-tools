@@ -1,5 +1,6 @@
 <template>
   <a-textarea
+      ref="textareaRef"
       :value="modelValue"
       @input="updateValue"
       :placeholder="placeholder"
@@ -9,7 +10,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 // 定义 props
 const props = defineProps({
@@ -27,12 +28,14 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: '请输入内容...'
+    default: ''
   }
 })
 
 // 定义 emit 事件
 const emit = defineEmits()
+
+const textareaRef = ref(null)
 
 // 触发父组件更新值
 const updateValue = (e) => {
@@ -46,4 +49,12 @@ const textareaStyle = computed(() => ({
   overflow: 'auto',   // 超出显示滚动条
   resize: 'none'      // 禁止调整大小
 }))
+
+// 监听modelValue变化，自动滚动到底部
+watch(() => props.modelValue, () => {
+  if (textareaRef.value) {
+    const textarea = textareaRef.value.$el;
+    textarea.scrollTop = textarea.scrollHeight;
+  }
+})
 </script>

@@ -4,8 +4,8 @@ const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BgpState, BgpPacketType, BgpOpenCapMap, 
 const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
 
 let bgpState = BgpState.IDLE;
-
 let bgpData;
+let server;  // Add server variable to global scope
 
 function changeBgpFsmState(_bgpState) {
     parentPort.postMessage({
@@ -80,6 +80,16 @@ function handleBgpPacket(socket, buffer) {
     }
 }
 
+function processCustomCapability(customCap) {
+    // Remove all spaces and newlines
+    const cleanHex = customCap.replace(/\s+/g, '');
+    // Convert 0xff format to pure hex string
+    const pureHex = cleanHex.replace(/0x/g, '');
+    // Convert hex string to buffer
+    const buffer = Buffer.from(pureHex, 'hex');
+    return buffer;
+}
+
 function buildOpenMsg() {
     const version = 4;
     
@@ -140,8 +150,17 @@ function buildOpenMsg() {
         });
     }
 
-    if (bgpData.openCapCustom != '') {
-        console.log(bgpData.openCapCustom);
+    if (bgpData.openCapCustom && bgpData.openCapCustom.trim() !== '') {
+        try {
+            const customCapBuffer = processCustomCapability(bgpData.openCapCustom);
+            // Add the custom data
+            optParams.push(...customCapBuffer);
+        } catch (error) {
+            parentPort.postMessage({
+                op: 'log',
+                message: `Error processing custom capability: ${error.message}`
+            });
+        }
     }
 
     // 可选参数长度
@@ -205,11 +224,30 @@ function sendOpenMsg(socket) {
 }
 
 function stopBgp() {
+    // Close all active connections
+    if (server) {
+        server.close(() => {
+            parentPort.postMessage({
+                op: 'log',
+                message: 'BGP server stopped'
+            });
+        });
+    }
+
+    // Reset BGP state
+    changeBgpFsmState(BgpState.IDLE);
     
+    // Clear any existing data
+    bgpData = null;
+    
+    parentPort.postMessage({
+        op: 'log',
+        message: 'BGP simulator stopped successfully'
+    });
 }
 
 function startTcpServer() {
-    const server = net.createServer((socket) => {
+    server = net.createServer((socket) => {
         const clientAddress = socket.remoteAddress;
         const clientPort = socket.remotePort;
         console.log(`Client connected from ${clientAddress}:${clientPort}`);

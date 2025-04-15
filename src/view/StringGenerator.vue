@@ -2,6 +2,7 @@
   <div class="container">
       <a-form :model="formState" @finish="handleFinish" :label-col="labelCol"
               :wrapper-col="wrapperCol">
+        <a-divider>字符串生成配置</a-divider>
         <!-- 字符串模板输入 -->
         <a-form-item label="字符串模板" name="template" :rules="[{ required: true, message: '请输入模板内容' }]">
           <ScrollTextarea
@@ -42,7 +43,7 @@
         <a-form-item label="生成结果">
           <ScrollTextarea
               v-model:modelValue="result"
-              :height="400"
+              :height="380"
           />
         </a-form-item>
       </a-form>
@@ -108,5 +109,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
+:deep(.ant-divider) {
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1890ff;
+}
 </style>

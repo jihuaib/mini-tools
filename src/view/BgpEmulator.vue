@@ -3,6 +3,7 @@
     <a-col :span="16">
       <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol"
               :wrapper-col="wrapperCol">
+        <a-divider>BGP配置</a-divider>
         <a-form-item label="请选择网卡">
           <a-select
               ref="select"
@@ -57,7 +58,7 @@
           </a-col>
         </a-row>
 
-        <a-form-item label="Open能力" name="openCap">
+        <a-form-item label="Open Cap" name="openCap">
           <a-space>
             <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
             <a-button type="primary" @click="showCustomOpenCap">自定义能力</a-button>
@@ -95,11 +96,33 @@
           </a-col>
         </a-row>
 
-        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
           <a-space size="middle">
             <a-button type="primary" html-type="submit">启动</a-button>
             <a-button type="primary" danger @click="stopBgp">停止</a-button>
           </a-space>
+        </a-form-item>
+
+        <a-divider>路由配置</a-divider>
+        <a-row>
+          <a-col :span="8">
+            <a-form-item label="Prefix" name="routePrefix">
+              <a-input v-model:value="bgpData.routeConfig.prefix"/>
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="Mask" name="routeMask">
+              <a-input v-model:value="bgpData.routeConfig.mask"/>
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="Count" name="routeCount">
+              <a-input v-model:value="bgpData.routeConfig.count"/>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+          <a-button type="primary" @click="sendRoutes">发送路由</a-button>
         </a-form-item>
       </a-form>
     </a-col>
@@ -164,25 +187,23 @@ const bgpData = ref({
   addressFamily: ['Ipv4-UNC'],
   peerState:'',
   role: '',
-  openCapCustom: ''
+  openCapCustom: '',
+  routeConfig: {
+    prefix: '1.1.1.1',
+    mask: '32',
+    count: '10'
+  }
 });
 
 const bgpLog = ref('')
 
-const startBgp = () => {
-  try {
-    const payload = JSON.parse(JSON.stringify(bgpData.value));
-    window.bgpEmulatorApi.startBgp(payload);
-  } catch (e) {
-    console.error(e);
-    message.error(e);
+const checkAndClearLog = (log) => {
+  const lines = log.split('\r\n');
+  if (lines.length > 1000) {
+    return lines.slice(lines.length - 1000).join('\r\n');
   }
+  return log;
 }
-
-const stopBgp = async () => {
-  const result = await window.bgpEmulatorApi.stopBgp();
-  console.log(result);
-};
 
 const networkList = []
 const networkInfo = ref([])
@@ -202,25 +223,31 @@ const saveBgpConfig = {
   openCap: [],
   addressFamily: [],
   role: '',
-  openCapCustom: ''
+  openCapCustom: '',
+  routeConfig: {
+    prefix: '',
+    mask: '',
+    count: ''
+  }
 }
 
 const saveDebounced = debounce((data) => {
   window.bgpEmulatorApi.saveBgpConfig(data);
 }, 300)
 
-watch(bgpData, (newValue) => {
+watch([bgpData], ([newBgpValue]) => {
   // 转换为saveBgpConfig
   saveBgpConfig.networkValue = networkValue.value;
-  saveBgpConfig.localAs = newValue.localAs;
-  saveBgpConfig.peerIp = newValue.peerIp;
-  saveBgpConfig.peerAs = newValue.peerAs;
-  saveBgpConfig.routerId = newValue.routerId;
-  saveBgpConfig.holdTime = newValue.holdTime;
-  saveBgpConfig.openCap = [...newValue.openCap];
-  saveBgpConfig.addressFamily = [...newValue.addressFamily];
-  saveBgpConfig.role = newValue.role;
-  saveBgpConfig.openCapCustom = newValue.openCapCustom;
+  saveBgpConfig.localAs = newBgpValue.localAs;
+  saveBgpConfig.peerIp = newBgpValue.peerIp;
+  saveBgpConfig.peerAs = newBgpValue.peerAs;
+  saveBgpConfig.routerId = newBgpValue.routerId;
+  saveBgpConfig.holdTime = newBgpValue.holdTime;
+  saveBgpConfig.openCap = [...newBgpValue.openCap];
+  saveBgpConfig.addressFamily = [...newBgpValue.addressFamily];
+  saveBgpConfig.role = newBgpValue.role;
+  saveBgpConfig.openCapCustom = newBgpValue.openCapCustom;
+  saveBgpConfig.routeConfig = { ...newBgpValue.routeConfig };
   const raw = toRaw(saveBgpConfig);
   saveDebounced(raw)
 }, { deep: true, immediate: true })
@@ -256,7 +283,7 @@ onMounted(async () => {
     if (data.status === 'success') {
       const response = data.data;
       if (response.op === 'log') {
-        bgpLog.value += response.message + '\r\n';
+        bgpLog.value = checkAndClearLog(bgpLog.value + response.message + '\r\n');
       } else if (response.op === 'peer-state') {
         bgpData.value.peerState = response.message;
       }
@@ -283,6 +310,15 @@ onMounted(async () => {
     bgpData.value.addressFamily = Array.isArray(savedConfig.data.addressFamily) ? [...savedConfig.data.addressFamily] : [];
     bgpData.value.role = savedConfig.data.role || '';
     bgpData.value.openCapCustom = savedConfig.data.openCapCustom || '';
+    
+    // Load route configuration
+    if (savedConfig.data.routeConfig) {
+      bgpData.value.routeConfig = {
+        prefix: savedConfig.data.routeConfig.prefix || '',
+        mask: savedConfig.data.routeConfig.mask || '',
+        count: savedConfig.data.routeConfig.count || ''
+      };
+    }
   }
 })
 
@@ -295,8 +331,70 @@ const handleCustomOpenCapSubmit = (data) => {
   console.log(data)
   bgpData.value.openCapCustom = data
 }
+
+// Add watch for openCap changes
+watch(() => bgpData.value.openCap, (newValue) => {
+  if (!newValue.includes('Role')) {
+    bgpData.value.role = '';
+  }
+  else {
+    bgpData.value.role = 'Provider';
+  }
+}, { deep: true })
+
+const sendRoutes = async () => {
+  try {
+    if (!bgpData.value.routeConfig.prefix || !bgpData.value.routeConfig.mask || !bgpData.value.routeConfig.count) {
+      message.error('请填写完整路由配置信息');
+      return;
+    }
+    const result = await window.bgpEmulatorApi.sendRoutes(bgpData.value.routeConfig);
+    if (result.status === 'success') {
+      message.success('路由发送成功');
+    } else {
+      message.error(result.msg || '路由发送失败');
+    }
+  } catch (e) {
+    console.error(e);
+    message.error('路由发送失败');
+  }
+};
+
+const startBgp = () => {
+  try {
+    const payload = JSON.parse(JSON.stringify(bgpData.value));
+    window.bgpEmulatorApi.startBgp(payload);
+  } catch (e) {
+    console.error(e);
+    message.error(e);
+  }
+}
+
+const stopBgp = async () => {
+  const result = await window.bgpEmulatorApi.stopBgp();
+  console.log(result);
+};
 </script>
 
 <style scoped>
+:deep(.ant-col-8) {
+  margin-top: 16px;
+}
 
+:deep(.ant-divider) {
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+:deep(.ant-input[disabled]) {
+  background-color: #f5f5f5;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+:deep(.ant-select-disabled .ant-select-selector) {
+  background-color: #f5f5f5;
+  color: rgba(0, 0, 0, 0.85);
+}
 </style>

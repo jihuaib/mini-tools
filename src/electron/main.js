@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp } = require("./bgpSimulatorApp");
+const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp, getBgpState } = require("./bgpSimulatorApp");
 const {handleGenerateTemplateString, handleSaveStringGeneratorConfig, handleLoadStringGeneratorConfig} = require("./stringGeneratorApp");
 
 const isDev = !app.isPackaged;
+let mainWindow = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -29,6 +30,29 @@ function createWindow() {
 
     // 打开调试工具
     win.webContents.openDevTools();
+
+    // 监听窗口关闭事件
+    win.on('close', async (event) => {
+        if (getBgpState()) {
+            event.preventDefault();
+            const { response } = await dialog.showMessageBox(win, {
+                type: 'warning',
+                title: '确认关闭',
+                message: 'BGP 模拟器正在运行，确定要关闭吗？',
+                buttons: ['确定', '取消'],
+                defaultId: 1,
+                cancelId: 1
+            });
+            
+            if (response === 0) {
+                // 用户点击确定，先停止 BGP 然后关闭窗口
+                await handleStopBgp();
+                win.destroy();
+            }
+        }
+    });
+
+    mainWindow = win;
 }
 
 app.whenReady().then(() => {

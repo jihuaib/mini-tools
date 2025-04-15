@@ -47,7 +47,6 @@ const handleSelect = ({ key }) => {
 .content-area {
   display: flex;
   flex-direction: column;
-  margin: 20px auto;
   padding: 0 20px;
   width: 100%;
   max-width: 1200px;
