@@ -16,7 +16,8 @@
         "pack": "electron-builder --dir",
         "dist": "electron-builder",
         "prepack": "npm run build",
-        "predist": "npm run build"
+        "predist": "npm run build",
+        "format": "prettier --write ."
     },
     "build": {
         "appId": "MiniTools",
@@ -53,6 +54,7 @@
         "electron": "^15.3.0",
         "electron-builder": "^22.14.13",
         "lodash-es": "^4.17.21",
+        "prettier": "^3.5.3",
         "vite": "^4.4.0",
         "vue": "^3.5.13",
         "vue-router": "^4.5.0",

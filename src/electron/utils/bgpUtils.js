@@ -15,12 +15,7 @@ function writeUInt16(value) {
  * @returns {number[]} - 四个字节的数组
  */
 function writeUInt32(value) {
-    return [
-        (value >> 24) & 0xff,
-        (value >> 16) & 0xff,
-        (value >> 8) & 0xff,
-        value & 0xff,
-    ];
+    return [(value >> 24) & 0xff, (value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
 }
 
 /**
@@ -29,11 +24,11 @@ function writeUInt32(value) {
  * @returns {number[]}
  */
 function ipToBytes(ip) {
-    return ip.split(".").map((octet) => parseInt(octet, 10));
+    return ip.split('.').map(octet => parseInt(octet, 10));
 }
 
 module.exports = {
     writeUInt16,
     writeUInt32,
-    ipToBytes,
+    ipToBytes
 };
