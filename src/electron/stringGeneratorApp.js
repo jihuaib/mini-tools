@@ -3,6 +3,8 @@ const path = require('path');
 const { runWorkerWithPromise } = require('./worker/runWorkerWithPromise');
 const fs = require('fs');
 
+const isDev = !app.isPackaged;
+
 // 获取配置文件路径
 function getConfigPath() {
     return path.join(app.getPath('userData'), 'string-generator-config.json');
@@ -46,10 +48,10 @@ async function handleGenerateTemplateString(event, templateData) {
     console.log('[Main] handleGenerateTemplateString', templateData);
 
     try {
-        const result = await runWorkerWithPromise(
-            path.join(__dirname, './worker/StringGeneratorWorker.js'),
-            templateData
-        );
+        const workerPath = isDev
+            ? path.join(__dirname, './worker/StringGeneratorWorker.js')
+            : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/StringGeneratorWorker.js');
+        const result = await runWorkerWithPromise(path.join(workerPath), templateData);
         console.log('[Main] Worker处理结果:', result);
         return result;
     } catch (err) {

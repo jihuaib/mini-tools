@@ -9,6 +9,7 @@ const BGP_OPERATIONS = require('./const/operations');
 
 let bgpStart = false;
 let worker;
+const isDev = !app.isPackaged;
 
 async function handleGetNetworkInfo(event) {
     try {
@@ -134,7 +135,9 @@ async function handleStartBgp(event, bgpData) {
 
     log.info('[Main] handleStartBgp', bgpData);
 
-    const workerPath = path.join(__dirname, './worker/bgpSimulatorWorker.js');
+    const workerPath = isDev
+        ? path.join(__dirname, './worker/bgpSimulatorWorker.js')
+        : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/bgpSimulatorWorker.js');
     worker = new Worker(workerPath);
 
     log.info(`[Worker ${worker.threadId}] 启动`);

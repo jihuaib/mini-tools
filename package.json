@@ -28,6 +28,12 @@
             "src/electron/**/*",
             "package.json"
         ],
+        "asarUnpack": [
+            "src/electron/worker/**",
+            "src/electron/utils/**",
+            "src/electron/const/**",
+            "node_modules/**/*"
+        ],
         "directories": {
             "buildResources": "src/electron/assets"
         },
@@ -62,7 +68,6 @@
     },
     "dependencies": {
         "electron-log": "^5.3.3",
-        "ip6": "^0.2.11",
         "ipaddr.js": "^2.1.0"
     }
 }

@@ -97,6 +97,7 @@
             const payload = JSON.parse(JSON.stringify(toRaw(formState.value)));
             const resp = await window.stringGeneratorApi.generateTemplateString(payload);
 
+            console.log('[StringGenerator] handleFinish', resp);
             if (resp.status === 'success') {
                 result.value = resp.data.join('\r\n');
             } else {
