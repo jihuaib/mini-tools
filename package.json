@@ -1,63 +1,64 @@
 {
-  "name": "mini-tools",
-  "private": true,
-  "version": "1.0.0",
-  "main": "src/electron/main.js",
-  "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
-  "author": {
-    "name": "jihuaibin",
-    "email": "jihuaib@163.com"
-  },
-  "repository": "https://github.com/jihuaib/mini-tools",
-  "scripts": {
-    "build": "vite build",
-    "start": "vite",
-    "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "prepack": "npm run build",
-    "predist": "npm run build"
-  },
-  "build": {
-    "appId": "MiniTools",
-    "productName": "MiniTools",
-    "copyright": "Copyright © 2025 ${author}",
-    "files": [
-      "dist/**/*",
-      "src/electron/**/*",
-      "package.json"
-    ],
-    "directories" : {
-      "buildResources": "src/electron/assets"
+    "name": "mini-tools",
+    "private": true,
+    "version": "1.0.0",
+    "main": "src/electron/main.js",
+    "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
+    "author": {
+        "name": "jihuaibin",
+        "email": "jihuaib@163.com"
     },
-    "win": {
-      "target": [
-        "msi","nsis"
-      ],
-      "icon": "icon.ico",
-      "artifactName": "${productName}-Setup-${version}.${ext}",
-      "publisherName": "jihuaibin"
+    "repository": "https://github.com/jihuaib/mini-tools",
+    "scripts": {
+        "build": "vite build",
+        "start": "vite",
+        "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
+        "pack": "electron-builder --dir",
+        "dist": "electron-builder",
+        "prepack": "npm run build",
+        "predist": "npm run build"
     },
-    "nsis": {
-      "allowToChangeInstallationDirectory": true,
-      "oneClick": false,
-      "perMachine":false
+    "build": {
+        "appId": "MiniTools",
+        "productName": "MiniTools",
+        "copyright": "Copyright © 2025 ${author}",
+        "files": [
+            "dist/**/*",
+            "src/electron/**/*",
+            "package.json"
+        ],
+        "directories": {
+            "buildResources": "src/electron/assets"
+        },
+        "win": {
+            "target": [
+                "msi",
+                "nsis"
+            ],
+            "icon": "icon.ico",
+            "artifactName": "${productName}-Setup-${version}.${ext}",
+            "publisherName": "jihuaibin"
+        },
+        "nsis": {
+            "allowToChangeInstallationDirectory": true,
+            "oneClick": false,
+            "perMachine": false
+        }
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^4.2.3",
+        "ant-design-vue": "^4.2.6",
+        "concurrently": "^7.6.0",
+        "cross-env": "^7.0.3",
+        "electron": "^15.3.0",
+        "electron-builder": "^22.14.13",
+        "lodash-es": "^4.17.21",
+        "vite": "^4.4.0",
+        "vue": "^3.5.13",
+        "vue-router": "^4.5.0",
+        "wait-port": "^1.1.0"
+    },
+    "dependencies": {
+        "electron-log": "^5.3.3"
     }
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^4.2.3",
-    "ant-design-vue": "^4.2.6",
-    "concurrently": "^7.6.0",
-    "cross-env": "^7.0.3",
-    "electron": "^15.3.0",
-    "electron-builder": "^22.14.13",
-    "lodash-es": "^4.17.21",
-    "vite": "^4.4.0",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0",
-    "wait-port": "^1.1.0"
-  },
-  "dependencies": {
-    "electron-log": "^5.3.3"
-  }
 }

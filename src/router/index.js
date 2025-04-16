@@ -1,31 +1,31 @@
-import {createRouter, createWebHashHistory} from 'vue-router'
+import { createRouter, createWebHashHistory } from "vue-router";
 import Main from "../view/Main.vue";
 import StringGenerator from "../view/StringGenerator.vue";
 import BgpEmulator from "../view/BgpEmulator.vue";
 
 const routes = [
     {
-        path: '/',
+        path: "/",
         component: Main,
         children: [
-            { path: '/', redirect: '/string-generator' },
+            { path: "/", redirect: "/string-generator" },
             {
-                path: '/string-generator',
-                name: 'StringGenerator',
-                component: StringGenerator
+                path: "/string-generator",
+                name: "StringGenerator",
+                component: StringGenerator,
             },
             {
-                path: '/bgp-emulator',
-                name: 'BgpEmulator',
-                component: BgpEmulator
-            }
-        ]
-    }
-]
+                path: "/bgp-emulator",
+                name: "BgpEmulator",
+                component: BgpEmulator,
+            },
+        ],
+    },
+];
 
 const router = createRouter({
     history: createWebHashHistory(),
-    routes
-})
+    routes,
+});
 
-export default router
+export default router;

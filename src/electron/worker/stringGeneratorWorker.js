@@ -1,6 +1,6 @@
-const { parentPort } = require('worker_threads');
+const { parentPort } = require("worker_threads");
 
-parentPort.on('message', (templateData) => {
+parentPort.on("message", (templateData) => {
     try {
         const { template, placeholder, start, end } = templateData;
 
@@ -8,7 +8,7 @@ parentPort.on('message', (templateData) => {
         const endNum = parseInt(end);
 
         if (isNaN(startNum) || isNaN(endNum)) {
-            throw new Error('start和end必须是数字');
+            throw new Error("start和end必须是数字");
         }
 
         const results = [];

@@ -1,8 +1,8 @@
-const { app, BrowserWindow } = require('electron');
-const { Worker } = require('worker_threads');
-const path = require('path');
+const { app, BrowserWindow } = require("electron");
+const { Worker } = require("worker_threads");
+const path = require("path");
 const os = require("os");
-const fs = require('fs');
+const fs = require("fs");
 const log = require("electron-log");
 
 let bgpStart = false;
@@ -10,10 +10,13 @@ let worker;
 
 function sendBgpDataTime(webContents, channel, payload) {
     const now = new Date();
-    const timeStr = `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ` +
-        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+    const timeStr =
+        `[${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ` +
+        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}]`;
 
-    payload.data.message = payload.data.message ? `${timeStr} ${payload.data.message}` : timeStr;
+    payload.data.message = payload.data.message
+        ? `${timeStr} ${payload.data.message}`
+        : timeStr;
 
     webContents.send(channel, payload);
 }
@@ -26,7 +29,7 @@ async function handleGetNetworkInfo(event) {
 
 // 获取配置文件路径
 function getConfigPath() {
-    return path.join(app.getPath('userData'), 'bgp-simulator-config.json');
+    return path.join(app.getPath("userData"), "bgp-simulator-config.json");
 }
 
 // 保存配置
@@ -38,11 +41,14 @@ async function handleSaveBgpConfig(event, config) {
         if (!fs.existsSync(configDir)) {
             await fs.promises.mkdir(configDir, { recursive: true });
         }
-        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return { status: 'success' };
+        await fs.promises.writeFile(
+            configPath,
+            JSON.stringify(config, null, 2),
+        );
+        return { status: "success" };
     } catch (error) {
-        console.error('Error saving config:', error);
-        return { status: 'error', message: error.message };
+        console.error("Error saving config:", error);
+        return { status: "error", message: error.message };
     }
 }
 
@@ -51,13 +57,13 @@ async function handleLoadBgpConfig() {
     try {
         const configPath = getConfigPath();
         if (!fs.existsSync(configPath)) {
-            return { status: 'success', data: null };
+            return { status: "success", data: null };
         }
-        const data = await fs.promises.readFile(configPath, 'utf8');
-        return { status: 'success', data: JSON.parse(data) };
+        const data = await fs.promises.readFile(configPath, "utf8");
+        return { status: "success", data: JSON.parse(data) };
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        console.error("Error loading config:", error);
+        return { status: "error", message: error.message };
     }
 }
 
@@ -71,65 +77,68 @@ async function handleStopBgp() {
         await worker.terminate();
         bgpStart = false;
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        console.error("Error loading config:", error);
+        return { status: "error", message: error.message };
     }
 }
 
 async function handleSendRoute(event, config) {
     if (!bgpStart) {
         log.error("bgp协议没有运行");
-        return { status: 'error', message: 'bgp协议没有运行' };
+        return { status: "error", message: "bgp协议没有运行" };
     }
 
     log.info("handleSendRoute config:", config);
 
     try {
         const msg = {
-            op: 'send-route',
-            data: config
-        }
+            op: "send-route",
+            data: config,
+        };
 
         worker.postMessage(msg);
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        console.error("Error loading config:", error);
+        return { status: "error", message: error.message };
     }
 }
 
 async function handleWithdrawRoute(event, config) {
     if (!bgpStart) {
         log.error("bgp协议没有运行");
-        return { status: 'error', message: 'bgp协议没有运行' };
+        return { status: "error", message: "bgp协议没有运行" };
     }
 
     log.info("handleSendRoute config:", config);
 
     try {
         const msg = {
-            op: 'withdraw-route',
-            data: config
-        }
+            op: "withdraw-route",
+            data: config,
+        };
 
         worker.postMessage(msg);
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        console.error("Error loading config:", error);
+        return { status: "error", message: error.message };
     }
 }
 
-function handleStartBgp(event, bgpData){
+function handleStartBgp(event, bgpData) {
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
 
     if (bgpStart) {
-        webContents.send('update-bgp-data', { status: 'error', msg: 'bgp已经启动'});
+        webContents.send("update-bgp-data", {
+            status: "error",
+            msg: "bgp已经启动",
+        });
         return;
     }
 
-    console.log('[Main] handleStartBgp', bgpData);
+    console.log("[Main] handleStartBgp", bgpData);
 
-    const workerPath = path.join(__dirname, './worker/bgpSimulatorWorker.js');
+    const workerPath = path.join(__dirname, "./worker/bgpSimulatorWorker.js");
     worker = new Worker(workerPath);
 
     console.log(`[Worker ${worker.threadId}] 启动`);
@@ -137,37 +146,50 @@ function handleStartBgp(event, bgpData){
     bgpStart = true;
 
     const msg = {
-        op: 'start-bgp',
-        data: bgpData
-    }
+        op: "start-bgp",
+        data: bgpData,
+    };
 
     worker.postMessage(msg);
 
     // 持续接收 BGP 线程的消息
-    worker.on('message', (result) => {
+    worker.on("message", (result) => {
         console.log(`[Worker ${worker.threadId}] recv msg`, result);
-        if (result.op === 'log') {
-            sendBgpDataTime(webContents, 'update-bgp-data', { status: 'success', msg: '', data:result });
+        if (result.op === "log") {
+            sendBgpDataTime(webContents, "update-bgp-data", {
+                status: "success",
+                msg: "",
+                data: result,
+            });
         } else {
-            webContents.send('update-bgp-data', { status: 'success', msg: '', data:result });
+            webContents.send("update-bgp-data", {
+                status: "success",
+                msg: "",
+                data: result,
+            });
         }
     });
 
-    worker.on('error', (err) => {
+    worker.on("error", (err) => {
         console.error(`[Worker ${worker.threadId}] err:`, err);
-        webContents.send('update-bgp-data', { status: 'error', msg: err.message });
+        webContents.send("update-bgp-data", {
+            status: "error",
+            msg: err.message,
+        });
     });
 
-    worker.on('exit', (code) => {
+    worker.on("exit", (code) => {
         bgpStart = false;
         if (code !== 0) {
             console.error(`[Worker ${worker.threadId}] exit, exit code:`, code);
-            webContents.send('update-bgp-data', {
-                status: 'error',
+            webContents.send("update-bgp-data", {
+                status: "error",
                 msg: `Worker stopped with exit code ${code}`,
             });
         } else {
-            console.log(`[Worker ${worker.threadId}] has completed successfully.`);
+            console.log(
+                `[Worker ${worker.threadId}] has completed successfully.`,
+            );
         }
     });
 }
@@ -184,5 +206,5 @@ module.exports = {
     handleStopBgp,
     getBgpState,
     handleSendRoute,
-    handleWithdrawRoute
+    handleWithdrawRoute,
 };
