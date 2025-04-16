@@ -2,10 +2,11 @@ const { parentPort } = require('worker_threads');
 const net = require('net');
 const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BgpState, BgpPacketType, BgpOpenCapMap, BgpAfiType, BgpSAfiType, BgpRoleValueMap } = require('../const/bgpConst');
 const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
+const log = require("electron-log");
 
 let bgpState = BgpState.IDLE;
 let bgpData;
-let server;  // Add server variable to global scope
+let server;
 
 function changeBgpFsmState(_bgpState) {
     parentPort.postMessage({
@@ -287,6 +288,14 @@ function startTcpServer() {
     });
 }
 
+function sendRoute(config) {
+    log.info(config);
+}
+
+function withdrawRoute(config) {
+    log.info(config);
+}
+
 parentPort.on('message', (msg) => {
     try {
         if (msg.op === 'start-bgp') {
@@ -299,8 +308,11 @@ parentPort.on('message', (msg) => {
             });
         } else if (msg.op === 'stop-bgp') {
             stopBgp();
+        } else if (msg.op === 'send-route') {
+            sendRoute(msg.data);
+        } else if (msg.op === 'withdraw-route') {
+            withdrawRoute(msg.data);
         }
-
     } catch (err) {
         throw new Error(err.message);
     }

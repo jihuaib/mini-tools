@@ -1,199 +1,188 @@
 <template>
-  <a-row :gutter="[16,16]">
-    <a-col :span="16">
-      <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol"
-              :wrapper-col="wrapperCol">
-        <a-divider>BGP配置</a-divider>
-        <a-form-item label="请选择网卡">
+  <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol"
+          :wrapper-col="wrapperCol">
+    <a-divider>BGP配置</a-divider>
+    <a-form-item label="请选择网卡">
+      <a-select
+          ref="select"
+          v-model:value="networkValue"
+          :options="networkInfo"
+          @select="handleNetworkChange"
+      ></a-select>
+    </a-form-item>
+
+    <a-row>
+      <a-col :span="12">
+        <a-form-item label="Local IP" name="localIp">
+          <a-input v-model:value="bgpData.localIp" disabled/>
+        </a-form-item>
+      </a-col>
+      <a-col :span="12">
+        <a-form-item label="Local AS" name="localAs">
+          <a-tooltip :title="validationErrors.localAs" :open="!!validationErrors.localAs">
+            <a-input v-model:value="bgpData.localAs" @blur="validateLocalAs" :status="validationErrors.localAs ? 'error' : ''"/>
+          </a-tooltip>
+        </a-form-item>
+      </a-col>
+    </a-row>
+
+    <a-row>
+      <a-col :span="12">
+        <a-form-item label="Peer IP" name="peerIp">
+          <a-tooltip :title="validationErrors.peerIp" :open="!!validationErrors.peerIp">
+            <a-input v-model:value="bgpData.peerIp" @blur="validatePeerIp" :status="validationErrors.peerIp ? 'error' : ''"/>
+          </a-tooltip>
+        </a-form-item>
+      </a-col>
+      <a-col :span="12">
+        <a-form-item label="Peer AS" name="peerAs">
+          <a-tooltip :title="validationErrors.peerAs" :open="!!validationErrors.peerAs">
+            <a-input v-model:value="bgpData.peerAs" @blur="validatePeerAs" :status="validationErrors.peerAs ? 'error' : ''"/>
+          </a-tooltip>
+        </a-form-item>
+      </a-col>
+    </a-row>
+
+    <a-row>
+      <a-col :span="12">
+        <a-form-item label="Router ID" name="routerId">
+          <a-tooltip :title="validationErrors.routerId" :open="!!validationErrors.routerId">
+            <a-input v-model:value="bgpData.routerId" @blur="validateRouterId" :status="validationErrors.routerId ? 'error' : ''"/>
+          </a-tooltip>
+        </a-form-item>
+      </a-col>
+      <a-col :span="12">
+        <a-form-item label="Hold Time" name="holdTime">
+          <a-tooltip :title="validationErrors.holdTime" :open="!!validationErrors.holdTime">
+            <a-input v-model:value="bgpData.holdTime" @blur="validateHoldTime" :status="validationErrors.holdTime ? 'error' : ''"/>
+          </a-tooltip>
+        </a-form-item>
+      </a-col>
+    </a-row>
+
+    <a-form-item label="Open Cap" name="openCap">
+      <a-space>
+        <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
+        <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
+          <template #icon><SettingOutlined /></template>
+          配置自定义能力
+        </a-button>
+      </a-space>
+    </a-form-item>
+
+    <a-row>
+      <a-col :span="12">
+        <a-form-item label="Addr Family" name="addressFamily">
           <a-select
-              ref="select"
-              v-model:value="networkValue"
-              :options="networkInfo"
-              @select="handleNetworkChange"
-          ></a-select>
+            v-model:value="bgpData.addressFamily"
+            mode="multiple"
+            style="width: 100%"
+            :options="addressFamilyOptions"
+          />
         </a-form-item>
-
-        <a-row>
-          <a-col :span="12">
-            <a-form-item label="Local IP" name="localIp">
-              <a-input v-model:value="bgpData.localIp" disabled/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="Local AS" name="localAs">
-              <a-tooltip :title="validationErrors.localAs" :open="!!validationErrors.localAs">
-                <a-input v-model:value="bgpData.localAs" @blur="validateLocalAs" :status="validationErrors.localAs ? 'error' : ''"/>
-              </a-tooltip>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row>
-          <a-col :span="12">
-            <a-form-item label="Peer IP" name="peerIp">
-              <a-tooltip :title="validationErrors.peerIp" :open="!!validationErrors.peerIp">
-                <a-input v-model:value="bgpData.peerIp" @blur="validatePeerIp" :status="validationErrors.peerIp ? 'error' : ''"/>
-              </a-tooltip>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="Peer AS" name="peerAs">
-              <a-tooltip :title="validationErrors.peerAs" :open="!!validationErrors.peerAs">
-                <a-input v-model:value="bgpData.peerAs" @blur="validatePeerAs" :status="validationErrors.peerAs ? 'error' : ''"/>
-              </a-tooltip>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row>
-          <a-col :span="12">
-            <a-form-item label="Router ID" name="routerId">
-              <a-tooltip :title="validationErrors.routerId" :open="!!validationErrors.routerId">
-                <a-input v-model:value="bgpData.routerId" @blur="validateRouterId" :status="validationErrors.routerId ? 'error' : ''"/>
-              </a-tooltip>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="Hold Time" name="holdTime">
-              <a-tooltip :title="validationErrors.holdTime" :open="!!validationErrors.holdTime">
-                <a-input v-model:value="bgpData.holdTime" @blur="validateHoldTime" :status="validationErrors.holdTime ? 'error' : ''"/>
-              </a-tooltip>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-form-item label="Open Cap" name="openCap">
-          <a-space>
-            <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
-            <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
-              <template #icon><SettingOutlined /></template>
-              配置自定义能力
-            </a-button>
-          </a-space>
+      </a-col>
+      <a-col :span="12">
+        <a-form-item label="Role" name="role">
+          <a-select
+            v-model:value="bgpData.role"
+            style="width: 100%"
+            :options="roleOptions"
+            :disabled="!bgpData.openCap.includes('Role')"
+          />
         </a-form-item>
+      </a-col>
+    </a-row>
 
-        <a-row>
-          <a-col :span="12">
-            <a-form-item label="Addr Family" name="addressFamily">
-              <a-select
-                v-model:value="bgpData.addressFamily"
-                mode="multiple"
-                style="width: 100%"
-                :options="addressFamilyOptions"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="Role" name="role">
-              <a-select
-                v-model:value="bgpData.role"
-                style="width: 100%"
-                :options="roleOptions"
-                :disabled="!bgpData.openCap.includes('Role')"
-              />
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row>
-          <a-col :span="12">
-            <a-form-item label="Peer state" name="peerState">
-              <a-input v-model:value="bgpData.peerState" disabled/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-          <a-space size="middle">
-            <a-button type="primary" html-type="submit">启动</a-button>
-            <a-button type="primary" danger @click="stopBgp">停止</a-button>
-          </a-space>
+    <a-row>
+      <a-col :span="12">
+        <a-form-item label="Peer state" name="peerState">
+          <a-input v-model:value="bgpData.peerState" disabled/>
         </a-form-item>
+      </a-col>
+    </a-row>
 
-        <a-divider>路由配置</a-divider>
-        <a-form-item label="IP类型" name="ipType">
-          <a-radio-group v-model:value="bgpData.routeConfig.ipType">
-            <a-radio value="ipv4">IPv4</a-radio>
-            <a-radio value="ipv6">IPv6</a-radio>
-          </a-radio-group>
-        </a-form-item>
+    <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+      <a-space size="middle">
+        <a-button type="primary" html-type="submit">启动</a-button>
+        <a-button type="primary" danger @click="stopBgp">停止</a-button>
+      </a-space>
+    </a-form-item>
 
-        <!-- IPv4 Route Configuration -->
-        <div v-show="bgpData.routeConfig.ipType === 'ipv4'">
-          <a-row>
-            <a-col :span="8">
-              <a-form-item label="Prefix" name="ipv4RouteConfig.prefix">
-                <a-tooltip :title="validationErrors.ipv4Prefix" :open="!!validationErrors.ipv4Prefix">
-                  <a-input v-model:value="bgpData.ipv4RouteConfig.prefix" @blur="validateIpv4Prefix" :status="validationErrors.ipv4Prefix ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item label="Mask" name="ipv4RouteConfig.mask">
-                <a-tooltip :title="validationErrors.ipv4Mask" :open="!!validationErrors.ipv4Mask">
-                  <a-input v-model:value="bgpData.ipv4RouteConfig.mask" @blur="validateIpv4Mask" :status="validationErrors.ipv4Mask ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item label="Count" name="ipv4RouteConfig.count">
-                <a-tooltip :title="validationErrors.ipv4Count" :open="!!validationErrors.ipv4Count">
-                  <a-input v-model:value="bgpData.ipv4RouteConfig.count" @blur="validateIpv4Count" :status="validationErrors.ipv4Count ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </div>
+    <a-divider>路由配置</a-divider>
+    <a-form-item label="IP类型" name="ipType">
+      <a-radio-group v-model:value="bgpData.routeConfig.ipType">
+        <a-radio value="ipv4">IPv4</a-radio>
+        <a-radio value="ipv6">IPv6</a-radio>
+      </a-radio-group>
+    </a-form-item>
 
-        <!-- IPv6 Route Configuration -->
-        <div v-show="bgpData.routeConfig.ipType === 'ipv6'">
-          <a-row>
-            <a-col :span="8">
-              <a-form-item label="Prefix" name="ipv6RouteConfig.prefix">
-                <a-tooltip :title="validationErrors.ipv6Prefix" :open="!!validationErrors.ipv6Prefix">
-                  <a-input v-model:value="bgpData.ipv6RouteConfig.prefix" @blur="validateIpv6Prefix" :status="validationErrors.ipv6Prefix ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item label="Mask" name="ipv6RouteConfig.mask">
-                <a-tooltip :title="validationErrors.ipv6Mask" :open="!!validationErrors.ipv6Mask">
-                  <a-input v-model:value="bgpData.ipv6RouteConfig.mask" @blur="validateIpv6Mask" :status="validationErrors.ipv6Mask ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item label="Count" name="ipv6RouteConfig.count">
-                <a-tooltip :title="validationErrors.ipv6Count" :open="!!validationErrors.ipv6Count">
-                  <a-input v-model:value="bgpData.ipv6RouteConfig.count" @blur="validateIpv6Count" :status="validationErrors.ipv6Count ? 'error' : ''"/>
-                </a-tooltip>
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </div>
+    <!-- IPv4 Route Configuration -->
+    <div v-show="bgpData.routeConfig.ipType === 'ipv4'">
+      <a-row>
+        <a-col :span="8">
+          <a-form-item label="Prefix" name="ipv4RouteConfig.prefix">
+            <a-tooltip :title="validationErrors.ipv4Prefix" :open="!!validationErrors.ipv4Prefix">
+              <a-input v-model:value="bgpData.ipv4RouteConfig.prefix" @blur="validateIpv4Prefix" :status="validationErrors.ipv4Prefix ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="Mask" name="ipv4RouteConfig.mask">
+            <a-tooltip :title="validationErrors.ipv4Mask" :open="!!validationErrors.ipv4Mask">
+              <a-input v-model:value="bgpData.ipv4RouteConfig.mask" @blur="validateIpv4Mask" :status="validationErrors.ipv4Mask ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="Count" name="ipv4RouteConfig.count">
+            <a-tooltip :title="validationErrors.ipv4Count" :open="!!validationErrors.ipv4Count">
+              <a-input v-model:value="bgpData.ipv4RouteConfig.count" @blur="validateIpv4Count" :status="validationErrors.ipv4Count ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+      </a-row>
+    </div>
 
-        <a-form-item>
-          <a-button type="link" @click="showCustomRouteAttr" class="custom-route-btn">
-            <template #icon><SettingOutlined /></template>
-            配置自定义路由属性
-          </a-button>
-        </a-form-item>
-        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-          <a-space>
-            <a-button type="primary" @click="sendRoutes">发送路由</a-button>
-            <a-button type="primary" danger @click="withdrawRoutes">撤销路由</a-button>
-          </a-space>
-        </a-form-item>
-      </a-form>
-    </a-col>
+    <!-- IPv6 Route Configuration -->
+    <div v-show="bgpData.routeConfig.ipType === 'ipv6'">
+      <a-row>
+        <a-col :span="8">
+          <a-form-item label="Prefix" name="ipv6RouteConfig.prefix">
+            <a-tooltip :title="validationErrors.ipv6Prefix" :open="!!validationErrors.ipv6Prefix">
+              <a-input v-model:value="bgpData.ipv6RouteConfig.prefix" @blur="validateIpv6Prefix" :status="validationErrors.ipv6Prefix ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="Mask" name="ipv6RouteConfig.mask">
+            <a-tooltip :title="validationErrors.ipv6Mask" :open="!!validationErrors.ipv6Mask">
+              <a-input v-model:value="bgpData.ipv6RouteConfig.mask" @blur="validateIpv6Mask" :status="validationErrors.ipv6Mask ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="Count" name="ipv6RouteConfig.count">
+            <a-tooltip :title="validationErrors.ipv6Count" :open="!!validationErrors.ipv6Count">
+              <a-input v-model:value="bgpData.ipv6RouteConfig.count" @blur="validateIpv6Count" :status="validationErrors.ipv6Count ? 'error' : ''"/>
+            </a-tooltip>
+          </a-form-item>
+        </a-col>
+      </a-row>
+    </div>
 
-    <a-col :span="8" class="log-column">
-      <ScrollTextarea
-          v-model:modelValue="bgpLog"
-          :height="680"
-      />
-    </a-col>
-  </a-row>
+    <a-form-item>
+      <a-button type="link" @click="showCustomRouteAttr" class="custom-route-btn">
+        <template #icon><SettingOutlined /></template>
+        配置自定义路由属性
+      </a-button>
+    </a-form-item>
+    <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+      <a-space>
+        <a-button type="primary" @click="sendRoutes">发送路由</a-button>
+        <a-button type="primary" danger @click="withdrawRoutes">撤销路由</a-button>
+      </a-space>
+    </a-form-item>
+  </a-form>
 
   <CustomPktDrawer
     v-model:visible="customOpenCapVisible"
@@ -278,16 +267,6 @@ const bgpData = ref({
   }
 });
 
-const bgpLog = ref('')
-
-const checkAndClearLog = (log) => {
-  const lines = log.split('\r\n');
-  if (lines.length > 1000) {
-    return lines.slice(lines.length - 1000).join('\r\n');
-  }
-  return log;
-}
-
 const networkList = []
 const networkInfo = ref([])
 const networkValue = ref('')
@@ -343,7 +322,7 @@ watch([bgpData], async ([newBgpValue]) => {
   saveBgpConfig.ipv4RouteConfig = { ...newBgpValue.ipv4RouteConfig };
   saveBgpConfig.ipv6RouteConfig = { ...newBgpValue.ipv6RouteConfig };
   saveBgpConfig.routeConfig = { ...newBgpValue.routeConfig };
-  
+
   try {
     clearValidationErrors();
     validateLocalAs();
@@ -351,7 +330,7 @@ watch([bgpData], async ([newBgpValue]) => {
     validatePeerAs();
     validateRouterId();
     validateHoldTime();
-    
+
     validateIpv4Prefix();
     validateIpv4Mask();
     validateIpv4Count();
@@ -363,7 +342,7 @@ watch([bgpData], async ([newBgpValue]) => {
 
     // Check if there are any validation errors
     const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-    
+
     if (hasErrors) {
       console.log('Validation failed, configuration not saved');
       return;
@@ -407,9 +386,7 @@ onMounted(async () => {
     console.log(data);
     if (data.status === 'success') {
       const response = data.data;
-      if (response.op === 'log') {
-        bgpLog.value = checkAndClearLog(bgpLog.value + response.message + '\r\n');
-      } else if (response.op === 'peer-state') {
+      if (response.op === 'peer-state') {
         bgpData.value.peerState = response.message;
       }
     } else {
@@ -435,7 +412,7 @@ onMounted(async () => {
     bgpData.value.addressFamily = Array.isArray(savedConfig.data.addressFamily) ? [...savedConfig.data.addressFamily] : [];
     bgpData.value.role = savedConfig.data.role || '';
     bgpData.value.openCapCustom = savedConfig.data.openCapCustom || '';
-    
+
     // Load route configurations
     if (savedConfig.data.ipv4RouteConfig) {
       bgpData.value.ipv4RouteConfig = {
@@ -445,7 +422,7 @@ onMounted(async () => {
         customAttr: savedConfig.data.ipv4RouteConfig.customAttr || ''
       };
     }
-    
+
     if (savedConfig.data.ipv6RouteConfig) {
       bgpData.value.ipv6RouteConfig = {
         prefix: savedConfig.data.ipv6RouteConfig.prefix || '',
@@ -454,7 +431,7 @@ onMounted(async () => {
         customAttr: savedConfig.data.ipv6RouteConfig.customAttr || ''
       };
     }
-    
+
     if (savedConfig.data.routeConfig) {
       bgpData.value.routeConfig.ipType = savedConfig.data.routeConfig.ipType || 'ipv4';
     }
@@ -584,7 +561,7 @@ const validateIpv4Prefix = () => {
   } else if (!ipv4Regex.test(bgpData.value.ipv4RouteConfig.prefix)) {
     validationErrors.value.ipv4Prefix = '请输入有效的IPv4地址';
   } else {
-    validationErrors.value.ipv4Prefix = '';
+     validationErrors.value.ipv4Prefix = '';
   }
 };
 
@@ -646,9 +623,9 @@ const startBgp = async () => {
   validatePeerAs();
   validateRouterId();
   validateHoldTime();
-  
+
   const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-  
+
   if (hasErrors) {
     message.error('请检查BGP配置信息是否正确');
     return;
@@ -668,11 +645,10 @@ const stopBgp = async () => {
   console.log(result);
 };
 
-// Modify sendRoutes function to use manual validation
 const sendRoutes = async () => {
   try {
-    const currentConfig = bgpData.value.routeConfig.ipType === 'ipv4' 
-      ? bgpData.value.ipv4RouteConfig 
+    const currentConfig = bgpData.value.routeConfig.ipType === 'ipv4'
+      ? bgpData.value.ipv4RouteConfig
       : bgpData.value.ipv6RouteConfig;
 
     clearValidationErrors();
@@ -686,9 +662,8 @@ const sendRoutes = async () => {
       validateIpv6Count();
     }
 
-    // Check if there are any validation errors
     const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-    
+
     if (hasErrors) {
       message.error('请检查路由配置信息是否正确');
       return;
@@ -698,7 +673,7 @@ const sendRoutes = async () => {
       ...currentConfig,
       ipType: bgpData.value.routeConfig.ipType
     });
-    
+
     if (result.status === 'success') {
       message.success('路由发送成功');
     } else {
@@ -710,14 +685,12 @@ const sendRoutes = async () => {
   }
 };
 
-// Modify withdrawRoutes function to use manual validation
 const withdrawRoutes = async () => {
   try {
-    const currentConfig = bgpData.value.routeConfig.ipType === 'ipv4' 
-      ? bgpData.value.ipv4RouteConfig 
+    const currentConfig = bgpData.value.routeConfig.ipType === 'ipv4'
+      ? bgpData.value.ipv4RouteConfig
       : bgpData.value.ipv6RouteConfig;
 
-    // Run appropriate validations based on IP type
     if (bgpData.value.routeConfig.ipType === 'ipv4') {
       validateIpv4Prefix();
       validateIpv4Mask();
@@ -728,9 +701,8 @@ const withdrawRoutes = async () => {
       validateIpv6Count();
     }
 
-    // Check if there are any validation errors
     const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-    
+
     if (hasErrors) {
       message.error('请检查路由配置信息是否正确');
       return;
@@ -740,7 +712,7 @@ const withdrawRoutes = async () => {
       ...currentConfig,
       ipType: bgpData.value.routeConfig.ipType
     });
-    
+
     if (result.status === 'success') {
       message.success('路由撤销成功');
     } else {

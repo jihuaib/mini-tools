@@ -1,6 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray } = require('electron');
 const path = require('path');
-const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp, getBgpState } = require("./bgpSimulatorApp");
+const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp, getBgpState, handleSendRoute, handleWithdrawRoute } = require("./bgpSimulatorApp");
 const {handleGenerateTemplateString, handleSaveStringGeneratorConfig, handleLoadStringGeneratorConfig} = require("./stringGeneratorApp");
 const log = require("electron-log");
 
@@ -16,6 +16,7 @@ function createWindow() {
         frame: true, // 保持原生边框
         center: true, // 窗口居中显示
         backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
+        icon: path.join(__dirname, './assets/icon.ico'),
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
             contextIsolation: true, // 启用 contextIsolation 更好地隔离上下文
@@ -51,6 +52,8 @@ function createWindow() {
         }
     });
 
+    const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
+
     mainWindow = win;
 }
 
@@ -63,6 +66,8 @@ app.whenReady().then(() => {
     ipcMain.handle('save-string-generator-config', handleSaveStringGeneratorConfig);
     ipcMain.handle('load-string-generator-config', handleLoadStringGeneratorConfig);
     ipcMain.handle('stop-bgp', handleStopBgp);
+    ipcMain.handle('send-route', handleSendRoute);
+    ipcMain.handle('withdraw-route', handleWithdrawRoute);
     createWindow();
 
     app.on('activate', () => {

@@ -3,6 +3,7 @@ const { Worker } = require('worker_threads');
 const path = require('path');
 const os = require("os");
 const fs = require('fs');
+const log = require("electron-log");
 
 let bgpStart = false;
 let worker;
@@ -75,6 +76,48 @@ async function handleStopBgp() {
     }
 }
 
+async function handleSendRoute(event, config) {
+    if (!bgpStart) {
+        log.error("bgp协议没有运行");
+        return { status: 'error', message: 'bgp协议没有运行' };
+    }
+
+    log.info("handleSendRoute config:", config);
+
+    try {
+        const msg = {
+            op: 'send-route',
+            data: config
+        }
+
+        worker.postMessage(msg);
+    } catch (error) {
+        console.error('Error loading config:', error);
+        return { status: 'error', message: error.message };
+    }
+}
+
+async function handleWithdrawRoute(event, config) {
+    if (!bgpStart) {
+        log.error("bgp协议没有运行");
+        return { status: 'error', message: 'bgp协议没有运行' };
+    }
+
+    log.info("handleSendRoute config:", config);
+
+    try {
+        const msg = {
+            op: 'withdraw-route',
+            data: config
+        }
+
+        worker.postMessage(msg);
+    } catch (error) {
+        console.error('Error loading config:', error);
+        return { status: 'error', message: error.message };
+    }
+}
+
 function handleStartBgp(event, bgpData){
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
@@ -139,5 +182,7 @@ module.exports = {
     handleSaveBgpConfig,
     handleLoadBgpConfig,
     handleStopBgp,
-    getBgpState
+    getBgpState,
+    handleSendRoute,
+    handleWithdrawRoute
 };

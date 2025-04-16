@@ -19,14 +19,30 @@
     "predist": "npm run build"
   },
   "build": {
-    "appId": "Mini-Tools",
-    "productName": "Mini-Tools",
+    "appId": "MiniTools",
+    "productName": "MiniTools",
     "copyright": "Copyright © 2025 ${author}",
     "files": [
       "dist/**/*",
       "src/electron/**/*",
       "package.json"
-    ]
+    ],
+    "directories" : {
+      "buildResources": "src/electron/assets"
+    },
+    "win": {
+      "target": [
+        "msi","nsis"
+      ],
+      "icon": "icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "publisherName": "jihuaibin"
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false,
+      "perMachine":false
+    }
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",
