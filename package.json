@@ -3,13 +3,30 @@
   "private": true,
   "version": "1.0.0",
   "main": "src/electron/main.js",
-  "scripts": {
-    "start": "vite",
-    "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\""
+  "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
+  "author": {
+    "name": "jihuaibin",
+    "email": "jihuaib@163.com"
   },
-  "dependencies": {
-    "lodash-es": "^4.17.21",
-    "vue": "^3.3.4"
+  "repository": "https://github.com/jihuaib/mini-tools",
+  "scripts": {
+    "build": "vite build",
+    "start": "vite",
+    "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "prepack": "npm run build",
+    "predist": "npm run build"
+  },
+  "build": {
+    "appId": "Mini-Tools",
+    "productName": "Mini-Tools",
+    "copyright": "Copyright © 2025 ${author}",
+    "files": [
+      "dist/**/*",
+      "src/electron/**/*",
+      "package.json"
+    ]
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",
@@ -17,8 +34,14 @@
     "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
     "electron": "^15.3.0",
+    "electron-builder": "^22.14.13",
+    "lodash-es": "^4.17.21",
     "vite": "^4.4.0",
+    "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "wait-port": "^1.1.0"
+  },
+  "dependencies": {
+    "electron-log": "^5.3.3"
   }
 }

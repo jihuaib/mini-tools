@@ -352,15 +352,14 @@ watch([bgpData], async ([newBgpValue]) => {
     validateRouterId();
     validateHoldTime();
     
-    if (bgpData.value.routeConfig.ipType === 'ipv4') {
-      validateIpv4Prefix();
-      validateIpv4Mask();
-      validateIpv4Count();
-    } else {
-      validateIpv6Prefix();
-      validateIpv6Mask();
-      validateIpv6Count();
-    }
+    validateIpv4Prefix();
+    validateIpv4Mask();
+    validateIpv4Count();
+
+    validateIpv6Prefix();
+    validateIpv6Mask();
+    validateIpv6Count();
+
 
     // Check if there are any validation errors
     const hasErrors = Object.values(validationErrors.value).some(error => error !== '');

@@ -1,6 +1,6 @@
 const { parentPort } = require('worker_threads');
 const net = require('net');
-const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BgpState, BgpPacketType, BgpOpenCapMap, BgpAfiType, BgpSAfiType, BgpRoleValueMap } = require('../../const/bgpConst');
+const { BGP_DEFAULT_PORT, BGP_HEAD_LEN, BgpState, BgpPacketType, BgpOpenCapMap, BgpAfiType, BgpSAfiType, BgpRoleValueMap } = require('../const/bgpConst');
 const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
 
 let bgpState = BgpState.IDLE;
@@ -111,7 +111,7 @@ function buildOpenMsg() {
         // 遍历每个能力
         bgpData.openCap.forEach((cap) => {
             const capInfo = BgpOpenCapMap.get(cap);
-            if (cap === 'Address Family') {
+            if (cap === 'Addr Family') {
                 bgpData.addressFamily.forEach((addr)=>{
                     if (addr === 'Ipv4-UNC') {
                         optParams.push(0x02);

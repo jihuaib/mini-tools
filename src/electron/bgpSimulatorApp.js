@@ -116,6 +116,7 @@ function handleStartBgp(event, bgpData){
     });
 
     worker.on('exit', (code) => {
+        bgpStart = false;
         if (code !== 0) {
             console.error(`[Worker ${worker.threadId}] exit, exit code:`, code);
             webContents.send('update-bgp-data', {

@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory} from 'vue-router'
+import {createRouter, createWebHashHistory} from 'vue-router'
 import Main from "../view/Main.vue";
 import StringGenerator from "../view/StringGenerator.vue";
 import BgpEmulator from "../view/BgpEmulator.vue";
@@ -24,7 +24,7 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(),
     routes
 })
 

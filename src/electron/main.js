@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const {handleStartBgp, handleGetNetworkInfo, handleSaveBgpConfig, handleLoadBgpConfig, handleStopBgp, getBgpState } = require("./bgpSimulatorApp");
 const {handleGenerateTemplateString, handleSaveStringGeneratorConfig, handleLoadStringGeneratorConfig} = require("./stringGeneratorApp");
+const log = require("electron-log");
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
@@ -22,11 +23,9 @@ function createWindow() {
         },
     });
 
-    if (isDev) {
-        win.loadURL('http://127.0.0.1:3000');
-    } else {
-        win.loadFile(path.join(__dirname, 'dist/index.html'));
-    }
+    log.info(`Dev ${isDev} __dirname ${__dirname}`);
+    const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../../dist/index.html')}`;
+    win.loadURL(urlLocation);
 
     // 打开调试工具
     win.webContents.openDevTools();
