@@ -416,8 +416,7 @@
                 const raw = toRaw(saveBgpConfig);
                 saveDebounced(raw);
             } catch (error) {
-                // Form validation failed, don't save
-                console.log('Form validation failed, configuration not saved');
+                console.error(error);
             }
         },
         { deep: true, immediate: true }
@@ -425,39 +424,37 @@
 
     onMounted(async () => {
         const result = await window.bgpEmulatorApi.getNetworkInfo();
-        console.log(result);
-
-        for (const [name, addresses] of Object.entries(result)) {
-            addresses.forEach(addr => {
-                if (addr.family === 'IPv4' && !addr.internal) {
-                    networkList.push({
-                        name: name,
-                        ip: addr.address
-                    });
-                }
-            });
-        }
-
-        // 默认选中第一个
-        if (networkList.length > 0) {
-            for (let i = 0; i < networkList.length; i++) {
-                networkInfo.value.push({
-                    value: networkList[i].name
+        if (result.status === 'success') {
+            for (const [name, addresses] of Object.entries(result.data)) {
+                addresses.forEach(addr => {
+                    if (addr.family === 'IPv4' && !addr.internal) {
+                        networkList.push({
+                            name: name,
+                            ip: addr.address
+                        });
+                    }
                 });
             }
-            networkValue.value = networkInfo.value[0].value;
-            handleNetworkChange(networkValue.value);
+
+            // 默认选中第一个
+            if (networkList.length > 0) {
+                for (let i = 0; i < networkList.length; i++) {
+                    networkInfo.value.push({
+                        value: networkList[i].name
+                    });
+                }
+                networkValue.value = networkInfo.value[0].value;
+                handleNetworkChange(networkValue.value);
+            }
+        } else {
+            console.error(result.msg);
         }
 
-        window.bgpEmulatorApi.updateBgpData(data => {
-            console.log(data);
+        window.bgpEmulatorApi.updatePeerState(data => {
             if (data.status === 'success') {
                 const response = data.data;
-                if (response.op === 'peer-state') {
-                    bgpData.value.peerState = response.message;
-                }
+                bgpData.value.peerState = response.state;
             } else {
-                console.error(data.msg);
                 message.error(data.msg);
             }
         });
@@ -504,6 +501,8 @@
             if (savedConfig.data.routeConfig) {
                 bgpData.value.routeConfig.ipType = savedConfig.data.routeConfig.ipType || IP_TYPE.IPV4;
             }
+        } else {
+            message.error(savedConfig.msg);
         }
     });
 
@@ -568,16 +567,24 @@
 
         try {
             const payload = JSON.parse(JSON.stringify(bgpData.value));
-            window.bgpEmulatorApi.startBgp(payload);
+            const result = await window.bgpEmulatorApi.startBgp(payload);
+            if (result.status === 'success') {
+                message.success('BGP启动成功');
+            } else {
+                message.error(result.msg);
+            }
         } catch (e) {
-            console.error(e);
             message.error(e);
         }
     };
 
     const stopBgp = async () => {
         const result = await window.bgpEmulatorApi.stopBgp();
-        console.log(result);
+        if (result.status === 'success') {
+            message.success('BGP停止成功');
+        } else {
+            message.error(result.msg);
+        }
     };
 
     const sendRoutes = async () => {
@@ -598,7 +605,7 @@
                 validateIpv6Count(currentConfig.count, validationErrors);
             }
 
-            const hasErrors = Object.values(validationErrors).some(error => error !== '');
+            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
             if (hasErrors) {
                 message.error('请检查路由配置信息是否正确');
@@ -638,7 +645,7 @@
                 validateIpv6Count(currentConfig.count, validationErrors);
             }
 
-            const hasErrors = Object.values(validationErrors).some(error => error !== '');
+            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
             if (hasErrors) {
                 message.error('请检查路由配置信息是否正确');

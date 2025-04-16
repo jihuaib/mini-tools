@@ -72,7 +72,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
     ipcMain.handle('generate-template-string', handleGenerateTemplateString);
-    ipcMain.on('start-bgp', handleStartBgp);
+    ipcMain.handle('start-bgp', handleStartBgp);
     ipcMain.handle('get-network-info', handleGetNetworkInfo);
     ipcMain.handle('save-bgp-config', handleSaveBgpConfig);
     ipcMain.handle('load-bgp-config', handleLoadBgpConfig);

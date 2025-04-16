@@ -4,14 +4,19 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const log = require('electron-log');
+const { successResponse, errorResponse } = require('./utils/responseUtils');
+const BGP_OPERATIONS = require('./const/operations');
 
 let bgpStart = false;
 let worker;
 
 async function handleGetNetworkInfo(event) {
-    let interfaces;
-    interfaces = os.networkInterfaces();
-    return interfaces;
+    try {
+        const interfaces = os.networkInterfaces();
+        return successResponse(interfaces);
+    } catch (err) {
+        return errorResponse('Failed to get network interfaces', err);
+    }
 }
 
 // 获取配置文件路径
@@ -29,10 +34,10 @@ async function handleSaveBgpConfig(event, config) {
             await fs.promises.mkdir(configDir, { recursive: true });
         }
         await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return { status: 'success' };
+        return successResponse(null, '');
     } catch (error) {
-        console.error('Error saving config:', error);
-        return { status: 'error', message: error.message };
+        log.error('[Main] Error saving config:', error);
+        return errorResponse(error.message);
     }
 }
 
@@ -41,96 +46,103 @@ async function handleLoadBgpConfig() {
     try {
         const configPath = getConfigPath();
         if (!fs.existsSync(configPath)) {
-            return { status: 'success', data: null };
+            return successResponse(null, 'BGP配置文件不存在');
         }
         const data = await fs.promises.readFile(configPath, 'utf8');
-        return { status: 'success', data: JSON.parse(data) };
+        return successResponse(JSON.parse(data), 'BGP配置文件加载成功');
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        log.error('[Main] Error loading config:', error);
+        return errorResponse(error.message);
     }
 }
 
 async function handleStopBgp() {
     if (!bgpStart) {
-        return;
+        log.error('[Main] BGP未启动');
+        return errorResponse('BGP未启动');
     }
 
     try {
+        const msg = {
+            op: BGP_OPERATIONS.STOP_BGP,
+            data: null
+        };
+        await worker.postMessage(msg);
         // 退出work
         await worker.terminate();
         bgpStart = false;
+
+        return successResponse(null, 'BGP停止成功');
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        log.error('[Main] Error stopping BGP:', error);
+        return errorResponse(error.message);
     }
 }
 
 async function handleSendRoute(event, config) {
     if (!bgpStart) {
-        log.error('bgp协议没有运行');
-        return { status: 'error', message: 'bgp协议没有运行' };
+        log.error('[Main] bgp协议没有运行');
+        return errorResponse('bgp协议没有运行');
     }
 
-    log.info('handleSendRoute config:', config);
+    log.info('[Main] handleSendRoute config:', config);
 
     try {
         const msg = {
-            op: 'send-route',
+            op: BGP_OPERATIONS.SEND_ROUTE,
             data: config
         };
 
         worker.postMessage(msg);
+        return successResponse(null, 'Route sent successfully');
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        log.error('[Main] Error sending route:', error);
+        return errorResponse(error.message);
     }
 }
 
 async function handleWithdrawRoute(event, config) {
     if (!bgpStart) {
-        log.error('bgp协议没有运行');
-        return { status: 'error', message: 'bgp协议没有运行' };
+        log.error('[Main] bgp协议没有运行');
+        return errorResponse('bgp协议没有运行');
     }
 
-    log.info('handleSendRoute config:', config);
+    log.info('[Main] handleWithdrawRoute config:', config);
 
     try {
         const msg = {
-            op: 'withdraw-route',
+            op: BGP_OPERATIONS.WITHDRAW_ROUTE,
             data: config
         };
 
         worker.postMessage(msg);
+        return successResponse(null, 'Route withdrawn successfully');
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        log.error('[Main] Error withdrawing route:', error);
+        return errorResponse(error.message);
     }
 }
 
-function handleStartBgp(event, bgpData) {
+async function handleStartBgp(event, bgpData) {
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
 
     if (bgpStart) {
-        webContents.send('update-bgp-data', {
-            status: 'error',
-            msg: 'bgp已经启动'
-        });
-        return;
+        log.error('[Main] bgp已经启动');
+        return errorResponse('bgp已经启动');
     }
 
-    console.log('[Main] handleStartBgp', bgpData);
+    log.info('[Main] handleStartBgp', bgpData);
 
     const workerPath = path.join(__dirname, './worker/bgpSimulatorWorker.js');
     worker = new Worker(workerPath);
 
-    console.log(`[Worker ${worker.threadId}] 启动`);
+    log.info(`[Worker ${worker.threadId}] 启动`);
 
     bgpStart = true;
 
     const msg = {
-        op: 'start-bgp',
+        op: BGP_OPERATIONS.START_BGP,
         data: bgpData
     };
 
@@ -138,34 +150,27 @@ function handleStartBgp(event, bgpData) {
 
     // 持续接收 BGP 线程的消息
     worker.on('message', result => {
-        console.log(`[Worker ${worker.threadId}] recv msg`, result);
-        webContents.send('update-bgp-data', {
-            status: 'success',
-            msg: '',
-            data: result
-        });
+        log.info(`[Main] recv msg from [Worker ${worker.threadId}]`, result);
+        if (result.op === BGP_OPERATIONS.PEER_STATE) {
+            webContents.send('update-peer-data', successResponse({ state: result.state }));
+        }
     });
 
     worker.on('error', err => {
-        console.error(`[Worker ${worker.threadId}] err:`, err);
-        webContents.send('update-bgp-data', {
-            status: 'error',
-            msg: err.message
-        });
+        log.error(`[Main] recv err from [Worker ${worker.threadId}]`, err);
     });
 
     worker.on('exit', code => {
         bgpStart = false;
         if (code !== 0) {
-            console.error(`[Worker ${worker.threadId}] exit, exit code:`, code);
-            webContents.send('update-bgp-data', {
-                status: 'error',
-                msg: `Worker stopped with exit code ${code}`
-            });
+            log.error(`[Main] recv exit from [Worker ${worker.threadId}]`, code);
         } else {
-            console.log(`[Worker ${worker.threadId}] has completed successfully.`);
+            log.info(`[Main] [Worker ${worker.threadId}] has completed successfully.`);
         }
     });
+
+    log.info(`[Main] BGP启动成功 in ${worker.threadId}`);
+    return successResponse(null, 'BGP启动成功');
 }
 
 function getBgpState() {

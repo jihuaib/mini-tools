@@ -10,8 +10,8 @@ contextBridge.exposeInMainWorld('stringGeneratorApi', {
 // bgp模块
 contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     getNetworkInfo: () => ipcRenderer.invoke('get-network-info'),
-    startBgp: bgpData => ipcRenderer.send('start-bgp', bgpData),
-    updateBgpData: callback => ipcRenderer.on('update-bgp-data', (_event, data) => callback(data)),
+    startBgp: bgpData => ipcRenderer.invoke('start-bgp', bgpData),
+    updatePeerState: callback => ipcRenderer.on('update-peer-data', (_event, data) => callback(data)),
     saveBgpConfig: config => ipcRenderer.invoke('save-bgp-config', config),
     loadBgpConfig: () => ipcRenderer.invoke('load-bgp-config'),
     stopBgp: () => ipcRenderer.invoke('stop-bgp'),

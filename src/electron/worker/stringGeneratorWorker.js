@@ -1,4 +1,5 @@
 const { parentPort } = require('worker_threads');
+const { successResponse, errorResponse } = require('../utils/responseUtils');
 
 parentPort.on('message', templateData => {
     try {
@@ -17,8 +18,8 @@ parentPort.on('message', templateData => {
             results.push(line);
         }
 
-        parentPort.postMessage(results);
+        parentPort.postMessage(successResponse(results));
     } catch (err) {
-        throw new Error(err.message);
+        parentPort.postMessage(errorResponse(err.message));
     }
 });

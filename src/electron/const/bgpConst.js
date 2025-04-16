@@ -90,6 +90,7 @@ module.exports = {
     BGP_MAX_PKT_SIZE,
     BGP_VERSION,
     BGP_MARKER_LEN,
+    BGP_OPEN_CAP_MAP,
     BGP_STATE,
     BGP_PACKET_TYPE,
     BGP_CAPABILITY_UI,
