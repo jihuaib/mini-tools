@@ -35,7 +35,7 @@ async function handleSaveBgpConfig(event, config) {
             await fs.promises.mkdir(configDir, { recursive: true });
         }
         await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return successResponse(null, '');
+        return successResponse(null, '配置保存成功');
     } catch (error) {
         log.error('[Main] Error saving config:', error);
         return errorResponse(error.message);
