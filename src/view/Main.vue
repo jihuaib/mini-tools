@@ -1,11 +1,17 @@
 <template>
     <div class="main-layout">
         <!-- 顶部菜单导航 -->
-        <a-menu v-model:selectedKeys="current" mode="horizontal" :items="items" @select="handleSelect" />
+        <a-menu
+            v-model:selectedKeys="current"
+            mode="horizontal"
+            :items="items"
+            @select="handleSelect"
+            class="main-menu"
+        />
         <div class="content-area">
             <router-view v-slot="{ Component }">
                 <keep-alive :include="['StringGenerator', 'BgpEmulator']">
-                    <component :is="Component" />
+                    <component :is="Component" ref="currentComponent" />
                 </keep-alive>
             </router-view>
         </div>
@@ -13,10 +19,12 @@
 </template>
 
 <script setup>
-    import { ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { ref, watch } from 'vue';
+    import { useRouter, useRoute } from 'vue-router';
 
     const router = useRouter();
+    const route = useRoute();
+    const currentComponent = ref(null);
 
     const current = ref(['string-generator']);
     const items = ref([
@@ -41,9 +49,24 @@
             router.push(selectedItem.route);
         }
     };
+
+    // 监听路由变化
+    watch(
+        () => route.path,
+        () => {
+            // 路由变化时清空验证错误
+            if (currentComponent.value && typeof currentComponent.value.clearValidationErrors === 'function') {
+                currentComponent.value.clearValidationErrors();
+            }
+        }
+    );
 </script>
 
 <style scoped>
+    .main-menu {
+        line-height: 30px;
+    }
+
     .content-area {
         display: flex;
         flex-direction: column;

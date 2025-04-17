@@ -8,10 +8,6 @@ parentPort.on('message', templateData => {
         const startNum = parseInt(start);
         const endNum = parseInt(end);
 
-        if (isNaN(startNum) || isNaN(endNum)) {
-            throw new Error('start和end必须是数字');
-        }
-
         const results = [];
         for (let i = startNum; i <= endNum; i++) {
             const line = template.replaceAll(placeholder, i);

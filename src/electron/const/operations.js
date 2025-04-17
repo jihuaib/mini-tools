@@ -4,7 +4,8 @@ const BGP_OPERATIONS = {
     SEND_ROUTE: 2,
     WITHDRAW_ROUTE: 3,
     PEER_STATE: 4,
-    STOP_BGP: 5
+    STOP_BGP: 5,
+    PUSH_MSG: 6
 };
 
 module.exports = BGP_OPERATIONS;

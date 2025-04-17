@@ -17,7 +17,9 @@
         "dist": "electron-builder",
         "prepack": "npm run build",
         "predist": "npm run build",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "release": "electron-builder",
+        "postrelease": "npm run build"
     },
     "build": {
         "appId": "MiniTools",
@@ -34,6 +36,12 @@
             "src/electron/const/**",
             "node_modules/**/*"
         ],
+        "publish": {
+            "provider": "github",
+            "owner": "jihuaib",
+            "repo": "mini-tools",
+            "releaseType": "release"
+        },
         "directories": {
             "buildResources": "src/electron/assets"
         },

@@ -361,11 +361,25 @@
         }
     };
 
-    const saveDebounced = debounce(data => {
-        window.bgpEmulatorApi.saveBgpConfig(data);
+    const saveDebounced = debounce(async data => {
+        const result = await window.bgpEmulatorApi.saveBgpConfig(data);
+        if (result.status === 'success') {
+            if (result.msg !== '') {
+                message.success(result.msg);
+            }
+        } else {
+            message.error(result.msg || '配置文件保存失败');
+        }
     }, 300);
 
     const validationErrors = ref({ ...VALIDATION_ERRORS });
+
+    // 暴露清空验证错误的方法给父组件
+    defineExpose({
+        clearValidationErrors: () => {
+            clearValidationErrors(validationErrors);
+        }
+    });
 
     const validateField = (value, fieldName, validationFn) => {
         validationFn(value, validationErrors);
@@ -459,6 +473,17 @@
             }
         });
 
+        window.bgpEmulatorApi.pushMsg(data => {
+            console.log('pushMsg', data);
+            if (data.status === 'success') {
+                if (data.msg !== '') {
+                    message.success(data.msg);
+                }
+            } else {
+                message.error(data.msg);
+            }
+        });
+
         // 加载保存的配置
         const savedConfig = await window.bgpEmulatorApi.loadBgpConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
@@ -502,7 +527,7 @@
                 bgpData.value.routeConfig.ipType = savedConfig.data.routeConfig.ipType || IP_TYPE.IPV4;
             }
         } else {
-            message.error(savedConfig.msg);
+            console.error('[BgpEmulator] 配置文件加载失败', savedConfig.msg);
         }
     });
 
@@ -550,6 +575,14 @@
         bgpData.value.ipv6RouteConfig.customAttr = data;
     };
 
+    // Add watch for route type changes
+    watch(
+        () => bgpData.value.routeConfig.ipType,
+        () => {
+            clearValidationErrors(validationErrors);
+        }
+    );
+
     const startBgp = async () => {
         clearValidationErrors(validationErrors);
         validateLocalAs(bgpData.value.localAs, validationErrors);
@@ -569,9 +602,11 @@
             const payload = JSON.parse(JSON.stringify(bgpData.value));
             const result = await window.bgpEmulatorApi.startBgp(payload);
             if (result.status === 'success') {
-                message.success('BGP启动成功');
+                if (result.msg !== '') {
+                    message.success(result.msg);
+                }
             } else {
-                message.error(result.msg);
+                message.error(result.msg || 'BGP启动失败');
             }
         } catch (e) {
             message.error(e);
@@ -581,10 +616,12 @@
     const stopBgp = async () => {
         const result = await window.bgpEmulatorApi.stopBgp();
         if (result.status === 'success') {
-            message.success('BGP停止成功');
             bgpData.value.peerState = '';
+            if (result.msg !== '') {
+                message.success(result.msg);
+            }
         } else {
-            message.error(result.msg);
+            message.error(result.msg || 'BGP停止失败');
         }
     };
 
@@ -620,8 +657,8 @@
                 ipType: bgpData.value.routeConfig.ipType
             });
 
-            if (result.status === 'success') {
-                message.success('路由发送成功');
+            if (result.status === 'success' && result.msg !== '') {
+                message.success(result.msg);
             } else {
                 message.error(result.msg || '路由发送失败');
             }
@@ -662,8 +699,8 @@
                 ipType: bgpData.value.routeConfig.ipType
             });
 
-            if (result.status === 'success') {
-                message.success('路由撤销成功');
+            if (result.status === 'success' && result.msg !== '') {
+                message.success(result.msg);
             } else {
                 message.error(result.msg || '路由撤销失败');
             }

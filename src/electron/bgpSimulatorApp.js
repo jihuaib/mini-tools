@@ -35,7 +35,7 @@ async function handleSaveBgpConfig(event, config) {
             await fs.promises.mkdir(configDir, { recursive: true });
         }
         await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return successResponse(null, '配置保存成功');
+        return successResponse(null, '');
     } catch (error) {
         log.error('[Main] Error saving config:', error);
         return errorResponse(error.message);
@@ -73,7 +73,7 @@ async function handleStopBgp() {
         await worker.terminate();
         bgpStart = false;
 
-        return successResponse(null, 'BGP停止成功');
+        return successResponse(null, 'bgp协议停止成功');
     } catch (error) {
         log.error('[Main] Error stopping BGP:', error);
         return errorResponse(error.message);
@@ -95,7 +95,7 @@ async function handleSendRoute(event, config) {
         };
 
         worker.postMessage(msg);
-        return successResponse(null, 'Route sent successfully');
+        return successResponse(null, '');
     } catch (error) {
         log.error('[Main] Error sending route:', error);
         return errorResponse(error.message);
@@ -117,7 +117,7 @@ async function handleWithdrawRoute(event, config) {
         };
 
         worker.postMessage(msg);
-        return successResponse(null, 'Route withdrawn successfully');
+        return successResponse(null, '');
     } catch (error) {
         log.error('[Main] Error withdrawing route:', error);
         return errorResponse(error.message);
@@ -157,6 +157,12 @@ async function handleStartBgp(event, bgpData) {
         if (result.status === 'success') {
             if (result.data.op === BGP_OPERATIONS.PEER_STATE) {
                 webContents.send('update-peer-state', successResponse({ state: result.data.state }));
+            } else if (result.data.op === BGP_OPERATIONS.PUSH_MSG) {
+                if (result.data.status === 'success') {
+                    webContents.send('push-msg', successResponse(null, result.data.msg));
+                } else {
+                    webContents.send('push-msg', errorResponse(result.data.msg));
+                }
             }
         } else {
             log.error(`[Main] recv error msg from [Worker ${worker.threadId}]`, result);
@@ -177,7 +183,7 @@ async function handleStartBgp(event, bgpData) {
     });
 
     log.info(`[Main] BGP启动成功 in ${worker.threadId}`);
-    return successResponse(null, 'BGP启动成功');
+    return successResponse(null, '');
 }
 
 function getBgpState() {

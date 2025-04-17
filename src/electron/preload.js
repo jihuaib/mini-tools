@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     loadBgpConfig: () => ipcRenderer.invoke('load-bgp-config'),
     stopBgp: () => ipcRenderer.invoke('stop-bgp'),
     sendRoutes: config => ipcRenderer.invoke('send-route', config),
-    withdrawRoutes: config => ipcRenderer.invoke('withdraw-route', config)
+    withdrawRoutes: config => ipcRenderer.invoke('withdraw-route', config),
+    pushMsg: callback => ipcRenderer.on('push-msg', (_event, data) => callback(data))
 });

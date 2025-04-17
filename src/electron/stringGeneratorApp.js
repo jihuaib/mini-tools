@@ -2,6 +2,8 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { runWorkerWithPromise } = require('./worker/runWorkerWithPromise');
 const fs = require('fs');
+const log = require('electron-log');
+const { successResponse, errorResponse } = require('./utils/responseUtils');
 
 const isDev = !app.isPackaged;
 
@@ -20,10 +22,10 @@ async function handleSaveStringGeneratorConfig(event, config) {
             await fs.promises.mkdir(configDir, { recursive: true });
         }
         await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return { status: 'success' };
+        return successResponse(null, '配置文件保存成功');
     } catch (error) {
-        console.error('Error saving config:', error);
-        return { status: 'error', message: error.message };
+        log.error('Error saving config:', error);
+        return errorResponse(error.message);
     }
 }
 
@@ -32,31 +34,31 @@ async function handleLoadStringGeneratorConfig() {
     try {
         const configPath = getConfigPath();
         if (!fs.existsSync(configPath)) {
-            return { status: 'success', data: null };
+            return successResponse(null, '配置文件不存在');
         }
         const data = await fs.promises.readFile(configPath, 'utf8');
-        return { status: 'success', data: JSON.parse(data) };
+        return successResponse(JSON.parse(data), '配置文件加载成功');
     } catch (error) {
-        console.error('Error loading config:', error);
-        return { status: 'error', message: error.message };
+        log.error('Error loading config:', error);
+        return errorResponse(error.message);
     }
 }
 
 async function handleGenerateTemplateString(event, templateData) {
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
-    console.log('[Main] handleGenerateTemplateString', templateData);
+    log.info('[Main] handleGenerateTemplateString', templateData);
 
     try {
         const workerPath = isDev
             ? path.join(__dirname, './worker/StringGeneratorWorker.js')
             : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/StringGeneratorWorker.js');
         const result = await runWorkerWithPromise(path.join(workerPath), templateData);
-        console.log('[Main] Worker处理结果:', result);
+        log.info('[Main] Worker处理结果:', result);
         return result;
     } catch (err) {
-        console.log('[Main] Worker处理结果:', err);
-        return err;
+        log.error('[Main] Worker处理结果:', err);
+        return errorResponse(err.message);
     }
 }
 

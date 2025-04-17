@@ -239,6 +239,14 @@ function stopBgp() {
     bgpData = null;
 
     log.info(`[Thread ${threadId}] BGP stopped successfully`);
+
+    parentPort.postMessage(
+        successResponse({
+            op: BGP_OPERATIONS.PUSH_MSG,
+            status: 'success',
+            msg: 'bgp协议停止成功'
+        })
+    );
 }
 
 function startTcpServer() {
@@ -277,6 +285,14 @@ function startTcpServer() {
     server.listen(BGP_DEFAULT_PORT, bgpData.localIp, () => {
         log.info(`[Thread ${threadId}] TCP Server listening on port ${BGP_DEFAULT_PORT} at ${bgpData.localIp}`);
     });
+
+    parentPort.postMessage(
+        successResponse({
+            op: BGP_OPERATIONS.PUSH_MSG,
+            status: 'success',
+            msg: 'bgp协议启动成功'
+        })
+    );
 }
 
 function buildUpdateMsgIpv4(route, customAttr) {
@@ -417,16 +433,22 @@ function sendRoute(config) {
     if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV4) {
         routes.forEach(route => {
             const buf = buildUpdateMsgIpv4(route, config.customAttr);
-            console.log(buf.toString('hex'));
             bgpSocket.write(buf);
         });
     } else if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV6) {
         routes.forEach(route => {
             const buf = buildUpdateMsgIpv6(route, config.customAttr);
-            console.log(buf.toString('hex'));
             bgpSocket.write(buf);
         });
     }
+
+    parentPort.postMessage(
+        successResponse({
+            op: BGP_OPERATIONS.PUSH_MSG,
+            status: 'success',
+            msg: '路由发送成功'
+        })
+    );
 }
 
 function buildWithdrawMsgIpv4(route) {
@@ -492,16 +514,22 @@ function withdrawRoute(config) {
     if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV4) {
         routes.forEach(route => {
             const buf = buildWithdrawMsgIpv4(route);
-            console.log(buf.toString('hex'));
             bgpSocket.write(buf);
         });
     } else if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV6) {
         routes.forEach(route => {
             const buf = buildWithdrawMsgIpv6(route);
-            console.log(buf.toString('hex'));
             bgpSocket.write(buf);
         });
     }
+
+    parentPort.postMessage(
+        successResponse({
+            op: BGP_OPERATIONS.PUSH_MSG,
+            status: 'success',
+            msg: '路由撤销成功'
+        })
+    );
 }
 
 parentPort.on('message', msg => {
@@ -513,8 +541,30 @@ parentPort.on('message', msg => {
         } else if (msg.op === BGP_OPERATIONS.STOP_BGP) {
             stopBgp();
         } else if (msg.op === BGP_OPERATIONS.SEND_ROUTE) {
+            if (bgpState !== BGP_STATE.ESTABLISHED) {
+                log.error(`[Thread ${threadId}] bgp server not in established state`);
+                parentPort.postMessage(
+                    successResponse({
+                        op: BGP_OPERATIONS.PUSH_MSG,
+                        status: 'error',
+                        msg: 'bgp状态不在ESTABLISHED状态'
+                    })
+                );
+                return;
+            }
             sendRoute(msg.data);
         } else if (msg.op === BGP_OPERATIONS.WITHDRAW_ROUTE) {
+            if (bgpState !== BGP_STATE.ESTABLISHED) {
+                log.error(`[Thread ${threadId}] bgp server not in established state`);
+                parentPort.postMessage(
+                    successResponse({
+                        op: BGP_OPERATIONS.PUSH_MSG,
+                        status: 'error',
+                        msg: 'bgp状态不在ESTABLISHED状态'
+                    })
+                );
+                return;
+            }
             withdrawRoute(msg.data);
         }
     } catch (err) {
