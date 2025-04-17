@@ -19,7 +19,7 @@
         "predist": "npm run build",
         "format": "prettier --write .",
         "release": "electron-builder",
-        "postrelease": "npm run build"
+        "prerelease": "npm run build"
     },
     "build": {
         "appId": "MiniTools",
