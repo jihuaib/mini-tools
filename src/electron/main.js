@@ -42,7 +42,9 @@ function createWindow() {
     win.loadURL(urlLocation);
 
     // 打开调试工具
-    win.webContents.openDevTools();
+    if (isDev) {
+        win.webContents.openDevTools();
+    }
 
     // 监听窗口关闭事件
     win.on('close', async event => {
