@@ -154,8 +154,12 @@ async function handleStartBgp(event, bgpData) {
     // 持续接收 BGP 线程的消息
     worker.on('message', result => {
         log.info(`[Main] recv msg from [Worker ${worker.threadId}]`, result);
-        if (result.op === BGP_OPERATIONS.PEER_STATE) {
-            webContents.send('update-peer-data', successResponse({ state: result.state }));
+        if (result.status === 'success') {
+            if (result.data.op === BGP_OPERATIONS.PEER_STATE) {
+                webContents.send('update-peer-state', successResponse({ state: result.data.state }));
+            }
+        } else {
+            log.error(`[Main] recv error msg from [Worker ${worker.threadId}]`, result);
         }
     });
 

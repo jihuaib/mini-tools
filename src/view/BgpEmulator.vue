@@ -582,6 +582,7 @@
         const result = await window.bgpEmulatorApi.stopBgp();
         if (result.status === 'success') {
             message.success('BGP停止成功');
+            bgpData.value.peerState = '';
         } else {
             message.error(result.msg);
         }
@@ -612,6 +613,8 @@
                 return;
             }
 
+            currentConfig.mask = parseInt(currentConfig.mask);
+            currentConfig.count = parseInt(currentConfig.count);
             const result = await window.bgpEmulatorApi.sendRoutes({
                 ...currentConfig,
                 ipType: bgpData.value.routeConfig.ipType
@@ -652,6 +655,8 @@
                 return;
             }
 
+            currentConfig.mask = parseInt(currentConfig.mask);
+            currentConfig.count = parseInt(currentConfig.count);
             const result = await window.bgpEmulatorApi.withdrawRoutes({
                 ...currentConfig,
                 ipType: bgpData.value.routeConfig.ipType

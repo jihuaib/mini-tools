@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('stringGeneratorApi', {
 contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     getNetworkInfo: () => ipcRenderer.invoke('get-network-info'),
     startBgp: bgpData => ipcRenderer.invoke('start-bgp', bgpData),
-    updatePeerState: callback => ipcRenderer.on('update-peer-data', (_event, data) => callback(data)),
+    updatePeerState: callback => ipcRenderer.on('update-peer-state', (_event, data) => callback(data)),
     saveBgpConfig: config => ipcRenderer.invoke('save-bgp-config', config),
     loadBgpConfig: () => ipcRenderer.invoke('load-bgp-config'),
     stopBgp: () => ipcRenderer.invoke('stop-bgp'),

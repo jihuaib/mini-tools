@@ -21,8 +21,9 @@ const { genRouteIps } = require('../utils/ipUtils');
 const ipaddr = require('ipaddr.js');
 
 let bgpState = BGP_STATE.IDLE;
-let bgpData;
-let server;
+let bgpData = null;
+let server = null;
+let bgpSocket = null;
 
 function changeBgpFsmState(_bgpState) {
     log.info(`[Thread ${threadId}] bgp fsm state ${bgpState} -> ${_bgpState}`);
@@ -48,7 +49,7 @@ function parseBgpHeader(buffer) {
     return { marker, length, type };
 }
 
-function handleBgpPacket(socket, buffer) {
+function handleBgpPacket(buffer) {
     const header = parseBgpHeader(buffer);
     if (!header) {
         log.error(`[Thread ${threadId}] Invalid or incomplete BGP header`);
@@ -59,20 +60,30 @@ function handleBgpPacket(socket, buffer) {
 
     if (header.type == BGP_PACKET_TYPE.OPEN) {
         log.info(`[Thread ${threadId}] recv open message`);
-        sendKeepAliveMsg(socket);
+        sendKeepAliveMsg();
         changeBgpFsmState(BGP_STATE.OPEN_CONFIRM);
     } else if (header.type == BGP_PACKET_TYPE.KEEPALIVE) {
-        sendKeepAliveMsg(socket);
+        if (bgpState != BGP_STATE.ESTABLISHED) {
+            log.info(`[Thread ${threadId}] recv keepalive message`);
+        }
+        sendKeepAliveMsg();
         if (bgpState != BGP_STATE.ESTABLISHED) {
             changeBgpFsmState(BGP_STATE.ESTABLISHED);
         }
     } else if (header.type == BGP_PACKET_TYPE.NOTIFICATION) {
         log.info(`[Thread ${threadId}] recv notification message`);
         changeBgpFsmState(BGP_STATE.IDLE);
+        if (bgpSocket) {
+            bgpSocket.destroy();
+            bgpSocket = null;
+        }
     } else if (header.type == BGP_PACKET_TYPE.ROUTE_REFRESH) {
         log.info(`[Thread ${threadId}] recv route-refresh message`);
     } else if (header.type == BGP_PACKET_TYPE.UPDATE) {
         log.info(`[Thread ${threadId}] recv update message`);
+        if (bgpState != BGP_STATE.ESTABLISHED) {
+            changeBgpFsmState(BGP_STATE.ESTABLISHED);
+        }
     }
 }
 
@@ -109,14 +120,14 @@ function buildOpenMsg() {
             const capInfo = BGP_OPEN_CAP_MAP.get(cap);
             if (cap === BGP_CAPABILITY_UI.ADDR_FAMILY) {
                 bgpData.addressFamily.forEach(addr => {
-                    if (addr === BGP_ADDRESS_FAMILY_UI.IPV4_UNC) {
+                    if (addr === BGP_AFI_TYPE_UI.AFI_IPV4) {
                         optParams.push(0x02);
                         optParams.push(0x06);
                         optParams.push(capInfo);
                         optParams.push(0x04);
                         optParams.push(...writeUInt16(BGP_AFI_TYPE_UI.AFI_IPV4));
                         optParams.push(...writeUInt16(BGP_SAFI_TYPE.SAFI_UNICAST));
-                    } else if (addr === BGP_ADDRESS_FAMILY_UI.IPV6_UNC) {
+                    } else if (addr === BGP_AFI_TYPE_UI.AFI_IPV6) {
                         optParams.push(0x02);
                         optParams.push(0x06);
                         optParams.push(capInfo);
@@ -195,29 +206,36 @@ function buildKeepAliveMsg() {
     return buffer;
 }
 
-function sendKeepAliveMsg(socket) {
+function sendKeepAliveMsg() {
     const buf = buildKeepAliveMsg();
-    socket.write(buf);
+    bgpSocket.write(buf);
+    if (bgpState != BGP_STATE.ESTABLISHED) {
+        log.info(`[Thread ${threadId}] send keepalive msg`);
+    }
 }
 
-function sendOpenMsg(socket) {
+function sendOpenMsg() {
     const buf = buildOpenMsg();
-    socket.write(buf);
+    bgpSocket.write(buf);
     log.info(`[Thread ${threadId}] send open msg`);
 }
 
 function stopBgp() {
-    // Close all active connections
+    if (bgpSocket) {
+        bgpSocket.destroy();
+    }
+
     if (server) {
         server.close(() => {
             log.info(`[Thread ${threadId}] BGP server stopped`);
         });
     }
 
-    // Reset BGP state
+    bgpSocket = null;
+    server = null;
+
     changeBgpFsmState(BGP_STATE.IDLE);
 
-    // Clear any existing data
     bgpData = null;
 
     log.info(`[Thread ${threadId}] BGP stopped successfully`);
@@ -230,21 +248,27 @@ function startTcpServer() {
 
         log.info(`[Thread ${threadId}] Client connected from ${clientAddress}:${clientPort}`);
 
+        bgpSocket = socket;
+
         changeBgpFsmState(BGP_STATE.CONNECT);
         // 连接建立成功之后就发送open报文
-        sendOpenMsg(socket);
+        sendOpenMsg();
         changeBgpFsmState(BGP_STATE.OPEN_SENT);
 
         // 当接收到数据时处理数据
-        socket.on('data', data => {
-            handleBgpPacket(socket, data);
+        bgpSocket.on('data', data => {
+            handleBgpPacket(data);
         });
 
-        socket.on('end', () => {
-            log.info(`[Thread ${threadId}] Client ${clientAddress}:${clientPort} disconnected`);
+        bgpSocket.on('end', () => {
+            log.info(`[Thread ${threadId}] Client ${clientAddress}:${clientPort} end`);
         });
 
-        socket.on('error', err => {
+        bgpSocket.on('close', () => {
+            log.info(`[Thread ${threadId}] Client ${clientAddress}:${clientPort} close`);
+        });
+
+        bgpSocket.on('error', err => {
             log.error(`[Thread ${threadId}] TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
         });
     });
@@ -279,7 +303,7 @@ function buildUpdateMsgIpv4(route, customAttr) {
     pathAttr.push(0x80);
     pathAttr.push(0x04);
     pathAttr.push(0x04);
-    pathAttr.push(...writeUInt16(0));
+    pathAttr.push(...writeUInt32(0));
 
     if (customAttr && customAttr.trim() !== '') {
         try {
@@ -297,9 +321,9 @@ function buildUpdateMsgIpv4(route, customAttr) {
 
     // 构建NLRI
     const nlri = [];
-    nlri.push(0x06);
+    nlri.push(route.mask);
     nlri.push(...ipToBytes(route.ip));
-    nlri.push(...writeUInt16(route.mask));
+
     const nlriBuf = Buffer.alloc(nlri.length);
     for (let i = 0; i < nlri.length; i++) {
         nlriBuf[i] = nlri[i];
@@ -312,7 +336,10 @@ function buildUpdateMsgIpv4(route, customAttr) {
     // 填充 Marker（16 字节 0xff）
     bufHeader.fill(0xff, 0, BGP_MARKER_LEN);
     // Length (2 bytes)
-    bufHeader.writeUInt16BE(BGP_HEAD_LEN + pathAttrBuf.length + nlriBuf.length + 2, BGP_MARKER_LEN);
+    bufHeader.writeUInt16BE(
+        BGP_HEAD_LEN + pathAttrBuf.length + nlriBuf.length + withdrawnRoutesBuf.length,
+        BGP_MARKER_LEN
+    );
     // Type (1 byte)
     bufHeader.writeUInt8(BGP_PACKET_TYPE.UPDATE, BGP_MARKER_LEN + 2);
 
@@ -334,16 +361,11 @@ function buildUpdateMsgIpv6(route, customAttr) {
     pathAttr.push(0x02);
     pathAttr.push(0x01);
     pathAttr.push(...writeUInt32(bgpData.localAs));
-    // NEXT_HOP
-    pathAttr.push(0x40);
-    pathAttr.push(0x03);
-    pathAttr.push(0x04);
-    pathAttr.push(...ipToBytes(bgpData.localIp));
     // MED
     pathAttr.push(0x80);
     pathAttr.push(0x04);
     pathAttr.push(0x04);
-    pathAttr.push(...writeUInt16(0));
+    pathAttr.push(...writeUInt32(0));
     // MP_REACH_NLRI
     pathAttr.push(0x90);
     pathAttr.push(0x0e);
@@ -355,11 +377,12 @@ function buildUpdateMsgIpv6(route, customAttr) {
     pathAttr.push(bytes.length);
     pathAttr.push(...bytes);
 
+    pathAttr.push(0x00);
+
     addr = ipaddr.parse(route.ip);
     bytes = addr.toByteArray();
-    pathAttr.push(writeUInt16(0x02 + bytes.length));
+    pathAttr.push(route.mask);
     pathAttr.push(...bytes);
-    pathAttr.push(writeUInt16(route.mask));
 
     if (customAttr && customAttr.trim() !== '') {
         try {
@@ -382,7 +405,7 @@ function buildUpdateMsgIpv6(route, customAttr) {
     // 填充 Marker（16 字节 0xff）
     bufHeader.fill(0xff, 0, BGP_MARKER_LEN);
     // Length (2 bytes)
-    bufHeader.writeUInt16BE(BGP_HEAD_LEN + pathAttrBuf.length + 2, BGP_MARKER_LEN);
+    bufHeader.writeUInt16BE(BGP_HEAD_LEN + pathAttrBuf.length + withdrawnRoutesBuf.length, BGP_MARKER_LEN);
     // Type (1 byte)
     bufHeader.writeUInt8(BGP_PACKET_TYPE.UPDATE, BGP_MARKER_LEN + 2);
 
@@ -395,22 +418,22 @@ function sendRoute(config) {
         routes.forEach(route => {
             const buf = buildUpdateMsgIpv4(route, config.customAttr);
             console.log(buf.toString('hex'));
-            socket.write(buf);
+            bgpSocket.write(buf);
         });
     } else if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV6) {
         routes.forEach(route => {
             const buf = buildUpdateMsgIpv6(route, config.customAttr);
             console.log(buf.toString('hex'));
-            socket.write(buf);
+            bgpSocket.write(buf);
         });
     }
 }
 
 function buildWithdrawMsgIpv4(route) {
     const withdrawPrefixBufArray = [];
-    withdrawPrefixBufArray.push(0x06);
+    withdrawPrefixBufArray.push(route.mask);
     withdrawPrefixBufArray.push(...ipToBytes(route.ip));
-    withdrawPrefixBufArray.push(...writeUInt16(route.mask));
+
     const withdrawPrefixBuf = Buffer.alloc(withdrawPrefixBufArray.length + 2);
     withdrawPrefixBuf.writeUInt16BE(withdrawPrefixBufArray.length, 0);
     for (let i = 0; i < withdrawPrefixBufArray.length; i++) {
@@ -441,9 +464,8 @@ function buildWithdrawMsgIpv6(route) {
     withdrawPrefixBufArray.push(0x01);
     const addr = ipaddr.parse(route.ip);
     const bytes = addr.toByteArray();
-    withdrawPrefixBufArray.push(0x02 + bytes.length);
+    withdrawPrefixBufArray.push(route.mask);
     withdrawPrefixBufArray.push(...bytes);
-    withdrawPrefixBufArray.push(writeUInt16(route.mask));
 
     const withdrawPrefixBuf = Buffer.alloc(withdrawPrefixBufArray.length + 2);
     withdrawPrefixBuf.writeUInt16BE(withdrawPrefixBufArray.length, 0);
@@ -458,7 +480,7 @@ function buildWithdrawMsgIpv6(route) {
     // 填充 Marker（16 字节 0xff）
     bufHeader.fill(0xff, 0, BGP_MARKER_LEN);
     // Length (2 bytes)
-    bufHeader.writeUInt16BE(BGP_HEAD_LEN + withdrawPrefixBuf.length + withdrawnRoutesBuf.length, BGP_MARKER_LEN);
+    bufHeader.writeUInt16BE(BGP_HEAD_LEN + withdrawnRoutesBuf.length + withdrawPrefixBuf.length, BGP_MARKER_LEN);
     // Type (1 byte)
     bufHeader.writeUInt8(BGP_PACKET_TYPE.UPDATE, BGP_MARKER_LEN + 2);
 
@@ -471,13 +493,13 @@ function withdrawRoute(config) {
         routes.forEach(route => {
             const buf = buildWithdrawMsgIpv4(route);
             console.log(buf.toString('hex'));
-            socket.write(buf);
+            bgpSocket.write(buf);
         });
     } else if (config.ipType === BGP_AFI_TYPE_UI.AFI_IPV6) {
         routes.forEach(route => {
             const buf = buildWithdrawMsgIpv6(route);
             console.log(buf.toString('hex'));
-            socket.write(buf);
+            bgpSocket.write(buf);
         });
     }
 }
