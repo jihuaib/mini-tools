@@ -18,7 +18,6 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const log = require('electron-log');
 const BGP_OPERATIONS = require('../const/operations');
 const { genRouteIps } = require('../utils/ipUtils');
-const ipaddr = require('ipaddr.js');
 
 let bgpState = BGP_STATE.IDLE;
 let bgpData = null;
@@ -337,8 +336,10 @@ function buildUpdateMsgIpv4(route, customAttr) {
 
     // 构建NLRI
     const nlri = [];
-    nlri.push(route.mask);
-    nlri.push(...ipToBytes(route.ip));
+    nlri.push(route.mask); // 前缀长度（单位bit）
+    const prefixBytes = ipToBytes(route.ip);
+    const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+    nlri.push(...prefixBytes.slice(0, prefixLength));
 
     const nlriBuf = Buffer.alloc(nlri.length);
     for (let i = 0; i < nlri.length; i++) {
@@ -388,17 +389,16 @@ function buildUpdateMsgIpv6(route, customAttr) {
     pathAttr.push(...writeUInt16(0x26));
     pathAttr.push(...writeUInt16(0x02));
     pathAttr.push(0x01);
-    let addr = ipaddr.parse(`::ffff:${bgpData.localIp}`);
-    let bytes = addr.toByteArray();
+    let bytes = ipToBytes(`::ffff:${bgpData.localIp}`);
     pathAttr.push(bytes.length);
     pathAttr.push(...bytes);
 
     pathAttr.push(0x00);
 
-    addr = ipaddr.parse(route.ip);
-    bytes = addr.toByteArray();
-    pathAttr.push(route.mask);
-    pathAttr.push(...bytes);
+    pathAttr.push(route.mask); // 前缀长度（单位bit）
+    const prefixBytes = ipToBytes(route.ip);
+    const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+    pathAttr.push(...prefixBytes.slice(0, prefixLength));
 
     if (customAttr && customAttr.trim() !== '') {
         try {
@@ -453,8 +453,10 @@ function sendRoute(config) {
 
 function buildWithdrawMsgIpv4(route) {
     const withdrawPrefixBufArray = [];
+    const prefixBytes = ipToBytes(route.ip);
+    const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
     withdrawPrefixBufArray.push(route.mask);
-    withdrawPrefixBufArray.push(...ipToBytes(route.ip));
+    withdrawPrefixBufArray.push(...prefixBytes.slice(0, prefixLength));
 
     const withdrawPrefixBuf = Buffer.alloc(withdrawPrefixBufArray.length + 2);
     withdrawPrefixBuf.writeUInt16BE(withdrawPrefixBufArray.length, 0);
@@ -484,10 +486,10 @@ function buildWithdrawMsgIpv6(route) {
     withdrawPrefixBufArray.push(...writeUInt16(0x14));
     withdrawPrefixBufArray.push(...writeUInt16(0x02));
     withdrawPrefixBufArray.push(0x01);
-    const addr = ipaddr.parse(route.ip);
-    const bytes = addr.toByteArray();
+    const bytes = ipToBytes(route.ip);
+    const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
     withdrawPrefixBufArray.push(route.mask);
-    withdrawPrefixBufArray.push(...bytes);
+    withdrawPrefixBufArray.push(...bytes.slice(0, prefixLength));
 
     const withdrawPrefixBuf = Buffer.alloc(withdrawPrefixBufArray.length + 2);
     withdrawPrefixBuf.writeUInt16BE(withdrawPrefixBufArray.length, 0);

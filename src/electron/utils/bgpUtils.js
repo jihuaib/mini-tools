@@ -1,4 +1,4 @@
-// bgpUtils.js
+const ipaddr = require('ipaddr.js');
 
 /**
  * 将一个 16 位无符号整数转换为两个字节（Big Endian）
@@ -19,12 +19,13 @@ function writeUInt32(value) {
 }
 
 /**
- * 将 IPv4 字符串地址（如 '192.168.1.1'）转换为字节数组 [192, 168, 1, 1]
- * @param {string} ip - 点分十进制 IP 地址
- * @returns {number[]}
+ * 通用 IP 转字节（支持 IPv4 和 IPv6）
+ * @param {string} ip - IP 地址字符串
+ * @returns {number[]} - IPv4 返回 4 字节，IPv6 返回 16 字节
  */
 function ipToBytes(ip) {
-    return ip.split('.').map(octet => parseInt(octet, 10));
+    const addr = ipaddr.parse(ip);
+    return addr.toByteArray();
 }
 
 module.exports = {
