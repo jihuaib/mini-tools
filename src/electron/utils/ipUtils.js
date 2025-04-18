@@ -15,12 +15,7 @@ function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
     if (routeType === BGP_AFI_TYPE_UI.AFI_IPV4) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray();
-        let baseInt = (
-            (baseBytes[0] << 24) |
-            (baseBytes[1] << 16) |
-            (baseBytes[2] << 8) |
-            baseBytes[3]
-        );
+        let baseInt = (baseBytes[0] << 24) | (baseBytes[1] << 16) | (baseBytes[2] << 8) | baseBytes[3];
 
         const step = routeMask === 32 ? 1 : Math.pow(2, 32 - routeMask);
 
@@ -39,9 +34,7 @@ function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
                 mask: routeMask
             });
         }
-    }
-
-    else if (routeType === BGP_AFI_TYPE_UI.AFI_IPV6) {
+    } else if (routeType === BGP_AFI_TYPE_UI.AFI_IPV6) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray(); // 16 bytes
         let baseBigInt = BigInt(0);
@@ -49,13 +42,13 @@ function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
             baseBigInt = (baseBigInt << 8n) + BigInt(baseBytes[i]);
         }
 
-        const step = routeMask === 128 ? 1n : (1n << BigInt(128 - routeMask));
+        const step = routeMask === 128 ? 1n : 1n << BigInt(128 - routeMask);
 
         for (let i = 0n; i < BigInt(routeCnt); i++) {
             const currentBigInt = baseBigInt + i * step;
             const bytes = [];
             for (let j = 15; j >= 0; j--) {
-                bytes[j] = Number(currentBigInt >> BigInt((15 - j) * 8) & 0xffn);
+                bytes[j] = Number((currentBigInt >> BigInt((15 - j) * 8)) & 0xffn);
             }
             const ip = ipaddr.fromByteArray(bytes);
             const networkAddress = ipaddr.IPv6.networkAddressFromCIDR(`${ip}/${routeMask}`);
