@@ -27,22 +27,26 @@
 ## 安装与运行
 
 1. 克隆项目
+
 ```bash
 git clone https://github.com/jihuaib/mini-tools.git
 cd mini-tools
 ```
 
 2. 安装依赖
+
 ```bash
 npm install
 ```
 
 3. 开发模式运行
+
 ```bash
 npm run dev
 ```
 
 4. 打包应用
+
 ```bash
 npm run dist
 ```
@@ -69,5 +73,3 @@ mini-tools/
 ## 许可证
 
 MIT License
-
-
