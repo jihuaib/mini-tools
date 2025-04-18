@@ -657,8 +657,10 @@
                 ipType: bgpData.value.routeConfig.ipType
             });
 
-            if (result.status === 'success' && result.msg !== '') {
-                message.success(result.msg);
+            if (result.status === 'success') {
+                if (result.msg !== '') {
+                    message.success(result.msg);
+                }
             } else {
                 message.error(result.msg || '路由发送失败');
             }
@@ -699,8 +701,10 @@
                 ipType: bgpData.value.routeConfig.ipType
             });
 
-            if (result.status === 'success' && result.msg !== '') {
-                message.success(result.msg);
+            if (result.status === 'success') {
+                if (result.msg !== '') {
+                    message.success(result.msg);
+                }
             } else {
                 message.error(result.msg || '路由撤销失败');
             }
