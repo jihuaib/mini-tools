@@ -616,7 +616,6 @@
     const stopBgp = async () => {
         const result = await window.bgpEmulatorApi.stopBgp();
         if (result.status === 'success') {
-            bgpData.value.peerState = '';
             if (result.msg !== '') {
                 message.success(result.msg);
             }

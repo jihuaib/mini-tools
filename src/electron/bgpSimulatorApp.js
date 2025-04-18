@@ -68,13 +68,11 @@ async function handleStopBgp() {
             op: BGP_OPERATIONS.STOP_BGP,
             data: null
         };
-        await worker.postMessage(msg);
-        // 退出work
+        worker.postMessage(msg);
+        return successResponse(null, '');
+    } catch (error) {
         await worker.terminate();
         bgpStart = false;
-
-        return successResponse(null, 'bgp协议停止成功');
-    } catch (error) {
         log.error('[Main] Error stopping BGP:', error);
         return errorResponse(error.message);
     }
@@ -152,7 +150,7 @@ async function handleStartBgp(event, bgpData) {
     worker.postMessage(msg);
 
     // 持续接收 BGP 线程的消息
-    worker.on('message', result => {
+    worker.on('message', async result => {
         log.info(`[Main] recv msg from [Worker ${worker.threadId}]`, result);
         if (result.status === 'success') {
             if (result.data.op === BGP_OPERATIONS.PEER_STATE) {
@@ -163,6 +161,11 @@ async function handleStartBgp(event, bgpData) {
                 } else {
                     webContents.send('push-msg', errorResponse(result.data.msg));
                 }
+            } else if (result.data.op === BGP_OPERATIONS.STOP_BGP) {
+                // BGP停止成功
+                await worker.terminate();
+                bgpStart = false;
+                webContents.send('push-msg', successResponse(null, result.data.msg));
             }
         } else {
             log.error(`[Main] recv error msg from [Worker ${worker.threadId}]`, result);

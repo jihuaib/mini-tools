@@ -242,7 +242,7 @@ function stopBgp() {
 
     parentPort.postMessage(
         successResponse({
-            op: BGP_OPERATIONS.PUSH_MSG,
+            op: BGP_OPERATIONS.STOP_BGP,
             status: 'success',
             msg: 'bgp协议停止成功'
         })
