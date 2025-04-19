@@ -7,6 +7,7 @@
             :items="items"
             @select="handleSelect"
             class="main-menu"
+            sticky
         />
         <div class="content-area">
             <router-view v-slot="{ Component }">
@@ -65,6 +66,13 @@
 <style scoped>
     .main-menu {
         line-height: 30px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        background-color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     .content-area {
@@ -74,6 +82,7 @@
         width: 100%;
         max-width: 1200px;
         box-sizing: border-box;
+        margin-top: 30px; /* 为固定导航栏留出空间 */
     }
 
     .main-layout {
