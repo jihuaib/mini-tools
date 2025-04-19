@@ -73,9 +73,9 @@
         validateTemplate,
         validatePlaceholder,
         validateStart,
-        validateEnd,
-        clearValidationErrors
-    } from '../utils/validation';
+        validateEnd
+    } from '../utils/stringGeneratorValidation';
+    import { clearValidationErrors } from '../utils/validationCommon';
 
     defineOptions({
         name: 'StringGenerator'

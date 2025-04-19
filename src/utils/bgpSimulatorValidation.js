@@ -1,39 +1,7 @@
-// Validation error messages
-export const VALIDATION_ERRORS = {
-    localAs: '',
-    peerIp: '',
-    peerAs: '',
-    routerId: '',
-    holdTime: '',
-    ipv4Prefix: '',
-    ipv4Mask: '',
-    ipv4Count: '',
-    ipv6Prefix: '',
-    ipv6Mask: '',
-    ipv6Count: '',
-    template: '',
-    placeholder: '',
-    start: '',
-    end: ''
-};
+// BGP and network validation functions
+import { REGEX } from './validationCommon';
 
-// Regular expressions
-export const REGEX = {
-    ipv4: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-    ipv6: /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/,
-    number: /^\d+$/,
-    ipv4Mask: /^(?:[0-9]|[1-2][0-9]|3[0-2])$/,
-    ipv6Mask: /^(?:[0-9]|[1-9][0-9]|1[0-2][0-8])$/
-};
-
-// Clear all validation errors
-export const clearValidationErrors = validationErrors => {
-    Object.keys(validationErrors.value).forEach(key => {
-        validationErrors.value[key] = '';
-    });
-};
-
-// Validation functions
+// BGP validation functions
 export const validateLocalAs = (value, validationErrors) => {
     if (!value) {
         validationErrors.value.localAs = '请输入Local AS';
@@ -141,43 +109,5 @@ export const validateIpv6Count = (value, validationErrors) => {
         validationErrors.value.ipv6Count = '请输入大于0的数字';
     } else {
         validationErrors.value.ipv6Count = '';
-    }
-};
-
-export const validateTemplate = (value, validationErrors) => {
-    if (!value) {
-        validationErrors.value.template = '请输入模板内容';
-    } else {
-        validationErrors.value.template = '';
-    }
-};
-
-export const validatePlaceholder = (value, validationErrors) => {
-    if (!value) {
-        validationErrors.value.placeholder = '请输入占位符';
-    } else {
-        validationErrors.value.placeholder = '';
-    }
-};
-
-export const validateStart = (value, validationErrors) => {
-    if (!value) {
-        validationErrors.value.start = '请输入开始数值';
-    } else if (!/^\d+$/.test(value)) {
-        validationErrors.value.start = '请输入数字';
-    } else {
-        validationErrors.value.start = '';
-    }
-};
-
-export const validateEnd = (value, startValue, validationErrors) => {
-    if (!value) {
-        validationErrors.value.end = '请输入结束数值';
-    } else if (!/^\d+$/.test(value)) {
-        validationErrors.value.end = '请输入数字';
-    } else if (parseInt(value) < parseInt(startValue)) {
-        validationErrors.value.end = '结束值必须大于或等于开始值';
-    } else {
-        validationErrors.value.end = '';
     }
 };

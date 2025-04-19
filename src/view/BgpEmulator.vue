@@ -252,10 +252,8 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { SettingOutlined } from '@ant-design/icons-vue';
-    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../constants/bgp';
+    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../constants/bgpConst';
     import {
-        VALIDATION_ERRORS,
-        clearValidationErrors,
         validateLocalAs,
         validatePeerIp,
         validatePeerAs,
@@ -267,7 +265,8 @@
         validateIpv6Prefix,
         validateIpv6Mask,
         validateIpv6Count
-    } from '../utils/validation';
+    } from '../utils/bgpSimulatorValidation';
+    import { clearValidationErrors } from '../utils/validationCommon';
 
     defineOptions({
         name: 'BgpEmulator'
@@ -372,7 +371,19 @@
         }
     }, 300);
 
-    const validationErrors = ref({ ...VALIDATION_ERRORS });
+    const validationErrors = ref({
+        localAs: '',
+        peerIp: '',
+        peerAs: '',
+        routerId: '',
+        holdTime: '',
+        ipv4Prefix: '',
+        ipv4Mask: '',
+        ipv4Count: '',
+        ipv6Prefix: '',
+        ipv6Mask: '',
+        ipv6Count: ''
+    });
 
     // 暴露清空验证错误的方法给父组件
     defineExpose({
@@ -730,6 +741,16 @@
     :deep(.ant-select-disabled .ant-select-selector) {
         background-color: #f5f5f5;
         color: rgba(0, 0, 0, 0.85);
+    }
+
+    /* 增强禁用复选框的可见度 */
+    :deep(.ant-checkbox-disabled + span) {
+        color: rgba(0, 0, 0, 0.85) !important;
+    }
+
+    :deep(.ant-checkbox-disabled .ant-checkbox-inner) {
+        background-color: #e6e6e6 !important;
+        border-color: #d9d9d9 !important;
     }
 
     .custom-route-btn {
