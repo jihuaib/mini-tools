@@ -5,7 +5,7 @@ const os = require('os');
 const fs = require('fs');
 const log = require('electron-log');
 const { successResponse, errorResponse } = require('./utils/responseUtils');
-const { BGP_OPERATIONS } = require('./const/operations');
+const { BGP_OPERATIONS } = require('./const/bgpOpConst');
 
 let bgpStart = false;
 let worker;

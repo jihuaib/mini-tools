@@ -256,7 +256,7 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { SettingOutlined } from '@ant-design/icons-vue';
-    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../constants/bgpConst';
+    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../const/bgpConst';
     import {
         validateLocalAs,
         validatePeerIp,

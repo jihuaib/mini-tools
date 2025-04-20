@@ -1,8 +1,9 @@
 const { parentPort, threadId } = require('worker_threads');
 const net = require('net');
 const log = require('electron-log');
-const { BMP_OPERATIONS } = require('../const/operations');
+const { BMP_OPERATIONS } = require('../const/bmpOpConst');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
+const BmpConst = require('../const/bmpConst');
 
 // BMP Server state
 let server = null;
@@ -11,33 +12,6 @@ let server = null;
 const peers = new Map(); // Map of peer IP -> peer data
 const ipv4Routes = new Map(); // Map of prefix/mask -> route data
 const ipv6Routes = new Map(); // Map of prefix/mask -> route data
-
-// BMP message types (RFC 7854)
-const BMP_MSG_TYPE = {
-    ROUTE_MONITORING: 0,
-    STATISTICS_REPORT: 1,
-    PEER_DOWN_NOTIFICATION: 2,
-    PEER_UP_NOTIFICATION: 3,
-    INITIATION: 4,
-    TERMINATION: 5,
-    ROUTE_MIRRORING: 6
-};
-
-// BMP peer types
-const BMP_PEER_TYPE = {
-    GLOBAL: 0,
-    L3VPN: 1,
-    LOCAL: 2,
-    LOCAL_L3VPN: 3
-};
-
-// BMP peer flags
-const BMP_PEER_FLAGS = {
-    IPV6: 0x80,
-    POST_POLICY: 0x40,
-    AS_PATH: 0x20,
-    ADJ_RIB_OUT: 0x10
-};
 
 function startServer(serverConfig) {
     try {
@@ -160,31 +134,31 @@ function processMessage(message, socket) {
         log.info(`[BMP Worker ${threadId}] Received message type ${type} from ${clientAddress}, length ${length}`);
 
         switch (type) {
-            case BMP_MSG_TYPE.ROUTE_MONITORING:
+            case BmpConst.BMP_MSG_TYPE.ROUTE_MONITORING:
                 processRouteMonitoring(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.STATISTICS_REPORT:
+            case BmpConst.BMP_MSG_TYPE.STATISTICS_REPORT:
                 processStatisticsReport(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.PEER_DOWN_NOTIFICATION:
+            case BmpConst.BMP_MSG_TYPE.PEER_DOWN_NOTIFICATION:
                 processPeerDown(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.PEER_UP_NOTIFICATION:
+            case BmpConst.BMP_MSG_TYPE.PEER_UP_NOTIFICATION:
                 processPeerUp(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.INITIATION:
+            case BmpConst.BMP_MSG_TYPE.INITIATION:
                 processInitiation(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.TERMINATION:
+            case BmpConst.BMP_MSG_TYPE.TERMINATION:
                 processTermination(message, socket);
                 break;
 
-            case BMP_MSG_TYPE.ROUTE_MIRRORING:
+            case BmpConst.BMP_MSG_TYPE.ROUTE_MIRRORING:
                 processRouteMirroring(message, socket);
                 break;
 
@@ -207,7 +181,7 @@ function processPeerUp(message, socket) {
         const peerFlags = peerHeader[1];
 
         let peerIp;
-        if (peerFlags & BMP_PEER_FLAGS.IPV6) {
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
                 .slice(6 + 6, 6 + 6 + 16)
@@ -252,7 +226,7 @@ function processPeerDown(message, socket) {
         const peerFlags = peerHeader[1];
 
         let peerIp;
-        if (peerFlags & BMP_PEER_FLAGS.IPV6) {
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
                 .slice(6 + 6, 6 + 6 + 16)
@@ -291,7 +265,7 @@ function processRouteMonitoring(message, socket) {
         const peerFlags = peerHeader[1];
 
         let peerIp;
-        if (peerFlags & BMP_PEER_FLAGS.IPV6) {
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
                 .slice(6 + 6, 6 + 6 + 16)
@@ -361,7 +335,7 @@ function processStatisticsReport(message, socket) {
         const peerFlags = peerHeader[1];
 
         let peerIp;
-        if (peerFlags & BMP_PEER_FLAGS.IPV6) {
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
                 .slice(6 + 6, 6 + 6 + 16)

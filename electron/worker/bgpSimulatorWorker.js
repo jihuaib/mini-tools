@@ -1,12 +1,11 @@
 const { parentPort, threadId } = require('worker_threads');
 const net = require('net');
 const BgpConst = require('../const/bgpConst');
-const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
+const { genRouteIps, writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const { parseBgpPacket, getBgpSummary } = require('../utils/bgpPacketParser');
 const log = require('electron-log');
-const { BGP_OPERATIONS } = require('../const/operations');
-const { genRouteIps } = require('../utils/ipUtils');
+const { BGP_OPERATIONS } = require('../const/bgpOpConst');
 
 let bgpState = BgpConst.BGP_STATE.IDLE;
 let bgpData = null;

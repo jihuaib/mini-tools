@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const log = require('electron-log');
 const { successResponse, errorResponse } = require('./utils/responseUtils');
-const { BMP_OPERATIONS } = require('./const/operations');
+const { BMP_OPERATIONS } = require('./const/bmpOpConst');
 
 let bmpServerRunning = false;
 let worker;
