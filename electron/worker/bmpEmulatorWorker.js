@@ -183,7 +183,7 @@ function processPeerUp(message, socket) {
         position += 1;
 
         // Parse peer header
-        const peerHeader = message.slice(position, position + 42);
+        const peerHeader = message.subarray(position, position + 42);
         position += 42;
 
         const peerHeaderPosition = 0;
@@ -192,19 +192,19 @@ function processPeerUp(message, socket) {
         const peerFlags = peerHeader[peerHeaderPosition];
         peerHeaderPosition += 1;
 
-        const rd = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 9);
+        const rd = peerHeader.subarray(peerHeaderPosition, peerHeaderPosition + 9);
         peerHeaderPosition += 10;
 
         let peerAddress;
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
-            peerAddress = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 16);
+            peerAddress = peerHeader.subarray(peerHeaderPosition, peerHeaderPosition + 16);
             peerHeaderPosition += 16;
         } else {
             // IPv4 peer
             // 12字节保留字段
             peerHeaderPosition += 12;
-            peerAddress = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 4);
+            peerAddress = peerHeader.subarray(peerHeaderPosition, peerHeaderPosition + 4);
             peerHeaderPosition += 4;
         }
 
@@ -219,13 +219,13 @@ function processPeerUp(message, socket) {
 
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
-            const localAddress = peerHeader.slice(position, position + 16);
+            const localAddress = peerHeader.subarray(position, position + 16);
             position += 16;
         } else {
             // IPv4 peer
             // 12字节保留字段
             position += 12;
-            const localAddress = peerHeader.slice(position, position + 4);
+            const localAddress = peerHeader.subarray(position, position + 4);
             position += 4;
         }
         const localPort = peerHeader.readUInt16BE(position);
@@ -233,7 +233,7 @@ function processPeerUp(message, socket) {
         const remotePort = peerHeader.readUInt16BE(position);
         position += 2;
 
-        const sentOpenMsg = message.slice(position);
+        const sentOpenMsg = message.subarray(position);
 
         // Add peer to our list with enhanced information from OPEN messages
         const peerInfo = {
@@ -283,7 +283,7 @@ function processPeerDown(message, socket) {
         const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
 
         // Parse peer header (starts at byte 6)
-        const peerHeader = message.slice(6, 6 + 42);
+        const peerHeader = message.subarray(6, 6 + 42);
         const peerType = peerHeader[0];
         const peerFlags = peerHeader[1];
 
@@ -292,13 +292,13 @@ function processPeerDown(message, socket) {
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
-                .slice(6 + 6, 6 + 6 + 16)
+                .subarray(6 + 6, 6 + 6 + 16)
                 .toString('hex')
                 .match(/.{1,4}/g)
                 .join(':');
         } else {
             // IPv4 peer
-            peerIp = message.slice(6 + 18, 6 + 18 + 4).join('.');
+            peerIp = message.subarray(6 + 18, 6 + 18 + 4).join('.');
         }
 
         // Update peer status
@@ -323,7 +323,7 @@ function processRouteMonitoring(message, socket) {
         const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
 
         // Parse peer header (starts at byte 6)
-        const peerHeader = message.slice(6, 6 + 42);
+        const peerHeader = message.subarray(6, 6 + 42);
         const peerType = peerHeader[0];
         const peerFlags = peerHeader[1];
 
@@ -331,17 +331,17 @@ function processRouteMonitoring(message, socket) {
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
-                .slice(6 + 6, 6 + 6 + 16)
+                .subarray(6 + 6, 6 + 6 + 16)
                 .toString('hex')
                 .match(/.{1,4}/g)
                 .join(':');
         } else {
             // IPv4 peer
-            peerIp = message.slice(6 + 18, 6 + 18 + 4).join('.');
+            peerIp = message.subarray(6 + 18, 6 + 18 + 4).join('.');
         }
 
         // BGP update starts after the peer header (at byte 6 + 42)
-        const bgpUpdate = message.slice(6 + 42);
+        const bgpUpdate = message.subarray(6 + 42);
 
         // Use parseBgpPacket to extract route information
         const { parseBgpPacket } = require('../utils/bgpPacketParser');
@@ -539,7 +539,7 @@ function processStatisticsReport(message, socket) {
         const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
 
         // Parse peer header (starts at byte 6)
-        const peerHeader = message.slice(6, 6 + 42);
+        const peerHeader = message.subarray(6, 6 + 42);
         const peerType = peerHeader[0];
         const peerFlags = peerHeader[1];
 
@@ -547,13 +547,13 @@ function processStatisticsReport(message, socket) {
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
             peerIp = message
-                .slice(6 + 6, 6 + 6 + 16)
+                .subarray(6 + 6, 6 + 6 + 16)
                 .toString('hex')
                 .match(/.{1,4}/g)
                 .join(':');
         } else {
             // IPv4 peer
-            peerIp = message.slice(6 + 18, 6 + 18 + 4).join('.');
+            peerIp = message.subarray(6 + 18, 6 + 18 + 4).join('.');
         }
 
         log.info(`[BMP Worker ${threadId}] Received statistics report from peer ${peerIp}`);
@@ -679,7 +679,7 @@ function processInitiation(message, socket) {
         log.info(`[BMP Worker ${threadId}] Received initiation message from ${clientAddress}`);
 
         // Parse initiation message (starts at byte 6)
-        const initiationData = message.slice(6);
+        const initiationData = message.subarray(6);
         let position = 0;
 
         // Store TLV data
@@ -702,7 +702,7 @@ function processInitiation(message, socket) {
                 break; // Not enough data for TLV value
             }
 
-            const value = initiationData.slice(position, position + length).toString('utf8');
+            const value = initiationData.subarray(position, position + length).toString('utf8');
             position += length;
 
             tlvs.push({ type, length, value });

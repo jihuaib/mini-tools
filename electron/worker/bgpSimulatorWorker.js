@@ -29,7 +29,7 @@ function parseBgpHeader(buffer) {
         return null;
     }
 
-    const marker = buffer.slice(0, 16).toString('hex');
+    const marker = buffer.subarray(0, 16).toString('hex');
     const length = buffer.readUInt16BE(16);
     const type = buffer.readUInt8(18);
 
@@ -42,7 +42,7 @@ function handleBgpPacket(buffer) {
 
     while (packet.length > 0) {
         const header = parseBgpHeader(packet);
-        const spiltBuffer = packet.slice(0, header.length); // 剩余报文体
+        const spiltBuffer = packet.subarray(0, header.length); // 剩余报文体
         const parsedPacket = parseBgpPacket(spiltBuffer);
 
         if (header.type == BgpConst.BGP_PACKET_TYPE.OPEN) {
@@ -70,7 +70,7 @@ function handleBgpPacket(buffer) {
             log.info(`[BGP Worker ${threadId}] recv update message`);
         }
 
-        packet = packet.slice(header.length);
+        packet = packet.subarray(header.length);
     }
 }
 
@@ -348,7 +348,7 @@ function buildMpReachNlriAttribute(route, localIp) {
     attr.push(route.mask);
     const prefixBytes = ipToBytes(route.ip);
     const prefixLength = Math.ceil(route.mask / 8);
-    attr.push(...prefixBytes.slice(0, prefixLength));
+    attr.push(...prefixBytes.subarray(0, prefixLength));
 
     // 更新长度
     const length = attr.length - lengthPos - 2;
@@ -377,7 +377,7 @@ function buildMpUnreachNlriAttribute(route) {
     attr.push(route.mask);
     const prefixBytes = ipToBytes(route.ip);
     const prefixLength = Math.ceil(route.mask / 8);
-    attr.push(...prefixBytes.slice(0, prefixLength));
+    attr.push(...prefixBytes.subarray(0, prefixLength));
 
     // 更新长度
     const length = attr.length - lengthPos - 2;
@@ -464,7 +464,7 @@ function buildUpdateMsgIpv4(route, customAttr) {
         nlri.push(route.mask); // 前缀长度（单位bit）
         const prefixBytes = ipToBytes(route.ip);
         const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
-        nlri.push(...prefixBytes.slice(0, prefixLength));
+        nlri.push(...prefixBytes.subarray(0, prefixLength));
 
         const nlriBuf = Buffer.alloc(nlri.length);
         nlriBuf.set(nlri);
@@ -514,7 +514,7 @@ function buildWithdrawMsgIpv4(route) {
         const prefixBytes = ipToBytes(route.ip);
         const prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
         withdrawPrefixBufArray.push(route.mask);
-        withdrawPrefixBufArray.push(...prefixBytes.slice(0, prefixLength));
+        withdrawPrefixBufArray.push(...prefixBytes.subarray(0, prefixLength));
 
         const withdrawPrefixBuf = Buffer.alloc(withdrawPrefixBufArray.length + 2);
         withdrawPrefixBuf.writeUInt16BE(withdrawPrefixBufArray.length, 0);

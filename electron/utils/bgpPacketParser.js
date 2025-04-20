@@ -24,7 +24,7 @@ function parseBgpPacket(buffer) {
         }
 
         // Check if the BGP marker is valid (16 bytes of 0xFF)
-        const marker = buffer.slice(0, BgpConst.BGP_MARKER_LEN);
+        const marker = buffer.subarray(0, BgpConst.BGP_MARKER_LEN);
         if (!marker.every(byte => byte === 0xff)) {
             return {
                 valid: false,
@@ -218,7 +218,7 @@ function parseUpdateMessage(buffer) {
         const prefixBytes = Math.ceil(prefixLength / 8);
 
         // Extract the prefix
-        const prefixBuffer = buffer.slice(position, position + prefixBytes);
+        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
         position += prefixBytes;
 
         // Convert to dotted decimal format for IPv4
@@ -253,7 +253,7 @@ function parseUpdateMessage(buffer) {
             position += 1;
         }
 
-        const attributeValue = buffer.slice(position, position + attributeLength);
+        const attributeValue = buffer.subarray(position, position + attributeLength);
         position += attributeLength;
 
         const attribute = {
@@ -311,7 +311,7 @@ function parseUpdateMessage(buffer) {
         const prefixBytes = Math.ceil(prefixLength / 8);
 
         // Extract the prefix
-        const prefixBuffer = buffer.slice(position, position + prefixBytes);
+        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
         position += prefixBytes;
 
         // Convert to dotted decimal format for IPv4
@@ -344,7 +344,7 @@ function parseNotificationMessage(buffer) {
     const errorSubcode = buffer[position];
     position += 1;
 
-    const data = buffer.slice(position);
+    const data = buffer.subarray(position);
 
     return {
         errorCode,
@@ -473,7 +473,7 @@ function parseMpReachNlri(buffer, attrLength) {
         nextHop = `${buffer[position]}.${buffer[position + 1]}.${buffer[position + 2]}.${buffer[position + 3]}`;
     } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
         // IPv6
-        nextHop = formatIpv6Address(buffer.slice(position, position + 16));
+        nextHop = formatIpv6Address(buffer.subarray(position, position + 16));
     }
 
     position += nextHopLength;
@@ -491,7 +491,7 @@ function parseMpReachNlri(buffer, attrLength) {
         const prefixBytes = Math.ceil(prefixLength / 8);
 
         // Extract the prefix
-        const prefixBuffer = buffer.slice(position, position + prefixBytes);
+        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
         position += prefixBytes;
 
         // Format the prefix based on AFI
@@ -540,7 +540,7 @@ function parseMpUnreachNlri(buffer, attrLength) {
         const prefixBytes = Math.ceil(prefixLength / 8);
 
         // Extract the prefix
-        const prefixBuffer = buffer.slice(position, position + prefixBytes);
+        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
         position += prefixBytes;
 
         // Format the prefix based on AFI
