@@ -11,7 +11,7 @@
         />
         <div class="content-area">
             <router-view v-slot="{ Component }">
-                <keep-alive :include="['StringGenerator', 'BgpEmulator']">
+                <keep-alive :include="['StringGenerator', 'BgpEmulator', 'BmpEmulator']">
                     <component :is="Component" ref="currentComponent" />
                 </keep-alive>
             </router-view>
@@ -40,6 +40,12 @@
             label: 'bgp模拟工具',
             title: 'bgp模拟工具',
             route: '/bgp-emulator'
+        },
+        {
+            key: 'bmp-emulator',
+            label: 'bmp监控服务器',
+            title: 'bmp监控服务器',
+            route: '/bmp-emulator'
         }
     ]);
 

@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import Main from '../view/Main.vue';
 import StringGenerator from '../view/StringGenerator.vue';
 import BgpEmulator from '../view/BgpEmulator.vue';
+import BmpEmulator from '../view/BmpEmulator.vue';
 
 const routes = [
     {
@@ -18,6 +19,11 @@ const routes = [
                 path: '/bgp-emulator',
                 name: 'BgpEmulator',
                 component: BgpEmulator
+            },
+            {
+                path: '/bmp-emulator',
+                name: 'BmpEmulator',
+                component: BmpEmulator
             }
         ]
     }

@@ -1,6 +1,6 @@
 <template>
     <div class="string-generator-container">
-        <a-card title="字符串生成配置" class="config-card">
+        <a-card title="字符串生成配置">
             <a-form :model="formState" @finish="handleFinish" :label-col="labelCol" :wrapper-col="wrapperCol">
                 <!-- 字符串模板输入 -->
                 <a-form-item label="字符串模板" name="template">

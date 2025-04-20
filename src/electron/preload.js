@@ -19,3 +19,35 @@ contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     withdrawRoutes: config => ipcRenderer.invoke('bgp-emulator:withdrawRoute', config),
     pushMsg: callback => ipcRenderer.on('bgp-emulator:pushMsg', (_event, data) => callback(data))
 });
+
+// bmp模块
+contextBridge.exposeInMainWorld('bmpEmulatorApi', {
+    getNetworkInfo: () => ipcRenderer.invoke('bmp-emulator:getNetworkInfo'),
+    // Server control
+    startServer: config => ipcRenderer.invoke('bmp-emulator:startServer', config),
+    stopServer: () => ipcRenderer.invoke('bmp-emulator:stopServer'),
+    getServerStatus: () => ipcRenderer.invoke('bmp-emulator:getServerStatus'),
+
+    // Configuration
+    saveConfig: config => ipcRenderer.invoke('bmp-emulator:saveConfig', config),
+    loadConfig: () => ipcRenderer.invoke('bmp-emulator:loadConfig'),
+
+    // Data retrieval
+    getPeers: () => ipcRenderer.invoke('bmp-emulator:getPeers'),
+    getRoutes: ipType => ipcRenderer.invoke('bmp-emulator:getRoutes', ipType),
+
+    // Event listeners
+    onPeerUpdate: callback => ipcRenderer.on('bmp-emulator:peerUpdate', (_event, data) => callback(_event, data)),
+    onRouteUpdate: callback => ipcRenderer.on('bmp-emulator:routeUpdate', (_event, data) => callback(_event, data)),
+    onServerLog: callback => ipcRenderer.on('bmp-emulator:serverLog', (_event, data) => callback(_event, data)),
+    onInitiationReceived: callback =>
+        ipcRenderer.on('bmp-emulator:initiationReceived', (_event, data) => callback(_event, data)),
+
+    // Clean up event listeners
+    removeAllListeners: () => {
+        ipcRenderer.removeAllListeners('bmp-emulator:peerUpdate');
+        ipcRenderer.removeAllListeners('bmp-emulator:routeUpdate');
+        ipcRenderer.removeAllListeners('bmp-emulator:serverLog');
+        ipcRenderer.removeAllListeners('bmp-emulator:initiationReceived');
+    }
+});

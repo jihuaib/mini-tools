@@ -3,6 +3,7 @@ const path = require('path');
 const log = require('electron-log');
 const bgpSimulatorApp = require('./bgpSimulatorApp');
 const stringGeneratorApp = require('./stringGeneratorApp');
+const bmpEmulatorApp = require('./bmpEmulatorApp');
 const packageJson = require('../../package.json');
 
 // 配置 electron-log
@@ -89,10 +90,14 @@ function createWindow() {
     // 监听窗口关闭事件
     win.on('close', async event => {
         event.preventDefault();
-        const closeWindow = await bgpSimulatorApp.handleWindowClose(win);
-        if (closeWindow) {
-            win.destroy();
-        }
+        // Check both BGP and BMP servers before closing
+        const closeBgpOk = await bgpSimulatorApp.handleWindowClose(win);
+        if (!closeBgpOk) return;
+
+        const closeBmpOk = await bmpEmulatorApp.handleWindowClose(win);
+        if (!closeBmpOk) return;
+
+        win.destroy();
     });
 
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
@@ -103,6 +108,7 @@ function createWindow() {
 app.whenReady().then(() => {
     bgpSimulatorApp.registerHandlers(ipcMain);
     stringGeneratorApp.registerHandlers(ipcMain);
+    bmpEmulatorApp.registerHandlers(ipcMain);
 
     createWindow();
 

@@ -1,233 +1,233 @@
 <template>
     <div class="bgp-emulator-container">
         <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol" class="bgp-form">
-            <a-card title="BGP配置" class="bgp-config-card">
-            <a-form-item label="请选择网卡">
-                <a-select
-                    ref="select"
-                    v-model:value="networkValue"
-                    :options="networkInfo"
-                    @select="handleNetworkChange"
-                ></a-select>
-            </a-form-item>
+            <a-card title="BGP配置">
+                <a-form-item label="请选择网卡">
+                    <a-select
+                        ref="select"
+                        v-model:value="networkValue"
+                        :options="networkInfo"
+                        @select="handleNetworkChange"
+                    ></a-select>
+                </a-form-item>
 
-            <a-row>
-                <a-col :span="12">
-                    <a-form-item label="Local IP" name="localIp">
-                        <a-input v-model:value="bgpData.localIp" disabled />
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Local AS" name="localAs">
-                        <a-tooltip :title="validationErrors.localAs" :open="!!validationErrors.localAs">
-                            <a-input
-                                v-model:value="bgpData.localAs"
-                                @blur="e => validateField(e.target.value, 'localAs', validateLocalAs)"
-                                :status="validationErrors.localAs ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-            </a-row>
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="Local IP" name="localIp">
+                            <a-input v-model:value="bgpData.localIp" disabled />
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="Local AS" name="localAs">
+                            <a-tooltip :title="validationErrors.localAs" :open="!!validationErrors.localAs">
+                                <a-input
+                                    v-model:value="bgpData.localAs"
+                                    @blur="e => validateField(e.target.value, 'localAs', validateLocalAs)"
+                                    :status="validationErrors.localAs ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
-            <a-row>
-                <a-col :span="12">
-                    <a-form-item label="Peer IP" name="peerIp">
-                        <a-tooltip :title="validationErrors.peerIp" :open="!!validationErrors.peerIp">
-                            <a-input
-                                v-model:value="bgpData.peerIp"
-                                @blur="e => validateField(e.target.value, 'peerIp', validatePeerIp)"
-                                :status="validationErrors.peerIp ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Peer AS" name="peerAs">
-                        <a-tooltip :title="validationErrors.peerAs" :open="!!validationErrors.peerAs">
-                            <a-input
-                                v-model:value="bgpData.peerAs"
-                                @blur="e => validateField(e.target.value, 'peerAs', validatePeerAs)"
-                                :status="validationErrors.peerAs ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-            </a-row>
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="Peer IP" name="peerIp">
+                            <a-tooltip :title="validationErrors.peerIp" :open="!!validationErrors.peerIp">
+                                <a-input
+                                    v-model:value="bgpData.peerIp"
+                                    @blur="e => validateField(e.target.value, 'peerIp', validatePeerIp)"
+                                    :status="validationErrors.peerIp ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="Peer AS" name="peerAs">
+                            <a-tooltip :title="validationErrors.peerAs" :open="!!validationErrors.peerAs">
+                                <a-input
+                                    v-model:value="bgpData.peerAs"
+                                    @blur="e => validateField(e.target.value, 'peerAs', validatePeerAs)"
+                                    :status="validationErrors.peerAs ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
-            <a-row>
-                <a-col :span="12">
-                    <a-form-item label="Router ID" name="routerId">
-                        <a-tooltip :title="validationErrors.routerId" :open="!!validationErrors.routerId">
-                            <a-input
-                                v-model:value="bgpData.routerId"
-                                @blur="e => validateField(e.target.value, 'routerId', validateRouterId)"
-                                :status="validationErrors.routerId ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Hold Time" name="holdTime">
-                        <a-tooltip :title="validationErrors.holdTime" :open="!!validationErrors.holdTime">
-                            <a-input
-                                v-model:value="bgpData.holdTime"
-                                @blur="e => validateField(e.target.value, 'holdTime', validateHoldTime)"
-                                :status="validationErrors.holdTime ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-            </a-row>
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="Router ID" name="routerId">
+                            <a-tooltip :title="validationErrors.routerId" :open="!!validationErrors.routerId">
+                                <a-input
+                                    v-model:value="bgpData.routerId"
+                                    @blur="e => validateField(e.target.value, 'routerId', validateRouterId)"
+                                    :status="validationErrors.routerId ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="Hold Time" name="holdTime">
+                            <a-tooltip :title="validationErrors.holdTime" :open="!!validationErrors.holdTime">
+                                <a-input
+                                    v-model:value="bgpData.holdTime"
+                                    @blur="e => validateField(e.target.value, 'holdTime', validateHoldTime)"
+                                    :status="validationErrors.holdTime ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
-            <a-form-item label="Open Cap" name="openCap">
-                <a-space>
-                    <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
-                    <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
+                <a-form-item label="Open Cap" name="openCap">
+                    <a-space>
+                        <a-checkbox-group v-model:value="bgpData.openCap" :options="openCapOptions" />
+                        <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
+                            <template #icon><SettingOutlined /></template>
+                            配置自定义能力
+                        </a-button>
+                    </a-space>
+                </a-form-item>
+
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="Addr Family" name="addressFamily">
+                            <a-select
+                                v-model:value="bgpData.addressFamily"
+                                mode="multiple"
+                                style="width: 100%"
+                                :options="addressFamilyOptions"
+                            />
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="Role" name="role">
+                            <a-select
+                                v-model:value="bgpData.role"
+                                style="width: 100%"
+                                :options="roleOptions"
+                                :disabled="!bgpData.openCap.includes(BGP_CAPABILITY.ROLE)"
+                            />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="Peer state" name="peerState">
+                            <a-input v-model:value="bgpData.peerState" disabled />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-space size="middle">
+                        <a-button type="primary" html-type="submit">启动</a-button>
+                        <a-button type="primary" danger @click="stopBgp">停止</a-button>
+                    </a-space>
+                </a-form-item>
+            </a-card>
+
+            <a-card title="路由配置" class="route-config-card">
+                <a-form-item label="IP类型" name="ipType">
+                    <a-radio-group v-model:value="bgpData.routeConfig.ipType">
+                        <a-radio :value="IP_TYPE.IPV4">IPv4</a-radio>
+                        <a-radio :value="IP_TYPE.IPV6">IPv6</a-radio>
+                    </a-radio-group>
+                </a-form-item>
+
+                <!-- IPv4 Route Configuration -->
+                <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV4">
+                    <a-row>
+                        <a-col :span="8">
+                            <a-form-item label="Prefix" name="ipv4RouteConfig.prefix">
+                                <a-tooltip :title="validationErrors.ipv4Prefix" :open="!!validationErrors.ipv4Prefix">
+                                    <a-input
+                                        v-model:value="bgpData.ipv4RouteConfig.prefix"
+                                        @blur="e => validateField(e.target.value, 'ipv4Prefix', validateIpv4Prefix)"
+                                        :status="validationErrors.ipv4Prefix ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                        <a-col :span="8">
+                            <a-form-item label="Mask" name="ipv4RouteConfig.mask">
+                                <a-tooltip :title="validationErrors.ipv4Mask" :open="!!validationErrors.ipv4Mask">
+                                    <a-input
+                                        v-model:value="bgpData.ipv4RouteConfig.mask"
+                                        @blur="e => validateField(e.target.value, 'ipv4Mask', validateIpv4Mask)"
+                                        :status="validationErrors.ipv4Mask ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                        <a-col :span="8">
+                            <a-form-item label="Count" name="ipv4RouteConfig.count">
+                                <a-tooltip :title="validationErrors.ipv4Count" :open="!!validationErrors.ipv4Count">
+                                    <a-input
+                                        v-model:value="bgpData.ipv4RouteConfig.count"
+                                        @blur="e => validateField(e.target.value, 'ipv4Count', validateIpv4Count)"
+                                        :status="validationErrors.ipv4Count ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                    </a-row>
+                </div>
+
+                <!-- IPv6 Route Configuration -->
+                <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV6">
+                    <a-row>
+                        <a-col :span="8">
+                            <a-form-item label="Prefix" name="ipv6RouteConfig.prefix">
+                                <a-tooltip :title="validationErrors.ipv6Prefix" :open="!!validationErrors.ipv6Prefix">
+                                    <a-input
+                                        v-model:value="bgpData.ipv6RouteConfig.prefix"
+                                        @blur="e => validateField(e.target.value, 'ipv6Prefix', validateIpv6Prefix)"
+                                        :status="validationErrors.ipv6Prefix ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                        <a-col :span="8">
+                            <a-form-item label="Mask" name="ipv6RouteConfig.mask">
+                                <a-tooltip :title="validationErrors.ipv6Mask" :open="!!validationErrors.ipv6Mask">
+                                    <a-input
+                                        v-model:value="bgpData.ipv6RouteConfig.mask"
+                                        @blur="e => validateField(e.target.value, 'ipv6Mask', validateIpv6Mask)"
+                                        :status="validationErrors.ipv6Mask ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                        <a-col :span="8">
+                            <a-form-item label="Count" name="ipv6RouteConfig.count">
+                                <a-tooltip :title="validationErrors.ipv6Count" :open="!!validationErrors.ipv6Count">
+                                    <a-input
+                                        v-model:value="bgpData.ipv6RouteConfig.count"
+                                        @blur="e => validateField(e.target.value, 'ipv6Count', validateIpv6Count)"
+                                        :status="validationErrors.ipv6Count ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </a-col>
+                    </a-row>
+                </div>
+
+                <a-form-item>
+                    <a-button type="link" @click="showCustomRouteAttr" class="custom-route-btn">
                         <template #icon><SettingOutlined /></template>
-                        配置自定义能力
+                        配置自定义路由属性
                     </a-button>
-                </a-space>
-            </a-form-item>
-
-            <a-row>
-                <a-col :span="12">
-                    <a-form-item label="Addr Family" name="addressFamily">
-                        <a-select
-                            v-model:value="bgpData.addressFamily"
-                            mode="multiple"
-                            style="width: 100%"
-                            :options="addressFamilyOptions"
-                        />
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Role" name="role">
-                        <a-select
-                            v-model:value="bgpData.role"
-                            style="width: 100%"
-                            :options="roleOptions"
-                            :disabled="!bgpData.openCap.includes(BGP_CAPABILITY.ROLE)"
-                        />
-                    </a-form-item>
-                </a-col>
-            </a-row>
-
-            <a-row>
-                <a-col :span="12">
-                    <a-form-item label="Peer state" name="peerState">
-                        <a-input v-model:value="bgpData.peerState" disabled />
-                    </a-form-item>
-                </a-col>
-            </a-row>
-
-            <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-space size="middle">
-                    <a-button type="primary" html-type="submit">启动</a-button>
-                    <a-button type="primary" danger @click="stopBgp">停止</a-button>
-                </a-space>
-            </a-form-item>
-        </a-card>
-
-        <a-card title="路由配置" class="route-config-card">
-            <a-form-item label="IP类型" name="ipType">
-                <a-radio-group v-model:value="bgpData.routeConfig.ipType">
-                    <a-radio :value="IP_TYPE.IPV4">IPv4</a-radio>
-                    <a-radio :value="IP_TYPE.IPV6">IPv6</a-radio>
-                </a-radio-group>
-            </a-form-item>
-
-            <!-- IPv4 Route Configuration -->
-            <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV4">
-                <a-row>
-                    <a-col :span="8">
-                        <a-form-item label="Prefix" name="ipv4RouteConfig.prefix">
-                            <a-tooltip :title="validationErrors.ipv4Prefix" :open="!!validationErrors.ipv4Prefix">
-                                <a-input
-                                    v-model:value="bgpData.ipv4RouteConfig.prefix"
-                                    @blur="e => validateField(e.target.value, 'ipv4Prefix', validateIpv4Prefix)"
-                                    :status="validationErrors.ipv4Prefix ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                        <a-form-item label="Mask" name="ipv4RouteConfig.mask">
-                            <a-tooltip :title="validationErrors.ipv4Mask" :open="!!validationErrors.ipv4Mask">
-                                <a-input
-                                    v-model:value="bgpData.ipv4RouteConfig.mask"
-                                    @blur="e => validateField(e.target.value, 'ipv4Mask', validateIpv4Mask)"
-                                    :status="validationErrors.ipv4Mask ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                        <a-form-item label="Count" name="ipv4RouteConfig.count">
-                            <a-tooltip :title="validationErrors.ipv4Count" :open="!!validationErrors.ipv4Count">
-                                <a-input
-                                    v-model:value="bgpData.ipv4RouteConfig.count"
-                                    @blur="e => validateField(e.target.value, 'ipv4Count', validateIpv4Count)"
-                                    :status="validationErrors.ipv4Count ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-            </div>
-
-            <!-- IPv6 Route Configuration -->
-            <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV6">
-                <a-row>
-                    <a-col :span="8">
-                        <a-form-item label="Prefix" name="ipv6RouteConfig.prefix">
-                            <a-tooltip :title="validationErrors.ipv6Prefix" :open="!!validationErrors.ipv6Prefix">
-                                <a-input
-                                    v-model:value="bgpData.ipv6RouteConfig.prefix"
-                                    @blur="e => validateField(e.target.value, 'ipv6Prefix', validateIpv6Prefix)"
-                                    :status="validationErrors.ipv6Prefix ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                        <a-form-item label="Mask" name="ipv6RouteConfig.mask">
-                            <a-tooltip :title="validationErrors.ipv6Mask" :open="!!validationErrors.ipv6Mask">
-                                <a-input
-                                    v-model:value="bgpData.ipv6RouteConfig.mask"
-                                    @blur="e => validateField(e.target.value, 'ipv6Mask', validateIpv6Mask)"
-                                    :status="validationErrors.ipv6Mask ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                        <a-form-item label="Count" name="ipv6RouteConfig.count">
-                            <a-tooltip :title="validationErrors.ipv6Count" :open="!!validationErrors.ipv6Count">
-                                <a-input
-                                    v-model:value="bgpData.ipv6RouteConfig.count"
-                                    @blur="e => validateField(e.target.value, 'ipv6Count', validateIpv6Count)"
-                                    :status="validationErrors.ipv6Count ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-            </div>
-
-            <a-form-item>
-                <a-button type="link" @click="showCustomRouteAttr" class="custom-route-btn">
-                    <template #icon><SettingOutlined /></template>
-                    配置自定义路由属性
-                </a-button>
-            </a-form-item>
-            <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-space>
-                    <a-button type="primary" @click="sendRoutes">发送路由</a-button>
-                    <a-button type="primary" danger @click="withdrawRoutes">撤销路由</a-button>
-                </a-space>
-            </a-form-item>
-        </a-card>
+                </a-form-item>
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-space>
+                        <a-button type="primary" @click="sendRoutes">发送路由</a-button>
+                        <a-button type="primary" danger @click="withdrawRoutes">撤销路由</a-button>
+                    </a-space>
+                </a-form-item>
+            </a-card>
         </a-form>
 
         <CustomPktDrawer
