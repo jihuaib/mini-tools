@@ -13,7 +13,7 @@ function getConfigPath() {
 }
 
 // 保存配置
-async function handleSaveStringGeneratorConfig(event, config) {
+async function handleSaveConfig(event, config) {
     try {
         const configPath = getConfigPath();
         const configDir = path.dirname(configPath);
@@ -30,7 +30,7 @@ async function handleSaveStringGeneratorConfig(event, config) {
 }
 
 // 加载配置
-async function handleLoadStringGeneratorConfig() {
+async function handleLoadConfig() {
     try {
         const configPath = getConfigPath();
         if (!fs.existsSync(configPath)) {
@@ -44,7 +44,7 @@ async function handleLoadStringGeneratorConfig() {
     }
 }
 
-async function handleGenerateTemplateString(event, templateData) {
+async function handleGenerateString(event, templateData) {
     const webContents = event.sender;
     const win = BrowserWindow.fromWebContents(webContents);
     log.info('[Main] handleGenerateTemplateString', templateData);
@@ -62,8 +62,15 @@ async function handleGenerateTemplateString(event, templateData) {
     }
 }
 
+// Register IPC handlers
+const registerHandlers = ipc => {
+    ipc.handle('string-generator:generateString', async (event, templateData) =>
+        handleGenerateString(event, templateData)
+    );
+    ipc.handle('string-generator:saveConfig', async (event, config) => handleSaveConfig(event, config));
+    ipc.handle('string-generator:loadConfig', async () => handleLoadConfig());
+};
+
 module.exports = {
-    handleGenerateTemplateString,
-    handleSaveStringGeneratorConfig,
-    handleLoadStringGeneratorConfig
+    registerHandlers
 };

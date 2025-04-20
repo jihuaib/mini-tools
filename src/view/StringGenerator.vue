@@ -113,7 +113,7 @@
     };
 
     const saveDebounced = debounce(async data => {
-        const resp = await window.stringGeneratorApi.saveStringGeneratorConfig(data);
+        const resp = await window.stringGeneratorApi.saveConfig(data);
         if (resp.status === 'success') {
             console.info('[StringGenerator] 配置文件保存成功');
         } else {
@@ -161,7 +161,7 @@
             }
 
             const payload = JSON.parse(JSON.stringify(toRaw(formState.value)));
-            const resp = await window.stringGeneratorApi.generateTemplateString(payload);
+            const resp = await window.stringGeneratorApi.generateString(payload);
 
             console.log('[StringGenerator] handleFinish', resp);
             if (resp.status === 'success') {
@@ -177,7 +177,7 @@
 
     onMounted(async () => {
         // 加载保存的配置
-        const savedConfig = await window.stringGeneratorApi.loadStringGeneratorConfig();
+        const savedConfig = await window.stringGeneratorApi.loadConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
             console.log('Loading saved config:', savedConfig.data);
             formState.value = savedConfig.data;

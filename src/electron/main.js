@@ -1,21 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu } = require('electron');
 const path = require('path');
 const log = require('electron-log');
-const {
-    handleStartBgp,
-    handleGetNetworkInfo,
-    handleSaveBgpConfig,
-    handleLoadBgpConfig,
-    handleStopBgp,
-    getBgpState,
-    handleSendRoute,
-    handleWithdrawRoute
-} = require('./bgpSimulatorApp');
-const {
-    handleGenerateTemplateString,
-    handleSaveStringGeneratorConfig,
-    handleLoadStringGeneratorConfig
-} = require('./stringGeneratorApp');
+const bgpSimulatorApp = require('./bgpSimulatorApp');
+const stringGeneratorApp = require('./stringGeneratorApp');
 const packageJson = require('../../package.json');
 
 // 配置 electron-log
@@ -101,22 +88,10 @@ function createWindow() {
 
     // 监听窗口关闭事件
     win.on('close', async event => {
-        if (getBgpState()) {
-            event.preventDefault();
-            const { response } = await dialog.showMessageBox(win, {
-                type: 'warning',
-                title: '确认关闭',
-                message: 'BGP 模拟器正在运行，确定要关闭吗？',
-                buttons: ['确定', '取消'],
-                defaultId: 1,
-                cancelId: 1
-            });
-
-            if (response === 0) {
-                // 用户点击确定，先停止 BGP 然后关闭窗口
-                await handleStopBgp();
-                win.destroy();
-            }
+        event.preventDefault();
+        const closeWindow = await bgpSimulatorApp.handleWindowClose(win);
+        if (closeWindow) {
+            win.destroy();
         }
     });
 
@@ -126,16 +101,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    ipcMain.handle('generate-template-string', handleGenerateTemplateString);
-    ipcMain.handle('start-bgp', handleStartBgp);
-    ipcMain.handle('get-network-info', handleGetNetworkInfo);
-    ipcMain.handle('save-bgp-config', handleSaveBgpConfig);
-    ipcMain.handle('load-bgp-config', handleLoadBgpConfig);
-    ipcMain.handle('save-string-generator-config', handleSaveStringGeneratorConfig);
-    ipcMain.handle('load-string-generator-config', handleLoadStringGeneratorConfig);
-    ipcMain.handle('stop-bgp', handleStopBgp);
-    ipcMain.handle('send-route', handleSendRoute);
-    ipcMain.handle('withdraw-route', handleWithdrawRoute);
+    bgpSimulatorApp.registerHandlers(ipcMain);
+    stringGeneratorApp.registerHandlers(ipcMain);
+
     createWindow();
 
     app.on('activate', () => {

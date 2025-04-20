@@ -332,7 +332,7 @@
         bgpData.value.routerId = networkList.find(item => item.name === name).ip;
     };
 
-    const saveBgpConfig = {
+    const saveConfig = {
         networkValue: '',
         localAs: '',
         peerIp: '',
@@ -361,7 +361,7 @@
     };
 
     const saveDebounced = debounce(async data => {
-        const result = await window.bgpEmulatorApi.saveBgpConfig(data);
+        const result = await window.bgpEmulatorApi.saveConfig(data);
         if (result.status === 'success') {
             if (result.msg !== '') {
                 message.success(result.msg);
@@ -400,19 +400,19 @@
         [bgpData],
         async ([newBgpValue]) => {
             // 转换为saveBgpConfig
-            saveBgpConfig.networkValue = networkValue.value;
-            saveBgpConfig.localAs = newBgpValue.localAs;
-            saveBgpConfig.peerIp = newBgpValue.peerIp;
-            saveBgpConfig.peerAs = newBgpValue.peerAs;
-            saveBgpConfig.routerId = newBgpValue.routerId;
-            saveBgpConfig.holdTime = newBgpValue.holdTime;
-            saveBgpConfig.openCap = [...newBgpValue.openCap];
-            saveBgpConfig.addressFamily = [...newBgpValue.addressFamily];
-            saveBgpConfig.role = newBgpValue.role;
-            saveBgpConfig.openCapCustom = newBgpValue.openCapCustom;
-            saveBgpConfig.ipv4RouteConfig = { ...newBgpValue.ipv4RouteConfig };
-            saveBgpConfig.ipv6RouteConfig = { ...newBgpValue.ipv6RouteConfig };
-            saveBgpConfig.routeConfig = { ...newBgpValue.routeConfig };
+            saveConfig.networkValue = networkValue.value;
+            saveConfig.localAs = newBgpValue.localAs;
+            saveConfig.peerIp = newBgpValue.peerIp;
+            saveConfig.peerAs = newBgpValue.peerAs;
+            saveConfig.routerId = newBgpValue.routerId;
+            saveConfig.holdTime = newBgpValue.holdTime;
+            saveConfig.openCap = [...newBgpValue.openCap];
+            saveConfig.addressFamily = [...newBgpValue.addressFamily];
+            saveConfig.role = newBgpValue.role;
+            saveConfig.openCapCustom = newBgpValue.openCapCustom;
+            saveConfig.ipv4RouteConfig = { ...newBgpValue.ipv4RouteConfig };
+            saveConfig.ipv6RouteConfig = { ...newBgpValue.ipv6RouteConfig };
+            saveConfig.routeConfig = { ...newBgpValue.routeConfig };
 
             try {
                 clearValidationErrors(validationErrors);
@@ -438,7 +438,7 @@
                     return;
                 }
 
-                const raw = toRaw(saveBgpConfig);
+                const raw = toRaw(saveConfig);
                 saveDebounced(raw);
             } catch (error) {
                 console.error(error);
@@ -496,7 +496,7 @@
         });
 
         // 加载保存的配置
-        const savedConfig = await window.bgpEmulatorApi.loadBgpConfig();
+        const savedConfig = await window.bgpEmulatorApi.loadConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
             console.log('Loading saved config:', savedConfig.data);
             networkValue.value = savedConfig.data.networkValue;

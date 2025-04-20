@@ -26,7 +26,7 @@ function getConfigPath() {
 }
 
 // 保存配置
-async function handleSaveBgpConfig(event, config) {
+async function handleSaveConfig(event, config) {
     try {
         const configPath = getConfigPath();
         const configDir = path.dirname(configPath);
@@ -43,7 +43,7 @@ async function handleSaveBgpConfig(event, config) {
 }
 
 // 加载配置
-async function handleLoadBgpConfig() {
+async function handleLoadConfig() {
     try {
         const configPath = getConfigPath();
         if (!fs.existsSync(configPath)) {
@@ -154,18 +154,18 @@ async function handleStartBgp(event, bgpData) {
         log.info(`[Main] recv msg from [Worker ${worker.threadId}]`, result);
         if (result.status === 'success') {
             if (result.data.op === BGP_OPERATIONS.PEER_STATE) {
-                webContents.send('update-peer-state', successResponse({ state: result.data.state }));
+                webContents.send('bgp-emulator:updatePeerState', successResponse({ state: result.data.state }));
             } else if (result.data.op === BGP_OPERATIONS.PUSH_MSG) {
                 if (result.data.status === 'success') {
-                    webContents.send('push-msg', successResponse(null, result.data.msg));
+                    webContents.send('bgp-emulator:pushMsg', successResponse(null, result.data.msg));
                 } else {
-                    webContents.send('push-msg', errorResponse(result.data.msg));
+                    webContents.send('bgp-emulator:pushMsg', errorResponse(result.data.msg));
                 }
             } else if (result.data.op === BGP_OPERATIONS.STOP_BGP) {
                 // BGP停止成功
                 await worker.terminate();
                 bgpStart = false;
-                webContents.send('push-msg', successResponse(null, result.data.msg));
+                webContents.send('bgp-emulator:pushMsg', successResponse(null, result.data.msg));
             }
         } else {
             log.error(`[Main] recv error msg from [Worker ${worker.threadId}]`, result);
@@ -189,17 +189,54 @@ async function handleStartBgp(event, bgpData) {
     return successResponse(null, '');
 }
 
-function getBgpState() {
-    return bgpStart;
+async function handleWindowClose(win) {
+    if (bgpStart) {
+        const { dialog } = require('electron');
+        const { response } = await dialog.showMessageBox(win, {
+            type: 'warning',
+            title: '确认关闭',
+            message: 'BGP 模拟器正在运行，确定要关闭吗？',
+            buttons: ['确定', '取消'],
+            defaultId: 1,
+            cancelId: 1
+        });
+
+        if (response === 0) {
+            // 用户点击确定，先停止 BGP 然后关闭窗口
+            await handleStopBgp();
+
+            // 等待 bgpStart 变为 false
+            const waitForBgpStop = () => {
+                return new Promise(resolve => {
+                    const checkInterval = setInterval(() => {
+                        if (!bgpStart) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                });
+            };
+
+            await waitForBgpStop();
+            return true;
+        }
+        return false;
+    }
+    return true;
 }
 
+// Register IPC handlers
+const registerHandlers = ipc => {
+    ipc.handle('bgp-emulator:getNetworkInfo', async () => handleGetNetworkInfo());
+    ipc.handle('bgp-emulator:saveConfig', async (event, config) => handleSaveConfig(event, config));
+    ipc.handle('bgp-emulator:loadConfig', async () => handleLoadConfig());
+    ipc.handle('bgp-emulator:startBgp', async (event, config) => handleStartBgp(event, config));
+    ipc.handle('bgp-emulator:stopBgp', async () => handleStopBgp());
+    ipc.handle('bgp-emulator:sendRoute', async (event, config) => handleSendRoute(event, config));
+    ipc.handle('bgp-emulator:withdrawRoute', async (event, config) => handleWithdrawRoute(event, config));
+};
+
 module.exports = {
-    handleStartBgp,
-    handleGetNetworkInfo,
-    handleSaveBgpConfig,
-    handleLoadBgpConfig,
-    handleStopBgp,
-    getBgpState,
-    handleSendRoute,
-    handleWithdrawRoute
+    registerHandlers,
+    handleWindowClose
 };
