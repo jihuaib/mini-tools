@@ -359,15 +359,17 @@ function parseNotificationMessage(buffer) {
  * @returns {Object} Parsed ROUTE-REFRESH message data
  */
 function parseRouteRefreshMessage(buffer) {
-    const afi = buffer.readUInt16BE(19);
-    const safi = buffer[22];
+    let position = BgpConst.BGP_HEAD_LEN;
+    const afi = buffer.readUInt16BE(position);
+    position += 2;
+    const subType = buffer[position];
+    position += 1;
+    const safi = buffer[position];
 
     return {
         afi,
-        afiName: getAfiName(afi),
-        reserved: buffer[21],
+        subType,
         safi,
-        safiName: getSafiName(safi)
     };
 }
 

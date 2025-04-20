@@ -90,9 +90,27 @@ function ipToBytes(ip) {
     return addr.toByteArray();
 }
 
+/**
+ * 将 8 字节的 RD buffer 转换为字符串
+ * @param {Buffer} buffer - 8 字节的 RD buffer
+ * @returns {string} - 格式化的 RD 字符串
+ */
+function rdBufferToString(buffer) {
+    if (buffer.length !== 8) {
+        throw new Error('Invalid RD buffer length. Expected 8 bytes.');
+    }
+
+    const highOrder = buffer.readUInt32BE(0);
+    const lowOrder = buffer.readUInt32BE(4);
+
+    return `${highOrder}:${lowOrder}`;
+}
+
+
 module.exports = {
     genRouteIps,
     writeUInt16,
     writeUInt32,
-    ipToBytes
+    ipToBytes,
+    rdBufferToString
 };

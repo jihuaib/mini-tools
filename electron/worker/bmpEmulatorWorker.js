@@ -4,6 +4,7 @@ const log = require('electron-log');
 const { BMP_OPERATIONS } = require('../const/bmpOpConst');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const BmpConst = require('../const/bmpConst');
+const BgpConst = require('../const/bgpConst');
 
 // BMP Server state
 let server = null;
@@ -170,33 +171,72 @@ function processMessage(message, socket) {
     }
 }
 
-// Process peer up notification
 function processPeerUp(message, socket) {
     try {
-        const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
 
-        // Parse peer header (starts at byte 6)
-        const peerHeader = message.slice(6, 6 + 42);
-        const peerType = peerHeader[0];
-        const peerFlags = peerHeader[1];
+        const position = 0;
+        const version = message[position];
+        position += 1;
+        const length = message.readUInt32BE(position);
+        position += 4;
+        const type = message[position];
+        position += 1;
 
-        let peerIp;
+        // Parse peer header
+        const peerHeader = message.slice(position, position + 42);
+        position += 42;
+
+        const peerHeaderPosition = 0;
+        const peerType = peerHeader[peerHeaderPosition];
+        peerHeaderPosition += 1;
+        const peerFlags = peerHeader[peerHeaderPosition];
+        peerHeaderPosition += 1;
+
+        const rd = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 9);
+        peerHeaderPosition += 10;
+
+        let peerAddress;
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
-            peerIp = message
-                .slice(6 + 6, 6 + 6 + 16)
-                .toString('hex')
-                .match(/.{1,4}/g)
-                .join(':');
+            peerAddress = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 16);
+            peerHeaderPosition += 16;
         } else {
             // IPv4 peer
-            peerIp = message.slice(6 + 18, 6 + 18 + 4).join('.');
+            // 12字节保留字段
+            peerHeaderPosition += 12;
+            peerAddress = peerHeader.slice(peerHeaderPosition, peerHeaderPosition + 4);
+            peerHeaderPosition += 4;
         }
 
-        const peerAs = peerHeader.readUInt32BE(38);
+        const peerAs = peerHeader.readUInt32BE(peerHeaderPosition);
+        peerHeaderPosition += 4;
+        const peerRouterId = peerHeader.readUInt32BE(peerHeaderPosition);
+        peerHeaderPosition += 4;
+        const timestamps = peerHeader.readUInt32BE(peerHeaderPosition);
+        peerHeaderPosition += 4;
+        const timestampMs = timestamps.readUInt32BE(peerHeaderPosition);
+        peerHeaderPosition += 4;
 
-        // Add peer to our list
-        peers.set(peerIp, {
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
+            // IPv6 peer
+            const localAddress = peerHeader.slice(position, position + 16);
+            position += 16;
+        } else {
+            // IPv4 peer
+            // 12字节保留字段
+            position += 12;
+            const localAddress = peerHeader.slice(position, position + 4);
+            position += 4;
+        }
+        const localPort = peerHeader.readUInt16BE(position);
+        position += 2;
+        const remotePort = peerHeader.readUInt16BE(position);
+        position += 2;
+
+        const sentOpenMsg = message.slice(position);
+
+        // Add peer to our list with enhanced information from OPEN messages
+        const peerInfo = {
             peerIp,
             peerAs,
             peerType,
@@ -204,7 +244,29 @@ function processPeerUp(message, socket) {
             clientAddress,
             status: 'connected',
             connectedAt: new Date().toISOString()
-        });
+        };
+
+        // Add parsed OPEN message information if available
+        if (parsedSentOpen && parsedSentOpen.valid) {
+            peerInfo.sentOpen = {
+                version: parsedSentOpen.version,
+                holdTime: parsedSentOpen.holdTime,
+                routerId: parsedSentOpen.routerId,
+                capabilities: parsedSentOpen.capabilities
+            };
+        }
+
+        if (parsedReceivedOpen && parsedReceivedOpen.valid) {
+            peerInfo.receivedOpen = {
+                version: parsedReceivedOpen.version,
+                holdTime: parsedReceivedOpen.holdTime,
+                routerId: parsedReceivedOpen.routerId,
+                capabilities: parsedReceivedOpen.capabilities
+            };
+        }
+
+        // Store the enhanced peer information
+        peers.set(peerIp, peerInfo);
 
         log.info(`[BMP Worker ${threadId}] Peer UP: ${peerIp} (AS${peerAs})`);
 
@@ -224,6 +286,7 @@ function processPeerDown(message, socket) {
         const peerHeader = message.slice(6, 6 + 42);
         const peerType = peerHeader[0];
         const peerFlags = peerHeader[1];
+
 
         let peerIp;
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
@@ -280,10 +343,58 @@ function processRouteMonitoring(message, socket) {
         // BGP update starts after the peer header (at byte 6 + 42)
         const bgpUpdate = message.slice(6 + 42);
 
-        // Process BGP update to extract routes (simplified for this example)
-        // In a real implementation, you would parse the BGP update message in detail
+        // Use parseBgpPacket to extract route information
+        const { parseBgpPacket } = require('../utils/bgpPacketParser');
+        let parsedUpdate = null;
+        try {
+            parsedUpdate = parseBgpPacket(bgpUpdate);
+            log.info(`[BMP Worker ${threadId}] Parsed BGP UPDATE message: ${JSON.stringify(parsedUpdate)}`);
+        } catch (err) {
+            log.error(`[BMP Worker ${threadId}] Error parsing BGP UPDATE message: ${err.message}`);
+        }
 
-        // For this simulation, we'll just create a mock route
+        // If we have valid parsed update data, extract route information
+        if (parsedUpdate && parsedUpdate.valid && parsedUpdate.type === 2) { // Type 2 is UPDATE
+            // Process withdrawn routes
+            if (parsedUpdate.withdrawnRoutes && parsedUpdate.withdrawnRoutes.length > 0) {
+                for (const route of parsedUpdate.withdrawnRoutes) {
+                    const routeKey = `${route.prefix}/${route.length}`;
+                    if (route.prefix.includes(':')) {
+                        ipv6Routes.delete(routeKey);
+                    } else {
+                        ipv4Routes.delete(routeKey);
+                    }
+                    log.info(`[BMP Worker ${threadId}] Withdrawn route: ${routeKey} via ${peerIp}`);
+                }
+            }
+
+            // Process announced routes (NLRI)
+            if (parsedUpdate.nlri && parsedUpdate.nlri.length > 0) {
+                for (const route of parsedUpdate.nlri) {
+                    processAnnouncedRoute(route, 'ipv4', parsedUpdate.pathAttributes, peerIp);
+                }
+            }
+
+            // Process MP_REACH_NLRI for IPv6 routes
+            if (parsedUpdate.pathAttributes) {
+                const mpReachAttr = parsedUpdate.pathAttributes.find(
+                    attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI
+                );
+
+                if (mpReachAttr && mpReachAttr.afi === 2) { // AFI 2 is IPv6
+                    for (const route of mpReachAttr.nlri) {
+                        processAnnouncedRoute(route, 'ipv6', parsedUpdate.pathAttributes, peerIp);
+                    }
+                }
+            }
+
+            // Notify about route updates
+            sendRouteUpdate('ipv4');
+            sendRouteUpdate('ipv6');
+            return;
+        }
+
+        // Fallback to the simple simulation if we couldn't parse the update properly
         const routeType = Math.random() > 0.5 ? 'ipv4' : 'ipv6';
         const prefix =
             routeType === 'ipv4'
@@ -322,6 +433,104 @@ function processRouteMonitoring(message, socket) {
     } catch (err) {
         log.error(`[BMP Worker ${threadId}] Error processing route monitoring:`, err);
     }
+}
+
+// Helper function to process announced routes
+function processAnnouncedRoute(route, routeType, pathAttributes, peerIp) {
+    const prefix = route.prefix;
+    const mask = route.length;
+    const routeKey = `${prefix}/${mask}`;
+
+    // Extract path attributes
+    let nextHop = '';
+    let origin = 'igp';
+    let asPath = [];
+    let med = 0;
+    let localPref = 100;
+
+    if (pathAttributes) {
+        // Extract next hop
+        if (routeType === 'ipv4') {
+            const nextHopAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.NEXT_HOP);
+            if (nextHopAttr) {
+                nextHop = nextHopAttr.nextHop;
+            }
+        } else if (routeType === 'ipv6') {
+            const mpReachAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI);
+            if (mpReachAttr) {
+                nextHop = mpReachAttr.nextHop;
+            }
+        }
+
+        // Extract origin
+        const originAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.ORIGIN);
+        if (originAttr) {
+            switch (originAttr.origin) {
+                case BgpConst.BGP_ORIGIN_TYPE.IGP:
+                    origin = 'igp';
+                    break;
+                case BgpConst.BGP_ORIGIN_TYPE.EGP:
+                    origin = 'egp';
+                    break;
+                case BgpConst.BGP_ORIGIN_TYPE.INCOMPLETE:
+                    origin = 'incomplete';
+                    break;
+                default:
+                    origin = 'unknown';
+            }
+        }
+
+        // Extract AS path
+        const asPathAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.AS_PATH);
+        if (asPathAttr && asPathAttr.segments) {
+            for (const segment of asPathAttr.segments) {
+                asPath = asPath.concat(segment.asns);
+            }
+        }
+
+        // Extract MED
+        const medAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.MED);
+        if (medAttr) {
+            med = medAttr.med;
+        }
+
+        // Extract LOCAL_PREF
+        const localPrefAttr = pathAttributes.find(attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.LOCAL_PREF);
+        if (localPrefAttr) {
+            localPref = localPrefAttr.localPref;
+        }
+    }
+
+    // If next hop is still empty, generate a default one
+    if (!nextHop) {
+        nextHop = routeType === 'ipv4'
+            ? `10.0.0.${Math.floor(Math.random() * 254) + 1}`
+            : `2001:db8:ffff::${Math.floor(Math.random() * 254) + 1}`;
+    }
+
+    // Create route object
+    const routeObj = {
+        prefix,
+        mask,
+        nextHop,
+        peerIp,
+        receivedAt: new Date().toISOString(),
+        attributes: {
+            origin,
+            asPath,
+            med,
+            localPref
+        }
+    };
+
+    // Store route
+    if (routeType === 'ipv4') {
+        ipv4Routes.set(routeKey, routeObj);
+    } else {
+        ipv6Routes.set(routeKey, routeObj);
+    }
+
+    log.info(`[BMP Worker ${threadId}] Received ${routeType.toUpperCase()} route: ${routeKey} via ${peerIp}`);
 }
 
 // Process statistics report
