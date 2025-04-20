@@ -55,9 +55,9 @@ npm run dist
 
 ```
 mini-tools/
-├── src/               # 源代码目录
+├── electron/          # Electron 相关代码
+├── src/               # UI源代码目录
 │   ├── view/          # 视图组件
-│   ├── electron/      # Electron 相关代码
 │   ├── components/    # 公共组件
 │   ├── utils/         # 工具函数
 │   ├── router/        # 路由配置

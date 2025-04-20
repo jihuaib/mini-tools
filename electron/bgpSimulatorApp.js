@@ -135,7 +135,7 @@ async function handleStartBgp(event, bgpData) {
 
     const workerPath = isDev
         ? path.join(__dirname, './worker/bgpSimulatorWorker.js')
-        : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/bgpSimulatorWorker.js');
+        : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpSimulatorWorker.js');
     worker = new Worker(workerPath);
 
     log.info(`[Worker ${worker.threadId}] 启动`);

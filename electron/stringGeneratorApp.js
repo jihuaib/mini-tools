@@ -52,7 +52,7 @@ async function handleGenerateString(event, templateData) {
     try {
         const workerPath = isDev
             ? path.join(__dirname, './worker/StringGeneratorWorker.js')
-            : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/StringGeneratorWorker.js');
+            : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/StringGeneratorWorker.js');
         const result = await runWorkerWithPromise(path.join(workerPath), templateData);
         log.info('[Main] Worker处理结果:', result);
         return result;

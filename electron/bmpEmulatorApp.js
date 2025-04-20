@@ -88,7 +88,7 @@ async function handleStartServer(event, config) {
 
     const workerPath = isDev
         ? path.join(__dirname, './worker/bmpEmulatorWorker.js')
-        : path.join(process.resourcesPath, 'app.asar.unpacked', 'src/electron/worker/bmpEmulatorWorker.js');
+        : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bmpEmulatorWorker.js');
 
     try {
         worker = new Worker(workerPath);
@@ -286,5 +286,6 @@ function registerHandlers(ipcMain) {
 }
 
 module.exports = {
-    registerHandlers
+    registerHandlers,
+    handleWindowClose
 };

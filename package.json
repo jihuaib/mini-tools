@@ -2,7 +2,7 @@
     "name": "mini-tools",
     "private": true,
     "version": "1.0.0",
-    "main": "src/electron/main.js",
+    "main": "electron/main.js",
     "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
     "author": {
         "name": "jihuaibin",
@@ -27,13 +27,13 @@
         "copyright": "Copyright © 2025 ${author}",
         "files": [
             "dist/**/*",
-            "src/electron/**/*",
+            "electron/**/*",
             "package.json"
         ],
         "asarUnpack": [
-            "src/electron/worker/**",
-            "src/electron/utils/**",
-            "src/electron/const/**",
+            "electron/worker/**",
+            "electron/utils/**",
+            "electron/const/**",
             "node_modules/**/*"
         ],
         "publish": {
@@ -43,7 +43,7 @@
             "releaseType": "release"
         },
         "directories": {
-            "buildResources": "src/electron/assets"
+            "buildResources": "electron/assets"
         },
         "win": {
             "target": [

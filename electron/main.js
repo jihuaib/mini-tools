@@ -4,7 +4,7 @@ const log = require('electron-log');
 const bgpSimulatorApp = require('./bgpSimulatorApp');
 const stringGeneratorApp = require('./stringGeneratorApp');
 const bmpEmulatorApp = require('./bmpEmulatorApp');
-const packageJson = require('../../package.json');
+const packageJson = require('../package.json');
 
 // 配置 electron-log
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
@@ -84,7 +84,7 @@ function createWindow() {
     Menu.setApplicationMenu(menu);
 
     log.info(`Dev ${isDev} __dirname ${__dirname}`);
-    const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../../dist/index.html')}`;
+    const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
     win.loadURL(urlLocation);
 
     // 监听窗口关闭事件
