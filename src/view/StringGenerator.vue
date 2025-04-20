@@ -1,66 +1,67 @@
 <template>
-    <div class="container">
-        <a-form :model="formState" @finish="handleFinish" :label-col="labelCol" :wrapper-col="wrapperCol">
-            <a-divider>字符串生成配置</a-divider>
-            <!-- 字符串模板输入 -->
-            <a-form-item label="字符串模板" name="template">
-                <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
-                    <ScrollTextarea
-                        v-model:modelValue="formState.template"
-                        :height="120"
-                        @blur="e => validateField(e.target.value, 'template', validateTemplate)"
-                        :status="validationErrors.template ? 'error' : ''"
-                    />
-                </a-tooltip>
-            </a-form-item>
+    <div class="string-generator-container">
+        <a-card title="字符串生成配置" class="config-card">
+            <a-form :model="formState" @finish="handleFinish" :label-col="labelCol" :wrapper-col="wrapperCol">
+                <!-- 字符串模板输入 -->
+                <a-form-item label="字符串模板" name="template">
+                    <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
+                        <ScrollTextarea
+                            v-model:modelValue="formState.template"
+                            :height="120"
+                            @blur="e => validateField(e.target.value, 'template', validateTemplate)"
+                            :status="validationErrors.template ? 'error' : ''"
+                        />
+                    </a-tooltip>
+                </a-form-item>
 
-            <!-- 参数配置行 -->
-            <a-row :gutter="20">
-                <a-col :span="7">
-                    <a-form-item label="占位符" name="placeholder">
-                        <a-tooltip :title="validationErrors.placeholder" :open="!!validationErrors.placeholder">
-                            <a-input
-                                v-model:value="formState.placeholder"
-                                @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
-                                :status="validationErrors.placeholder ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="7">
-                    <a-form-item label="开始" name="start">
-                        <a-tooltip :title="validationErrors.start" :open="!!validationErrors.start">
-                            <a-input
-                                v-model:value="formState.start"
-                                @blur="e => validateField(e.target.value, 'start', validateStart)"
-                                :status="validationErrors.start ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="7">
-                    <a-form-item label="结束" name="end">
-                        <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
-                            <a-input
-                                v-model:value="formState.end"
-                                @blur="e => validateField(e.target.value, 'end', validateEnd)"
-                                :status="validationErrors.end ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-            </a-row>
+                <!-- 参数配置行 -->
+                <a-row>
+                    <a-col :span="8">
+                        <a-form-item label="占位符" name="placeholder">
+                            <a-tooltip :title="validationErrors.placeholder" :open="!!validationErrors.placeholder">
+                                <a-input
+                                    v-model:value="formState.placeholder"
+                                    @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
+                                    :status="validationErrors.placeholder ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="开始" name="start">
+                            <a-tooltip :title="validationErrors.start" :open="!!validationErrors.start">
+                                <a-input
+                                    v-model:value="formState.start"
+                                    @blur="e => validateField(e.target.value, 'start', validateStart)"
+                                    :status="validationErrors.start ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="结束" name="end">
+                            <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
+                                <a-input
+                                    v-model:value="formState.end"
+                                    @blur="e => validateField(e.target.value, 'end', validateEnd)"
+                                    :status="validationErrors.end ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
-            <!-- 操作按钮 -->
-            <a-form-item :wrapper-col="{ offset: 12, span: 20 }">
-                <a-button type="primary" html-type="submit">立即生成</a-button>
-            </a-form-item>
+                <!-- 操作按钮 -->
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-button type="primary" html-type="submit">立即生成</a-button>
+                </a-form-item>
 
-            <!-- 结果显示 -->
-            <a-form-item label="生成结果">
-                <ScrollTextarea v-model:modelValue="result" :height="380" />
-            </a-form-item>
-        </a-form>
+                <!-- 结果显示 -->
+                <a-form-item label="生成结果">
+                    <ScrollTextarea v-model:modelValue="result" :height="400" />
+                </a-form-item>
+            </a-form>
+        </a-card>
     </div>
 </template>
 
@@ -81,8 +82,8 @@
         name: 'StringGenerator'
     });
 
-    const labelCol = { style: { width: '120px' } };
-    const wrapperCol = { span: 21 };
+    const labelCol = { style: { width: '100px' } };
+    const wrapperCol = { span: 40 };
 
     const validationErrors = ref({
         template: '',
@@ -188,10 +189,38 @@
 </script>
 
 <style scoped>
-    :deep(.ant-divider) {
-        margin: 10px 0;
-        font-size: 16px;
-        font-weight: 500;
-        color: #1890ff;
+    .string-generator-container {
+        padding: 10px;
+    }
+
+    :deep(.ant-card-body) {
+        padding: 10px;
+    }
+
+    :deep(.ant-card-head) {
+        padding: 0 10px;
+        min-height: 40px;
+    }
+
+    :deep(.ant-card-head-title) {
+        padding: 10px 0;
+    }
+
+    /* 调整表单项间距 */
+    :deep(.ant-form-item) {
+        margin-bottom: 10px;
+    }
+
+    /* 调整输入框的间距 */
+    :deep(.ant-row) {
+        margin-bottom: 8px;
+    }
+
+    :deep(.ant-col) {
+        padding-right: 8px;
+    }
+
+    :deep(.ant-col:last-child) {
+        padding-right: 0;
     }
 </style>

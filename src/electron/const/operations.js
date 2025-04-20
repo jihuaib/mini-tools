@@ -1,11 +1,22 @@
-// BGP Operation Codes
+// BGP operations
 const BGP_OPERATIONS = {
     START_BGP: 1,
-    SEND_ROUTE: 2,
-    WITHDRAW_ROUTE: 3,
-    PEER_STATE: 4,
-    STOP_BGP: 5,
+    STOP_BGP: 2,
+    SEND_ROUTE: 3,
+    WITHDRAW_ROUTE: 4,
+    PEER_STATE: 5,
     PUSH_MSG: 6
 };
 
-module.exports = BGP_OPERATIONS;
+// BMP operations
+const BMP_OPERATIONS = {
+    START_SERVER: 1,
+    STOP_SERVER: 2,
+    PEER_CONNECTED: 3,
+    PEER_DISCONNECTED: 4,
+    ROUTE_ANNOUNCED: 5,
+    ROUTE_WITHDRAWN: 6,
+    SERVER_LOG: 7
+};
+
+module.exports = { BGP_OPERATIONS, BMP_OPERATIONS };

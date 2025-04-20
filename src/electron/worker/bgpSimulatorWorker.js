@@ -16,7 +16,7 @@ const {
 const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/bgpUtils');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const log = require('electron-log');
-const BGP_OPERATIONS = require('../const/operations');
+const { BGP_OPERATIONS } = require('../const/operations');
 const { genRouteIps } = require('../utils/ipUtils');
 
 let bgpState = BGP_STATE.IDLE;
@@ -612,6 +612,7 @@ function withdrawRoute(config) {
 }
 
 parentPort.on('message', msg => {
+    log.log(`[Thread ${threadId}] recv msg: ${JSON.stringify(msg)}`);
     try {
         if (msg.op === BGP_OPERATIONS.START_BGP) {
             bgpData = msg.data;
@@ -619,6 +620,7 @@ parentPort.on('message', msg => {
             log.info(`[Thread ${threadId}] bgp server start.`);
         } else if (msg.op === BGP_OPERATIONS.STOP_BGP) {
             stopBgp();
+            log.info(`[Thread ${threadId}] bgp server stop.`);
         } else if (msg.op === BGP_OPERATIONS.SEND_ROUTE) {
             if (bgpState !== BGP_STATE.ESTABLISHED) {
                 log.error(`[Thread ${threadId}] bgp server not in established state`);
@@ -647,6 +649,7 @@ parentPort.on('message', msg => {
             withdrawRoute(msg.data);
         }
     } catch (err) {
+        log.error(`[Thread ${threadId}] Error processing message: ${err}`);
         parentPort.postMessage(errorResponse(err.message));
     }
 });
