@@ -563,7 +563,9 @@
             if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
                 bgpData.value.role = '';
             } else {
-                bgpData.value.role = BGP_ROLE.PROVIDER;
+                if (bgpData.value.role === '') {
+                    bgpData.value.role = BGP_ROLE.PROVIDER;
+                }
             }
         },
         { deep: true }
