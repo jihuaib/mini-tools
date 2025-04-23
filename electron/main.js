@@ -1,8 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu } = require('electron');
 const path = require('path');
 const log = require('electron-log');
-const bgpSimulatorApp = require('./bgpSimulatorApp');
-const stringGeneratorApp = require('./stringGeneratorApp');
+const BgpSimulatorApp = require('./bgpSimulatorApp');
+const StringGeneratorApp = require('./stringGeneratorApp');
 const bmpEmulatorApp = require('./bmpEmulatorApp');
 const packageJson = require('../package.json');
 
@@ -13,6 +13,9 @@ log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
+
+let stringGeneratorApp = null;
+let bgpSimulatorApp = null;
 
 function showAboutDialog() {
     const aboutMessage = `
@@ -94,8 +97,8 @@ function createWindow() {
         const closeBgpOk = await bgpSimulatorApp.handleWindowClose(win);
         if (!closeBgpOk) return;
 
-        const closeBmpOk = await bmpEmulatorApp.handleWindowClose(win);
-        if (!closeBmpOk) return;
+        // const closeBmpOk = await bmpEmulatorApp.handleWindowClose(win);
+        // if (!closeBmpOk) return;
 
         win.destroy();
     });
@@ -106,8 +109,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    bgpSimulatorApp.registerHandlers(ipcMain);
-    stringGeneratorApp.registerHandlers(ipcMain);
+    bgpSimulatorApp = new BgpSimulatorApp(ipcMain);
+    stringGeneratorApp = new StringGeneratorApp(ipcMain);
     bmpEmulatorApp.registerHandlers(ipcMain);
 
     createWindow();

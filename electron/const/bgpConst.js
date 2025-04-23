@@ -12,13 +12,22 @@ const BGP_VERSION = 4;
 const BGP_MARKER_LEN = 16;
 
 const BGP_STATE = {
-    IDLE: 'Idle',
-    CONNECT: 'Connect',
-    ACTIVE: 'Active',
-    OPEN_SENT: 'OpenSent',
-    OPEN_CONFIRM: 'OpenConfirm',
-    ESTABLISHED: 'Established'
+    IDLE: 0,
+    CONNECT: 1,
+    ACTIVE: 2,
+    OPEN_SENT: 3,
+    OPEN_CONFIRM: 4,
+    ESTABLISHED: 5
 };
+
+const BGP_STATE_MAP = new Map([
+    [BGP_STATE.IDLE, 'Idle'],
+    [BGP_STATE.CONNECT, 'Connect'],
+    [BGP_STATE.ACTIVE, 'Active'],
+    [BGP_STATE.OPEN_SENT, 'OpenSent'],
+    [BGP_STATE.OPEN_CONFIRM, 'OpenConfirm'],
+    [BGP_STATE.ESTABLISHED, 'Established']
+]);
 
 const BGP_PACKET_TYPE = {
     OPEN: 1,
@@ -209,5 +218,6 @@ module.exports = {
     BGP_ERROR_MESSAGE_HEADER_SUBCODE,
     BGP_ERROR_OPEN_MESSAGE_SUBCODE,
     BGP_ERROR_UPDATE_MESSAGE_SUBCODE,
-    BGP_ERROR_CONNECTION_REJECTED_SUBCODE
+    BGP_ERROR_CONNECTION_REJECTED_SUBCODE,
+    BGP_STATE_MAP
 };

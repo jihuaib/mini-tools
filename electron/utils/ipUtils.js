@@ -106,7 +106,6 @@ function rdBufferToString(buffer) {
     return `${highOrder}:${lowOrder}`;
 }
 
-
 module.exports = {
     genRouteIps,
     writeUInt16,

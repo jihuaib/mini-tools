@@ -173,7 +173,6 @@ function processMessage(message, socket) {
 
 function processPeerUp(message, socket) {
     try {
-
         const position = 0;
         const version = message[position];
         position += 1;
@@ -287,7 +286,6 @@ function processPeerDown(message, socket) {
         const peerType = peerHeader[0];
         const peerFlags = peerHeader[1];
 
-
         let peerIp;
         if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
             // IPv6 peer
@@ -354,7 +352,8 @@ function processRouteMonitoring(message, socket) {
         }
 
         // If we have valid parsed update data, extract route information
-        if (parsedUpdate && parsedUpdate.valid && parsedUpdate.type === 2) { // Type 2 is UPDATE
+        if (parsedUpdate && parsedUpdate.valid && parsedUpdate.type === 2) {
+            // Type 2 is UPDATE
             // Process withdrawn routes
             if (parsedUpdate.withdrawnRoutes && parsedUpdate.withdrawnRoutes.length > 0) {
                 for (const route of parsedUpdate.withdrawnRoutes) {
@@ -381,7 +380,8 @@ function processRouteMonitoring(message, socket) {
                     attr => attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI
                 );
 
-                if (mpReachAttr && mpReachAttr.afi === 2) { // AFI 2 is IPv6
+                if (mpReachAttr && mpReachAttr.afi === 2) {
+                    // AFI 2 is IPv6
                     for (const route of mpReachAttr.nlri) {
                         processAnnouncedRoute(route, 'ipv6', parsedUpdate.pathAttributes, peerIp);
                     }
@@ -503,9 +503,10 @@ function processAnnouncedRoute(route, routeType, pathAttributes, peerIp) {
 
     // If next hop is still empty, generate a default one
     if (!nextHop) {
-        nextHop = routeType === 'ipv4'
-            ? `10.0.0.${Math.floor(Math.random() * 254) + 1}`
-            : `2001:db8:ffff::${Math.floor(Math.random() * 254) + 1}`;
+        nextHop =
+            routeType === 'ipv4'
+                ? `10.0.0.${Math.floor(Math.random() * 254) + 1}`
+                : `2001:db8:ffff::${Math.floor(Math.random() * 254) + 1}`;
     }
 
     // Create route object

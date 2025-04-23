@@ -11,13 +11,12 @@ contextBridge.exposeInMainWorld('stringGeneratorApi', {
 contextBridge.exposeInMainWorld('bgpEmulatorApi', {
     getNetworkInfo: () => ipcRenderer.invoke('bgp-emulator:getNetworkInfo'),
     startBgp: bgpData => ipcRenderer.invoke('bgp-emulator:startBgp', bgpData),
-    updatePeerState: callback => ipcRenderer.on('bgp-emulator:updatePeerState', (_event, data) => callback(data)),
+    onUpdatePeerState: callback => ipcRenderer.on('bgp-emulator:updatePeerState', (_event, data) => callback(data)),
     saveConfig: config => ipcRenderer.invoke('bgp-emulator:saveConfig', config),
     loadConfig: () => ipcRenderer.invoke('bgp-emulator:loadConfig'),
     stopBgp: () => ipcRenderer.invoke('bgp-emulator:stopBgp'),
     sendRoutes: config => ipcRenderer.invoke('bgp-emulator:sendRoute', config),
-    withdrawRoutes: config => ipcRenderer.invoke('bgp-emulator:withdrawRoute', config),
-    pushMsg: callback => ipcRenderer.on('bgp-emulator:pushMsg', (_event, data) => callback(data))
+    withdrawRoutes: config => ipcRenderer.invoke('bgp-emulator:withdrawRoute', config)
 });
 
 // bmp模块

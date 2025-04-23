@@ -123,8 +123,10 @@
 
                 <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                     <a-space size="middle">
-                        <a-button type="primary" html-type="submit">启动</a-button>
-                        <a-button type="primary" danger @click="stopBgp">停止</a-button>
+                        <a-button type="primary" html-type="submit" :loading="bgpLoading">
+                            {{ bgpRunning ? '重启BGP' : '启动BGP' }}
+                        </a-button>
+                        <a-button type="primary" danger @click="stopBgp" :disabled="!bgpRunning">停止BGP</a-button>
                     </a-space>
                 </a-form-item>
             </a-card>
@@ -223,8 +225,17 @@
                 </a-form-item>
                 <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                     <a-space>
-                        <a-button type="primary" @click="sendRoutes">发送路由</a-button>
-                        <a-button type="primary" danger @click="withdrawRoutes">撤销路由</a-button>
+                        <a-button type="primary" @click="sendRoutes" :disabled="bgpData.peerState !== 'Established'">
+                            发送路由
+                        </a-button>
+                        <a-button
+                            type="primary"
+                            danger
+                            @click="withdrawRoutes"
+                            :disabled="bgpData.peerState !== 'Established' || !routesSent"
+                        >
+                            撤销路由
+                        </a-button>
                     </a-space>
                 </a-form-item>
             </a-card>
@@ -400,6 +411,12 @@
         validationFn(value, validationErrors);
     };
 
+    const bgpLoading = ref(false);
+    const bgpRunning = ref(false);
+
+    // Add a state variable to track if routes have been sent
+    const routesSent = ref(false);
+
     watch(
         [bgpData],
         async ([newBgpValue]) => {
@@ -479,21 +496,10 @@
             console.error(result.msg);
         }
 
-        window.bgpEmulatorApi.updatePeerState(data => {
+        window.bgpEmulatorApi.onUpdatePeerState(data => {
             if (data.status === 'success') {
                 const response = data.data;
                 bgpData.value.peerState = response.state;
-            } else {
-                message.error(data.msg);
-            }
-        });
-
-        window.bgpEmulatorApi.pushMsg(data => {
-            console.log('pushMsg', data);
-            if (data.status === 'success') {
-                if (data.msg !== '') {
-                    message.success(data.msg);
-                }
             } else {
                 message.error(data.msg);
             }
@@ -615,6 +621,9 @@
             return;
         }
 
+        bgpLoading.value = true;
+        bgpRunning.value = false;
+
         try {
             const payload = JSON.parse(JSON.stringify(bgpData.value));
             const result = await window.bgpEmulatorApi.startBgp(payload);
@@ -622,10 +631,14 @@
                 if (result.msg !== '') {
                     message.success(result.msg);
                 }
+                bgpLoading.value = false;
+                bgpRunning.value = true;
             } else {
+                bgpLoading.value = false;
                 message.error(result.msg || 'BGP启动失败');
             }
         } catch (e) {
+            bgpLoading.value = false;
             message.error(e);
         }
     };
@@ -636,6 +649,9 @@
             if (result.msg !== '') {
                 message.success(result.msg);
             }
+            bgpRunning.value = false;
+            bgpData.value.peerState = '';
+            routesSent.value = false; // Reset when BGP stops
         } else {
             message.error(result.msg || 'BGP停止失败');
         }
@@ -677,6 +693,7 @@
                 if (result.msg !== '') {
                     message.success(result.msg);
                 }
+                routesSent.value = true;
             } else {
                 message.error(result.msg || '路由发送失败');
             }
@@ -721,6 +738,7 @@
                 if (result.msg !== '') {
                     message.success(result.msg);
                 }
+                routesSent.value = false;
             } else {
                 message.error(result.msg || '路由撤销失败');
             }

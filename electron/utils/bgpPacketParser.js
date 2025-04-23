@@ -369,7 +369,7 @@ function parseRouteRefreshMessage(buffer) {
     return {
         afi,
         subType,
-        safi,
+        safi
     };
 }
 

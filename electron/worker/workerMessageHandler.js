@@ -1,0 +1,87 @@
+const { parentPort } = require('worker_threads');
+const Logger = require('../log/logger');
+
+class WorkerMessageHandler {
+    constructor() {
+        this.handlers = new Map();
+        this.logger = new Logger();
+    }
+
+    /**
+     * 创建带有消息ID的响应消息
+     * @param {string} messageId - 请求消息ID
+     * @param {string} status - 响应状态
+     * @param {string} msg - 响应消息
+     * @param {any} data - 响应数据
+     * @returns {Object} 带有消息ID的响应消息
+     */
+    static createMessageResponse(messageId, status, msg = '', data = null) {
+        return {
+            messageId,
+            status,
+            msg,
+            data
+        };
+    }
+
+    // 初始化消息处理, 用于监听app发送给worker的消息
+    init() {
+        if (!parentPort) {
+            throw new Error('This function must be called in a worker thread');
+        }
+
+        parentPort.on('message', message => {
+            const { messageId, op, data } = message;
+            this.logger.info(`recv msg: ${JSON.stringify(message)}`);
+
+            if (!op) {
+                this.sendErrorResponse(messageId, 'Invalid message format: missing operation');
+                return;
+            }
+
+            if (this.handlers.has(op)) {
+                try {
+                    const handler = this.handlers.get(op);
+                    handler(messageId, data);
+                } catch (error) {
+                    this.logger.error(`Error handling operation ${op}:`, error);
+                    this.sendErrorResponse(messageId, `Error handling operation ${op}: ${error.message}`);
+                }
+            } else {
+                this.logger.error(`No handler registered for operation: ${op}`);
+                this.sendErrorResponse(messageId, `No handler registered for operation: ${op}`);
+            }
+        });
+    }
+
+    // worker注册消息处理器
+    registerHandler(op, handler) {
+        this.handlers.set(op, handler);
+    }
+
+    // worker发送成功响应
+    sendSuccessResponse(messageId, data = null, msg = '') {
+        if (!parentPort) return;
+
+        parentPort.postMessage(WorkerMessageHandler.createMessageResponse(messageId, 'success', msg, data));
+    }
+
+    // worker发送错误响应
+    sendErrorResponse(messageId, msg = '', data = null) {
+        if (!parentPort) return;
+
+        parentPort.postMessage(WorkerMessageHandler.createMessageResponse(messageId, 'error', msg, data));
+    }
+
+    // worker发送事件通知（不需要messageId，不是响应）
+    sendEvent(eventName, data = null) {
+        if (!parentPort) return;
+
+        parentPort.postMessage({
+            eventName,
+            data
+        });
+    }
+}
+
+module.exports = WorkerMessageHandler;

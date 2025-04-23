@@ -1,242 +1,201 @@
 const { app, BrowserWindow } = require('electron');
-const { Worker } = require('worker_threads');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const log = require('electron-log');
 const { successResponse, errorResponse } = require('./utils/responseUtils');
-const { BGP_OPERATIONS } = require('./const/bgpOpConst');
+const { BGP_REQ_TYPES } = require('./const/bgpReqConst');
+const Logger = require('./log/logger');
+const WorkerWithPromise = require('./worker/workerWithPromise');
+const { BGP_EVT_TYPES } = require('./const/BgpEvtConst');
+class BgpSimulatorApp {
+    constructor(ipc) {
+        this.bgpStart = false;
+        this.worker = null;
+        this.configName = 'bgp-simulator-config.json';
+        this.isDev = !app.isPackaged;
+        this.logger = new Logger();
+        this.stateChangeHandler = null;
 
-let bgpStart = false;
-let worker;
-const isDev = !app.isPackaged;
-
-async function handleGetNetworkInfo(event) {
-    try {
-        const interfaces = os.networkInterfaces();
-        return successResponse(interfaces);
-    } catch (err) {
-        return errorResponse('Failed to get network interfaces', err);
+        // 注册IPC处理程序
+        this.registerHandlers(ipc);
     }
-}
 
-// 获取配置文件路径
-function getConfigPath() {
-    return path.join(app.getPath('userData'), 'bgp-simulator-config.json');
-}
+    registerHandlers(ipc) {
+        ipc.handle('bgp-emulator:getNetworkInfo', async () => this.handleGetNetworkInfo());
+        ipc.handle('bgp-emulator:saveConfig', async (event, config) => this.handleSaveConfig(event, config));
+        ipc.handle('bgp-emulator:loadConfig', async () => this.handleLoadConfig());
+        ipc.handle('bgp-emulator:startBgp', async (event, config) => this.handleStartBgp(event, config));
+        ipc.handle('bgp-emulator:stopBgp', async () => this.handleStopBgp());
+        ipc.handle('bgp-emulator:sendRoute', async (event, config) => this.handleSendRoute(event, config));
+        ipc.handle('bgp-emulator:withdrawRoute', async (event, config) => this.handleWithdrawRoute(event, config));
+    }
 
-// 保存配置
-async function handleSaveConfig(event, config) {
-    try {
-        const configPath = getConfigPath();
-        const configDir = path.dirname(configPath);
-        // 确保目录存在
-        if (!fs.existsSync(configDir)) {
-            await fs.promises.mkdir(configDir, { recursive: true });
+    async handleGetNetworkInfo(event) {
+        try {
+            const interfaces = os.networkInterfaces();
+            return successResponse(interfaces);
+        } catch (err) {
+            return errorResponse('Failed to get network interfaces', err);
         }
-        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-        return successResponse(null, '');
-    } catch (error) {
-        log.error('[Main] Error saving config:', error);
-        return errorResponse(error.message);
-    }
-}
-
-// 加载配置
-async function handleLoadConfig() {
-    try {
-        const configPath = getConfigPath();
-        if (!fs.existsSync(configPath)) {
-            return successResponse(null, 'BGP配置文件不存在');
-        }
-        const data = await fs.promises.readFile(configPath, 'utf8');
-        return successResponse(JSON.parse(data), 'BGP配置文件加载成功');
-    } catch (error) {
-        log.error('[Main] Error loading config:', error);
-        return errorResponse(error.message);
-    }
-}
-
-async function handleStopBgp() {
-    if (!bgpStart) {
-        log.error('[Main] BGP未启动');
-        return errorResponse('BGP未启动');
     }
 
-    try {
-        const msg = {
-            op: BGP_OPERATIONS.STOP_BGP,
-            data: null
-        };
-        worker.postMessage(msg);
-        return successResponse(null, '');
-    } catch (error) {
-        await worker.terminate();
-        bgpStart = false;
-        log.error('[Main] Error stopping BGP:', error);
-        return errorResponse(error.message);
-    }
-}
-
-async function handleSendRoute(event, config) {
-    if (!bgpStart) {
-        log.error('[Main] bgp协议没有运行');
-        return errorResponse('bgp协议没有运行');
+    // 获取配置文件路径
+    getConfigPath() {
+        return path.join(app.getPath('userData'), this.configName);
     }
 
-    log.info('[Main] handleSendRoute config:', config);
-
-    try {
-        const msg = {
-            op: BGP_OPERATIONS.SEND_ROUTE,
-            data: config
-        };
-
-        worker.postMessage(msg);
-        return successResponse(null, '');
-    } catch (error) {
-        log.error('[Main] Error sending route:', error);
-        return errorResponse(error.message);
-    }
-}
-
-async function handleWithdrawRoute(event, config) {
-    if (!bgpStart) {
-        log.error('[Main] bgp协议没有运行');
-        return errorResponse('bgp协议没有运行');
-    }
-
-    log.info('[Main] handleWithdrawRoute config:', config);
-
-    try {
-        const msg = {
-            op: BGP_OPERATIONS.WITHDRAW_ROUTE,
-            data: config
-        };
-
-        worker.postMessage(msg);
-        return successResponse(null, '');
-    } catch (error) {
-        log.error('[Main] Error withdrawing route:', error);
-        return errorResponse(error.message);
-    }
-}
-
-async function handleStartBgp(event, bgpData) {
-    const webContents = event.sender;
-    const win = BrowserWindow.fromWebContents(webContents);
-
-    if (bgpStart) {
-        log.error('[Main] bgp已经启动');
-        return errorResponse('bgp已经启动');
-    }
-
-    log.info('[Main] handleStartBgp', bgpData);
-
-    const workerPath = isDev
-        ? path.join(__dirname, './worker/bgpSimulatorWorker.js')
-        : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpSimulatorWorker.js');
-    worker = new Worker(workerPath);
-
-    log.info(`[Worker ${worker.threadId}] 启动`);
-
-    bgpStart = true;
-
-    const msg = {
-        op: BGP_OPERATIONS.START_BGP,
-        data: bgpData
-    };
-
-    worker.postMessage(msg);
-
-    // 持续接收 BGP 线程的消息
-    worker.on('message', async result => {
-        log.info(`[Main] recv msg from [Worker ${worker.threadId}]`, result);
-        if (result.status === 'success') {
-            if (result.data.op === BGP_OPERATIONS.PEER_STATE) {
-                webContents.send('bgp-emulator:updatePeerState', successResponse({ state: result.data.state }));
-            } else if (result.data.op === BGP_OPERATIONS.PUSH_MSG) {
-                if (result.data.status === 'success') {
-                    webContents.send('bgp-emulator:pushMsg', successResponse(null, result.data.msg));
-                } else {
-                    webContents.send('bgp-emulator:pushMsg', errorResponse(result.data.msg));
-                }
-            } else if (result.data.op === BGP_OPERATIONS.STOP_BGP) {
-                // BGP停止成功
-                await worker.terminate();
-                bgpStart = false;
-                webContents.send('bgp-emulator:pushMsg', successResponse(null, result.data.msg));
+    // 保存配置
+    async handleSaveConfig(event, config) {
+        try {
+            const configPath = this.getConfigPath();
+            const configDir = path.dirname(configPath);
+            // 确保目录存在
+            if (!fs.existsSync(configDir)) {
+                await fs.promises.mkdir(configDir, { recursive: true });
             }
-        } else {
-            log.error(`[Main] recv error msg from [Worker ${worker.threadId}]`, result);
+            await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+            return successResponse(null, '');
+        } catch (error) {
+            this.logger.error('Error saving config:', error);
+            return errorResponse(error.message);
         }
-    });
+    }
 
-    worker.on('error', err => {
-        log.error(`[Main] recv err from [Worker ${worker.threadId}]`, err);
-    });
-
-    worker.on('exit', code => {
-        bgpStart = false;
-        if (code !== 0) {
-            log.error(`[Main] recv exit from [Worker ${worker.threadId}]`, code);
-        } else {
-            log.info(`[Main] [Worker ${worker.threadId}] has completed successfully.`);
+    // 加载配置
+    async handleLoadConfig() {
+        try {
+            const configPath = this.getConfigPath();
+            if (!fs.existsSync(configPath)) {
+                return successResponse(null, 'BGP配置文件不存在');
+            }
+            const data = await fs.promises.readFile(configPath, 'utf8');
+            return successResponse(JSON.parse(data), 'BGP配置文件加载成功');
+        } catch (error) {
+            this.logger.error('Error loading config:', error);
+            return errorResponse(error.message);
         }
-    });
+    }
 
-    log.info(`[Main] BGP启动成功 in thread ${worker.threadId}`);
-    return successResponse(null, '');
-}
+    async handleStartBgp(event, bgpData) {
+        const webContents = event.sender;
+        try {
+            if (this.bgpStart) {
+                await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
 
-async function handleWindowClose(win) {
-    if (bgpStart) {
-        const { dialog } = require('electron');
-        const { response } = await dialog.showMessageBox(win, {
-            type: 'warning',
-            title: '确认关闭',
-            message: 'BGP 模拟器正在运行，确定要关闭吗？',
-            buttons: ['确定', '取消'],
-            defaultId: 1,
-            cancelId: 1
-        });
+                const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpData);
 
-        if (response === 0) {
-            // 用户点击确定，先停止 BGP 然后关闭窗口
-            await handleStopBgp();
+                // 这里肯定是启动成功了，如果失败，会抛出异常
+                this.logger.info(`bgp重启成功 result: ${JSON.stringify(result)}`);
 
-            // 等待 bgpStart 变为 false
-            const waitForBgpStop = () => {
-                return new Promise(resolve => {
-                    const checkInterval = setInterval(() => {
-                        if (!bgpStart) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 100);
-                });
+                this.bgpStart = true;
+                return successResponse(null, 'bgp协议重启成功');
+            }
+
+            this.logger.info('handleStartBgp', bgpData);
+
+            const workerPath = this.isDev
+                ? path.join(__dirname, './worker/bgpSimulatorWorker.js')
+                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpSimulatorWorker.js');
+
+            const workerFactory = new WorkerWithPromise(workerPath);
+            this.worker = workerFactory.createLongRunningWorker();
+
+            // 定义事件处理函数
+            this.stateChangeHandler = data => {
+                webContents.send('bgp-emulator:updatePeerState', successResponse({ state: data.state }));
             };
 
-            await waitForBgpStop();
-            return true;
+            // 注册事件监听器，处理来自worker的事件通知
+            this.worker.addEventListener(BGP_EVT_TYPES.BGP_STATE_CHANGE, this.stateChangeHandler);
+
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpData);
+
+            // 这里肯定是启动成功了，如果失败，会抛出异常
+            this.logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);
+
+            this.bgpStart = true;
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error starting BGP:', error);
+            return errorResponse(error.message);
         }
-        return false;
     }
-    return true;
+
+    async handleStopBgp() {
+        if (!this.bgpStart) {
+            this.logger.error('BGP未启动');
+            return errorResponse('BGP未启动');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
+            this.bgpStart = false;
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error stopping BGP:', error);
+            return errorResponse(error.message);
+        } finally {
+            // 移除事件监听器
+            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_STATE_CHANGE, this.stateChangeHandler);
+            await this.worker.terminate();
+        }
+    }
+
+    async handleSendRoute(event, config) {
+        if (!this.bgpStart) {
+            this.logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        this.logger.info('handleSendRoute config:', config);
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.SEND_ROUTE, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error sending route:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleWithdrawRoute(event, config) {
+        if (!this.bgpStart) {
+            this.logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        this.logger.info('handleWithdrawRoute config:', config);
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.WITHDRAW_ROUTE, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error withdrawing route:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleWindowClose(win) {
+        if (this.bgpStart) {
+            const { dialog } = require('electron');
+            const { response } = await dialog.showMessageBox(win, {
+                type: 'warning',
+                title: '确认关闭',
+                message: 'BGP 模拟器正在运行，确定要关闭吗？',
+                buttons: ['确定', '取消'],
+                defaultId: 1,
+                cancelId: 1
+            });
+
+            if (response === 0) {
+                // 用户点击确定，先停止 BGP 然后关闭窗口
+                await this.handleStopBgp();
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
 }
 
-// Register IPC handlers
-const registerHandlers = ipc => {
-    ipc.handle('bgp-emulator:getNetworkInfo', async () => handleGetNetworkInfo());
-    ipc.handle('bgp-emulator:saveConfig', async (event, config) => handleSaveConfig(event, config));
-    ipc.handle('bgp-emulator:loadConfig', async () => handleLoadConfig());
-    ipc.handle('bgp-emulator:startBgp', async (event, config) => handleStartBgp(event, config));
-    ipc.handle('bgp-emulator:stopBgp', async () => handleStopBgp());
-    ipc.handle('bgp-emulator:sendRoute', async (event, config) => handleSendRoute(event, config));
-    ipc.handle('bgp-emulator:withdrawRoute', async (event, config) => handleWithdrawRoute(event, config));
-};
-
-module.exports = {
-    registerHandlers,
-    handleWindowClose
-};
+module.exports = BgpSimulatorApp;
