@@ -1,7 +1,7 @@
 const net = require('net');
 const BgpConst = require('../const/bgpConst');
 const { genRouteIps, writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
-const { parseBgpPacket, getBgpSummary } = require('../utils/bgpPacketParser');
+const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
@@ -118,28 +118,28 @@ class BgpSimulatorWorker {
             const parsedPacket = parseBgpPacket(spiltBuffer);
 
             if (header.type == BgpConst.BGP_PACKET_TYPE.OPEN) {
-                this.logger.info(`recv open message ${getBgpSummary(parsedPacket)}`);
+                this.logger.info(`recv open message ${getBgpPacketSummary(parsedPacket)}`);
                 this.sendKeepAliveMsg();
                 this.changeBgpFsmState(BgpConst.BGP_STATE.OPEN_CONFIRM);
             } else if (header.type == BgpConst.BGP_PACKET_TYPE.KEEPALIVE) {
                 if (this.bgpState != BgpConst.BGP_STATE.ESTABLISHED) {
-                    this.logger.info(`recv keepalive message ${getBgpSummary(parsedPacket)}`);
+                    this.logger.info(`recv keepalive message ${getBgpPacketSummary(parsedPacket)}`);
                 }
                 this.sendKeepAliveMsg();
                 if (this.bgpState != BgpConst.BGP_STATE.ESTABLISHED) {
                     this.changeBgpFsmState(BgpConst.BGP_STATE.ESTABLISHED);
                 }
             } else if (header.type == BgpConst.BGP_PACKET_TYPE.NOTIFICATION) {
-                this.logger.info(`recv notification message ${getBgpSummary(parsedPacket)}`);
+                this.logger.info(`recv notification message ${getBgpPacketSummary(parsedPacket)}`);
                 this.changeBgpFsmState(BgpConst.BGP_STATE.IDLE);
                 if (this.bgpSocket) {
                     this.bgpSocket.destroy();
                     this.bgpSocket = null;
                 }
             } else if (header.type == BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH) {
-                this.logger.info(`recv route-refresh message ${getBgpSummary(parsedPacket)}`);
+                this.logger.info(`recv route-refresh message ${getBgpPacketSummary(parsedPacket)}`);
             } else if (header.type == BgpConst.BGP_PACKET_TYPE.UPDATE) {
-                this.logger.info(`recv update message ${getBgpSummary(parsedPacket)}`);
+                this.logger.info(`recv update message ${getBgpPacketSummary(parsedPacket)}`);
             }
 
             packet = packet.subarray(header.length);
@@ -256,7 +256,6 @@ class BgpSimulatorWorker {
         );
         const buffer = Buffer.concat([header, openHeadMsgBuf, optParamsBuf]);
 
-        this.logger.info(`build open msg: ${buffer.toString('hex')}`);
         return buffer;
     }
 
@@ -277,14 +276,16 @@ class BgpSimulatorWorker {
         const buf = this.buildKeepAliveMsg();
         this.bgpSocket.write(buf);
         if (this.bgpState != BgpConst.BGP_STATE.ESTABLISHED) {
-            this.logger.info(`send keepalive msg`);
+            const parsedPacket = parseBgpPacket(buf);
+            this.logger.info(`send keepalive msg ${getBgpPacketSummary(parsedPacket)}`);
         }
     }
 
     sendOpenMsg() {
         const buf = this.buildOpenMsg();
         this.bgpSocket.write(buf);
-        this.logger.info(`send open msg`);
+        const parsedPacket = parseBgpPacket(buf);
+        this.logger.info(`send open msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 
     stopBgp(messageId) {
@@ -523,11 +524,15 @@ class BgpSimulatorWorker {
             routes.forEach(route => {
                 const buf = this.buildUpdateMsgIpv4(route, config.customAttr);
                 this.bgpSocket.write(buf);
+                const parsedPacket = parseBgpPacket(buf);
+                this.logger.info(`send update msg ${getBgpPacketSummary(parsedPacket)}`);
             });
         } else if (config.ipType === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
             routes.forEach(route => {
                 const buf = this.buildUpdateMsgIpv6(route, config.customAttr);
                 this.bgpSocket.write(buf);
+                const parsedPacket = parseBgpPacket(buf);
+                this.logger.info(`send update msg ${getBgpPacketSummary(parsedPacket)}`);
             });
         }
 
@@ -598,11 +603,15 @@ class BgpSimulatorWorker {
             routes.forEach(route => {
                 const buf = this.buildWithdrawMsgIpv4(route);
                 this.bgpSocket.write(buf);
+                const parsedPacket = parseBgpPacket(buf);
+                this.logger.info(`send withdraw msg ${getBgpPacketSummary(parsedPacket)}`);
             });
         } else if (config.ipType === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
             routes.forEach(route => {
                 const buf = this.buildWithdrawMsgIpv6(route);
                 this.bgpSocket.write(buf);
+                const parsedPacket = parseBgpPacket(buf);
+                this.logger.info(`send withdraw msg ${getBgpPacketSummary(parsedPacket)}`);
             });
         }
 

@@ -269,7 +269,7 @@ function parseUpdateMessage(buffer) {
                 attribute.origin = getOriginType(attributeValue[0]);
                 break;
             case BgpConst.BGP_PATH_ATTR.AS_PATH: // AS_PATH
-                attribute.segments = parseAsPath(attributeValue, attributeLength);
+                attribute.segments = parseAsPath(attributeValue);
                 break;
             case BgpConst.BGP_PATH_ATTR.NEXT_HOP: // NEXT_HOP
                 attribute.nextHop = `${attributeValue[0]}.${attributeValue[1]}.${attributeValue[2]}.${attributeValue[3]}`;
@@ -288,13 +288,13 @@ function parseUpdateMessage(buffer) {
                 attribute.aggregatorIp = `${attributeValue[2]}.${attributeValue[3]}.${attributeValue[4]}.${attributeValue[5]}`;
                 break;
             case BgpConst.BGP_PATH_ATTR.COMMUNITY: // COMMUNITY
-                attribute.communities = parseCommunities(attributeValue, attributeLength);
+                attribute.communities = parseCommunities(attributeValue);
                 break;
             case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: // MP_REACH_NLRI
-                attribute.mpReach = parseMpReachNlri(attributeValue, attributeLength);
+                attribute.mpReach = parseMpReachNlri(attributeValue);
                 break;
             case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: // MP_UNREACH_NLRI
-                attribute.mpUnreach = parseMpUnreachNlri(attributeValue, attributeLength);
+                attribute.mpUnreach = parseMpUnreachNlri(attributeValue);
                 break;
         }
 
@@ -401,14 +401,13 @@ function formatIpv4Prefix(buffer, length) {
 /**
  * Parse AS_PATH attribute
  * @param {Buffer} buffer - AS_PATH attribute value
- * @attrLength
  * @returns {Array} Array of AS path segments
  */
-function parseAsPath(buffer, attrLength) {
+function parseAsPath(buffer) {
     const segments = [];
     let position = 0;
 
-    while (position < attrLength) {
+    while (position < buffer.length) {
         const segmentType = buffer[position];
         const segmentLength = buffer[position + 1];
         position += 2;
@@ -434,10 +433,10 @@ function parseAsPath(buffer, attrLength) {
  * @param {Buffer} buffer - COMMUNITIES attribute value
  * @returns {Array} Array of community values
  */
-function parseCommunities(buffer, attrLength) {
+function parseCommunities(buffer) {
     const communities = [];
 
-    for (let i = 0; i < attrLength; i += 4) {
+    for (let i = 0; i < buffer.length; i += 4) {
         const value = buffer.readUInt32BE(i);
         const highOrder = (value >> 16) & 0xffff;
         const lowOrder = value & 0xffff;
@@ -456,7 +455,7 @@ function parseCommunities(buffer, attrLength) {
  * @param {Buffer} buffer - MP_REACH_NLRI attribute value
  * @returns {Object} Parsed MP_REACH_NLRI data
  */
-function parseMpReachNlri(buffer, attrLength) {
+function parseMpReachNlri(buffer) {
     let position = 0;
     const afi = buffer.readUInt16BE(position);
     position += 2;
@@ -483,7 +482,7 @@ function parseMpReachNlri(buffer, attrLength) {
 
     // Parse NLRI
     const nlri = [];
-    while (position < attrLength) {
+    while (position < buffer.length) {
         const prefixLength = buffer[position];
         position += 1;
 
@@ -524,7 +523,7 @@ function parseMpReachNlri(buffer, attrLength) {
  * @param {Buffer} buffer - MP_UNREACH_NLRI attribute value
  * @returns {Object} Parsed MP_UNREACH_NLRI data
  */
-function parseMpUnreachNlri(buffer, attrLength) {
+function parseMpUnreachNlri(buffer) {
     const afi = buffer.readUInt16BE(0);
     const safi = buffer[2];
 
@@ -532,7 +531,7 @@ function parseMpUnreachNlri(buffer, attrLength) {
 
     // Parse withdrawn routes
     const withdrawnRoutes = [];
-    while (position < attrLength) {
+    while (position < buffer.length) {
         const prefixLength = buffer[position];
         position += 1;
 
@@ -854,7 +853,7 @@ function getErrorName(errorCode, errorSubcode) {
  * @param {Object} parsedPacket - The parsed BGP packet object
  * @returns {String} Human-readable summary
  */
-function getBgpSummary(parsedPacket) {
+function getBgpPacketSummary(parsedPacket) {
     if (!parsedPacket || !parsedPacket.valid) {
         return `Invalid BGP packet: ${parsedPacket?.error || 'Unknown error'}`;
     }
@@ -932,7 +931,7 @@ function getBgpSummary(parsedPacket) {
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI) {
                         const afiName = getAfiName(attr.mpReach.afi);
                         const safiName = getSafiName(attr.mpReach.safi);
-                        summary += `\n    - (${afiName}/${safiName} : ${attr.mpReach.nextHop})`;
+                        summary += `\n    - (${afiName}/${safiName}: ${attr.mpReach.nextHop})`;
                         if (attr.mpReach.nlri && attr.mpReach.nlri.length > 0) {
                             summary += '\n    - Routes:';
                             attr.mpReach.nlri.forEach(route => {
@@ -973,5 +972,5 @@ function getBgpSummary(parsedPacket) {
 
 module.exports = {
     parseBgpPacket,
-    getBgpSummary
+    getBgpPacketSummary
 };
