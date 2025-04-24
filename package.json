@@ -34,6 +34,7 @@
             "electron/worker/**",
             "electron/utils/**",
             "electron/const/**",
+            "electron/log/**",
             "node_modules/**/*"
         ],
         "publish": {

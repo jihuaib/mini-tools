@@ -1,10 +1,10 @@
-const { app, BrowserWindow } = require('electron');
+const { app } = require('electron');
 const path = require('path');
-const { runWorkerWithPromise } = require('./worker/workerWithPromise');
 const fs = require('fs');
-const { successResponse, errorResponse } = require('./utils/responseUtils');
-const Logger = require('./log/logger');
-const WorkerWithPromise = require('./worker/workerWithPromise');
+const { successResponse, errorResponse } = require('../utils/responseUtils');
+const Logger = require('../log/logger');
+const WorkerWithPromise = require('../worker/workerWithPromise');
+
 class StringGeneratorApp {
     constructor(ipc) {
         this.isDev = !app.isPackaged;
@@ -63,7 +63,7 @@ class StringGeneratorApp {
 
         try {
             const workerPath = this.isDev
-                ? path.join(__dirname, './worker/StringGeneratorWorker.js')
+                ? path.join(__dirname, '../worker/StringGeneratorWorker.js')
                 : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/StringGeneratorWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);

@@ -296,6 +296,9 @@ function parseUpdateMessage(buffer) {
             case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: // MP_UNREACH_NLRI
                 attribute.mpUnreach = parseMpUnreachNlri(attributeValue);
                 break;
+            case BgpConst.BGP_PATH_ATTR.PATH_OTC: // OTC
+                attribute.otc = attributeValue.readUInt32BE(0);
+                break;
         }
 
         pathAttributes.push(attribute);
@@ -524,10 +527,11 @@ function parseMpReachNlri(buffer) {
  * @returns {Object} Parsed MP_UNREACH_NLRI data
  */
 function parseMpUnreachNlri(buffer) {
-    const afi = buffer.readUInt16BE(0);
-    const safi = buffer[2];
-
-    let position = 3;
+    let position = 0;
+    const afi = buffer.readUInt16BE(position);
+    position += 2;
+    const safi = buffer[position];
+    position += 1;
 
     // Parse withdrawn routes
     const withdrawnRoutes = [];
@@ -544,10 +548,10 @@ function parseMpUnreachNlri(buffer) {
 
         // Format the prefix based on AFI
         let prefix;
-        if (afi === 1) {
+        if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
             // IPv4
             prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
-        } else if (afi === 2) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
             // IPv6
             prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
         }
@@ -560,9 +564,7 @@ function parseMpUnreachNlri(buffer) {
 
     return {
         afi,
-        afiName: getAfiName(afi),
         safi,
-        safiName: getSafiName(safi),
         withdrawnRoutes
     };
 }
@@ -712,6 +714,8 @@ function getAttributeTypeName(typeCode) {
             return 'AS4_PATH';
         case BgpConst.BGP_PATH_ATTR.AS4_AGGREGATOR:
             return 'AS4_AGGREGATOR';
+        case BgpConst.BGP_PATH_ATTR.PATH_OTC:
+            return 'OTC';
         default:
             return `Unknown (${typeCode})`;
     }
@@ -938,6 +942,18 @@ function getBgpPacketSummary(parsedPacket) {
                                 summary += `\n      - ${route.prefix}/${route.length}`;
                             });
                         }
+                    } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI) {
+                        const afiName = getAfiName(attr.mpUnreach.afi);
+                        const safiName = getSafiName(attr.mpUnreach.safi);
+                        summary += `\n    - (${afiName}/${safiName})`;
+                        if (attr.mpUnreach.withdrawnRoutes && attr.mpUnreach.withdrawnRoutes.length > 0) {
+                            summary += '\n    - Routes:';
+                            attr.mpUnreach.withdrawnRoutes.forEach(route => {
+                                summary += `\n      - ${route.prefix}/${route.length}`;
+                            });
+                        }
+                    } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.PATH_OTC) {
+                        summary += `: ${attr.otc}`;
                     }
                 });
             }
@@ -962,8 +978,10 @@ function getBgpPacketSummary(parsedPacket) {
             break;
 
         case BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH: // ROUTE-REFRESH
-            summary += `\nAddress Family: ${parsedPacket.afiName}`;
-            summary += `\nSubsequent Address Family: ${parsedPacket.safiName}`;
+            const afiName = getAfiName(parsedPacket.afi);
+            const safiName = getSafiName(parsedPacket.safi);
+            summary += `\nAddress Family: ${afiName}`;
+            summary += `\nSubsequent Address Family: ${safiName}`;
             break;
     }
 

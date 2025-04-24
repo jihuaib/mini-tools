@@ -116,7 +116,8 @@ const BGP_PATH_ATTR = {
     MP_UNREACH_NLRI: 0x0f,
     EXTENDED_COMMUNITIES: 0x10,
     AS4_PATH: 0x11,
-    AS4_AGGREGATOR: 0x12
+    AS4_AGGREGATOR: 0x12,
+    PATH_OTC: 0x23
 };
 
 // BGP Path Attribute Flags

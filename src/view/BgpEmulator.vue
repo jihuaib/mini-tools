@@ -224,7 +224,7 @@
                     </a-button>
                 </a-form-item>
                 <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                    <a-space>
+                    <a-space size="middle">
                         <a-button type="primary" @click="sendRoutes" :disabled="bgpData.peerState !== 'Established'">
                             发送路由
                         </a-button>

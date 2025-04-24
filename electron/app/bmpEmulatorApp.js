@@ -4,8 +4,8 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs');
 const log = require('electron-log');
-const { successResponse, errorResponse } = require('./utils/responseUtils');
-const { BMP_OPERATIONS } = require('./const/bmpOpConst');
+const { successResponse, errorResponse } = require('../utils/responseUtils');
+const { BMP_OPERATIONS } = require('../const/bmpOpConst');
 
 let bmpServerRunning = false;
 let worker;
@@ -87,7 +87,7 @@ async function handleStartServer(event, config) {
     log.info('[Main] Starting BMP server with config:', config);
 
     const workerPath = isDev
-        ? path.join(__dirname, './worker/bmpEmulatorWorker.js')
+        ? path.join(__dirname, '../worker/bmpEmulatorWorker.js')
         : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bmpEmulatorWorker.js');
 
     try {

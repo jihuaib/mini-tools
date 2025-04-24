@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu } = require('electron');
 const path = require('path');
 const log = require('electron-log');
-const BgpSimulatorApp = require('./bgpSimulatorApp');
-const StringGeneratorApp = require('./stringGeneratorApp');
-const bmpEmulatorApp = require('./bmpEmulatorApp');
+const BgpSimulatorApp = require('./app/bgpSimulatorApp');
+const StringGeneratorApp = require('./app/stringGeneratorApp');
+const bmpEmulatorApp = require('./app/bmpEmulatorApp');
 const packageJson = require('../package.json');
 
 // 配置 electron-log

@@ -1,12 +1,13 @@
-const { app, BrowserWindow } = require('electron');
+const { app } = require('electron');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { successResponse, errorResponse } = require('./utils/responseUtils');
-const { BGP_REQ_TYPES } = require('./const/bgpReqConst');
-const Logger = require('./log/logger');
-const WorkerWithPromise = require('./worker/workerWithPromise');
-const { BGP_EVT_TYPES } = require('./const/BgpEvtConst');
+const { successResponse, errorResponse } = require('../utils/responseUtils');
+const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
+const Logger = require('../log/logger');
+const WorkerWithPromise = require('../worker/workerWithPromise');
+const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
+
 class BgpSimulatorApp {
     constructor(ipc) {
         this.bgpStart = false;
@@ -94,7 +95,7 @@ class BgpSimulatorApp {
             this.logger.info('handleStartBgp', bgpData);
 
             const workerPath = this.isDev
-                ? path.join(__dirname, './worker/bgpSimulatorWorker.js')
+                ? path.join(__dirname, '../worker/bgpSimulatorWorker.js')
                 : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpSimulatorWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
