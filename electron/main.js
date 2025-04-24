@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
 const log = require('electron-log');
 const BgpSimulatorApp = require('./app/bgpSimulatorApp');
 const StringGeneratorApp = require('./app/stringGeneratorApp');
 const bmpEmulatorApp = require('./app/bmpEmulatorApp');
-const packageJson = require('../package.json');
+const SystemMenuApp = require('./app/systemMenuApp');
 
 // 配置 electron-log
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
@@ -17,32 +17,12 @@ let mainWindow = null;
 let stringGeneratorApp = null;
 let bgpSimulatorApp = null;
 
-function showAboutDialog() {
-    const aboutMessage = `
-MiniTools
-Version: ${packageJson.version}
-Author: ${packageJson.author.name}
-Email: ${packageJson.author.email}
-Environment: ${isDev ? 'Development' : 'Production'}
-Electron: ${process.versions.electron}
-Node.js: ${process.versions.node}
-Chrome: ${process.versions.chrome}
-    `.trim();
-
-    dialog.showMessageBox({
-        type: 'info',
-        title: 'About MiniTools',
-        message: aboutMessage,
-        buttons: ['OK']
-    });
-}
-
 function createWindow() {
     const win = new BrowserWindow({
         width: 1100,
         height: 800,
         resizable: false, // 固定大小，不允许调整
-        autoHideMenuBar: false, // 显示菜单栏
+        autoHideMenuBar: true, // 显示菜单栏
         frame: true, // 保持原生边框
         center: true, // 窗口居中显示
         backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
@@ -53,38 +33,6 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     });
-
-    // 创建菜单
-    const template = [
-        {
-            label: '帮助',
-            submenu: [
-                {
-                    label: '关于',
-                    click: () => {
-                        showAboutDialog();
-                    }
-                },
-                {
-                    label: '开发者选项',
-                    accelerator: process.platform === 'darwin' ? 'F12' : 'F12',
-                    click: () => {
-                        win.webContents.openDevTools();
-                    }
-                },
-                {
-                    label: '重新加载',
-                    accelerator: process.platform === 'darwin' ? 'F5' : 'F5',
-                    click: () => {
-                        win.reload();
-                    }
-                }
-            ]
-        }
-    ];
-
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
 
     log.info(`Dev ${isDev} __dirname ${__dirname}`);
     const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
@@ -106,18 +54,21 @@ function createWindow() {
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
+
+    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
-    bgpSimulatorApp = new BgpSimulatorApp(ipcMain);
-    stringGeneratorApp = new StringGeneratorApp(ipcMain);
-    bmpEmulatorApp.registerHandlers(ipcMain);
-
     createWindow();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
+
+    bgpSimulatorApp = new BgpSimulatorApp(ipcMain);
+    stringGeneratorApp = new StringGeneratorApp(ipcMain);
+    systemMenuApp = new SystemMenuApp(ipcMain, mainWindow);
+    bmpEmulatorApp.registerHandlers(ipcMain);
 });
 
 app.on('window-all-closed', () => {

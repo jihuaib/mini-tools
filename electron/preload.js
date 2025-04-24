@@ -1,5 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+// 通用模块
+contextBridge.exposeInMainWorld('commonApi', {
+    openDeveloperOptions: () => ipcRenderer.send('common:openDeveloperOptions'),
+    openSoftwareInfo: () => ipcRenderer.send('common:openSoftwareInfo')
+});
+
 // 字符串生成模块
 contextBridge.exposeInMainWorld('stringGeneratorApi', {
     generateString: templateData => ipcRenderer.invoke('string-generator:generateString', templateData),
