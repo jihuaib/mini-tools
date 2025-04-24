@@ -210,8 +210,8 @@
     }
 
     .content-container.content-expanded {
-        margin-left: 80px;
-        width: calc(100% - 80px);
+        margin-left: 90px;
+        width: calc(100% - 90px);
     }
 
     .content-area {
