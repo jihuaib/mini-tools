@@ -1,6 +1,6 @@
 <template>
     <div class="bgp-main-container">
-        <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
+        <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange" style="height: 55px">
             <a-tab-pane key="bgp-config" tab="BGP配置"></a-tab-pane>
             <a-tab-pane key="bgp-send-route" tab="发送路由"></a-tab-pane>
             <a-tab-pane key="bgp-receive-route" tab="接收路由"></a-tab-pane>
@@ -40,21 +40,10 @@
             }
         }
     });
-
-    onActivated(() => {
-        console.log('[BgpMain] activated');
-    });
-    onDeactivated(() => {
-        console.log('[BgpMain] deactivated');
-    });
-    onUnmounted(() => {
-        console.log('[BgpMain] unmounted');
-    });
 </script>
 
 <style scoped>
     .bgp-main-container {
         padding: 5px;
     }
-
 </style>

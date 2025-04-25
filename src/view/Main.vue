@@ -143,7 +143,9 @@
         () => route.path,
         () => {
             // 路由变化时清空验证错误
+            console.log('1');
             if (currentComponent.value && typeof currentComponent.value.clearValidationErrors === 'function') {
+                console.log('11');
                 currentComponent.value.clearValidationErrors();
             }
         }
@@ -175,14 +177,14 @@
         background-color: #fff;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
         transition: all 0.2s;
-        width: 200px;
+        width: 150px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
     }
 
     .sider.collapsed {
-        width: 80px;
+        width: 60px;
     }
 
     .toggle-btn {
@@ -203,15 +205,15 @@
     }
 
     .content-container {
-        margin-left: 200px;
+        margin-left: 155px;
         transition: all 0.2s;
-        width: calc(100% - 200px);
+        width: calc(100% - 155px);
         display: flex;
     }
 
     .content-container.content-expanded {
-        margin-left: 90px;
-        width: calc(100% - 90px);
+        margin-left: 65px;
+        width: calc(100% - 65px);
     }
 
     .content-area {
@@ -229,6 +231,6 @@
 
     :deep(.ant-menu-inline-collapsed .ant-menu-item),
     :deep(.ant-menu-inline-collapsed .ant-menu-submenu-title) {
-        padding: 0 calc(50% - 16px / 2) !important;
+        padding: 0 calc(30% - 16px / 2) !important;
     }
 </style>

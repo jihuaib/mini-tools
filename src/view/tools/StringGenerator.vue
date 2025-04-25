@@ -184,16 +184,6 @@
             console.error('[StringGeneratorConfig] 配置文件加载失败', savedConfig.msg);
         }
     });
-
-    onActivated(() => {
-    console.log('[StringGenerator] activated');
-});
-onDeactivated(() => {
-    console.log('[StringGenerator] deactivated');
-});
-onUnmounted(() => {
-    console.log('[StringGenerator] unmounted');
-});
 </script>
 
 <style scoped>
