@@ -1,6 +1,6 @@
 <template>
     <div class="tool-main-container">
-        <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
+        <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange" style="height: 55px">
             <a-tab-pane key="string-generator" tab="字符串生成"></a-tab-pane>
         </a-tabs>
         <!-- 缓存子页面 -->
@@ -42,5 +42,4 @@
     .tool-main-container {
         padding: 5px;
     }
-
 </style>
