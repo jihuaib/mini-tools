@@ -65,7 +65,7 @@
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, toRaw, watch, onMounted, onActivated, onDeactivated, onUnmounted } from 'vue';
+    import { ref, toRaw, watch, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import {
@@ -107,16 +107,19 @@
     const validateField = (value, field, validator) => {
         if (field === 'end') {
             return validator(value, formState.value.start, validationErrors);
+        } else if (field === 'start') {
+            return validator(value, formState.value.end, validationErrors);
+        } else {
+            return validator(value, validationErrors);
         }
-        return validator(value, validationErrors);
     };
 
     const saveDebounced = debounce(async data => {
         const resp = await window.stringGeneratorApi.saveConfig(data);
         if (resp.status === 'success') {
-            console.info('[StringGeneratorConfig] 配置文件保存成功');
+            console.info(resp.msg);
         } else {
-            console.error('[StringGeneratorConfig] 配置文件保存失败', resp.msg);
+            console.error(resp.msg);
         }
     }, 300);
 
@@ -184,16 +187,6 @@
             console.error('[StringGeneratorConfig] 配置文件加载失败', savedConfig.msg);
         }
     });
-
-    onActivated(() => {
-    console.log('[StringGenerator] activated');
-});
-onDeactivated(() => {
-    console.log('[StringGenerator] deactivated');
-});
-onUnmounted(() => {
-    console.log('[StringGenerator] unmounted');
-});
 </script>
 
 <style scoped>

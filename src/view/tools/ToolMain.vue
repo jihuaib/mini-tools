@@ -15,13 +15,11 @@
 <script setup>
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { useStore } from 'vuex';
 
     defineOptions({
         name: 'ToolMain'
     });
 
-    const store = useStore();
     const router = useRouter();
     const activeTabKey = ref('string-generator');
     const currentTab = ref(null);

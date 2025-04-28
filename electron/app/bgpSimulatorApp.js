@@ -9,14 +9,14 @@ const WorkerWithPromise = require('../worker/workerWithPromise');
 const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
 
 class BgpSimulatorApp {
-    constructor(ipc) {
+    constructor(ipc, store) {
         this.bgpStart = false;
         this.worker = null;
-        this.configName = 'bgp-simulator-config.json';
+        this.configFileKey = 'bgp-config';
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
         this.stateChangeHandler = null;
-
+        this.store = store;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
     }
@@ -40,22 +40,11 @@ class BgpSimulatorApp {
         }
     }
 
-    // 获取配置文件路径
-    getConfigPath() {
-        return path.join(app.getPath('userData'), this.configName);
-    }
-
     // 保存配置
     async handleSaveConfig(event, config) {
         try {
-            const configPath = this.getConfigPath();
-            const configDir = path.dirname(configPath);
-            // 确保目录存在
-            if (!fs.existsSync(configDir)) {
-                await fs.promises.mkdir(configDir, { recursive: true });
-            }
-            await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
-            return successResponse(null, '');
+            this.store.set(this.configFileKey, config);
+            return successResponse(null, 'BGP配置文件保存成功');
         } catch (error) {
             this.logger.error('Error saving config:', error);
             return errorResponse(error.message);
@@ -65,12 +54,11 @@ class BgpSimulatorApp {
     // 加载配置
     async handleLoadConfig() {
         try {
-            const configPath = this.getConfigPath();
-            if (!fs.existsSync(configPath)) {
+            const config = this.store.get(this.configFileKey);
+            if (!config) {
                 return successResponse(null, 'BGP配置文件不存在');
             }
-            const data = await fs.promises.readFile(configPath, 'utf8');
-            return successResponse(JSON.parse(data), 'BGP配置文件加载成功');
+            return successResponse(config, 'BGP配置文件加载成功');
         } catch (error) {
             this.logger.error('Error loading config:', error);
             return errorResponse(error.message);

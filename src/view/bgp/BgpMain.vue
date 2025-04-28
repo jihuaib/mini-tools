@@ -15,15 +15,13 @@
 </template>
 
 <script setup>
-    import { ref, onActivated, onDeactivated, onUnmounted } from 'vue';
+    import { ref, onActivated } from 'vue';
     import { useRouter } from 'vue-router';
-    import { useStore } from 'vuex';
 
     defineOptions({
         name: 'BgpMain'
     });
 
-    const store = useStore();
     const router = useRouter();
     const activeTabKey = ref('bgp-config');
     const currentTab = ref(null);
@@ -42,14 +40,10 @@
     });
 
     onActivated(() => {
-        console.log('[BgpMain] activated');
+        activeTabKey.value = 'bgp-config';
+        router.push('/bgp/bgp-config');
     });
-    onDeactivated(() => {
-        console.log('[BgpMain] deactivated');
-    });
-    onUnmounted(() => {
-        console.log('[BgpMain] unmounted');
-    });
+
 </script>
 
 <style scoped>

@@ -12,6 +12,7 @@ class BgpSimulatorWorker {
         this.bgpState = BgpConst.BGP_STATE.IDLE;
         this.server = null;
         this.bgpSocket = null;
+        this.packetBuffer = Buffer.alloc(0); // 添加缓冲区用于存储不完整的报文
 
         this.logger = new Logger();
 
@@ -113,13 +114,21 @@ class BgpSimulatorWorker {
     }
 
     handleBgpPacket(buffer) {
-        // 可能多个报文
-        let packet = buffer;
+        // 将新接收的数据追加到缓冲区
+        this.packetBuffer = Buffer.concat([this.packetBuffer, buffer]);
 
-        while (packet.length > 0) {
-            const header = this.parseBgpHeader(packet);
-            const spiltBuffer = packet.subarray(0, header.length); // 剩余报文体
-            const parsedPacket = parseBgpPacket(spiltBuffer);
+        // 循环处理缓冲区中的完整报文
+        while (this.packetBuffer.length >= BgpConst.BGP_HEAD_LEN) {
+            const header = this.parseBgpHeader(this.packetBuffer);
+
+            // 如果缓冲区中的数据不足以构成一个完整的报文，等待更多数据
+            if (this.packetBuffer.length < header.length) {
+                break;
+            }
+
+            // 提取完整的报文
+            const packet = this.packetBuffer.subarray(0, header.length);
+            const parsedPacket = parseBgpPacket(packet);
 
             if (header.type == BgpConst.BGP_PACKET_TYPE.OPEN) {
                 this.logger.info(`recv open message ${getBgpPacketSummary(parsedPacket)}`);
@@ -158,7 +167,8 @@ class BgpSimulatorWorker {
                 this.logger.info(`recv update message ${getBgpPacketSummary(parsedPacket)}`);
             }
 
-            packet = packet.subarray(header.length);
+            // 从缓冲区中移除已处理的报文
+            this.packetBuffer = this.packetBuffer.subarray(header.length);
         }
     }
 

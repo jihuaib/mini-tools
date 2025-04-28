@@ -1,16 +1,16 @@
 const { app } = require('electron');
 const path = require('path');
-const fs = require('fs');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const Logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-
+const Store = require('electron-store');
 class StringGeneratorApp {
-    constructor(ipc) {
+    constructor(ipc, store) {
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
-        this.configName = 'string-generator-config.json';
+        this.configFileKey = 'string-generator';
         this.registerHandlers(ipc);
+        this.store = store;
     }
 
     registerHandlers(ipc) {
@@ -21,21 +21,10 @@ class StringGeneratorApp {
         ipc.handle('string-generator:loadConfig', async () => this.handleLoadConfig());
     }
 
-    // 获取配置文件路径
-    getConfigPath() {
-        return path.join(app.getPath('userData'), this.configName);
-    }
-
     // 保存配置
     async handleSaveConfig(event, config) {
         try {
-            const configPath = this.getConfigPath();
-            const configDir = path.dirname(configPath);
-            // 确保目录存在
-            if (!fs.existsSync(configDir)) {
-                await fs.promises.mkdir(configDir, { recursive: true });
-            }
-            await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+            this.store.set(this.configFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
             this.logger.error('Error saving config:', error);
@@ -46,12 +35,11 @@ class StringGeneratorApp {
     // 加载配置
     async handleLoadConfig() {
         try {
-            const configPath = this.getConfigPath();
-            if (!fs.existsSync(configPath)) {
+            const config = this.store.get(this.configFileKey);
+            if (!config) {
                 return successResponse(null, '配置文件不存在');
             }
-            const data = await fs.promises.readFile(configPath, 'utf8');
-            return successResponse(JSON.parse(data), '配置文件加载成功');
+            return successResponse(config, '配置文件加载成功');
         } catch (error) {
             this.logger.error('Error loading config:', error);
             return errorResponse(error.message);

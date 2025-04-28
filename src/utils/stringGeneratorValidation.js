@@ -17,11 +17,13 @@ export const validatePlaceholder = (value, validationErrors) => {
     }
 };
 
-export const validateStart = (value, validationErrors) => {
+export const validateStart = (value, endValue, validationErrors) => {
     if (!value) {
         validationErrors.value.start = '请输入开始数值';
     } else if (!isNumber(value)) {
         validationErrors.value.start = '请输入数字';
+    } else if (parseInt(value) > parseInt(endValue)) {
+        validationErrors.value.start = '开始值必须小于或等于结束值';
     } else {
         validationErrors.value.start = '';
     }

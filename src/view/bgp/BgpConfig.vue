@@ -378,11 +378,9 @@
     const saveDebounced = debounce(async data => {
         const result = await window.bgpEmulatorApi.saveConfig(data);
         if (result.status === 'success') {
-            if (result.msg !== '') {
-                message.success(result.msg);
-            }
+            console.info(result.msg);
         } else {
-            message.error(result.msg || '配置文件保存失败');
+            console.error(result.msg);
         }
     }, 300);
 

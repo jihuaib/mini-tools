@@ -5,7 +5,7 @@ const BgpSimulatorApp = require('./app/bgpSimulatorApp');
 const StringGeneratorApp = require('./app/stringGeneratorApp');
 const bmpEmulatorApp = require('./app/bmpEmulatorApp');
 const SystemMenuApp = require('./app/systemMenuApp');
-
+const Store = require('electron-store');
 // 配置 electron-log
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
 log.transports.file.maxFiles = 3; // 最多保留3个日志文件
@@ -65,8 +65,13 @@ app.whenReady().then(() => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
 
-    bgpSimulatorApp = new BgpSimulatorApp(ipcMain);
-    stringGeneratorApp = new StringGeneratorApp(ipcMain);
+    const store = new Store({
+        name: 'Program Data',
+        fileExtension: 'json',
+        cwd: app.getPath('userData')
+    });
+    bgpSimulatorApp = new BgpSimulatorApp(ipcMain, store);
+    stringGeneratorApp = new StringGeneratorApp(ipcMain, store);
     systemMenuApp = new SystemMenuApp(ipcMain, mainWindow);
     bmpEmulatorApp.registerHandlers(ipcMain);
 });
