@@ -6,7 +6,7 @@ const Logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
 
-class BgpSimulatorApp {
+class BgpApp {
     constructor(ipc, store) {
         this.bgpStart = false;
         this.worker = null;
@@ -14,7 +14,7 @@ class BgpSimulatorApp {
         this.peerConfigFileKey = 'peer-config';
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
-        this.stateChangeHandler = null;
+        this.peerChangeHandler = null;
         this.store = store;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
@@ -33,6 +33,7 @@ class BgpSimulatorApp {
 
         // peer
         ipc.handle('bgp:configPeer', async (event, peerConfigData) => this.handleConfigPeer(event, peerConfigData));
+        ipc.handle('bgp:getPeerInfo', async () => this.handleGetPeerInfo());
 
         // route
         ipc.handle('bgp:sendRoute', async (event, config) => this.handleSendRoute(event, config));
@@ -93,7 +94,6 @@ class BgpSimulatorApp {
         const webContents = event.sender;
         try {
             if (this.bgpStart) {
-
             }
 
             this.logger.info(`${JSON.stringify(peerConfigData)}`);
@@ -115,6 +115,8 @@ class BgpSimulatorApp {
         }
     }
 
+
+
     async handleStartBgp(event, bgpConfigData) {
         const webContents = event.sender;
         try {
@@ -126,19 +128,20 @@ class BgpSimulatorApp {
             this.logger.info(`${JSON.stringify(bgpConfigData)}`);
 
             const workerPath = this.isDev
-                ? path.join(__dirname, '../worker/bgpSimulatorWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpSimulatorWorker.js');
+                ? path.join(__dirname, '../worker/bgpWorker.js')
+                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
             // 定义事件处理函数
-            this.stateChangeHandler = data => {
-                webContents.send('bgp:updatePeerState', successResponse({ state: data.state }));
+            this.peerChangeHandler = data => {
+                console.log(`peerChangeHandler data: ${JSON.stringify(data)}`);
+                webContents.send('bgp:peerChange', successResponse(data.data));
             };
 
             // 注册事件监听器，处理来自worker的事件通知
-            this.worker.addEventListener(BGP_EVT_TYPES.BGP_STATE_CHANGE, this.stateChangeHandler);
+            this.worker.addEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
 
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpConfigData);
 
@@ -168,8 +171,24 @@ class BgpSimulatorApp {
             return errorResponse(error.message);
         } finally {
             // 移除事件监听器
-            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_STATE_CHANGE, this.stateChangeHandler);
+            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
+        }
+    }
+
+    async handleGetPeerInfo() {
+        if (!this.bgpStart) {
+            this.logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GET_PEER_INFO, null);
+            this.logger.info(`获取Peer信息成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取Peer信息成功');
+        } catch (error) {
+            this.logger.error('Error getting peer info:', error);
+            return errorResponse(error.message);
         }
     }
 
@@ -230,4 +249,4 @@ class BgpSimulatorApp {
     }
 }
 
-module.exports = BgpSimulatorApp;
+module.exports = BgpApp;

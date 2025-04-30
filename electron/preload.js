@@ -27,7 +27,8 @@ contextBridge.exposeInMainWorld('bgpApi', {
 
     // peer
     configPeer: peerConfigData => ipcRenderer.invoke('bgp:configPeer', peerConfigData),
-    onUpdatePeerState: callback => ipcRenderer.on('bgp:updatePeerState', (_event, data) => callback(data)),
+    onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
+    getPeerInfo: () => ipcRenderer.invoke('bgp:getPeerInfo'),
 
     // route
     sendRoutes: config => ipcRenderer.invoke('bgp:sendRoute', config),

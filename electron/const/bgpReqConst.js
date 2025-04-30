@@ -4,7 +4,8 @@ const BGP_REQ_TYPES = {
     STOP_BGP: 2,
     CONFIG_PEER: 3,
     SEND_ROUTE: 4,
-    WITHDRAW_ROUTE: 5
+    WITHDRAW_ROUTE: 5,
+    GET_PEER_INFO: 6
 };
 
 module.exports = { BGP_REQ_TYPES };

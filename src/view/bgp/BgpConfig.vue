@@ -5,7 +5,10 @@
                 <a-row>
                     <a-col :span="12">
                         <a-form-item label="Local AS" name="localAs">
-                            <a-tooltip :title="bgpConfigvalidationErrors.localAs" :open="!!bgpConfigvalidationErrors.localAs">
+                            <a-tooltip
+                                :title="bgpConfigvalidationErrors.localAs"
+                                :open="!!bgpConfigvalidationErrors.localAs"
+                            >
                                 <a-input
                                     v-model:value="bgpConfigData.localAs"
                                     @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
@@ -16,7 +19,10 @@
                     </a-col>
                     <a-col :span="12">
                         <a-form-item label="Router ID" name="routerId">
-                            <a-tooltip :title="bgpConfigvalidationErrors.routerId" :open="!!bgpConfigvalidationErrors.routerId">
+                            <a-tooltip
+                                :title="bgpConfigvalidationErrors.routerId"
+                                :open="!!bgpConfigvalidationErrors.routerId"
+                            >
                                 <a-input
                                     v-model:value="bgpConfigData.routerId"
                                     @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
@@ -41,7 +47,10 @@
                 <a-row>
                     <a-col :span="12">
                         <a-form-item label="Peer IP" name="peerIp">
-                            <a-tooltip :title="peerConfigvalidationErrors.peerIp" :open="!!peerConfigvalidationErrors.peerIp">
+                            <a-tooltip
+                                :title="peerConfigvalidationErrors.peerIp"
+                                :open="!!peerConfigvalidationErrors.peerIp"
+                            >
                                 <a-input
                                     v-model:value="peerConfigData.peerIp"
                                     @blur="e => validatePeerConfigField(e.target.value, 'peerIp', validatePeerIp)"
@@ -52,7 +61,10 @@
                     </a-col>
                     <a-col :span="12">
                         <a-form-item label="Peer AS" name="peerAs">
-                            <a-tooltip :title="peerConfigvalidationErrors.peerAs" :open="!!peerConfigvalidationErrors.peerAs">
+                            <a-tooltip
+                                :title="peerConfigvalidationErrors.peerAs"
+                                :open="!!peerConfigvalidationErrors.peerAs"
+                            >
                                 <a-input
                                     v-model:value="peerConfigData.peerAs"
                                     @blur="e => validatePeerConfigField(e.target.value, 'peerAs', validatePeerAs)"
@@ -66,7 +78,10 @@
                 <a-row>
                     <a-col :span="12">
                         <a-form-item label="Hold Time" name="holdTime">
-                            <a-tooltip :title="peerConfigvalidationErrors.holdTime" :open="!!peerConfigvalidationErrors.holdTime">
+                            <a-tooltip
+                                :title="peerConfigvalidationErrors.holdTime"
+                                :open="!!peerConfigvalidationErrors.holdTime"
+                            >
                                 <a-input
                                     v-model:value="peerConfigData.holdTime"
                                     @blur="e => validatePeerConfigField(e.target.value, 'holdTime', validateHoldTime)"
@@ -117,9 +132,7 @@
                     <a-col :span="24">
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space size="middle">
-                                <a-button type="primary" html-type="submit" :disabled="!bgpRunning">
-                                    配置邻居
-                                </a-button>
+                                <a-button type="primary" html-type="submit" :disabled="!bgpRunning">配置邻居</a-button>
                             </a-space>
                         </a-form-item>
                     </a-col>
@@ -132,13 +145,15 @@
                 <a-card title="邻居信息" class="route-config-card">
                     <div>
                         <a-tabs v-model:activeKey="activePeerInfoTabKey">
-                            <a-tab-pane key="ipv4-peer" tab="IPv4邻居">
+                            <a-tab-pane key="ipv4-unc-peer" tab="IPv4-UNC邻居">
                                 <a-table
                                     :columns="PeerInfoColumns"
-                                    :data-source="ipv4RouteList"
-                                    :rowKey="record => record.peerIp + record.mask"
+                                    :data-source="ipv4UncPeerList"
+                                    :rowKey="
+                                        record =>
+                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
+                                    "
                                     :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                                    :loading="routeLoading"
                                     :scroll="{ y: 200 }"
                                     size="small"
                                 >
@@ -149,13 +164,15 @@
                                     </template>
                                 </a-table>
                             </a-tab-pane>
-                            <a-tab-pane key="ipv6-peer" tab="IPv6邻居">
+                            <a-tab-pane key="ipv6-unc-peer" tab="IPv6-UNC邻居">
                                 <a-table
                                     :columns="PeerInfoColumns"
-                                    :data-source="ipv6RouteList"
-                                    :rowKey="record => record.peerIp + record.mask"
+                                    :data-source="ipv6UncPeerList"
+                                    :rowKey="
+                                        record =>
+                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
+                                    "
                                     :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                                    :loading="routeLoading"
                                     :scroll="{ y: 200 }"
                                     size="small"
                                 >
@@ -192,13 +209,7 @@
         validatePeerIp,
         validatePeerAs,
         validateRouterId,
-        validateHoldTime,
-        validateIpv4Prefix,
-        validateIpv4Mask,
-        validateIpv4Count,
-        validateIpv6Prefix,
-        validateIpv6Mask,
-        validateIpv6Count
+        validateHoldTime
     } from '../../utils/bgpSimulatorValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
@@ -244,35 +255,44 @@
         openCapCustom: ''
     });
 
-    const ipv4RouteList = ref([]);
-    const ipv6RouteList = ref([]);
-    const activePeerInfoTabKey = ref('ipv4-peer');
+    const ipv4UncPeerList = ref([]);
+    const ipv6UncPeerList = ref([]);
+    const activePeerInfoTabKey = ref('ipv4-unc-peer');
     const PeerInfoColumns = [
         {
-            title: 'Peer',
+            title: 'Local IP',
+            dataIndex: 'localIp',
+            ellipsis: true
+        },
+        {
+            title: 'Local AS',
+            dataIndex: 'localAs',
+            ellipsis: true
+        },
+        {
+            title: 'Peer IP',
             dataIndex: 'peerIp',
-            key: 'prefix',
-            width: '150px',
+            key: 'peerIp',
             ellipsis: true
         },
         {
-            title: '掩码',
-            dataIndex: 'mask',
-            key: 'mask',
-            width: '80px',
+            title: 'Peer AS',
+            dataIndex: 'peerAs',
             ellipsis: true
         },
         {
-            title: '下一跳',
-            dataIndex: 'nextHop',
-            key: 'nextHop',
-            width: '150px',
+            title: 'Router ID',
+            dataIndex: 'routerId',
+            ellipsis: true
+        },
+        {
+            title: 'Peer State',
+            dataIndex: 'peerState',
             ellipsis: true
         },
         {
             title: '操作',
-            key: 'action',
-            width: '100px'
+            key: 'action'
         }
     ];
 
@@ -296,13 +316,13 @@
 
     const bgpConfigvalidationErrors = ref({
         localAs: '',
-        routerId: '',
+        routerId: ''
     });
 
     const peerConfigvalidationErrors = ref({
         peerIp: '',
         peerAs: '',
-        holdTime: '',
+        holdTime: ''
     });
 
     // 暴露清空验证错误的方法给父组件
@@ -364,10 +384,27 @@
     );
 
     onMounted(async () => {
-        window.bgpApi.onUpdatePeerState(data => {
+        window.bgpApi.onPeerChange(data => {
             if (data.status === 'success') {
                 const response = data.data;
-                peerConfigData.value.peerState = response.state;
+                // 根据地址族类型更新对应的表格数据
+                if (response.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+                    const index = ipv4UncPeerList.value.findIndex(
+                        peer => `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                               `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
+                    );
+                    if (index !== -1) {
+                        ipv4UncPeerList.value[index] = { ...ipv4UncPeerList.value[index], ...response };
+                    }
+                } else if (response.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+                    const index = ipv6UncPeerList.value.findIndex(
+                        peer => `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                               `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
+                    );
+                    if (index !== -1) {
+                        ipv6UncPeerList.value[index] = { ...ipv6UncPeerList.value[index], ...response };
+                    }
+                }
             } else {
                 message.error(data.msg);
             }
@@ -390,7 +427,9 @@
             peerConfigData.value.peerIp = savedPeerConfig.data.peerIp;
             peerConfigData.value.peerAs = savedPeerConfig.data.peerAs;
             peerConfigData.value.holdTime = savedPeerConfig.data.holdTime;
-            peerConfigData.value.openCap = Array.isArray(savedPeerConfig.data.openCap) ? [...savedPeerConfig.data.openCap] : [];
+            peerConfigData.value.openCap = Array.isArray(savedPeerConfig.data.openCap)
+                ? [...savedPeerConfig.data.openCap]
+                : [];
             peerConfigData.value.addressFamily = Array.isArray(savedPeerConfig.data.addressFamily)
                 ? [...savedPeerConfig.data.addressFamily]
                 : [];
@@ -477,6 +516,22 @@
                 if (result.msg !== '') {
                     message.success(result.msg);
                 }
+                const peerInfo = await window.bgpApi.getPeerInfo();
+                if (peerInfo.status === 'success') {
+                    // 处理 IPv4-UNC 邻居信息 (addrFamilyType: 1)
+                    ipv4UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV4_UNC])
+                        ? [...peerInfo.data[ADDRESS_FAMILY.IPV4_UNC]]
+                        : [];
+
+                    // 处理 IPv6-UNC 邻居信息 (addrFamilyType: 2)
+                    ipv6UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV6_UNC])
+                        ? [...peerInfo.data[ADDRESS_FAMILY.IPV6_UNC]]
+                        : [];
+                } else {
+                    console.error(peerInfo.msg || 'Peer信息查询失败');
+                    ipv4UncPeerList.value = [];
+                    ipv6UncPeerList.value = [];
+                }
             } else {
                 bgpLoading.value = false;
                 message.error(result.msg || 'Peer配置失败');
@@ -484,6 +539,7 @@
         } catch (e) {
             bgpLoading.value = false;
             message.error(e);
+            console.error(e);
         }
     };
 
@@ -502,6 +558,11 @@
 </script>
 
 <style scoped>
+    .bgp-config-container {
+        margin-top: 10px;
+        margin-left: 8px;
+    }
+
     :deep(.ant-input[disabled]) {
         background-color: #f5f5f5;
         color: rgba(0, 0, 0, 0.85);

@@ -116,17 +116,34 @@ function getAddrFamilyType(afi, safi) {
     switch (afi) {
         case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
             if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST
+                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST;
             }
             break;
         case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST
+                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST;
             }
             break;
     }
 
     return addrFamily;
+}
+
+function getAfiAndSafi(addrFamily) {
+    let afi;
+    let safi;
+    switch (addrFamily) {
+        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST:
+            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV4;
+            safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
+            break;
+        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST:
+            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
+            safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
+            break;
+    }
+
+    return { afi, safi };
 }
 
 module.exports = {
@@ -135,5 +152,6 @@ module.exports = {
     writeUInt32,
     ipToBytes,
     rdBufferToString,
-    getAddrFamilyType
+    getAddrFamilyType,
+    getAfiAndSafi
 };

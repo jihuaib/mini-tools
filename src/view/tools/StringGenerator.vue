@@ -190,6 +190,11 @@
 </script>
 
 <style scoped>
+    .string-generator-card {
+        margin-top: 10px;
+        margin-left: 8px;
+    }
+
     :deep(.ant-form-item) {
         margin-bottom: 10px;
     }

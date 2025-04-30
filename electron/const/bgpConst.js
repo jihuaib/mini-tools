@@ -66,13 +66,13 @@ const BGP_OPEN_CAP_MAP = new Map(BGP_OPEN_CAP.map(({ key, code }) => [key, code]
 // 渲染进程传入的地址组类型
 const BGP_ADDR_FAMILY_UI = {
     ADDR_FAMILY_IPV4_UNICAST: 1,
-    ADDR_FAMILY_IPV6_UNICAST: 2,
+    ADDR_FAMILY_IPV6_UNICAST: 2
 };
 
 // 协议规定的afi
 const BGP_AFI_TYPE = {
     AFI_IPV4: 1,
-    AFI_IPV6: 2,
+    AFI_IPV6: 2
 };
 
 // 协议规定的safi

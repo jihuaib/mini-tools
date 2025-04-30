@@ -1,6 +1,6 @@
 const BgpConst = require('../const/bgpConst');
 const BgpPeer = require('./bgpPeer');
-const { genRouteIps, writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
+const { genRouteIps, writeUInt16, writeUInt32, ipToBytes, getAddrFamilyType, getAfiAndSafi } = require('../utils/ipUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
@@ -8,12 +8,13 @@ const WorkerMessageHandler = require('./workerMessageHandler');
 const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
 
 class BgpSession {
-    constructor(bgpConfigData, peerConfigData) {
+    constructor(bgpConfigData, peerConfigData, messageHandler) {
         this.socket = null;
         this.bgpConfigData = bgpConfigData; // peer配置数据
         this.peerConfigData = peerConfigData; // peer配置数据
         this.packetBuffer = Buffer.alloc(0); // 添加缓冲区用于存储不完整的报文
         this.peerMap = new Map();
+        this.messageHandler = messageHandler;
 
         this.logger = new Logger();
         this.sessState = BgpConst.BGP_PEER_STATE.IDLE;
@@ -21,47 +22,155 @@ class BgpSession {
 
     createPeer() {
         this.peerConfigData.addressFamily.forEach(family => {
-            if (family == BgpConst.BGP_ADDR_FAMILY_UI.AFI_IPV4) {
-                const bgpPeer = new BgpPeer();
-                this.peerMap.set(BgpPeer.makeKey(0, this.peerConfigData.peerIp, BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST), bgpPeer);
-            } else if (family == BgpConst.BGP_ADDR_FAMILY_UI.AFI_IPV6) {
-                const bgpPeer = new BgpPeer();
-                this.peerMap.set(BgpPeer.makeKey(0, this.peerConfigData.peerIp, BgpConst.BGP_AFI_TYPE.AFI_IPV6, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST), bgpPeer);
+            if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                const bgpPeer = new BgpPeer(
+                    this,
+                    0,
+                    this.socket ? this.socket.localAddress : 'N/A',
+                    this.bgpConfigData.localAs,
+                    this.peerConfigData.peerIp,
+                    this.peerConfigData.peerAs,
+                    BgpConst.BGP_AFI_TYPE.AFI_IPV4,
+                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST,
+                    this.bgpConfigData.routerId
+                );
+                this.peerMap.set(
+                    BgpPeer.makeKey(
+                        0,
+                        this.peerConfigData.peerIp,
+                        BgpConst.BGP_AFI_TYPE.AFI_IPV4,
+                        BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                    ),
+                    bgpPeer
+                );
+            } else if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                const bgpPeer = new BgpPeer(
+                    this,
+                    0,
+                    this.socket ? this.socket.localAddress : 'N/A',
+                    this.bgpConfigData.localAs,
+                    this.peerConfigData.peerIp,
+                    this.peerConfigData.peerAs,
+                    BgpConst.BGP_AFI_TYPE.AFI_IPV6,
+                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST,
+                    this.bgpConfigData.routerId
+                );
+                this.peerMap.set(
+                    BgpPeer.makeKey(
+                        0,
+                        this.peerConfigData.peerIp,
+                        BgpConst.BGP_AFI_TYPE.AFI_IPV6,
+                        BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                    ),
+                    bgpPeer
+                );
             }
         });
     }
 
-    changeBgpFsmState(_bgpState) {
-        this.logger.info(
-            `bgp fsm state ${BgpConst.BGP_STATE_MAP.get(this.sessState)} -> ${BgpConst.BGP_STATE_MAP.get(_bgpState)}`
-        );
-
+    changeSessionFsmState(sessionState) {
         // 更新peer状态
-
-        // // 发送状态变更事件
-        // this.messageHandler.sendEvent(BGP_EVT_TYPES.BGP_STATE_CHANGE, {
-        //     state: `${BgpConst.BGP_STATE_MAP.get(_bgpState)}`
-        // });
+        this.peerMap.forEach(peer => {
+            peer.changePeerState(sessionState);
+        });
 
         // 更新状态
-        this.sessState = _bgpState;
+        this.sessState = sessionState;
+    }
+
+    changePeerState(peer, sessionState) {
+        peer.changePeerState(sessionState);
     }
 
     recvMsg(data) {
         this.handleBgpPacket(data);
     }
 
+    comparePeerConfig(localPeerConfigData, peerConfigData) {
+        if (localPeerConfigData.peerIp !== peerConfigData.peerIp) {
+            return true;
+        }
+
+        if (localPeerConfigData.peerAs !== peerConfigData.peerAs) {
+            return true;
+        }
+
+        if (localPeerConfigData.holdTime !== peerConfigData.holdTime) {
+            return true;
+        }
+
+        if (localPeerConfigData.openCap.length !== peerConfigData.openCap.length) {
+            return true;
+        }
+
+        for (let i = 0; i < localPeerConfigData.openCap.length; i++) {
+            if (localPeerConfigData.openCap[i] !== peerConfigData.openCap[i]) {
+                return true;
+            }
+        }
+
+        if (localPeerConfigData.addressFamily.length !== peerConfigData.addressFamily.length) {
+            return true;
+        }
+
+        for (let i = 0; i < localPeerConfigData.addressFamily.length; i++) {
+            if (localPeerConfigData.addressFamily[i] !== peerConfigData.addressFamily[i]) {
+                return true;
+            }
+        }
+
+        if (localPeerConfigData.role !== peerConfigData.role) {
+            return true;
+        }
+
+        if (localPeerConfigData.openCapCustom.trim() !== peerConfigData.openCapCustom.trim()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    configChange(peerConfigData) {
+        // 比较配置是否变化
+        if (!this.comparePeerConfig(this.peerConfigData, peerConfigData)) {
+            return false;
+        }
+
+        this.peerConfigData = peerConfigData;
+
+        // 发送Notification报文
+        this.sendNotification(BgpConst.BGP_ERROR_CODE.CONNECTION_REJECTED, BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.OTHER_CONFIGURATION_CHANGE);
+
+        this.socket.destroy();
+        this.socket = null;
+
+        // 清空peer
+        this.peerMap.clear();
+
+        return true;
+    }
+
     tcpConnectSuccess(socket) {
         this.socket = socket;
 
-        this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.CONNECT);
+        // 更新peer的localIp
+        this.peerMap.forEach(peer => {
+            peer.localIp = this.socket ? this.socket.localAddress : 'N/A';
+        });
+
+        this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.CONNECT);
         // 连接建立成功之后就发送open报文
         this.sendOpenMsg();
-        this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.OPEN_SENT);
+        this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_SENT);
     }
 
     static makeKey(vrfIndex, peerIp) {
         return `${vrfIndex}|${peerIp}`;
+    }
+
+    static parseKey(key) {
+        const [vrfIndex, peerIp] = key.split('|');
+        return { vrfIndex: parseInt(vrfIndex), peerIp };
     }
 
     parseBgpHeader(buffer) {
@@ -83,6 +192,12 @@ class BgpSession {
         this.logger.info(`send open msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 
+    handleNotification() {
+        this.peerMap.forEach(peer => {
+            peer.handleNotification();
+        });
+    }
+
     handleBgpPacket(buffer) {
         // 将新接收的数据追加到缓冲区
         this.packetBuffer = Buffer.concat([this.packetBuffer, buffer]);
@@ -100,17 +215,38 @@ class BgpSession {
             const packet = this.packetBuffer.subarray(0, header.length);
             const parsedPacket = parseBgpPacket(packet);
 
-            if (header.type == BgpConst.BGP_PACKET_TYPE.OPEN) {
+            if (header.type === BgpConst.BGP_PACKET_TYPE.OPEN) {
+                this.logger.info(`recv open message ${JSON.stringify(parsedPacket)}`);
                 this.logger.info(`recv open message ${getBgpPacketSummary(parsedPacket)}`);
+                const localAddressFamily = [];
+                this.peerConfigData.addressFamily.forEach(family => {
+                    localAddressFamily.push(family);
+                });
+                const remoteAddressFamily = [];
+                parsedPacket.capabilities.forEach(cap => {
+                    if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS) {
+                        const addrFamilyType = getAddrFamilyType(cap.afi, cap.safi);
+                        remoteAddressFamily.push(addrFamilyType);
+                    }
+                });
+
+                // 如果本地没使能的地址族，而远端使能了，更新该peer状态为NO_NEG
+                localAddressFamily.forEach(family => {
+                    if (!remoteAddressFamily.includes(family)) {
+                        const { afi, safi } = getAfiAndSafi(family);
+                        const peer = this.peerMap.get(BgpPeer.makeKey(0, this.peerConfigData.peerIp, afi, safi));
+                        this.changePeerState(peer, BgpConst.BGP_PEER_STATE.NO_NEG);
+                    }
+                });
                 this.sendKeepAliveMsg();
-                this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.OPEN_CONFIRM);
-            } else if (header.type == BgpConst.BGP_PACKET_TYPE.KEEPALIVE) {
-                if (this.sessState != BgpConst.BGP_PEER_STATE.ESTABLISHED) {
+                this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_CONFIRM);
+            } else if (header.type === BgpConst.BGP_PACKET_TYPE.KEEPALIVE) {
+                if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
                     this.logger.info(`recv keepalive message ${getBgpPacketSummary(parsedPacket)}`);
                 }
                 this.sendKeepAliveMsg();
-                if (this.sessState != BgpConst.BGP_PEER_STATE.ESTABLISHED) {
-                    this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.ESTABLISHED);
+                if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
+                    this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.ESTABLISHED);
                     if (this.sendRouteV4 != null) {
                         this.sendRoute(null, this.sendRouteV4);
                     }
@@ -118,14 +254,14 @@ class BgpSession {
                         this.sendRoute(null, this.sendRouteV6);
                     }
                 }
-            } else if (header.type == BgpConst.BGP_PACKET_TYPE.NOTIFICATION) {
+            } else if (header.type === BgpConst.BGP_PACKET_TYPE.NOTIFICATION) {
                 this.logger.info(`recv notification message ${getBgpPacketSummary(parsedPacket)}`);
-                this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.IDLE);
+                this.handleNotification();
                 if (this.socket) {
                     this.socket.destroy();
                     this.socket = null;
                 }
-            } else if (header.type == BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH) {
+            } else if (header.type === BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH) {
                 this.logger.info(`recv route-refresh message ${getBgpPacketSummary(parsedPacket)}`);
                 if (this.sendRouteV4 != null) {
                     this.sendRoute(null, this.sendRouteV4);
@@ -133,7 +269,7 @@ class BgpSession {
                 if (this.sendRouteV6 != null) {
                     this.sendRoute(null, this.sendRouteV6);
                 }
-            } else if (header.type == BgpConst.BGP_PACKET_TYPE.UPDATE) {
+            } else if (header.type === BgpConst.BGP_PACKET_TYPE.UPDATE) {
                 this.logger.info(`recv update message ${getBgpPacketSummary(parsedPacket)}`);
             }
 
@@ -170,14 +306,14 @@ class BgpSession {
                 const capType = BgpConst.BGP_OPEN_CAP_MAP.get(cap);
                 if (cap === BgpConst.BGP_CAPABILITY_UI.ADDR_FAMILY) {
                     this.peerConfigData.addressFamily.forEach(addrFamily => {
-                        if (addrFamily === BgpConst.BGP_ADDR_FAMILY_UI.AFI_IPV4) {
+                        if (addrFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
                             optParams.push(
                                 ...this.buildBgpCapability(BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE, 0x06, capType, 0x04, [
                                     ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4),
                                     ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
                                 ])
                             );
-                        } else if (addrFamily === BgpConst.BGP_ADDR_FAMILY_UI.AFI_IPV6) {
+                        } else if (addrFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
                             optParams.push(
                                 ...this.buildBgpCapability(BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE, 0x06, capType, 0x04, [
                                     ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
@@ -255,6 +391,23 @@ class BgpSession {
         return buffer;
     }
 
+    buildNotificationMsg(errorCode, errorSubcode) {
+        const buffer = Buffer.alloc(BgpConst.BGP_HEAD_LEN + 2);
+
+        // 填充 Marker（16 字节 0xff）
+        buffer.fill(0xff, 0, BgpConst.BGP_MARKER_LEN);
+        // Length (2 bytes)
+        buffer.writeUInt16BE(BgpConst.BGP_HEAD_LEN + 2, BgpConst.BGP_MARKER_LEN);
+        // Type (1 byte)
+        buffer.writeUInt8(BgpConst.BGP_PACKET_TYPE.NOTIFICATION, BgpConst.BGP_MARKER_LEN + 2);
+        // Error Code (1 byte)
+        buffer.writeUInt8(errorCode, BgpConst.BGP_MARKER_LEN + 3);
+        // Error Subcode (1 byte)
+        buffer.writeUInt8(errorSubcode, BgpConst.BGP_MARKER_LEN + 4);
+
+        return buffer;
+    }
+
     buildKeepAliveMsg() {
         const buffer = Buffer.alloc(BgpConst.BGP_HEAD_LEN);
 
@@ -271,10 +424,15 @@ class BgpSession {
     sendKeepAliveMsg() {
         const buf = this.buildKeepAliveMsg();
         this.socket.write(buf);
-        if (this.sessState != BgpConst.BGP_PEER_STATE.ESTABLISHED) {
+        if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
             const parsedPacket = parseBgpPacket(buf);
             this.logger.info(`send keepalive msg ${getBgpPacketSummary(parsedPacket)}`);
         }
+    }
+
+    sendNotification(errorCode, errorSubcode) {
+        const buffer = this.buildNotificationMsg(errorCode, errorSubcode);
+        this.socket.write(buffer);
     }
 }
 

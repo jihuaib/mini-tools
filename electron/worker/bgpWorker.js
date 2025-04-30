@@ -1,15 +1,15 @@
 const net = require('net');
 const util = require('util');
 const BgpConst = require('../const/bgpConst');
-const { genRouteIps, writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
+const { genRouteIps, writeUInt16, writeUInt32, ipToBytes, getAddrFamilyType } = require('../utils/ipUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
-const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
 const BgpSession = require('./bgpSession');
+const BgpPeer = require('./bgpPeer');
 
-class BgpSimulatorWorker {
+class BgpWorker {
     constructor() {
         this.bgpState = BgpConst.BGP_PEER_STATE.IDLE;
         this.ipv6Server = null;
@@ -35,6 +35,7 @@ class BgpSimulatorWorker {
         this.messageHandler.registerHandler(BGP_REQ_TYPES.CONFIG_PEER, this.configPeer.bind(this));
         this.messageHandler.registerHandler(BGP_REQ_TYPES.SEND_ROUTE, this.sendRoute.bind(this));
         this.messageHandler.registerHandler(BGP_REQ_TYPES.WITHDRAW_ROUTE, this.withdrawRoute.bind(this));
+        this.messageHandler.registerHandler(BGP_REQ_TYPES.GET_PEER_INFO, this.getPeerInfo.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -44,6 +45,7 @@ class BgpSimulatorWorker {
                 const clientPort = socket.remotePort;
 
                 this.logger.info(`Client connected from ${clientAddress}:${clientPort}`);
+                this.logger.info(`localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -67,8 +69,6 @@ class BgpSimulatorWorker {
                     this.logger.error(`TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
-                this.logger.info(`${JSON.stringify(this.bgpSessionMap)}`);
-
                 const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
                 if (null == bgpSession) {
                     socket.destroy();
@@ -86,10 +86,10 @@ class BgpSimulatorWorker {
 
                 this.bgpSocket = socket;
 
-                this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.CONNECT);
+                this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.CONNECT);
                 // 连接建立成功之后就发送open报文
                 this.sendOpenMsg();
-                this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.OPEN_SENT);
+                this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_SENT);
 
                 // 当接收到数据时处理数据
                 this.bgpSocket.on('data', data => {
@@ -136,8 +136,20 @@ class BgpSimulatorWorker {
 
     configPeer(messageId, peerConfigData) {
         // 创建session结构
-        const bgpSession = new BgpSession(this.bgpConfigData, peerConfigData);
-        this.bgpSessionMap.set(BgpSession.makeKey(0, peerConfigData.peerIp), bgpSession);
+        const sessKey = BgpSession.makeKey(0, peerConfigData.peerIp);
+        let bgpSession = null;
+        if (this.bgpSessionMap.has(sessKey)) {
+            bgpSession = this.bgpSessionMap.get(sessKey);
+            const isChange = bgpSession.configChange(peerConfigData);
+            if (!isChange) {
+                this.logger.info(`邻居配置变化`);
+                this.messageHandler.sendSuccessResponse(messageId, null, '邻居配置变化');
+                return;
+            }
+        } else {
+            bgpSession = new BgpSession(this.bgpConfigData, peerConfigData, this.messageHandler);
+            this.bgpSessionMap.set(sessKey, bgpSession);
+        }
 
         // 创建peer
         bgpSession.createPeer();
@@ -146,20 +158,28 @@ class BgpSimulatorWorker {
     }
 
     getPeerInfo(messageId) {
+        const ipv4PeerInfoList = [];
+        const ipv6PeerInfoList = [];
         this.bgpSessionMap.forEach((session, sessKey) => {
-            session.peerMap.forEach((peer, peerkey) => {
-
-            });
+            if (session.peerMap && session.peerMap.size > 0) {
+                session.peerMap.forEach((peer, peerkey) => {
+                    const peerInfo = peer.getPeerInfo();
+                    if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                        ipv4PeerInfoList.push(peerInfo);
+                    } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                        ipv6PeerInfoList.push(peerInfo);
+                    }
+                });
+            } else {
+                this.logger.warn('peerMap is empty or undefined for session:', sessKey);
+            }
         });
-        // 查询所有ipv4单播地址组邻居
 
-
-        // 查询所有ipv6单播地址组邻居
-
-        // 创建peer
-        bgpSession.createPeer();
-        this.logger.info(`邻居配置成功`);
-        this.messageHandler.sendSuccessResponse(messageId, null, '邻居配置成功');
+        const peerInfoList = {
+            [BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST]: [...ipv4PeerInfoList],
+            [BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST]: [...ipv6PeerInfoList]
+        };
+        this.messageHandler.sendSuccessResponse(messageId, peerInfoList, '邻居信息查询成功');
     }
 
     stopBgp(messageId) {
@@ -176,7 +196,7 @@ class BgpSimulatorWorker {
         }
 
         // Reset BGP state
-        this.changeBgpFsmState(BgpConst.BGP_PEER_STATE.IDLE);
+        this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.IDLE);
 
         // Clear configuration data
         this.bgpData = null;
@@ -674,4 +694,4 @@ class BgpSimulatorWorker {
     }
 }
 
-new BgpSimulatorWorker(); // 启动监听
+new BgpWorker(); // 启动监听
