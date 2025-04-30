@@ -14,15 +14,24 @@ contextBridge.exposeInMainWorld('stringGeneratorApi', {
 });
 
 // bgp模块
-contextBridge.exposeInMainWorld('bgpEmulatorApi', {
-    getNetworkInfo: () => ipcRenderer.invoke('bgp-emulator:getNetworkInfo'),
-    startBgp: bgpData => ipcRenderer.invoke('bgp-emulator:startBgp', bgpData),
-    onUpdatePeerState: callback => ipcRenderer.on('bgp-emulator:updatePeerState', (_event, data) => callback(data)),
-    saveConfig: config => ipcRenderer.invoke('bgp-emulator:saveConfig', config),
-    loadConfig: () => ipcRenderer.invoke('bgp-emulator:loadConfig'),
-    stopBgp: () => ipcRenderer.invoke('bgp-emulator:stopBgp'),
-    sendRoutes: config => ipcRenderer.invoke('bgp-emulator:sendRoute', config),
-    withdrawRoutes: config => ipcRenderer.invoke('bgp-emulator:withdrawRoute', config)
+contextBridge.exposeInMainWorld('bgpApi', {
+    // 配置相关
+    saveBgpConfig: config => ipcRenderer.invoke('bgp:saveBgpConfig', config),
+    loadBgpConfig: () => ipcRenderer.invoke('bgp:loadBgpConfig'),
+    savePeerConfig: config => ipcRenderer.invoke('bgp:savePeerConfig', config),
+    loadPeerConfig: () => ipcRenderer.invoke('bgp:loadPeerConfig'),
+
+    // bgp
+    startBgp: bgpConfigData => ipcRenderer.invoke('bgp:startBgp', bgpConfigData),
+    stopBgp: () => ipcRenderer.invoke('bgp:stopBgp'),
+
+    // peer
+    configPeer: peerConfigData => ipcRenderer.invoke('bgp:configPeer', peerConfigData),
+    onUpdatePeerState: callback => ipcRenderer.on('bgp:updatePeerState', (_event, data) => callback(data)),
+
+    // route
+    sendRoutes: config => ipcRenderer.invoke('bgp:sendRoute', config),
+    withdrawRoutes: config => ipcRenderer.invoke('bgp:withdrawRoute', config)
 });
 
 // bmp模块

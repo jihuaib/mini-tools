@@ -1,7 +1,5 @@
 const { app } = require('electron');
 const path = require('path');
-const os = require('os');
-const fs = require('fs');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
@@ -12,7 +10,8 @@ class BgpSimulatorApp {
     constructor(ipc, store) {
         this.bgpStart = false;
         this.worker = null;
-        this.configFileKey = 'bgp-config';
+        this.bgpConfigFileKey = 'bgp-config';
+        this.peerConfigFileKey = 'peer-config';
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
         this.stateChangeHandler = null;
@@ -22,28 +21,28 @@ class BgpSimulatorApp {
     }
 
     registerHandlers(ipc) {
-        ipc.handle('bgp-emulator:getNetworkInfo', async () => this.handleGetNetworkInfo());
-        ipc.handle('bgp-emulator:saveConfig', async (event, config) => this.handleSaveConfig(event, config));
-        ipc.handle('bgp-emulator:loadConfig', async () => this.handleLoadConfig());
-        ipc.handle('bgp-emulator:startBgp', async (event, config) => this.handleStartBgp(event, config));
-        ipc.handle('bgp-emulator:stopBgp', async () => this.handleStopBgp());
-        ipc.handle('bgp-emulator:sendRoute', async (event, config) => this.handleSendRoute(event, config));
-        ipc.handle('bgp-emulator:withdrawRoute', async (event, config) => this.handleWithdrawRoute(event, config));
-    }
+        // 配置相关
+        ipc.handle('bgp:saveBgpConfig', async (event, config) => this.handleSaveBgpConfig(event, config));
+        ipc.handle('bgp:loadBgpConfig', async () => this.handleLoadBgpConfig());
+        ipc.handle('bgp:savePeerConfig', async (event, config) => this.handleSavePeerConfig(event, config));
+        ipc.handle('bgp:loadPeerConfig', async () => this.handleLoadPeerConfig());
 
-    async handleGetNetworkInfo(event) {
-        try {
-            const interfaces = os.networkInterfaces();
-            return successResponse(interfaces);
-        } catch (err) {
-            return errorResponse('Failed to get network interfaces', err);
-        }
+        // bgp
+        ipc.handle('bgp:startBgp', async (event, bgpConfigData) => this.handleStartBgp(event, bgpConfigData));
+        ipc.handle('bgp:stopBgp', async () => this.handleStopBgp());
+
+        // peer
+        ipc.handle('bgp:configPeer', async (event, peerConfigData) => this.handleConfigPeer(event, peerConfigData));
+
+        // route
+        ipc.handle('bgp:sendRoute', async (event, config) => this.handleSendRoute(event, config));
+        ipc.handle('bgp:withdrawRoute', async (event, config) => this.handleWithdrawRoute(event, config));
     }
 
     // 保存配置
-    async handleSaveConfig(event, config) {
+    async handleSaveBgpConfig(event, config) {
         try {
-            this.store.set(this.configFileKey, config);
+            this.store.set(this.bgpConfigFileKey, config);
             return successResponse(null, 'BGP配置文件保存成功');
         } catch (error) {
             this.logger.error('Error saving config:', error);
@@ -52,9 +51,9 @@ class BgpSimulatorApp {
     }
 
     // 加载配置
-    async handleLoadConfig() {
+    async handleLoadBgpConfig() {
         try {
-            const config = this.store.get(this.configFileKey);
+            const config = this.store.get(this.bgpConfigFileKey);
             if (!config) {
                 return successResponse(null, 'BGP配置文件不存在');
             }
@@ -65,22 +64,66 @@ class BgpSimulatorApp {
         }
     }
 
-    async handleStartBgp(event, bgpData) {
+    // 保存配置
+    async handleSavePeerConfig(event, config) {
+        try {
+            this.store.set(this.peerConfigFileKey, config);
+            return successResponse(null, 'Peer配置文件保存成功');
+        } catch (error) {
+            this.logger.error('Error saving config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    // 加载配置
+    async handleLoadPeerConfig() {
+        try {
+            const config = this.store.get(this.peerConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'Peer配置文件不存在');
+            }
+            return successResponse(config, 'Peer配置文件加载成功');
+        } catch (error) {
+            this.logger.error('Error loading config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleConfigPeer(event, peerConfigData) {
         const webContents = event.sender;
         try {
             if (this.bgpStart) {
-                await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
 
-                const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpData);
-
-                // 这里肯定是启动成功了，如果失败，会抛出异常
-                this.logger.info(`bgp重启成功 result: ${JSON.stringify(result)}`);
-
-                this.bgpStart = true;
-                return successResponse(null, 'bgp协议重启成功');
             }
 
-            this.logger.info('handleStartBgp', bgpData);
+            this.logger.info(`${JSON.stringify(peerConfigData)}`);
+
+            if (null == this.worker) {
+                this.logger.error(`bgp协议没有启动`);
+                return errorResponse('bgp协议没有启动');
+            }
+
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_PEER, peerConfigData);
+
+            // 这里肯定是启动成功了，如果失败，会抛出异常
+            this.logger.info(`config peer成功 result: ${JSON.stringify(result)}`);
+
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error config Peer:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleStartBgp(event, bgpConfigData) {
+        const webContents = event.sender;
+        try {
+            if (this.bgpStart) {
+                this.logger.error(`bgp协议已经启动`);
+                return errorResponse('bgp协议已经启动');
+            }
+
+            this.logger.info(`${JSON.stringify(bgpConfigData)}`);
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/bgpSimulatorWorker.js')
@@ -91,13 +134,13 @@ class BgpSimulatorApp {
 
             // 定义事件处理函数
             this.stateChangeHandler = data => {
-                webContents.send('bgp-emulator:updatePeerState', successResponse({ state: data.state }));
+                webContents.send('bgp:updatePeerState', successResponse({ state: data.state }));
             };
 
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BGP_EVT_TYPES.BGP_STATE_CHANGE, this.stateChangeHandler);
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpData);
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             this.logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);

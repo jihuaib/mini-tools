@@ -11,22 +11,24 @@ const BGP_VERSION = 4;
 // BGP marker length (16 bytes of 0xff)
 const BGP_MARKER_LEN = 16;
 
-const BGP_STATE = {
+const BGP_PEER_STATE = {
     IDLE: 0,
     CONNECT: 1,
     ACTIVE: 2,
     OPEN_SENT: 3,
     OPEN_CONFIRM: 4,
-    ESTABLISHED: 5
+    ESTABLISHED: 5,
+    NO_NEG: 6
 };
 
 const BGP_STATE_MAP = new Map([
-    [BGP_STATE.IDLE, 'Idle'],
-    [BGP_STATE.CONNECT, 'Connect'],
-    [BGP_STATE.ACTIVE, 'Active'],
-    [BGP_STATE.OPEN_SENT, 'OpenSent'],
-    [BGP_STATE.OPEN_CONFIRM, 'OpenConfirm'],
-    [BGP_STATE.ESTABLISHED, 'Established']
+    [BGP_PEER_STATE.IDLE, 'Idle'],
+    [BGP_PEER_STATE.CONNECT, 'Connect'],
+    [BGP_PEER_STATE.ACTIVE, 'Active'],
+    [BGP_PEER_STATE.OPEN_SENT, 'OpenSent'],
+    [BGP_PEER_STATE.OPEN_CONFIRM, 'OpenConfirm'],
+    [BGP_PEER_STATE.ESTABLISHED, 'Established'],
+    [BGP_PEER_STATE.NO_NEG, 'No Neg']
 ]);
 
 const BGP_PACKET_TYPE = {
@@ -61,10 +63,16 @@ const BGP_OPEN_CAP = [
 
 const BGP_OPEN_CAP_MAP = new Map(BGP_OPEN_CAP.map(({ key, code }) => [key, code]));
 
-// 渲染进程传入的afi（当前保持一致）
-const BGP_AFI_TYPE_UI = {
+// 渲染进程传入的地址组类型
+const BGP_ADDR_FAMILY_UI = {
+    ADDR_FAMILY_IPV4_UNICAST: 1,
+    ADDR_FAMILY_IPV6_UNICAST: 2,
+};
+
+// 协议规定的afi
+const BGP_AFI_TYPE = {
     AFI_IPV4: 1,
-    AFI_IPV6: 2
+    AFI_IPV6: 2,
 };
 
 // 协议规定的safi
@@ -201,10 +209,11 @@ module.exports = {
     BGP_VERSION,
     BGP_MARKER_LEN,
     BGP_OPEN_CAP_MAP,
-    BGP_STATE,
+    BGP_PEER_STATE,
     BGP_PACKET_TYPE,
     BGP_CAPABILITY_UI,
-    BGP_AFI_TYPE_UI,
+    BGP_ADDR_FAMILY_UI,
+    BGP_AFI_TYPE,
     BGP_SAFI_TYPE,
     BGP_ROLE_UI,
     BGP_ROLE_TYPE,

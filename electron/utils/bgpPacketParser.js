@@ -470,10 +470,10 @@ function parseMpReachNlri(buffer) {
     let nextHop = '';
 
     // Parse next hop based on AFI
-    if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+    if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
         // IPv4
         nextHop = `${buffer[position]}.${buffer[position + 1]}.${buffer[position + 2]}.${buffer[position + 3]}`;
-    } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+    } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
         // IPv6
         nextHop = formatIpv6Address(buffer.subarray(position, position + 16));
     }
@@ -498,10 +498,10 @@ function parseMpReachNlri(buffer) {
 
         // Format the prefix based on AFI
         let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
             prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
             prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
         }
@@ -548,10 +548,10 @@ function parseMpUnreachNlri(buffer) {
 
         // Format the prefix based on AFI
         let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
             prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
             prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
         }
@@ -626,9 +626,9 @@ function getCapabilityName(code) {
  */
 function getAfiName(afi) {
     switch (afi) {
-        case BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4:
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
             return 'IPv4';
-        case BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6:
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             return 'IPv6';
         default:
             return `Unknown (${afi})`;

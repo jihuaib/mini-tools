@@ -47,7 +47,7 @@ class StringGeneratorApp {
     }
 
     async handleGenerateString(event, templateData) {
-        this.logger.info('handleGenerateTemplateString', templateData);
+        this.logger.info(`${JSON.stringify(templateData)}`);
 
         try {
             const workerPath = this.isDev

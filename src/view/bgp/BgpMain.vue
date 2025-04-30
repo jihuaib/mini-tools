@@ -2,8 +2,7 @@
     <div class="bgp-main-container">
         <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange" style="height: 55px">
             <a-tab-pane key="bgp-config" tab="BGP配置"></a-tab-pane>
-            <a-tab-pane key="bgp-send-route" tab="发送路由"></a-tab-pane>
-            <a-tab-pane key="bgp-receive-route" tab="接收路由"></a-tab-pane>
+            <a-tab-pane key="route-config" tab="路由配置"></a-tab-pane>
         </a-tabs>
         <!-- 缓存子页面 -->
         <router-view v-slot="{ Component }">
@@ -43,7 +42,6 @@
         activeTabKey.value = 'bgp-config';
         router.push('/bgp/bgp-config');
     });
-
 </script>
 
 <style scoped>

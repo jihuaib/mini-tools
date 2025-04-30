@@ -190,22 +190,8 @@
 </script>
 
 <style scoped>
-    /* 调整表单项间距 */
     :deep(.ant-form-item) {
         margin-bottom: 10px;
-    }
-
-    /* 调整输入框的间距 */
-    :deep(.ant-row) {
-        margin-bottom: 8px;
-    }
-
-    :deep(.ant-col) {
-        padding-right: 8px;
-    }
-
-    :deep(.ant-col:last-child) {
-        padding-right: 0;
     }
 
     :deep(.ant-card-body) {

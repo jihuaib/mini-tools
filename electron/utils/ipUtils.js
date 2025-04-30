@@ -1,9 +1,9 @@
 const ipaddr = require('ipaddr.js');
-const { BGP_AFI_TYPE_UI } = require('../const/bgpConst');
+const BgpConst = require('../const/bgpConst');
 
 /**
  * Generate a list of IP networks based on route type, IP, mask and count
- * @param {number} routeType - BGP_AFI_TYPE_UI.AFI_IPV4 or BGP_AFI_TYPE_UI.AFI_IPV6
+ * @param {number} routeType - BGP_AFI_TYPE.AFI_IPV4 or BGP_AFI_TYPE.AFI_IPV6
  * @param {string} routeIp - Starting IP address
  * @param {number} routeMask - Network mask
  * @param {number} routeCnt - Number of routes to generate
@@ -12,7 +12,7 @@ const { BGP_AFI_TYPE_UI } = require('../const/bgpConst');
 function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
     const routes = [];
 
-    if (routeType === BGP_AFI_TYPE_UI.AFI_IPV4) {
+    if (routeType === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray();
         let baseInt = (baseBytes[0] << 24) | (baseBytes[1] << 16) | (baseBytes[2] << 8) | baseBytes[3];
@@ -34,7 +34,7 @@ function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
                 mask: routeMask
             });
         }
-    } else if (routeType === BGP_AFI_TYPE_UI.AFI_IPV6) {
+    } else if (routeType === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray(); // 16 bytes
         let baseBigInt = BigInt(0);
@@ -106,10 +106,34 @@ function rdBufferToString(buffer) {
     return `${highOrder}:${lowOrder}`;
 }
 
+/**
+ * 根据地址族和子地址族转为UI的地址组类型
+ * @param {BGP_AFI_TYPE} afi 地址族
+ * @param {BGP_SAFI_TYPE} safi 子地址族
+ */
+function getAddrFamilyType(afi, safi) {
+    let addrFamily;
+    switch (afi) {
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
+            if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST
+            }
+            break;
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
+            if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST
+            }
+            break;
+    }
+
+    return addrFamily;
+}
+
 module.exports = {
     genRouteIps,
     writeUInt16,
     writeUInt32,
     ipToBytes,
-    rdBufferToString
+    rdBufferToString,
+    getAddrFamilyType
 };
