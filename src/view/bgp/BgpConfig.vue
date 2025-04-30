@@ -1,22 +1,8 @@
 <template>
-    <div class="bgp-emulator-container">
+    <div class="bgp-config-container">
         <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol" class="bgp-form">
             <a-card title="BGP配置">
-                <a-form-item label="请选择网卡">
-                    <a-select
-                        ref="select"
-                        v-model:value="networkValue"
-                        :options="networkInfo"
-                        @select="handleNetworkChange"
-                    ></a-select>
-                </a-form-item>
-
                 <a-row>
-                    <a-col :span="12">
-                        <a-form-item label="Local IP" name="localIp">
-                            <a-input v-model:value="bgpData.localIp" disabled />
-                        </a-form-item>
-                    </a-col>
                     <a-col :span="12">
                         <a-form-item label="Local AS" name="localAs">
                             <a-tooltip :title="validationErrors.localAs" :open="!!validationErrors.localAs">
@@ -28,7 +14,32 @@
                             </a-tooltip>
                         </a-form-item>
                     </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="Router ID" name="routerId">
+                            <a-tooltip :title="validationErrors.routerId" :open="!!validationErrors.routerId">
+                                <a-input
+                                    v-model:value="bgpData.routerId"
+                                    @blur="e => validateField(e.target.value, 'routerId', validateRouterId)"
+                                    :status="validationErrors.routerId ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
                 </a-row>
+
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-space size="middle">
+                        <a-button type="primary" html-type="submit" :loading="bgpLoading">
+                            {{ bgpRunning ? '重启BGP' : '启动BGP' }}
+                        </a-button>
+                        <a-button type="primary" danger @click="stopBgp" :disabled="!bgpRunning">停止BGP</a-button>
+                    </a-space>
+                </a-form-item>
+            </a-card>
+            </a-form>
+
+            <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol" class="bgp-form">
+                <a-card title="邻居配置" class="route-config-card">
 
                 <a-row>
                     <a-col :span="12">
@@ -112,15 +123,6 @@
                         </a-form-item>
                     </a-col>
                 </a-row>
-
-                <a-row>
-                    <a-col :span="12">
-                        <a-form-item label="Peer state" name="peerState">
-                            <a-input v-model:value="bgpData.peerState" disabled />
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-
                 <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                     <a-space size="middle">
                         <a-button type="primary" html-type="submit" :loading="bgpLoading">
@@ -130,7 +132,9 @@
                     </a-space>
                 </a-form-item>
             </a-card>
+        </a-form>
 
+        <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol" class="bgp-form">
             <a-card title="路由配置" class="route-config-card">
                 <a-form-item label="IP类型" name="ipType">
                     <a-radio-group v-model:value="bgpData.routeConfig.ipType">

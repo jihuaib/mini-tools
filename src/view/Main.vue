@@ -143,9 +143,7 @@
         () => route.path,
         () => {
             // 路由变化时清空验证错误
-            console.log('1');
             if (currentComponent.value && typeof currentComponent.value.clearValidationErrors === 'function') {
-                console.log('11');
                 currentComponent.value.clearValidationErrors();
             }
         }
