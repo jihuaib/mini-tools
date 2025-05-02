@@ -68,12 +68,7 @@
     import { ref, toRaw, watch, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
-    import {
-        validateTemplate,
-        validatePlaceholder,
-        validateStart,
-        validateEnd
-    } from '../../utils/toolsValidation';
+    import { validateTemplate, validatePlaceholder, validateStart, validateEnd } from '../../utils/toolsValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({

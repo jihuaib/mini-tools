@@ -3,7 +3,7 @@
         <a-row>
             <a-col :span="24">
                 <a-card title="BMP服务器配置">
-                    <a-form :model="bmpConfig" @finish="startBmpServer" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <a-form :model="bmpConfig" @finish="startBmp" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="24">
                                 <a-form-item label="服务端端口" name="port">
@@ -22,7 +22,7 @@
                                 <a-button type="primary" html-type="submit" :loading="serverLoading">
                                     {{ serverRunning ? '重启服务器' : '启动服务器' }}
                                 </a-button>
-                                <a-button type="primary" danger @click="stopBmpServer" :disabled="!serverRunning">
+                                <a-button type="primary" danger @click="stopBmp" :disabled="!serverRunning">
                                     停止服务器
                                 </a-button>
                             </a-space>
@@ -32,23 +32,22 @@
             </a-col>
         </a-row>
 
-        <!-- BMP初始化信息 -->
+        <!-- BMP客户端列表 -->
         <a-row style="margin-top: 10px">
             <a-col :span="24">
-                <a-card title="BMP初始化信息">
+                <a-card title="BMP客户端列表">
                     <div>
                         <a-table
-                            :columns="initiationColumns"
-                            :data-source="initiationList"
-                            :rowKey="record => record.clientAddress + record.receivedAt"
+                            :columns="clientColumns"
+                            :data-source="clientList"
+                            :rowKey="record => `${record.clientAddress || ''}-${record.clientPort || ''}`"
                             :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                            :loading="initiationLoading"
                             :scroll="{ y: 200 }"
                             size="small"
                         >
                             <template #bodyCell="{ column, record }">
                                 <template v-if="column.key === 'action'">
-                                    <a-button type="link" @click="viewInitiationDetails(record)">详情</a-button>
+                                    <a-button type="link" @click="viewClientDetails(record)">详情</a-button>
                                 </template>
                             </template>
                         </a-table>
@@ -58,7 +57,7 @@
         </a-row>
 
         <a-drawer
-            v-model:visible="detailsDrawerVisible"
+            v-model:open="detailsDrawerVisible"
             :title="detailsDrawerTitle"
             placement="right"
             width="500px"
@@ -91,34 +90,46 @@
     const serverRunning = ref(false);
 
     // Initiation messages list
-    const initiationList = ref([]);
-    const initiationLoading = ref(false);
-    const initiationColumns = [
+    const clientList = ref([]);
+    const clientColumns = [
         {
-            title: '客户端',
+            title: '客户端IP',
             dataIndex: 'clientAddress',
             key: 'clientAddress',
-            width: '150px',
+            ellipsis: true
+        },
+        {
+            title: '客户端端口',
+            dataIndex: 'clientPort',
+            key: 'clientPort',
             ellipsis: true
         },
         {
             title: '系统名称',
             dataIndex: 'sysName',
             key: 'sysName',
-            width: '120px',
+            ellipsis: true
+        },
+        {
+            title: '系统描述',
+            dataIndex: 'sysDesc',
+            key: 'sysDesc',
             ellipsis: true
         },
         {
             title: '接收时间',
             dataIndex: 'receivedAt',
             key: 'receivedAt',
-            width: '150px',
-            ellipsis: true
+            ellipsis: true,
+            customRender: ({ text }) => {
+                if (!text) return '';
+                const date = new Date(text);
+                return date.toLocaleString();
+            }
         },
         {
             title: '操作',
-            key: 'action',
-            width: '80px'
+            key: 'action'
         }
     ];
 
@@ -178,7 +189,9 @@
     const detailsDrawerTitle = ref('');
     const currentDetails = ref(null);
 
-    const startBmpServer = async () => {
+    const startBmp = async () => {
+        clearValidationErrors(validationErrors);
+        validatePort(bmpConfig.value.port, validationErrors);
         const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
         if (hasErrors) {
@@ -189,46 +202,56 @@
         serverLoading.value = true;
         try {
             const payload = JSON.parse(JSON.stringify(bmpConfig.value));
-            const result = await window.bmpApi.startServer(payload);
+            const result = await window.bmpApi.startBmp(payload);
             if (result.status === 'success') {
                 serverRunning.value = true;
-                message.success('BMP服务器启动成功');
+                // Clear the client list when starting the server
+                clientList.value = [];
+                message.success(`${result.msg}`);
             } else {
                 message.error(result.msg || 'BMP服务器启动失败');
             }
         } catch (error) {
-            message.error('BMP服务器启动出错');
+            message.error(`BMP服务器启动出错: ${error.message}`);
         } finally {
             serverLoading.value = false;
         }
     };
 
-    // Stop BMP server
-    const stopBmpServer = async () => {
+    const stopBmp = async () => {
         try {
-            const result = await window.bmpApi.stopServer();
+            const result = await window.bmpApi.stopBmp();
             if (result.status === 'success') {
                 serverRunning.value = false;
-                message.success('BMP服务器已停止');
+                // Clear the client list when stopping the server
+                clientList.value = [];
+                message.success(`${result.msg}`);
             } else {
                 message.error(result.msg || 'BMP服务器停止失败');
             }
         } catch (error) {
-            message.error('BMP服务器停止出错');
+            message.error(`BMP服务器停止出错: ${error.message}`);
         }
     };
 
-    // View initiation details
-    const viewInitiationDetails = record => {
+    const viewClientDetails = record => {
         currentDetails.value = record;
-        detailsDrawerTitle.value = `BMP初始化信息: ${record.sysName || record.clientAddress}`;
+        detailsDrawerTitle.value = `BMP客户端信息: ${record.clientAddress}:${record.clientPort}`;
         detailsDrawerVisible.value = true;
     };
 
-    // Close details drawer
     const closeDetailsDrawer = () => {
         detailsDrawerVisible.value = false;
         currentDetails.value = null;
+    };
+
+    const initiationHandler = data => {
+        console.log('initiation', data);
+        if (data && !Array.isArray(data)) {
+            clientList.value.push(data);
+        } else {
+            clientList.value = data || [];
+        }
     };
 
     onMounted(async () => {
@@ -242,12 +265,20 @@
 
         // 所有数据加载完成后，标记mounted为true，允许watch保存数据
         mounted.value = true;
+
+        // 注册事件监听
+        window.bmpApi.onInitiation(data => {
+            if (data.status === 'success') {
+                initiationHandler(data.data);
+            } else {
+                console.error('客户端列表获取失败', data.msg);
+            }
+        });
     });
 
     onBeforeUnmount(() => {
         window.bmpApi.removeAllListeners();
     });
-
 </script>
 
 <style scoped>

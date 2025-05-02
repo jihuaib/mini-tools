@@ -1,10 +1,10 @@
-const { app, BrowserWindow } = require('electron');
-const { Worker } = require('worker_threads');
+const { app } = require('electron');
 const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
-const { BMP_OPERATIONS } = require('../const/bmpOpConst');
+const { BMP_REQ_TYPES } = require('../const/bmpReqConst');
 const Logger = require('../log/logger');
-
+const WorkerWithPromise = require('../worker/workerWithPromise');
+const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 class BmpApp {
     constructor(ipcMain, store) {
         this.ipcMain = ipcMain;
@@ -12,6 +12,9 @@ class BmpApp {
         this.bmpConfigFileKey = 'bmp-config';
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
+        this.worker = null;
+
+        this.bmpInitiationHandler = null;
 
         this.registerHandlers();
     }
@@ -19,8 +22,8 @@ class BmpApp {
     registerHandlers() {
         this.ipcMain.handle('bmp:saveBmpConfig', this.handleSaveBmpConfig.bind(this));
         this.ipcMain.handle('bmp:loadBmpConfig', this.handleLoadBmpConfig.bind(this));
-        // this.ipcMain.handle('bmp:startServer', handleStartServer);
-        // this.ipcMain.handle('bmp:stopServer', handleStopServer);
+        this.ipcMain.handle('bmp:startBmp', this.handleStartBmp.bind(this));
+        this.ipcMain.handle('bmp:stopBmp', this.handleStopBmp.bind(this));
         // this.ipcMain.handle('bmp:getServerStatus', handleGetServerStatus);
     }
 
@@ -46,9 +49,64 @@ class BmpApp {
             return errorResponse(error.message);
         }
     }
+
+    async handleStartBmp(event, bmpConfigData) {
+        const webContents = event.sender;
+        try {
+            if (null != this.worker) {
+                this.logger.error(`bmp协议已经启动`);
+                return errorResponse('bmp协议已经启动');
+            }
+
+            this.logger.info(`${JSON.stringify(bmpConfigData)}`);
+
+            const workerPath = this.isDev
+                ? path.join(__dirname, '../worker/bmpWorker.js')
+                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bmpWorker.js');
+
+            const workerFactory = new WorkerWithPromise(workerPath);
+            this.worker = workerFactory.createLongRunningWorker();
+
+            // 定义事件处理函数
+            this.bmpInitiationHandler = data => {
+                this.logger.info(`bmpInitiationHandler data: ${JSON.stringify(data)}`);
+                webContents.send('bmp:initiation', successResponse(data.data));
+            };
+
+            // 注册事件监听器，处理来自worker的事件通知
+            this.worker.addEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.START_BMP, bmpConfigData);
+
+            // 这里肯定是启动成功了，如果失败，会抛出异常
+            this.logger.info(`bmp启动成功 result: ${JSON.stringify(result)}`);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error starting BMP:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleStopBmp() {
+        if (null == this.worker) {
+            this.logger.error('BMP未启动');
+            return errorResponse('BMP未启动');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.STOP_BMP, null);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error stopping BMP:', error);
+            return errorResponse(error.message);
+        } finally {
+            // 移除事件监听器
+            this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            await this.worker.terminate();
+            this.worker = null;
+        }
+    }
 }
-
-
 
 // // Get server status
 // async function handleGetServerStatus() {

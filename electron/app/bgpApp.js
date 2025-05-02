@@ -4,7 +4,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
+const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
 class BgpApp {
     constructor(ipc, store) {
         this.worker = null;

@@ -59,26 +59,24 @@ contextBridge.exposeInMainWorld('bmpApi', {
     loadBmpConfig: () => ipcRenderer.invoke('bmp:loadBmpConfig'),
 
     // bmp
-    startServer: config => ipcRenderer.invoke('bmp:startServer', config),
-    stopServer: () => ipcRenderer.invoke('bmp:stopServer'),
-    getServerStatus: () => ipcRenderer.invoke('bmp:getServerStatus'),
+    startBmp: config => ipcRenderer.invoke('bmp:startBmp', config),
+    stopBmp: () => ipcRenderer.invoke('bmp:stopBmp'),
 
-    // Data retrieval
+    // 数据获取
     getPeers: () => ipcRenderer.invoke('bmp:getPeers'),
     getRoutes: ipType => ipcRenderer.invoke('bmp:getRoutes', ipType),
 
-    // Event listeners
-    onPeerUpdate: callback => ipcRenderer.on('bmp:peerUpdate', (_event, data) => callback(_event, data)),
-    onRouteUpdate: callback => ipcRenderer.on('bmp:routeUpdate', (_event, data) => callback(_event, data)),
-    onServerLog: callback => ipcRenderer.on('bmp:serverLog', (_event, data) => callback(_event, data)),
-    onInitiationReceived: callback =>
-        ipcRenderer.on('bmp:initiationReceived', (_event, data) => callback(_event, data)),
+    // 事件监听
+    onPeerUpdate: callback => ipcRenderer.on('bmp:peerUpdate', (_event, data) => callback(data)),
+    onRouteUpdate: callback => ipcRenderer.on('bmp:routeUpdate', (_event, data) => callback(data)),
+    onServerLog: callback => ipcRenderer.on('bmp:serverLog', (_event, data) => callback(data)),
+    onInitiation: callback => ipcRenderer.on('bmp:initiation', (_event, data) => callback(data)),
 
     // 移除事件监听
     removeAllListeners: () => {
         ipcRenderer.removeAllListeners('bmp:peerUpdate');
         ipcRenderer.removeAllListeners('bmp:routeUpdate');
         ipcRenderer.removeAllListeners('bmp:serverLog');
-        ipcRenderer.removeAllListeners('bmp:initiationReceived');
+        ipcRenderer.removeAllListeners('bmp:initiation');
     }
 });
