@@ -6,11 +6,12 @@ contextBridge.exposeInMainWorld('commonApi', {
     openSoftwareInfo: () => ipcRenderer.send('common:openSoftwareInfo')
 });
 
-// 字符串生成模块
-contextBridge.exposeInMainWorld('stringGeneratorApi', {
-    generateString: templateData => ipcRenderer.invoke('string-generator:generateString', templateData),
-    saveConfig: config => ipcRenderer.invoke('string-generator:saveConfig', config),
-    loadConfig: () => ipcRenderer.invoke('string-generator:loadConfig')
+// 工具模块
+contextBridge.exposeInMainWorld('toolsApi', {
+    // 字符串生成模块
+    generateString: templateData => ipcRenderer.invoke('tools:generateString', templateData),
+    saveGenerateStringConfig: config => ipcRenderer.invoke('tools:saveGenerateStringConfig', config),
+    loadGenerateStringConfig: () => ipcRenderer.invoke('tools:loadGenerateStringConfig')
 });
 
 // bgp模块

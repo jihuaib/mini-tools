@@ -3,28 +3,30 @@ const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const Logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-const Store = require('electron-store');
-class StringGeneratorApp {
+
+class ToolsApp {
     constructor(ipc, store) {
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
-        this.configFileKey = 'string-generator';
+        this.stringGeneratorConfigFileKey = 'string-generator';
         this.registerHandlers(ipc);
         this.store = store;
     }
 
     registerHandlers(ipc) {
-        ipc.handle('string-generator:generateString', async (event, templateData) =>
+        ipc.handle('tools:generateString', async (event, templateData) =>
             this.handleGenerateString(event, templateData)
         );
-        ipc.handle('string-generator:saveConfig', async (event, config) => this.handleSaveConfig(event, config));
-        ipc.handle('string-generator:loadConfig', async () => this.handleLoadConfig());
+        ipc.handle('tools:saveGenerateStringConfig', async (event, config) =>
+            this.handleSaveGenerateStringConfig(event, config)
+        );
+        ipc.handle('tools:loadGenerateStringConfig', async () => this.handleLoadGenerateStringConfig());
     }
 
     // 保存配置
-    async handleSaveConfig(event, config) {
+    async handleSaveGenerateStringConfig(event, config) {
         try {
-            this.store.set(this.configFileKey, config);
+            this.store.set(this.stringGeneratorConfigFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
             this.logger.error('Error saving config:', error);
@@ -33,9 +35,9 @@ class StringGeneratorApp {
     }
 
     // 加载配置
-    async handleLoadConfig() {
+    async handleLoadGenerateStringConfig() {
         try {
-            const config = this.store.get(this.configFileKey);
+            const config = this.store.get(this.stringGeneratorConfigFileKey);
             if (!config) {
                 return successResponse(null, '配置文件不存在');
             }
@@ -66,4 +68,4 @@ class StringGeneratorApp {
     }
 }
 
-module.exports = StringGeneratorApp;
+module.exports = ToolsApp;

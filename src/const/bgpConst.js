@@ -31,7 +31,7 @@ export const IP_TYPE = {
 // Default Values
 export const DEFAULT_VALUES = {
     LOCAL_AS: '65535',
-    ROUTER_ID: '192.168.56.11',
+    ROUTER_ID: '192.168.56.1',
     PEER_IP: '192.168.56.11',
     PEER_AS: '100',
     HOLD_TIME: '180',

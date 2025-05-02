@@ -490,12 +490,16 @@
         validationFn(value, ipv6PeerConfigvalidationErrors);
     };
 
+    const mounted = ref(false);
     const bgpLoading = ref(false);
     const bgpRunning = ref(false);
 
     watch(
         bgpConfigData,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             clearValidationErrors(bgpConfigvalidationErrors);
             validateLocalAs(newValue.localAs, bgpConfigvalidationErrors);
             validateRouterId(newValue.routerId, bgpConfigvalidationErrors);
@@ -509,12 +513,15 @@
             const raw = toRaw(newValue);
             saveBgpConfig(raw);
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
 
     watch(
         ipv4PeerConfigData,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             clearValidationErrors(ipv4PeerConfigvalidationErrors);
             validatePeerIp(newValue.peerIp, ipv4PeerConfigvalidationErrors);
             validatePeerAs(newValue.peerAs, ipv4PeerConfigvalidationErrors);
@@ -529,12 +536,15 @@
             const raw = toRaw(newValue);
             saveIpv4PeerConfig(raw);
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
 
     watch(
         ipv6PeerConfigData,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             clearValidationErrors(ipv6PeerConfigvalidationErrors);
             validatePeerIpv6(newValue.peerIpv6, ipv6PeerConfigvalidationErrors);
             validatePeerAs(newValue.peerIpv6As, ipv6PeerConfigvalidationErrors);
@@ -549,14 +559,13 @@
             const raw = toRaw(newValue);
             saveIpv6PeerConfig(raw);
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
 
     onMounted(async () => {
         // 加载Bgp保存的配置
         const savedBgpConfig = await window.bgpApi.loadBgpConfig();
         if (savedBgpConfig.status === 'success' && savedBgpConfig.data) {
-            console.log('Loading saved config:', savedBgpConfig.data);
             bgpConfigData.value.localAs = savedBgpConfig.data.localAs;
             bgpConfigData.value.routerId = savedBgpConfig.data.routerId;
             bgpConfigData.value.addressFamily = Array.isArray(savedBgpConfig.data.addressFamily)
@@ -569,8 +578,6 @@
         // 加载IPv4 Peer保存的配置
         const savedIpv4PeerConfig = await window.bgpApi.loadIpv4PeerConfig();
         if (savedIpv4PeerConfig.status === 'success' && savedIpv4PeerConfig.data) {
-            console.log('Loading saved ipv4 peer config:', savedIpv4PeerConfig.data);
-
             // IPv4 settings
             ipv4PeerConfigData.value.peerIp = savedIpv4PeerConfig.data.peerIp;
             ipv4PeerConfigData.value.peerAs = savedIpv4PeerConfig.data.peerAs;
@@ -590,8 +597,6 @@
         // 加载IPv6 Peer保存的配置
         const savedIpv6PeerConfig = await window.bgpApi.loadIpv6PeerConfig();
         if (savedIpv6PeerConfig.status === 'success' && savedIpv6PeerConfig.data) {
-            console.log('Loading saved ipv6 peer config:', savedIpv6PeerConfig.data);
-
             // IPv6 settings
             ipv6PeerConfigData.value.peerIpv6 = savedIpv6PeerConfig.data.peerIpv6;
             ipv6PeerConfigData.value.peerIpv6As = savedIpv6PeerConfig.data.peerIpv6As;
@@ -607,6 +612,9 @@
         } else {
             console.error('IPv6 Peer 配置文件加载失败', savedIpv6PeerConfig.msg);
         }
+
+        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
+        mounted.value = true;
     });
 
     const customOpenCapVisible = ref(false);

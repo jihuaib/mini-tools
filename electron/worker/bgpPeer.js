@@ -1,6 +1,6 @@
 const BgpConst = require('../const/bgpConst');
 const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
-const { getAddrFamilyType, writeUInt32, ipToBytes, writeUInt16, getIpType} = require('../utils/ipUtils');
+const { getAddrFamilyType, writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
 const Logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
 class BgpPeer {
@@ -468,7 +468,8 @@ class BgpPeer {
                         break;
                     }
                 }
-            } else if (ipType === BgpConst.IP_TYPE.IPV4){ // 没使能EXTENDED_NEXT_HOP_ENCODING的话，需要ipv4邻居才发送
+            } else if (ipType === BgpConst.IP_TYPE.IPV4) {
+                // 没使能EXTENDED_NEXT_HOP_ENCODING的话，需要ipv4邻居才发送
                 while (routeIndex < routes.length) {
                     const result = this.buildUpdateMsgIpv4(routes, routeIndex);
                     if (result.status) {

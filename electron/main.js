@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
 const log = require('electron-log');
 const BgpApp = require('./app/bgpApp');
-const StringGeneratorApp = require('./app/stringGeneratorApp');
+const ToolsApp = require('./app/toolsApp');
 const bmpEmulatorApp = require('./app/bmpEmulatorApp');
 const SystemMenuApp = require('./app/systemMenuApp');
 const Store = require('electron-store');
@@ -14,7 +14,6 @@ log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
 const isDev = !app.isPackaged;
 let mainWindow = null;
 
-let stringGeneratorApp = null;
 let bgpApp = null;
 
 function createWindow() {
@@ -54,8 +53,6 @@ function createWindow() {
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
-
-    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -71,8 +68,8 @@ app.whenReady().then(() => {
         cwd: app.getPath('userData')
     });
     bgpApp = new BgpApp(ipcMain, store);
-    stringGeneratorApp = new StringGeneratorApp(ipcMain, store);
-    systemMenuApp = new SystemMenuApp(ipcMain, mainWindow);
+    new ToolsApp(ipcMain, store);
+    new SystemMenuApp(ipcMain, mainWindow);
     bmpEmulatorApp.registerHandlers(ipcMain);
 });
 

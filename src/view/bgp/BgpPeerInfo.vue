@@ -26,7 +26,10 @@
                                 >
                                     <template #bodyCell="{ column, record }">
                                         <template v-if="column.key === 'action'">
-                                            <a-button type="link" @click="deletePeer(record)">删除</a-button>
+                                            <a-button type="primary" danger size="small" @click="deletePeer(record)">
+                                                <template #icon><DeleteOutlined /></template>
+                                                删除
+                                            </a-button>
                                         </template>
                                     </template>
                                 </a-table>
@@ -52,7 +55,10 @@
                                 >
                                     <template #bodyCell="{ column, record }">
                                         <template v-if="column.key === 'action'">
-                                            <a-button type="link" @click="deletePeer(record)">删除</a-button>
+                                            <a-button type="primary" danger size="small" @click="deletePeer(record)">
+                                                <template #icon><DeleteOutlined /></template>
+                                                删除
+                                            </a-button>
                                         </template>
                                     </template>
                                 </a-table>
@@ -69,7 +75,8 @@
     import { onMounted, onActivated, ref } from 'vue';
     import { message } from 'ant-design-vue';
     import { ADDRESS_FAMILY } from '../../const/bgpConst';
-    import { UnorderedListOutlined } from '@ant-design/icons-vue';
+    import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+
     defineOptions({
         name: 'BgpPeerInfo'
     });
@@ -176,7 +183,6 @@
     };
 
     onActivated(async () => {
-        console.log('onActivated');
         await refreshPeerInfo();
     });
 </script>

@@ -94,12 +94,7 @@
                             >
                                 <template #bodyCell="{ column, record }">
                                     <template v-if="column.key === 'action'">
-                                        <a-button
-                                            type="primary"
-                                            danger
-                                            size="small"
-                                            @click="withdrawSingleRoute(record)"
-                                        >
+                                        <a-button type="primary" danger size="small" @click="deleteSingleRoute(record)">
                                             <template #icon><DeleteOutlined /></template>
                                             删除
                                         </a-button>
@@ -183,7 +178,7 @@
                         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
                             <a-space size="middle">
                                 <a-button type="primary" @click="generateIpv6Routes">生成IPv6路由</a-button>
-                                <a-button type="primary" danger @click="withdrawIpv6Routes" :disabled="!hasIpv6Routes">
+                                <a-button type="primary" danger @click="deleteIpv6Routes" :disabled="!hasIpv6Routes">
                                     删除IPv6路由
                                 </a-button>
                             </a-space>
@@ -203,26 +198,15 @@
                                 :columns="routeColumns"
                                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                 size="small"
-                                :rowKey="record => `${record.prefix}-${record.addressFamily}`"
+                                :rowKey="record => `${record.ip}-${record.mask}`"
                                 :scroll="{ y: 240 }"
                             >
                                 <template #bodyCell="{ column, record }">
                                     <template v-if="column.key === 'action'">
-                                        <a-button
-                                            type="primary"
-                                            danger
-                                            size="small"
-                                            @click="withdrawSingleRoute(record)"
-                                        >
+                                        <a-button type="primary" danger size="small" @click="deleteSingleRoute(record)">
                                             <template #icon><DeleteOutlined /></template>
                                             删除
                                         </a-button>
-                                    </template>
-                                    <template v-else-if="column.key === 'prefix'">
-                                        <div>{{ record.prefix }}/{{ record.mask }}</div>
-                                    </template>
-                                    <template v-else-if="column.key === 'addressFamily'">
-                                        <div>{{ getAddressFamilyLabel(record.addressFamily) }}</div>
                                     </template>
                                 </template>
                             </a-table>
@@ -247,7 +231,7 @@
 </template>
 
 <script setup>
-    import { onMounted, ref, toRaw, watch, computed } from 'vue';
+    import { onMounted, ref, toRaw, watch, computed, onActivated } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
@@ -333,26 +317,24 @@
         validationFn(value, ipv6UNCValidationErrors);
     };
 
-    // Computed properties to check if routes are available
     const hasIpv4Routes = computed(() => sentIpv4Routes.value.length > 0);
     const hasIpv6Routes = computed(() => sentIpv6Routes.value.length > 0);
+
+    // 添加加载标记，避免在mounted前触发watch保存
+    const mounted = ref(false);
 
     onMounted(async () => {
         // 加载保存的IPv4-UNC路由配置
         const savedIpv4UNCRouteConfig = await window.bgpApi.loadIpv4UNCRouteConfig();
         if (savedIpv4UNCRouteConfig.status === 'success' && savedIpv4UNCRouteConfig.data) {
-            console.log('Loading saved IPv4-UNC route config:', savedIpv4UNCRouteConfig.data);
-
             // 加载IPv4路由配置
-            if (savedIpv4UNCRouteConfig.data.ipv4RouteConfig) {
-                ipv4Data.value = {
-                    prefix: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.prefix || DEFAULT_VALUES.IPV4_PREFIX,
-                    mask: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.mask || DEFAULT_VALUES.IPV4_MASK,
-                    count: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.count || DEFAULT_VALUES.IPV4_COUNT,
-                    customAttr: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.customAttr || '',
-                    addressFamily: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.addressFamily || ADDRESS_FAMILY.IPV4_UNC
-                };
-            }
+            ipv4Data.value = {
+                prefix: savedIpv4UNCRouteConfig.data.prefix,
+                mask: savedIpv4UNCRouteConfig.data.mask,
+                count: savedIpv4UNCRouteConfig.data.count,
+                customAttr: savedIpv4UNCRouteConfig.data.customAttr,
+                addressFamily: savedIpv4UNCRouteConfig.data.addressFamily
+            };
         } else {
             console.error('IPv4-UNC路由配置文件加载失败', savedIpv4UNCRouteConfig.msg);
         }
@@ -360,21 +342,20 @@
         // 加载保存的IPv6-UNC路由配置
         const savedIpv6UNCRouteConfig = await window.bgpApi.loadIpv6UNCRouteConfig();
         if (savedIpv6UNCRouteConfig.status === 'success' && savedIpv6UNCRouteConfig.data) {
-            console.log('Loading saved IPv6-UNC route config:', savedIpv6UNCRouteConfig.data);
-
             // 加载IPv6路由配置
-            if (savedIpv6UNCRouteConfig.data.ipv6RouteConfig) {
-                ipv6Data.value = {
-                    prefix: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.prefix || DEFAULT_VALUES.IPV6_PREFIX,
-                    mask: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.mask || DEFAULT_VALUES.IPV6_MASK,
-                    count: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.count || DEFAULT_VALUES.IPV6_COUNT,
-                    customAttr: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.customAttr || '',
-                    addressFamily: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.addressFamily || ADDRESS_FAMILY.IPV6_UNC
-                };
-            }
+            ipv6Data.value = {
+                prefix: savedIpv6UNCRouteConfig.data.prefix,
+                mask: savedIpv6UNCRouteConfig.data.mask,
+                count: savedIpv6UNCRouteConfig.data.count,
+                customAttr: savedIpv6UNCRouteConfig.data.customAttr,
+                addressFamily: savedIpv6UNCRouteConfig.data.addressFamily
+            };
         } else {
             console.error('IPv6-UNC路由配置文件加载失败', savedIpv6UNCRouteConfig.msg);
         }
+
+        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
+        mounted.value = true;
     });
 
     const customIpv4RouteAttrVisible = ref(false);
@@ -404,13 +385,19 @@
     const routeColumns = [
         {
             title: '前缀',
-            dataIndex: 'prefix',
-            key: 'prefix'
+            dataIndex: 'ip',
+            key: 'ip'
         },
         {
             title: '掩码',
             dataIndex: 'mask',
             key: 'mask',
+            width: 80
+        },
+        {
+            title: 'MED',
+            dataIndex: 'med',
+            key: 'med',
             width: 80
         },
         {
@@ -421,35 +408,26 @@
         }
     ];
 
-    // 获取地址族标签
-    const getAddressFamilyLabel = addressFamily => {
-        // 这个函数可能在源代码中已定义，如未定义需要添加适当的实现
-        const addressFamilyMap = {
-            [ADDRESS_FAMILY.IPV4_UNC]: 'IPv4-UNC',
-            [ADDRESS_FAMILY.IPV6_UNC]: 'IPv6-UNC'
-        };
-        return addressFamilyMap[addressFamily] || addressFamily;
-    };
-
     // 撤销单个路由
-    const withdrawSingleRoute = async route => {
+    const deleteSingleRoute = async route => {
         try {
             const config = {
-                prefix: route.prefix,
+                prefix: route.ip,
                 mask: parseInt(route.mask),
                 count: 1,
                 customAttr: route.customAttr || '',
-                ipType: route.ipType,
                 addressFamily: route.addressFamily
             };
 
-            const result = await window.bgpApi.withdrawRoutes(config);
+            let result;
+            if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+                result = await window.bgpApi.deleteIpv4Routes(config);
+            } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+                result = await window.bgpApi.deleteIpv6Routes(config);
+            }
 
             if (result.status === 'success') {
-                message.success(
-                    `成功从 ${getAddressFamilyLabel(route.addressFamily)} 移除路由 ${route.prefix}/${route.mask}`
-                );
-
+                message.success(`${result.msg}`);
                 // 更新路由列表
                 if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
                     await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
@@ -457,11 +435,11 @@
                     await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
                 }
             } else {
-                message.error(`移除路由失败: ${result.msg}`);
+                message.error(`路由删除失败: ${result.msg}`);
             }
         } catch (e) {
             console.error(e);
-            message.error('路由移除失败');
+            message.error('路由删除失败');
         }
     };
 
@@ -471,21 +449,9 @@
             // 将结果转换为表格数据
             const routes = result.data;
             if (addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
-                sentIpv4Routes.value = routes.map(route => ({
-                    prefix: route.ip,
-                    mask: route.mask,
-                    addressFamily: route.addressFamily,
-                    ipType: IP_TYPE.IPV4,
-                    customAttr: route.customAttr || ''
-                }));
+                sentIpv4Routes.value = Array.isArray(routes) ? [...routes] : [];
             } else if (addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
-                sentIpv6Routes.value = routes.map(route => ({
-                    prefix: route.ip,
-                    mask: route.mask,
-                    addressFamily: route.addressFamily,
-                    ipType: IP_TYPE.IPV6,
-                    customAttr: route.customAttr || ''
-                }));
+                sentIpv6Routes.value = Array.isArray(routes) ? [...routes] : [];
             }
         } else {
             console.error(result.msg);
@@ -590,7 +556,7 @@
         }
     };
 
-    const withdrawIpv6Routes = async () => {
+    const deleteIpv6Routes = async () => {
         try {
             const currentConfig = ipv6Data.value;
 
@@ -607,7 +573,7 @@
             }
 
             const payload = JSON.parse(JSON.stringify(currentConfig));
-            const result = await window.bgpApi.withdrawIpv6Routes(payload);
+            const result = await window.bgpApi.deleteIpv6Routes(payload);
 
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
@@ -626,6 +592,9 @@
     watch(
         ipv4Data,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             try {
                 clearValidationErrors(ipv4UNCValidationErrors);
 
@@ -648,13 +617,16 @@
                 console.error(error);
             }
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
 
     // 监听数据变化并保存配置
     watch(
         ipv6Data,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             try {
                 clearValidationErrors(ipv6UNCValidationErrors);
 
@@ -677,8 +649,13 @@
                 console.error(error);
             }
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
+
+    onActivated(async () => {
+        await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+        await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+    });
 </script>
 
 <style scoped>
