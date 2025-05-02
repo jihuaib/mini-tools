@@ -3,7 +3,8 @@ export const BGP_CAPABILITY = {
     ADDR_FAMILY: 1,
     ROUTE_REFRESH: 2,
     AS4: 3,
-    ROLE: 4
+    ROLE: 4,
+    EXTENDED_NEXT_HOP_ENCODING: 5
 };
 
 // BGP Role Values
@@ -30,6 +31,7 @@ export const IP_TYPE = {
 // Default Values
 export const DEFAULT_VALUES = {
     LOCAL_AS: '65535',
+    ROUTER_ID: '192.168.56.1',
     PEER_IP: '192.168.56.11',
     PEER_AS: '100',
     HOLD_TIME: '180',
@@ -41,5 +43,10 @@ export const DEFAULT_VALUES = {
     IPV4_COUNT: '10',
     IPV6_PREFIX: '2001:db8::',
     IPV6_MASK: '64',
-    IPV6_COUNT: '10'
+    IPV6_COUNT: '10',
+    PEER_IPV6: '192::11',
+    PEER_IPV6_AS: '100',
+    HOLD_TIME_IPV6: '180',
+    DEFAULT_OPEN_CAP_IPV6: [BGP_CAPABILITY.ADDR_FAMILY, BGP_CAPABILITY.ROUTE_REFRESH, BGP_CAPABILITY.AS4],
+    DEFAULT_ADDRESS_FAMILY_IPV6: [ADDRESS_FAMILY.IPV6_UNC]
 };

@@ -11,22 +11,24 @@ const BGP_VERSION = 4;
 // BGP marker length (16 bytes of 0xff)
 const BGP_MARKER_LEN = 16;
 
-const BGP_STATE = {
+const BGP_PEER_STATE = {
     IDLE: 0,
     CONNECT: 1,
     ACTIVE: 2,
     OPEN_SENT: 3,
     OPEN_CONFIRM: 4,
-    ESTABLISHED: 5
+    ESTABLISHED: 5,
+    NO_NEG: 6
 };
 
 const BGP_STATE_MAP = new Map([
-    [BGP_STATE.IDLE, 'Idle'],
-    [BGP_STATE.CONNECT, 'Connect'],
-    [BGP_STATE.ACTIVE, 'Active'],
-    [BGP_STATE.OPEN_SENT, 'OpenSent'],
-    [BGP_STATE.OPEN_CONFIRM, 'OpenConfirm'],
-    [BGP_STATE.ESTABLISHED, 'Established']
+    [BGP_PEER_STATE.IDLE, 'Idle'],
+    [BGP_PEER_STATE.CONNECT, 'Connect'],
+    [BGP_PEER_STATE.ACTIVE, 'Active'],
+    [BGP_PEER_STATE.OPEN_SENT, 'OpenSent'],
+    [BGP_PEER_STATE.OPEN_CONFIRM, 'OpenConfirm'],
+    [BGP_PEER_STATE.ESTABLISHED, 'Established'],
+    [BGP_PEER_STATE.NO_NEG, 'No Neg']
 ]);
 
 const BGP_PACKET_TYPE = {
@@ -42,12 +44,15 @@ const BGP_CAPABILITY_UI = {
     ADDR_FAMILY: 1,
     ROUTE_REFRESH: 2,
     AS4: 3,
-    ROLE: 4
+    ROLE: 4,
+    EXTENDED_NEXT_HOP_ENCODING: 5
 };
 
+// 协议规定的BGP open capability code
 const BGP_OPEN_CAP_CODE = {
     MULTIPROTOCOL_EXTENSIONS: 0x01,
     ROUTE_REFRESH: 0x02,
+    EXTENDED_NEXT_HOP_ENCODING: 0x05,
     FOUR_OCTET_AS: 0x41,
     BGP_ROLE: 0x09
 };
@@ -56,13 +61,25 @@ const BGP_OPEN_CAP = [
     { key: BGP_CAPABILITY_UI.ADDR_FAMILY, code: BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS },
     { key: BGP_CAPABILITY_UI.ROUTE_REFRESH, code: BGP_OPEN_CAP_CODE.ROUTE_REFRESH },
     { key: BGP_CAPABILITY_UI.AS4, code: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
-    { key: BGP_CAPABILITY_UI.ROLE, code: BGP_OPEN_CAP_CODE.BGP_ROLE }
+    { key: BGP_CAPABILITY_UI.ROLE, code: BGP_OPEN_CAP_CODE.BGP_ROLE },
+    { key: BGP_CAPABILITY_UI.EXTENDED_NEXT_HOP_ENCODING, code: BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING }
 ];
 
 const BGP_OPEN_CAP_MAP = new Map(BGP_OPEN_CAP.map(({ key, code }) => [key, code]));
 
-// 渲染进程传入的afi（当前保持一致）
-const BGP_AFI_TYPE_UI = {
+const IP_TYPE = {
+    IPV4: 1,
+    IPV6: 2
+};
+
+// 渲染进程传入的地址组类型
+const BGP_ADDR_FAMILY_UI = {
+    ADDR_FAMILY_IPV4_UNICAST: 1,
+    ADDR_FAMILY_IPV6_UNICAST: 2
+};
+
+// 协议规定的afi
+const BGP_AFI_TYPE = {
     AFI_IPV4: 1,
     AFI_IPV6: 2
 };
@@ -87,7 +104,8 @@ const BGP_ROLE_TYPE = {
     ROLE_RS: 1,
     ROLE_RS_CLIENT: 2,
     ROLE_CUSTOMER: 3,
-    ROLE_PEER: 4
+    ROLE_PEER: 4,
+    ROLE_INVALID: 255
 };
 
 const BGP_ROLE_VALUE = [
@@ -99,6 +117,22 @@ const BGP_ROLE_VALUE = [
 ];
 
 const BGP_ROLE_VALUE_MAP = new Map(BGP_ROLE_VALUE.map(({ key, code }) => [key, code]));
+
+// 定义能力标志位掩码
+const BGP_CAP_FLAGS = {
+    MULTIPROTOCOL_EXTENSIONS: 0x00000001, // 1 << 0
+    ROUTE_REFRESH: 0x00000002, // 1 << 1
+    FOUR_OCTET_AS: 0x00000004, // 1 << 2
+    BGP_ROLE: 0x00000008, // 1 << 3
+    EXTENDED_NEXT_HOP_ENCODING: 0x00000010 // 1 << 4
+    // 可以继续添加更多的能力标志
+};
+
+// 定义能力标志位掩码
+const BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS = {
+    ADDR_FAMILY_IPV4_UNICAST: 0x00000001, // 1 << 0
+    ADDR_FAMILY_IPV6_UNICAST: 0x00000002 // 1 << 1
+};
 
 // BGP Path Attribute Types
 const BGP_PATH_ATTR = {
@@ -201,10 +235,11 @@ module.exports = {
     BGP_VERSION,
     BGP_MARKER_LEN,
     BGP_OPEN_CAP_MAP,
-    BGP_STATE,
+    BGP_PEER_STATE,
     BGP_PACKET_TYPE,
     BGP_CAPABILITY_UI,
-    BGP_AFI_TYPE_UI,
+    BGP_ADDR_FAMILY_UI,
+    BGP_AFI_TYPE,
     BGP_SAFI_TYPE,
     BGP_ROLE_UI,
     BGP_ROLE_TYPE,
@@ -220,5 +255,8 @@ module.exports = {
     BGP_ERROR_OPEN_MESSAGE_SUBCODE,
     BGP_ERROR_UPDATE_MESSAGE_SUBCODE,
     BGP_ERROR_CONNECTION_REJECTED_SUBCODE,
-    BGP_STATE_MAP
+    BGP_STATE_MAP,
+    IP_TYPE,
+    BGP_CAP_FLAGS,
+    BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS
 };

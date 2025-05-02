@@ -1,8 +1,8 @@
 const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
 const log = require('electron-log');
-const BgpSimulatorApp = require('./app/bgpSimulatorApp');
-const StringGeneratorApp = require('./app/stringGeneratorApp');
+const BgpApp = require('./app/bgpApp');
+const ToolsApp = require('./app/toolsApp');
 const bmpEmulatorApp = require('./app/bmpEmulatorApp');
 const SystemMenuApp = require('./app/systemMenuApp');
 const Store = require('electron-store');
@@ -14,8 +14,7 @@ log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
 const isDev = !app.isPackaged;
 let mainWindow = null;
 
-let stringGeneratorApp = null;
-let bgpSimulatorApp = null;
+let bgpApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -42,7 +41,7 @@ function createWindow() {
     win.on('close', async event => {
         event.preventDefault();
         // Check both BGP and BMP servers before closing
-        const closeBgpOk = await bgpSimulatorApp.handleWindowClose(win);
+        const closeBgpOk = await bgpApp.handleWindowClose(win);
         if (!closeBgpOk) return;
 
         // const closeBmpOk = await bmpEmulatorApp.handleWindowClose(win);
@@ -54,8 +53,6 @@ function createWindow() {
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
-
-    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -70,9 +67,9 @@ app.whenReady().then(() => {
         fileExtension: 'json',
         cwd: app.getPath('userData')
     });
-    bgpSimulatorApp = new BgpSimulatorApp(ipcMain, store);
-    stringGeneratorApp = new StringGeneratorApp(ipcMain, store);
-    systemMenuApp = new SystemMenuApp(ipcMain, mainWindow);
+    bgpApp = new BgpApp(ipcMain, store);
+    new ToolsApp(ipcMain, store);
+    new SystemMenuApp(ipcMain, mainWindow);
     bmpEmulatorApp.registerHandlers(ipcMain);
 });
 

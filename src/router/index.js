@@ -4,8 +4,8 @@ import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
-import BgpSendRoute from '../view/bgp/BgpSendRoute.vue';
-import BgpReceiveRoute from '../view/bgp/BgpReceiveRoute.vue';
+import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
+import RouteConfig from '../view/bgp/RouteConfig.vue';
 import BmpEmulator from '../view/BmpEmulator.vue';
 import store from '../store';
 
@@ -46,15 +46,15 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bgp-send-route',
-                        name: 'BgpSendRoute',
-                        component: BgpSendRoute,
+                        path: 'bgp-peer-info',
+                        name: 'BgpPeerInfo',
+                        component: BgpPeerInfo,
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bgp-receive-route',
-                        name: 'BgpReceiveRoute',
-                        component: BgpReceiveRoute,
+                        path: 'route-config',
+                        name: 'RouteConfig',
+                        component: RouteConfig,
                         meta: { keepAlive: true }
                     }
                 ]

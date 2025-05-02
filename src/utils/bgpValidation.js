@@ -22,6 +22,16 @@ export const validatePeerIp = (value, validationErrors) => {
     }
 };
 
+export const validatePeerIpv6 = (value, validationErrors) => {
+    if (!value) {
+        validationErrors.value.peerIpv6 = '请输入Peer IPv6';
+    } else if (!isValidIpv6(value)) {
+        validationErrors.value.peerIpv6 = '请输入有效的IPv6地址';
+    } else {
+        validationErrors.value.peerIpv6 = '';
+    }
+};
+
 export const validatePeerAs = (value, validationErrors) => {
     if (!value) {
         validationErrors.value.peerAs = '请输入Peer AS';

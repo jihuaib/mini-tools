@@ -97,6 +97,8 @@
         }
     });
 
+    const mounted = ref(false);
+
     const formState = ref({
         template: 'ip address 1.1.1.{A} 24',
         placeholder: '{A}',
@@ -115,7 +117,7 @@
     };
 
     const saveDebounced = debounce(async data => {
-        const resp = await window.stringGeneratorApi.saveConfig(data);
+        const resp = await window.toolsApi.saveGenerateStringConfig(data);
         if (resp.status === 'success') {
             console.info(resp.msg);
         } else {
@@ -126,6 +128,9 @@
     watch(
         formState,
         newValue => {
+            // 只有在组件挂载后才保存数据
+            if (!mounted.value) return;
+
             clearValidationErrors(validationErrors);
             validateField(newValue.template, 'template', validateTemplate);
             validateField(newValue.placeholder, 'placeholder', validatePlaceholder);
@@ -141,7 +146,7 @@
             const raw = toRaw(newValue);
             saveDebounced(raw);
         },
-        { deep: true, immediate: true }
+        { deep: true }
     );
 
     const result = ref('');
@@ -163,9 +168,8 @@
             }
 
             const payload = JSON.parse(JSON.stringify(toRaw(formState.value)));
-            const resp = await window.stringGeneratorApi.generateString(payload);
+            const resp = await window.toolsApi.generateString(payload);
 
-            console.log('[StringGeneratorConfig] handleFinish', resp);
             if (resp.status === 'success') {
                 result.value = resp.data.join('\r\n');
             } else {
@@ -179,33 +183,26 @@
 
     onMounted(async () => {
         // 加载保存的配置
-        const savedConfig = await window.stringGeneratorApi.loadConfig();
+        const savedConfig = await window.toolsApi.loadGenerateStringConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
-            console.log('Loading saved config:', savedConfig.data);
             formState.value = savedConfig.data;
         } else {
-            console.error('[StringGeneratorConfig] 配置文件加载失败', savedConfig.msg);
+            console.error('配置文件加载失败', savedConfig.msg);
         }
+
+        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
+        mounted.value = true;
     });
 </script>
 
 <style scoped>
-    /* 调整表单项间距 */
+    .string-generator-card {
+        margin-top: 10px;
+        margin-left: 8px;
+    }
+
     :deep(.ant-form-item) {
         margin-bottom: 10px;
-    }
-
-    /* 调整输入框的间距 */
-    :deep(.ant-row) {
-        margin-bottom: 8px;
-    }
-
-    :deep(.ant-col) {
-        padding-right: 8px;
-    }
-
-    :deep(.ant-col:last-child) {
-        padding-right: 0;
     }
 
     :deep(.ant-card-body) {

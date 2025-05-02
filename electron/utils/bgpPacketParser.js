@@ -182,6 +182,16 @@ function parseOpenMessage(buffer) {
                                 tempPosition += 1;
                             }
                             break;
+                        case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING: // Extended Next Hop Encoding
+                            if (capLen >= 6) {
+                                capability.afi = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                                capability.safi = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                                capability.ipType = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                            }
+                            break;
                         // Other capabilities could be added here
                     }
                     result.capabilities.push(capability);
@@ -470,10 +480,10 @@ function parseMpReachNlri(buffer) {
     let nextHop = '';
 
     // Parse next hop based on AFI
-    if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+    if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
         // IPv4
         nextHop = `${buffer[position]}.${buffer[position + 1]}.${buffer[position + 2]}.${buffer[position + 3]}`;
-    } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+    } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
         // IPv6
         nextHop = formatIpv6Address(buffer.subarray(position, position + 16));
     }
@@ -498,10 +508,10 @@ function parseMpReachNlri(buffer) {
 
         // Format the prefix based on AFI
         let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
             prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
             prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
         }
@@ -548,10 +558,10 @@ function parseMpUnreachNlri(buffer) {
 
         // Format the prefix based on AFI
         let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4) {
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
             prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
             prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
         }
@@ -614,6 +624,8 @@ function getCapabilityName(code) {
             return '4-octet AS Number';
         case BgpConst.BGP_OPEN_CAP_CODE.BGP_ROLE:
             return 'BGP Role';
+        case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING:
+            return 'Extended Next Hop Encoding';
         default:
             return `Unknown (${code})`;
     }
@@ -626,9 +638,9 @@ function getCapabilityName(code) {
  */
 function getAfiName(afi) {
     switch (afi) {
-        case BgpConst.BGP_AFI_TYPE_UI.AFI_IPV4:
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
             return 'IPv4';
-        case BgpConst.BGP_AFI_TYPE_UI.AFI_IPV6:
+        case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             return 'IPv6';
         default:
             return `Unknown (${afi})`;
@@ -653,6 +665,15 @@ function getSafiName(safi) {
         default:
             return `Unknown (${safi})`;
     }
+}
+
+/**
+ * Get IP type name from code
+ * @param {Number} ipType - IP type code
+ * @returns {String} IP type name
+ */
+function getIpTypeName(ipType) {
+    return ipType === BgpConst.IP_TYPE.IPV4 ? 'IPv4' : 'IPv6';
 }
 
 /**
@@ -890,6 +911,12 @@ function getBgpPacketSummary(parsedPacket) {
                         // BGP Role
                         const roleName = getRoleName(cap.role);
                         summary += ` (${roleName})`;
+                    } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING) {
+                        // Extended Next Hop Encoding
+                        const afiName = getAfiName(cap.afi);
+                        const safiName = getSafiName(cap.safi);
+                        const ipTypeName = getIpTypeName(cap.ipType);
+                        summary += ` (${afiName}/${safiName}/${ipTypeName})`;
                     }
                 });
             }
