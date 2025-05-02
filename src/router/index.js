@@ -6,7 +6,10 @@ import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
 import RouteConfig from '../view/bgp/RouteConfig.vue';
-import BmpEmulator from '../view/BmpEmulator.vue';
+import BmpMain from '../view/bmp/BmpMain.vue';
+import BmpConfig from '../view/bmp/BmpConfig.vue';
+import BmpPeer from '../view/bmp/BmpPeer.vue';
+import BmpRoute from '../view/bmp/BmpRoute.vue';
 import store from '../store';
 
 const routes = [
@@ -60,10 +63,31 @@ const routes = [
                 ]
             },
             {
-                path: '/bmp-emulator',
-                name: 'BmpEmulator',
-                component: BmpEmulator,
-                meta: { keepAlive: true }
+                path: '/bmp',
+                name: 'BmpMain',
+                component: BmpMain,
+                meta: { keepAlive: true },
+                children: [
+                    { path: '', redirect: '/bmp/bmp-config' },
+                    {
+                        path: 'bmp-config',
+                        name: 'BmpConfig',
+                        component: BmpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bmp-peer',
+                        name: 'BmpPeer',
+                        component: BmpPeer,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bmp-route',
+                        name: 'BmpRoute',
+                        component: BmpRoute,
+                        meta: { keepAlive: true }
+                    }
+                ]
             }
         ]
     }

@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-    import { onMounted, onActivated, ref } from 'vue';
+    import { onMounted, onActivated, ref, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { ADDRESS_FAMILY } from '../../const/bgpConst';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
@@ -184,6 +184,10 @@
 
     onActivated(async () => {
         await refreshPeerInfo();
+    });
+
+    onBeforeUnmount(() => {
+        window.bgpApi.removeAllListeners();
     });
 </script>
 

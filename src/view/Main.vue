@@ -98,11 +98,11 @@
             route: '/bgp'
         },
         {
-            key: 'bmp-emulator',
+            key: 'bmp',
             icon: () => h(RadarChartOutlined),
             label: 'BMP',
             title: 'BMP',
-            route: '/bmp-emulator'
+            route: '/bmp'
         }
     ]);
 
@@ -207,6 +207,7 @@
         transition: all 0.2s;
         width: calc(100% - 155px);
         display: flex;
+        padding-right: 20px;
     }
 
     .content-container.content-expanded {

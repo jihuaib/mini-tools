@@ -73,7 +73,7 @@
         validatePlaceholder,
         validateStart,
         validateEnd
-    } from '../../utils/stringGeneratorValidation';
+    } from '../../utils/toolsValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({

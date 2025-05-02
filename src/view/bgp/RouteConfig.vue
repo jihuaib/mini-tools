@@ -61,7 +61,7 @@
                             </a-col>
                         </a-row>
                         <a-form-item>
-                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV4)" class="custom-route-btn">
+                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV4)">
                                 <template #icon><SettingOutlined /></template>
                                 配置自定义路由属性
                             </a-button>
@@ -170,7 +170,7 @@
                             </a-col>
                         </a-row>
                         <a-form-item>
-                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV6)" class="custom-route-btn">
+                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV6)">
                                 <template #icon><SettingOutlined /></template>
                                 配置自定义路由属性
                             </a-button>

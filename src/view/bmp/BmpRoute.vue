@@ -1,107 +1,7 @@
 <template>
     <div class="bmp-container">
-        <a-row :gutter="12">
-            <a-col :span="24">
-                <a-card title="BMP服务器配置">
-                    <a-form :model="bmpConfig" @finish="startBmpServer" :label-col="labelCol" :wrapper-col="wrapperCol">
-                        <a-form-item label="请选择网卡">
-                            <a-select
-                                ref="select"
-                                v-model:value="networkValue"
-                                :options="networkInfo"
-                                @select="handleNetworkChange"
-                            ></a-select>
-                        </a-form-item>
-                        <a-row>
-                            <a-col :span="12">
-                                <a-form-item label="Local IP" name="ip">
-                                    <a-input v-model:value="bmpConfig.ip" disabled />
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="12">
-                                <a-form-item label="服务端端口" name="port">
-                                    <a-tooltip :title="validationErrors.port" :open="!!validationErrors.port">
-                                        <a-input
-                                            v-model:value="bmpConfig.port"
-                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
-                                            :status="validationErrors.port ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                            <a-space>
-                                <a-button type="primary" html-type="submit" :loading="serverLoading">
-                                    {{ serverRunning ? '重启服务器' : '启动服务器' }}
-                                </a-button>
-                                <a-button type="primary" danger @click="stopBmpServer" :disabled="!serverRunning">
-                                    停止服务器
-                                </a-button>
-                            </a-space>
-                        </a-form-item>
-                    </a-form>
-                </a-card>
-            </a-col>
-        </a-row>
-
-        <!-- BMP初始化信息 -->
-        <a-row :gutter="12" style="margin-top: 10px">
-            <a-col :span="24">
-                <a-card title="BMP初始化信息" class="data-card">
-                    <div>
-                        <a-table
-                            :columns="initiationColumns"
-                            :data-source="initiationList"
-                            :rowKey="record => record.clientAddress + record.receivedAt"
-                            :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                            :loading="initiationLoading"
-                            :scroll="{ y: 200 }"
-                            size="small"
-                        >
-                            <template #bodyCell="{ column, record }">
-                                <template v-if="column.key === 'action'">
-                                    <a-button type="link" @click="viewInitiationDetails(record)">详情</a-button>
-                                </template>
-                            </template>
-                        </a-table>
-                    </div>
-                </a-card>
-            </a-col>
-        </a-row>
-
-        <!-- 已连接的BGP Peer -->
-        <a-row :gutter="12" style="margin-top: 10px">
-            <a-col :span="24">
-                <a-card title="已连接的BGP Peer" class="data-card">
-                    <div>
-                        <a-table
-                            :columns="peerColumns"
-                            :data-source="peerList"
-                            :rowKey="record => record.peerIp"
-                            :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                            :loading="peerLoading"
-                            :scroll="{ y: 200 }"
-                            size="small"
-                        >
-                            <template #bodyCell="{ column, record }">
-                                <template v-if="column.key === 'action'">
-                                    <a-button type="link" @click="viewPeerDetails(record)">详情</a-button>
-                                </template>
-                                <template v-if="column.key === 'status'">
-                                    <a-tag :color="record.status === 'connected' ? 'green' : 'red'">
-                                        {{ record.status === 'connected' ? '已连接' : '已断开' }}
-                                    </a-tag>
-                                </template>
-                            </template>
-                        </a-table>
-                    </div>
-                </a-card>
-            </a-col>
-        </a-row>
-
         <!-- 路由信息 -->
-        <a-row :gutter="12" style="margin-top: 10px">
+        <a-row>
             <a-col :span="24">
                 <a-card title="路由信息" class="data-card">
                     <div>
@@ -161,31 +61,23 @@
 <script setup>
     import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validatePort } from '../utils/bmpSimulatorValidation';
-    import { clearValidationErrors } from '../utils/validationCommon';
+    import { validatePort } from '../../utils/bmpValidation';
+    import { clearValidationErrors } from '../../utils/validationCommon';
     import { debounce } from 'lodash-es';
-
+    import { DEFAULT_VALUES } from '../../const/bgpConst';
     defineOptions({
-        name: 'BmpEmulator'
+        name: 'BmpRoute'
     });
 
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
 
     const bmpConfig = ref({
-        port: '11019',
-        ip: ''
+        port: DEFAULT_VALUES.DEFAULT_BMP_PORT
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
-
-    const networkList = [];
-    const networkInfo = ref([]);
-    const networkValue = ref('');
-    const handleNetworkChange = name => {
-        bmpConfig.value.ip = networkList.find(item => item.name === name).ip;
-    };
 
     // Peer list
     const peerList = ref([]);
@@ -291,7 +183,7 @@
     };
 
     const saveDebounced = debounce(async data => {
-        const result = await window.bmpEmulatorApi.saveConfig(data);
+        const result = await window.bmpApi.saveConfig(data);
         if (result.status === 'success') {
             if (result.msg !== '') {
                 message.success(result.msg);
@@ -359,7 +251,7 @@
         serverLoading.value = true;
         try {
             const payload = JSON.parse(JSON.stringify(bmpConfig.value));
-            const result = await window.bmpEmulatorApi.startServer(payload);
+            const result = await window.bmpApi.startServer(payload);
             if (result.status === 'success') {
                 serverRunning.value = true;
                 message.success('BMP服务器启动成功');
@@ -376,7 +268,7 @@
     // Stop BMP server
     const stopBmpServer = async () => {
         try {
-            const result = await window.bmpEmulatorApi.stopServer();
+            const result = await window.bmpApi.stopServer();
             if (result.status === 'success') {
                 serverRunning.value = false;
                 message.success('BMP服务器已停止');
@@ -417,7 +309,7 @@
 
     // Listen for BMP updates
     onMounted(async () => {
-        const result = await window.bmpEmulatorApi.getNetworkInfo();
+        const result = await window.bmpApi.getNetworkInfo();
         if (result.status === 'success') {
             for (const [name, addresses] of Object.entries(result.data)) {
                 addresses.forEach(addr => {
@@ -445,7 +337,7 @@
         }
 
         try {
-            const result = await window.bmpEmulatorApi.getServerStatus();
+            const result = await window.bmpApi.getServerStatus();
             if (result.status === 'success' && result.data) {
                 serverRunning.value = result.data.running;
                 if (serverRunning.value) {
@@ -457,12 +349,12 @@
         }
 
         // Setup event listeners
-        window.bmpEmulatorApi.onPeerUpdate((event, data) => {
+        window.bmpApi.onPeerUpdate((event, data) => {
             console.log('收到Peer列表更新', data);
             peerList.value = data;
         });
 
-        window.bmpEmulatorApi.onRouteUpdate((event, data) => {
+        window.bmpApi.onRouteUpdate((event, data) => {
             if (data.type === 'ipv4') {
                 ipv4RouteList.value = data.routes;
             } else if (data.type === 'ipv6') {
@@ -470,7 +362,7 @@
             }
         });
 
-        window.bmpEmulatorApi.onInitiationReceived((event, data) => {
+        window.bmpApi.onInitiationReceived((event, data) => {
             console.log('收到BMP初始化消息', data);
             // Add to the list, keeping the most recent first
             initiationList.value = [data, ...initiationList.value];
@@ -480,7 +372,7 @@
         loadPeersAndRoutes();
 
         // 加载保存的配置
-        const savedConfig = await window.bmpEmulatorApi.loadConfig();
+        const savedConfig = await window.bmpApi.loadConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
             console.log('Loading saved config:', savedConfig.data);
             networkValue.value = savedConfig.data.networkValue;
@@ -493,7 +385,7 @@
 
     // Clean up event listeners
     onBeforeUnmount(() => {
-        window.bmpEmulatorApi.removeAllListeners();
+        window.bmpApi.removeAllListeners();
     });
 
     // Load peers and routes
@@ -504,17 +396,17 @@
         routeLoading.value = true;
 
         try {
-            const peerResult = await window.bmpEmulatorApi.getPeers();
+            const peerResult = await window.bmpApi.getPeers();
             if (peerResult.status === 'success') {
                 peerList.value = peerResult.data || [];
             }
 
-            const ipv4RoutesResult = await window.bmpEmulatorApi.getRoutes('ipv4');
+            const ipv4RoutesResult = await window.bmpApi.getRoutes('ipv4');
             if (ipv4RoutesResult.status === 'success') {
                 ipv4RouteList.value = ipv4RoutesResult.data || [];
             }
 
-            const ipv6RoutesResult = await window.bmpEmulatorApi.getRoutes('ipv6');
+            const ipv6RoutesResult = await window.bmpApi.getRoutes('ipv6');
             if (ipv6RoutesResult.status === 'success') {
                 ipv6RouteList.value = ipv6RoutesResult.data || [];
             }

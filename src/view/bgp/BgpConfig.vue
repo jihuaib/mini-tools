@@ -145,7 +145,7 @@
                                             v-model:value="ipv4PeerConfigData.openCap"
                                             :options="ipv4OpenCapOptions"
                                         />
-                                        <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
+                                        <a-button type="link" @click="showCustomOpenCap">
                                             <template #icon><SettingOutlined /></template>
                                             配置自定义能力
                                         </a-button>
@@ -274,7 +274,7 @@
                                             v-model:value="ipv6PeerConfigData.openCapIpv6"
                                             :options="ipv6OpenCapOptions"
                                         />
-                                        <a-button type="link" @click="showCustomOpenCapIpv6" class="custom-route-btn">
+                                        <a-button type="link" @click="showCustomOpenCapIpv6">
                                             <template #icon><SettingOutlined /></template>
                                             配置自定义能力
                                         </a-button>
@@ -762,16 +762,6 @@
             message.error(result.msg || 'BGP停止失败');
         }
     };
-
-    const deletePeer = async record => {
-        const payload = JSON.parse(JSON.stringify(record));
-        const result = await window.bgpApi.deletePeer(payload);
-        if (result.status === 'success') {
-            message.success(result.msg);
-        } else {
-            message.error(result.msg || '删除Peer失败');
-        }
-    };
 </script>
 
 <style scoped>
@@ -802,26 +792,6 @@
 
     .route-config-card {
         margin-top: 10px;
-    }
-
-    .custom-route-btn {
-        color: #1890ff;
-        padding: 0;
-        height: 32px;
-        font-size: 14px;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-left: 8px;
-    }
-
-    .custom-route-btn:hover {
-        color: #40a9ff;
-    }
-
-    .custom-route-btn:active {
-        color: #096dd9;
     }
 
     :deep(.ant-form-item) {
