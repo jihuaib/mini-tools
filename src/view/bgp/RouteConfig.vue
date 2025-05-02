@@ -1,156 +1,266 @@
 <template>
     <div class="route-config-container">
-        <a-form :model="bgpData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol">
-            <a-card title="路由配置" class="route-config-card">
-                <a-form-item label="IP类型" name="ipType">
-                    <a-radio-group v-model:value="bgpData.routeConfig.ipType">
-                        <a-radio :value="IP_TYPE.IPV4">IPv4</a-radio>
-                        <a-radio :value="IP_TYPE.IPV6">IPv6</a-radio>
-                    </a-radio-group>
-                </a-form-item>
+        <a-card title="BGP路由配置" class="route-config-card">
+            <a-tabs>
+                <a-tab-pane :key="ADDRESS_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
+                    <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
+                        <a-row>
+                            <a-col :span="8">
+                                <a-form-item label="Prefix" name="prefix">
+                                    <a-tooltip
+                                        :title="ipv4UNCValidationErrors.ipv4Prefix"
+                                        :open="!!ipv4UNCValidationErrors.ipv4Prefix"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4Data.prefix"
+                                            @blur="
+                                                e =>
+                                                    validateIpv4UNCField(
+                                                        e.target.value,
+                                                        'ipv4Prefix',
+                                                        validateIpv4Prefix
+                                                    )
+                                            "
+                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Mask" name="mask">
+                                    <a-tooltip
+                                        :title="ipv4UNCValidationErrors.ipv4Mask"
+                                        :open="!!ipv4UNCValidationErrors.ipv4Mask"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4Data.mask"
+                                            @blur="
+                                                e => validateIpv4UNCField(e.target.value, 'ipv4Mask', validateIpv4Mask)
+                                            "
+                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Count" name="count">
+                                    <a-tooltip
+                                        :title="ipv4UNCValidationErrors.ipv4Count"
+                                        :open="!!ipv4UNCValidationErrors.ipv4Count"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4Data.count"
+                                            @blur="
+                                                e =>
+                                                    validateIpv4UNCField(e.target.value, 'ipv4Count', validateIpv4Count)
+                                            "
+                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <a-form-item>
+                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV4)" class="custom-route-btn">
+                                <template #icon><SettingOutlined /></template>
+                                配置自定义路由属性
+                            </a-button>
+                        </a-form-item>
+                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
+                            <a-space size="middle">
+                                <a-button type="primary" @click="generateIpv4Routes">生成IPv4路由</a-button>
+                                <a-button type="primary" danger @click="deleteIpv4Routes" :disabled="!hasIpv4Routes">
+                                    删除IPv4路由
+                                </a-button>
+                            </a-space>
+                        </a-form-item>
 
-                <!-- IPv4 Route Configuration -->
-                <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV4">
-                    <a-row>
-                        <a-col :span="8">
-                            <a-form-item label="Prefix" name="ipv4RouteConfig.prefix">
-                                <a-tooltip :title="validationErrors.ipv4Prefix" :open="!!validationErrors.ipv4Prefix">
-                                    <a-input
-                                        v-model:value="bgpData.ipv4RouteConfig.prefix"
-                                        @blur="e => validateField(e.target.value, 'ipv4Prefix', validateIpv4Prefix)"
-                                        :status="validationErrors.ipv4Prefix ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                        <a-col :span="8">
-                            <a-form-item label="Mask" name="ipv4RouteConfig.mask">
-                                <a-tooltip :title="validationErrors.ipv4Mask" :open="!!validationErrors.ipv4Mask">
-                                    <a-input
-                                        v-model:value="bgpData.ipv4RouteConfig.mask"
-                                        @blur="e => validateField(e.target.value, 'ipv4Mask', validateIpv4Mask)"
-                                        :status="validationErrors.ipv4Mask ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                        <a-col :span="8">
-                            <a-form-item label="Count" name="ipv4RouteConfig.count">
-                                <a-tooltip :title="validationErrors.ipv4Count" :open="!!validationErrors.ipv4Count">
-                                    <a-input
-                                        v-model:value="bgpData.ipv4RouteConfig.count"
-                                        @blur="e => validateField(e.target.value, 'ipv4Count', validateIpv4Count)"
-                                        :status="validationErrors.ipv4Count ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                    </a-row>
-                </div>
+                        <!-- IPv4路由列表 -->
+                        <div class="route-list-section">
+                            <div class="route-list-header">
+                                <UnorderedListOutlined />
+                                <span class="header-text">已生成IPv4路由列表</span>
+                                <a-tag v-if="sentIpv4Routes.length > 0" color="blue">
+                                    {{ sentIpv4Routes.length }}
+                                </a-tag>
+                            </div>
+                            <a-table
+                                :dataSource="sentIpv4Routes"
+                                :columns="routeColumns"
+                                :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                size="small"
+                                :rowKey="record => `${record.prefix}-${record.addressFamily}`"
+                                :scroll="{ y: 240 }"
+                            >
+                                <template #bodyCell="{ column, record }">
+                                    <template v-if="column.key === 'action'">
+                                        <a-button
+                                            type="primary"
+                                            danger
+                                            size="small"
+                                            @click="withdrawSingleRoute(record)"
+                                        >
+                                            <template #icon><DeleteOutlined /></template>
+                                            删除
+                                        </a-button>
+                                    </template>
+                                    <template v-else-if="column.key === 'prefix'">
+                                        <div>{{ record.prefix }}/{{ record.mask }}</div>
+                                    </template>
+                                    <template v-else-if="column.key === 'addressFamily'">
+                                        <div>{{ getAddressFamilyLabel(record.addressFamily) }}</div>
+                                    </template>
+                                </template>
+                            </a-table>
+                        </div>
+                    </a-form>
+                </a-tab-pane>
 
-                <!-- IPv6 Route Configuration -->
-                <div v-show="bgpData.routeConfig.ipType === IP_TYPE.IPV6">
-                    <a-row>
-                        <a-col :span="8">
-                            <a-form-item label="Prefix" name="ipv6RouteConfig.prefix">
-                                <a-tooltip :title="validationErrors.ipv6Prefix" :open="!!validationErrors.ipv6Prefix">
-                                    <a-input
-                                        v-model:value="bgpData.ipv6RouteConfig.prefix"
-                                        @blur="e => validateField(e.target.value, 'ipv6Prefix', validateIpv6Prefix)"
-                                        :status="validationErrors.ipv6Prefix ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                        <a-col :span="8">
-                            <a-form-item label="Mask" name="ipv6RouteConfig.mask">
-                                <a-tooltip :title="validationErrors.ipv6Mask" :open="!!validationErrors.ipv6Mask">
-                                    <a-input
-                                        v-model:value="bgpData.ipv6RouteConfig.mask"
-                                        @blur="e => validateField(e.target.value, 'ipv6Mask', validateIpv6Mask)"
-                                        :status="validationErrors.ipv6Mask ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                        <a-col :span="8">
-                            <a-form-item label="Count" name="ipv6RouteConfig.count">
-                                <a-tooltip :title="validationErrors.ipv6Count" :open="!!validationErrors.ipv6Count">
-                                    <a-input
-                                        v-model:value="bgpData.ipv6RouteConfig.count"
-                                        @blur="e => validateField(e.target.value, 'ipv6Count', validateIpv6Count)"
-                                        :status="validationErrors.ipv6Count ? 'error' : ''"
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </a-col>
-                    </a-row>
-                </div>
+                <a-tab-pane :key="ADDRESS_FAMILY.IPV6_UNC" tab="IPv6-UNC路由">
+                    <a-form :model="ipv6Data" :label-col="labelCol" :wrapper-col="wrapperCol">
+                        <a-row>
+                            <a-col :span="8">
+                                <a-form-item label="Prefix" name="prefix">
+                                    <a-tooltip
+                                        :title="ipv6UNCValidationErrors.ipv6Prefix"
+                                        :open="!!ipv6UNCValidationErrors.ipv6Prefix"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6Data.prefix"
+                                            @blur="
+                                                e =>
+                                                    validateIpv6UNCField(
+                                                        e.target.value,
+                                                        'ipv6Prefix',
+                                                        validateIpv6Prefix
+                                                    )
+                                            "
+                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Mask" name="mask">
+                                    <a-tooltip
+                                        :title="ipv6UNCValidationErrors.ipv6Mask"
+                                        :open="!!ipv6UNCValidationErrors.ipv6Mask"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6Data.mask"
+                                            @blur="
+                                                e => validateIpv6UNCField(e.target.value, 'ipv6Mask', validateIpv6Mask)
+                                            "
+                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Count" name="count">
+                                    <a-tooltip
+                                        :title="ipv6UNCValidationErrors.ipv6Count"
+                                        :open="!!ipv6UNCValidationErrors.ipv6Count"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6Data.count"
+                                            @blur="
+                                                e =>
+                                                    validateIpv6UNCField(e.target.value, 'ipv6Count', validateIpv6Count)
+                                            "
+                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <a-form-item>
+                            <a-button type="link" @click="showCustomRouteAttr(IP_TYPE.IPV6)" class="custom-route-btn">
+                                <template #icon><SettingOutlined /></template>
+                                配置自定义路由属性
+                            </a-button>
+                        </a-form-item>
+                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
+                            <a-space size="middle">
+                                <a-button type="primary" @click="generateIpv6Routes">生成IPv6路由</a-button>
+                                <a-button type="primary" danger @click="withdrawIpv6Routes" :disabled="!hasIpv6Routes">
+                                    删除IPv6路由
+                                </a-button>
+                            </a-space>
+                        </a-form-item>
 
-                <a-form-item>
-                    <a-button type="link" @click="showCustomRouteAttr" class="custom-route-btn">
-                        <template #icon><SettingOutlined /></template>
-                        配置自定义路由属性
-                    </a-button>
-                </a-form-item>
-                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                    <a-space size="middle">
-                        <a-button type="primary" @click="sendRoutes" :disabled="bgpData.peerState !== 'Established'">
-                            发送路由
-                        </a-button>
-                        <a-button
-                            type="primary"
-                            danger
-                            @click="withdrawRoutes"
-                            :disabled="bgpData.peerState !== 'Established' || !routesSent"
-                        >
-                            撤销路由
-                        </a-button>
-                    </a-space>
-                </a-form-item>
-            </a-card>
-        </a-form>
-
-        <CustomPktDrawer
-            v-model:visible="customOpenCapVisible"
-            v-model:inputValue="bgpData.openCapCustom"
-            @submit="handleCustomOpenCapSubmit"
-        />
+                        <!-- IPv6路由列表 -->
+                        <div class="route-list-section">
+                            <div class="route-list-header">
+                                <UnorderedListOutlined />
+                                <span class="header-text">已生成IPv6路由列表</span>
+                                <a-tag v-if="sentIpv6Routes.length > 0" color="blue">
+                                    {{ sentIpv6Routes.length }}
+                                </a-tag>
+                            </div>
+                            <a-table
+                                :dataSource="sentIpv6Routes"
+                                :columns="routeColumns"
+                                :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                size="small"
+                                :rowKey="record => `${record.prefix}-${record.addressFamily}`"
+                                :scroll="{ y: 240 }"
+                            >
+                                <template #bodyCell="{ column, record }">
+                                    <template v-if="column.key === 'action'">
+                                        <a-button
+                                            type="primary"
+                                            danger
+                                            size="small"
+                                            @click="withdrawSingleRoute(record)"
+                                        >
+                                            <template #icon><DeleteOutlined /></template>
+                                            删除
+                                        </a-button>
+                                    </template>
+                                    <template v-else-if="column.key === 'prefix'">
+                                        <div>{{ record.prefix }}/{{ record.mask }}</div>
+                                    </template>
+                                    <template v-else-if="column.key === 'addressFamily'">
+                                        <div>{{ getAddressFamilyLabel(record.addressFamily) }}</div>
+                                    </template>
+                                </template>
+                            </a-table>
+                        </div>
+                    </a-form>
+                </a-tab-pane>
+            </a-tabs>
+        </a-card>
 
         <CustomPktDrawer
             v-model:visible="customIpv4RouteAttrVisible"
-            v-model:inputValue="bgpData.ipv4RouteConfig.customAttr"
+            v-model:inputValue="ipv4Data.customAttr"
             @submit="handleCustomIpv4RouteAttrSubmit"
         />
 
         <CustomPktDrawer
             v-model:visible="customIpv6RouteAttrVisible"
-            v-model:inputValue="bgpData.ipv6RouteConfig.customAttr"
+            v-model:inputValue="ipv6Data.customAttr"
             @submit="handleCustomIpv6RouteAttrSubmit"
         />
     </div>
 </template>
 
 <script setup>
-    import { onMounted, ref, toRaw, watch } from 'vue';
+    import { onMounted, ref, toRaw, watch, computed } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
-    import { SettingOutlined } from '@ant-design/icons-vue';
-    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
+    import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+    import { ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
-        validateLocalAs,
-        validatePeerIp,
-        validatePeerAs,
-        validateRouterId,
-        validateHoldTime,
         validateIpv4Prefix,
         validateIpv4Mask,
         validateIpv4Count,
         validateIpv6Prefix,
         validateIpv6Mask,
         validateIpv6Count
-    } from '../../utils/bgpSimulatorValidation';
+    } from '../../utils/bgpValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({
@@ -160,108 +270,25 @@
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
 
-    const openCapOptions = [
-        { label: 'Addr Family', value: BGP_CAPABILITY.ADDR_FAMILY, disabled: true },
-        { label: 'Route-Refresh', value: BGP_CAPABILITY.ROUTE_REFRESH },
-        { label: 'AS4', value: BGP_CAPABILITY.AS4 },
-        { label: 'Role', value: BGP_CAPABILITY.ROLE }
-    ];
-
-    const roleOptions = [
-        { label: 'Provider', value: BGP_ROLE.PROVIDER },
-        { label: 'RS', value: BGP_ROLE.RS },
-        { label: 'RS-Client', value: BGP_ROLE.RS_CLIENT },
-        { label: 'Customer', value: BGP_ROLE.CUSTOMER },
-        { label: 'Lateral Peer', value: BGP_ROLE.LATERAL_PEER }
-    ];
-
-    const addressFamilyOptions = [
-        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC, disabled: true },
-        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC }
-    ];
-
-    const bgpConfigData = ref({
-        localAs: DEFAULT_VALUES.LOCAL_AS,
-        routerId: DEFAULT_VALUES.ROUTER_ID
+    // 分别为IPv4和IPv6定义独立的数据对象
+    const ipv4Data = ref({
+        prefix: DEFAULT_VALUES.IPV4_PREFIX,
+        mask: DEFAULT_VALUES.IPV4_MASK,
+        count: DEFAULT_VALUES.IPV4_COUNT,
+        customAttr: '',
+        addressFamily: ADDRESS_FAMILY.IPV4_UNC
     });
 
-    const peerConfigData = ref({
-        peerIp: DEFAULT_VALUES.PEER_IP,
-        peerAs: DEFAULT_VALUES.PEER_AS,
-        holdTime: DEFAULT_VALUES.HOLD_TIME,
-        openCap: DEFAULT_VALUES.DEFAULT_OPEN_CAP,
-        addressFamily: DEFAULT_VALUES.DEFAULT_ADDRESS_FAMILY,
-        role: '',
-        openCapCustom: ''
+    const ipv6Data = ref({
+        prefix: DEFAULT_VALUES.IPV6_PREFIX,
+        mask: DEFAULT_VALUES.IPV6_MASK,
+        count: DEFAULT_VALUES.IPV6_COUNT,
+        customAttr: '',
+        addressFamily: ADDRESS_FAMILY.IPV6_UNC
     });
 
-    const bgpData = ref({
-        localIp: '',
-        localAs: DEFAULT_VALUES.LOCAL_AS,
-        peerIp: DEFAULT_VALUES.PEER_IP,
-        peerAs: DEFAULT_VALUES.PEER_AS,
-        routerId: '',
-        holdTime: DEFAULT_VALUES.HOLD_TIME,
-        openCap: DEFAULT_VALUES.DEFAULT_OPEN_CAP,
-        addressFamily: DEFAULT_VALUES.DEFAULT_ADDRESS_FAMILY,
-        peerState: '',
-        role: '',
-        openCapCustom: '',
-        ipv4RouteConfig: {
-            prefix: DEFAULT_VALUES.IPV4_PREFIX,
-            mask: DEFAULT_VALUES.IPV4_MASK,
-            count: DEFAULT_VALUES.IPV4_COUNT,
-            customAttr: ''
-        },
-        ipv6RouteConfig: {
-            prefix: DEFAULT_VALUES.IPV6_PREFIX,
-            mask: DEFAULT_VALUES.IPV6_MASK,
-            count: DEFAULT_VALUES.IPV6_COUNT,
-            customAttr: ''
-        },
-        routeConfig: {
-            ipType: IP_TYPE.IPV4
-        }
-    });
-
-    const networkList = [];
-    const networkInfo = ref([]);
-    const networkValue = ref('');
-    const handleNetworkChange = name => {
-        bgpData.value.localIp = networkList.find(item => item.name === name).ip;
-        bgpData.value.routerId = networkList.find(item => item.name === name).ip;
-    };
-
-    const saveConfig = {
-        networkValue: '',
-        localAs: '',
-        peerIp: '',
-        peerAs: '',
-        routerId: '',
-        holdTime: '',
-        openCap: [],
-        addressFamily: [],
-        role: '',
-        openCapCustom: '',
-        ipv4RouteConfig: {
-            prefix: '',
-            mask: '',
-            count: '',
-            customAttr: ''
-        },
-        ipv6RouteConfig: {
-            prefix: '',
-            mask: '',
-            count: '',
-            customAttr: ''
-        },
-        routeConfig: {
-            ipType: ''
-        }
-    };
-
-    const saveDebounced = debounce(async data => {
-        const result = await window.bgpApi.saveConfig(data);
+    const saveIpv4UNCRouteConfig = debounce(async data => {
+        const result = await window.bgpApi.saveIpv4UNCRouteConfig(data);
         if (result.status === 'success') {
             console.info(result.msg);
         } else {
@@ -269,15 +296,22 @@
         }
     }, 300);
 
-    const validationErrors = ref({
-        localAs: '',
-        peerIp: '',
-        peerAs: '',
-        routerId: '',
-        holdTime: '',
+    const saveIpv6UNCRouteConfig = debounce(async data => {
+        const result = await window.bgpApi.saveIpv6UNCRouteConfig(data);
+        if (result.status === 'success') {
+            console.info(result.msg);
+        } else {
+            console.error(result.msg);
+        }
+    }, 300);
+
+    const ipv4UNCValidationErrors = ref({
         ipv4Prefix: '',
         ipv4Mask: '',
-        ipv4Count: '',
+        ipv4Count: ''
+    });
+
+    const ipv6UNCValidationErrors = ref({
         ipv6Prefix: '',
         ipv6Mask: '',
         ipv6Count: ''
@@ -286,158 +320,68 @@
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            clearValidationErrors(ipv4UNCValidationErrors);
+            clearValidationErrors(ipv6UNCValidationErrors);
         }
     });
 
-    const validateField = (value, fieldName, validationFn) => {
-        validationFn(value, validationErrors);
+    const validateIpv4UNCField = (value, fieldName, validationFn) => {
+        validationFn(value, ipv4UNCValidationErrors);
     };
 
-    const bgpLoading = ref(false);
-    const bgpRunning = ref(false);
+    const validateIpv6UNCField = (value, fieldName, validationFn) => {
+        validationFn(value, ipv6UNCValidationErrors);
+    };
 
-    // Add a state variable to track if routes have been sent
-    const routesSent = ref(false);
-
-    watch(
-        [bgpData],
-        async ([newBgpValue]) => {
-            // 转换为saveBgpConfig
-            saveConfig.networkValue = networkValue.value;
-            saveConfig.localAs = newBgpValue.localAs;
-            saveConfig.peerIp = newBgpValue.peerIp;
-            saveConfig.peerAs = newBgpValue.peerAs;
-            saveConfig.routerId = newBgpValue.routerId;
-            saveConfig.holdTime = newBgpValue.holdTime;
-            saveConfig.openCap = [...newBgpValue.openCap];
-            saveConfig.addressFamily = [...newBgpValue.addressFamily];
-            saveConfig.role = newBgpValue.role;
-            saveConfig.openCapCustom = newBgpValue.openCapCustom;
-            saveConfig.ipv4RouteConfig = { ...newBgpValue.ipv4RouteConfig };
-            saveConfig.ipv6RouteConfig = { ...newBgpValue.ipv6RouteConfig };
-            saveConfig.routeConfig = { ...newBgpValue.routeConfig };
-
-            try {
-                clearValidationErrors(validationErrors);
-                validateLocalAs(newBgpValue.localAs, validationErrors);
-                validatePeerIp(newBgpValue.peerIp, validationErrors);
-                validatePeerAs(newBgpValue.peerAs, validationErrors);
-                validateRouterId(newBgpValue.routerId, validationErrors);
-                validateHoldTime(newBgpValue.holdTime, validationErrors);
-
-                validateIpv4Prefix(newBgpValue.ipv4RouteConfig.prefix, validationErrors);
-                validateIpv4Mask(newBgpValue.ipv4RouteConfig.mask, validationErrors);
-                validateIpv4Count(newBgpValue.ipv4RouteConfig.count, validationErrors);
-
-                validateIpv6Prefix(newBgpValue.ipv6RouteConfig.prefix, validationErrors);
-                validateIpv6Mask(newBgpValue.ipv6RouteConfig.mask, validationErrors);
-                validateIpv6Count(newBgpValue.ipv6RouteConfig.count, validationErrors);
-
-                // Check if there are any validation errors
-                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    console.log('Validation failed, configuration not saved');
-                    return;
-                }
-
-                const raw = toRaw(saveConfig);
-                saveDebounced(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true, immediate: true }
-    );
+    // Computed properties to check if routes are available
+    const hasIpv4Routes = computed(() => sentIpv4Routes.value.length > 0);
+    const hasIpv6Routes = computed(() => sentIpv6Routes.value.length > 0);
 
     onMounted(async () => {
-        window.bgpApi.onUpdatePeerState(data => {
-            if (data.status === 'success') {
-                const response = data.data;
-                bgpData.value.peerState = response.state;
-            } else {
-                message.error(data.msg);
-            }
-        });
+        // 加载保存的IPv4-UNC路由配置
+        const savedIpv4UNCRouteConfig = await window.bgpApi.loadIpv4UNCRouteConfig();
+        if (savedIpv4UNCRouteConfig.status === 'success' && savedIpv4UNCRouteConfig.data) {
+            console.log('Loading saved IPv4-UNC route config:', savedIpv4UNCRouteConfig.data);
 
-        // 加载保存的配置
-        const savedConfig = await window.bgpApi.loadConfig();
-        if (savedConfig.status === 'success' && savedConfig.data) {
-            console.log('Loading saved config:', savedConfig.data);
-            networkValue.value = savedConfig.data.networkValue;
-            handleNetworkChange(networkValue.value);
-            bgpData.value.localAs = savedConfig.data.localAs;
-            bgpData.value.peerIp = savedConfig.data.peerIp;
-            bgpData.value.peerAs = savedConfig.data.peerAs;
-            if (savedConfig.data.routerId) {
-                bgpData.value.routerId = savedConfig.data.routerId;
-            }
-            bgpData.value.holdTime = savedConfig.data.holdTime;
-            bgpData.value.openCap = Array.isArray(savedConfig.data.openCap) ? [...savedConfig.data.openCap] : [];
-            bgpData.value.addressFamily = Array.isArray(savedConfig.data.addressFamily)
-                ? [...savedConfig.data.addressFamily]
-                : [];
-            bgpData.value.role = savedConfig.data.role || '';
-            bgpData.value.openCapCustom = savedConfig.data.openCapCustom || '';
-
-            // Load route configurations
-            if (savedConfig.data.ipv4RouteConfig) {
-                bgpData.value.ipv4RouteConfig = {
-                    prefix: savedConfig.data.ipv4RouteConfig.prefix || '',
-                    mask: savedConfig.data.ipv4RouteConfig.mask || '',
-                    count: savedConfig.data.ipv4RouteConfig.count || '',
-                    customAttr: savedConfig.data.ipv4RouteConfig.customAttr || ''
+            // 加载IPv4路由配置
+            if (savedIpv4UNCRouteConfig.data.ipv4RouteConfig) {
+                ipv4Data.value = {
+                    prefix: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.prefix || DEFAULT_VALUES.IPV4_PREFIX,
+                    mask: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.mask || DEFAULT_VALUES.IPV4_MASK,
+                    count: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.count || DEFAULT_VALUES.IPV4_COUNT,
+                    customAttr: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.customAttr || '',
+                    addressFamily: savedIpv4UNCRouteConfig.data.ipv4RouteConfig.addressFamily || ADDRESS_FAMILY.IPV4_UNC
                 };
-            }
-
-            if (savedConfig.data.ipv6RouteConfig) {
-                bgpData.value.ipv6RouteConfig = {
-                    prefix: savedConfig.data.ipv6RouteConfig.prefix || '',
-                    mask: savedConfig.data.ipv6RouteConfig.mask || '',
-                    count: savedConfig.data.ipv6RouteConfig.count || '',
-                    customAttr: savedConfig.data.ipv6RouteConfig.customAttr || ''
-                };
-            }
-
-            if (savedConfig.data.routeConfig) {
-                bgpData.value.routeConfig.ipType = savedConfig.data.routeConfig.ipType || IP_TYPE.IPV4;
             }
         } else {
-            console.error('[BgpEmulator] 配置文件加载失败', savedConfig.msg);
+            console.error('IPv4-UNC路由配置文件加载失败', savedIpv4UNCRouteConfig.msg);
+        }
+
+        // 加载保存的IPv6-UNC路由配置
+        const savedIpv6UNCRouteConfig = await window.bgpApi.loadIpv6UNCRouteConfig();
+        if (savedIpv6UNCRouteConfig.status === 'success' && savedIpv6UNCRouteConfig.data) {
+            console.log('Loading saved IPv6-UNC route config:', savedIpv6UNCRouteConfig.data);
+
+            // 加载IPv6路由配置
+            if (savedIpv6UNCRouteConfig.data.ipv6RouteConfig) {
+                ipv6Data.value = {
+                    prefix: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.prefix || DEFAULT_VALUES.IPV6_PREFIX,
+                    mask: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.mask || DEFAULT_VALUES.IPV6_MASK,
+                    count: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.count || DEFAULT_VALUES.IPV6_COUNT,
+                    customAttr: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.customAttr || '',
+                    addressFamily: savedIpv6UNCRouteConfig.data.ipv6RouteConfig.addressFamily || ADDRESS_FAMILY.IPV6_UNC
+                };
+            }
+        } else {
+            console.error('IPv6-UNC路由配置文件加载失败', savedIpv6UNCRouteConfig.msg);
         }
     });
-
-    const customOpenCapVisible = ref(false);
-    const showCustomOpenCap = () => {
-        customOpenCapVisible.value = true;
-    };
-
-    const handleCustomOpenCapSubmit = data => {
-        console.log(data);
-        bgpData.value.openCapCustom = data;
-    };
-
-    // Update watch for openCap changes
-    watch(
-        () => bgpData.value.openCap,
-        newValue => {
-            if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
-                bgpData.value.role = '';
-            } else {
-                if (bgpData.value.role === '') {
-                    bgpData.value.role = BGP_ROLE.PROVIDER;
-                }
-            }
-        },
-        { deep: true }
-    );
 
     const customIpv4RouteAttrVisible = ref(false);
     const customIpv6RouteAttrVisible = ref(false);
 
-    const showCustomRouteAttr = () => {
-        if (bgpData.value.routeConfig.ipType === IP_TYPE.IPV4) {
+    const showCustomRouteAttr = ipType => {
+        if (ipType === IP_TYPE.IPV4) {
             customIpv4RouteAttrVisible.value = true;
         } else {
             customIpv6RouteAttrVisible.value = true;
@@ -445,270 +389,316 @@
     };
 
     const handleCustomIpv4RouteAttrSubmit = data => {
-        console.log(data);
-        bgpData.value.ipv4RouteConfig.customAttr = data;
+        ipv4Data.value.customAttr = data;
     };
 
     const handleCustomIpv6RouteAttrSubmit = data => {
-        console.log(data);
-        bgpData.value.ipv6RouteConfig.customAttr = data;
+        ipv6Data.value.customAttr = data;
     };
 
-    // Add watch for route type changes
-    watch(
-        () => bgpData.value.routeConfig.ipType,
-        () => {
-            clearValidationErrors(validationErrors);
+    // 添加显示已发送路由相关数据
+    const sentIpv4Routes = ref([]);
+    const sentIpv6Routes = ref([]);
+
+    // 路由表列配置
+    const routeColumns = [
+        {
+            title: '前缀',
+            dataIndex: 'prefix',
+            key: 'prefix'
+        },
+        {
+            title: '掩码',
+            dataIndex: 'mask',
+            key: 'mask',
+            width: 80
+        },
+        {
+            title: '操作',
+            key: 'action',
+            width: 100,
+            align: 'center'
         }
+    ];
+
+    // 获取地址族标签
+    const getAddressFamilyLabel = addressFamily => {
+        // 这个函数可能在源代码中已定义，如未定义需要添加适当的实现
+        const addressFamilyMap = {
+            [ADDRESS_FAMILY.IPV4_UNC]: 'IPv4-UNC',
+            [ADDRESS_FAMILY.IPV6_UNC]: 'IPv6-UNC'
+        };
+        return addressFamilyMap[addressFamily] || addressFamily;
+    };
+
+    // 撤销单个路由
+    const withdrawSingleRoute = async route => {
+        try {
+            const config = {
+                prefix: route.prefix,
+                mask: parseInt(route.mask),
+                count: 1,
+                customAttr: route.customAttr || '',
+                ipType: route.ipType,
+                addressFamily: route.addressFamily
+            };
+
+            const result = await window.bgpApi.withdrawRoutes(config);
+
+            if (result.status === 'success') {
+                message.success(
+                    `成功从 ${getAddressFamilyLabel(route.addressFamily)} 移除路由 ${route.prefix}/${route.mask}`
+                );
+
+                // 更新路由列表
+                if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+                    await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+                } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+                    await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                }
+            } else {
+                message.error(`移除路由失败: ${result.msg}`);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('路由移除失败');
+        }
+    };
+
+    const getRoutes = async addressFamily => {
+        const result = await window.bgpApi.getRoutes(addressFamily);
+        if (result.status === 'success') {
+            // 将结果转换为表格数据
+            const routes = result.data;
+            if (addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+                sentIpv4Routes.value = routes.map(route => ({
+                    prefix: route.ip,
+                    mask: route.mask,
+                    addressFamily: route.addressFamily,
+                    ipType: IP_TYPE.IPV4,
+                    customAttr: route.customAttr || ''
+                }));
+            } else if (addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+                sentIpv6Routes.value = routes.map(route => ({
+                    prefix: route.ip,
+                    mask: route.mask,
+                    addressFamily: route.addressFamily,
+                    ipType: IP_TYPE.IPV6,
+                    customAttr: route.customAttr || ''
+                }));
+            }
+        } else {
+            console.error(result.msg);
+        }
+    };
+
+    // IPv4路由处理
+    const generateIpv4Routes = async () => {
+        try {
+            const currentConfig = ipv4Data.value;
+
+            clearValidationErrors(ipv4UNCValidationErrors);
+            validateIpv4Prefix(currentConfig.prefix, ipv4UNCValidationErrors);
+            validateIpv4Mask(currentConfig.mask, ipv4UNCValidationErrors);
+            validateIpv4Count(currentConfig.count, ipv4UNCValidationErrors);
+
+            const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
+
+            if (hasErrors) {
+                message.error('请检查IPv4路由配置信息是否正确');
+                return;
+            }
+
+            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const result = await window.bgpApi.generateIpv4Routes(payload);
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                // 更新路由列表
+                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('IPv4路由生成失败');
+        }
+    };
+
+    const deleteIpv4Routes = async () => {
+        try {
+            const currentConfig = ipv4Data.value;
+
+            clearValidationErrors(ipv4UNCValidationErrors);
+            validateIpv4Prefix(currentConfig.prefix, ipv4UNCValidationErrors);
+            validateIpv4Mask(currentConfig.mask, ipv4UNCValidationErrors);
+            validateIpv4Count(currentConfig.count, ipv4UNCValidationErrors);
+
+            const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
+
+            if (hasErrors) {
+                message.error('请检查IPv4路由配置信息是否正确');
+                return;
+            }
+
+            // 从选中的地址族移除路由
+            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const result = await window.bgpApi.deleteIpv4Routes(payload);
+
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                // 更新路由列表
+                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('IPv4路由删除失败');
+        }
+    };
+
+    // IPv6路由处理
+    const generateIpv6Routes = async () => {
+        try {
+            const currentConfig = ipv6Data.value;
+
+            clearValidationErrors(ipv6UNCValidationErrors);
+            validateIpv6Prefix(currentConfig.prefix, ipv6UNCValidationErrors);
+            validateIpv6Mask(currentConfig.mask, ipv6UNCValidationErrors);
+            validateIpv6Count(currentConfig.count, ipv6UNCValidationErrors);
+
+            const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
+
+            if (hasErrors) {
+                message.error('请检查IPv6路由配置信息是否正确');
+                return;
+            }
+
+            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const result = await window.bgpApi.generateIpv6Routes(payload);
+
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                // 更新路由列表
+                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('IPv6路由生成失败');
+        }
+    };
+
+    const withdrawIpv6Routes = async () => {
+        try {
+            const currentConfig = ipv6Data.value;
+
+            clearValidationErrors(ipv6UNCValidationErrors);
+            validateIpv6Prefix(currentConfig.prefix, ipv6UNCValidationErrors);
+            validateIpv6Mask(currentConfig.mask, ipv6UNCValidationErrors);
+            validateIpv6Count(currentConfig.count, ipv6UNCValidationErrors);
+
+            const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
+
+            if (hasErrors) {
+                message.error('请检查IPv6路由配置信息是否正确');
+                return;
+            }
+
+            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const result = await window.bgpApi.withdrawIpv6Routes(payload);
+
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                // 更新路由列表
+                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('IPv6路由删除失败');
+        }
+    };
+
+    // 监听数据变化并保存配置
+    watch(
+        ipv4Data,
+        newValue => {
+            try {
+                clearValidationErrors(ipv4UNCValidationErrors);
+
+                // 验证IPv4数据
+                validateIpv4Prefix(newValue.prefix, ipv4UNCValidationErrors);
+                validateIpv4Mask(newValue.mask, ipv4UNCValidationErrors);
+                validateIpv4Count(newValue.count, ipv4UNCValidationErrors);
+
+                // Check if there are any validation errors
+                const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
+
+                if (hasErrors) {
+                    console.log('ipv4UNC route config validation failed, configuration not saved');
+                    return;
+                }
+
+                const raw = toRaw(newValue);
+                saveIpv4UNCRouteConfig(raw);
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        { deep: true, immediate: true }
     );
 
-    const startBgp = async () => {
-        clearValidationErrors(validationErrors);
-        validateLocalAs(bgpConfigData.value.localAs, validationErrors);
-        validatePeerIp(bgpConfigData.value.routerId, validationErrors);
+    // 监听数据变化并保存配置
+    watch(
+        ipv6Data,
+        newValue => {
+            try {
+                clearValidationErrors(ipv6UNCValidationErrors);
 
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
+                // 验证IPv6数据
+                validateIpv6Prefix(newValue.prefix, ipv6UNCValidationErrors);
+                validateIpv6Mask(newValue.mask, ipv6UNCValidationErrors);
+                validateIpv6Count(newValue.count, ipv6UNCValidationErrors);
 
-        if (hasErrors) {
-            message.error('请检查BGP配置信息是否正确');
-            return;
-        }
+                // Check if there are any validation errors
+                const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
 
-        bgpLoading.value = true;
-        bgpRunning.value = false;
-
-        try {
-            const payload = JSON.parse(JSON.stringify(bgpConfigData.value));
-            const result = await window.bgpApi.startBgp(payload);
-            if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
+                if (hasErrors) {
+                    console.log('ipv6UNC route config validation failed, configuration not saved');
+                    return;
                 }
-                bgpLoading.value = false;
-                bgpRunning.value = true;
-            } else {
-                bgpLoading.value = false;
-                message.error(result.msg || 'BGP启动失败');
+
+                const raw = toRaw(newValue);
+                saveIpv6UNCRouteConfig(raw);
+            } catch (error) {
+                console.error(error);
             }
-        } catch (e) {
-            bgpLoading.value = false;
-            message.error(e);
-        }
-    };
-
-    const configPeer = async () => {
-        clearValidationErrors(validationErrors);
-        validateLocalAs(peerConfigData.value.localAs, validationErrors);
-        validatePeerIp(peerConfigData.value.routerId, validationErrors);
-
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-        if (hasErrors) {
-            message.error('请检查Peer配置信息是否正确');
-            return;
-        }
-
-        bgpLoading.value = true;
-        bgpRunning.value = false;
-
-        try {
-            const payload = JSON.parse(JSON.stringify(bgpConfigData.value));
-            const result = await window.bgpApi.startBgp(payload);
-            if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
-                }
-                bgpLoading.value = false;
-                bgpRunning.value = true;
-            } else {
-                bgpLoading.value = false;
-                message.error(result.msg || 'Peer配置失败');
-            }
-        } catch (e) {
-            bgpLoading.value = false;
-            message.error(e);
-        }
-    };
-
-    const stopBgp = async () => {
-        const result = await window.bgpApi.stopBgp();
-        if (result.status === 'success') {
-            if (result.msg !== '') {
-                message.success(result.msg);
-            }
-            bgpRunning.value = false;
-            bgpData.value.peerState = '';
-            routesSent.value = false; // Reset when BGP stops
-        } else {
-            message.error(result.msg || 'BGP停止失败');
-        }
-    };
-
-    const sendRoutes = async () => {
-        try {
-            const currentConfig =
-                bgpData.value.routeConfig.ipType === IP_TYPE.IPV4
-                    ? bgpData.value.ipv4RouteConfig
-                    : bgpData.value.ipv6RouteConfig;
-
-            clearValidationErrors(validationErrors);
-            if (bgpData.value.routeConfig.ipType === IP_TYPE.IPV4) {
-                validateIpv4Prefix(currentConfig.prefix, validationErrors);
-                validateIpv4Mask(currentConfig.mask, validationErrors);
-                validateIpv4Count(currentConfig.count, validationErrors);
-            } else {
-                validateIpv6Prefix(currentConfig.prefix, validationErrors);
-                validateIpv6Mask(currentConfig.mask, validationErrors);
-                validateIpv6Count(currentConfig.count, validationErrors);
-            }
-
-            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-            if (hasErrors) {
-                message.error('请检查路由配置信息是否正确');
-                return;
-            }
-
-            currentConfig.mask = parseInt(currentConfig.mask);
-            currentConfig.count = parseInt(currentConfig.count);
-            const result = await window.bgpApi.sendRoutes({
-                ...currentConfig,
-                ipType: bgpData.value.routeConfig.ipType
-            });
-
-            if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
-                }
-                routesSent.value = true;
-            } else {
-                message.error(result.msg || '路由发送失败');
-            }
-        } catch (e) {
-            console.error(e);
-            message.error('路由发送失败');
-        }
-    };
-
-    const withdrawRoutes = async () => {
-        try {
-            const currentConfig =
-                bgpData.value.routeConfig.ipType === IP_TYPE.IPV4
-                    ? bgpData.value.ipv4RouteConfig
-                    : bgpData.value.ipv6RouteConfig;
-
-            if (bgpData.value.routeConfig.ipType === IP_TYPE.IPV4) {
-                validateIpv4Prefix(currentConfig.prefix, validationErrors);
-                validateIpv4Mask(currentConfig.mask, validationErrors);
-                validateIpv4Count(currentConfig.count, validationErrors);
-            } else {
-                validateIpv6Prefix(currentConfig.prefix, validationErrors);
-                validateIpv6Mask(currentConfig.mask, validationErrors);
-                validateIpv6Count(currentConfig.count, validationErrors);
-            }
-
-            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-            if (hasErrors) {
-                message.error('请检查路由配置信息是否正确');
-                return;
-            }
-
-            currentConfig.mask = parseInt(currentConfig.mask);
-            currentConfig.count = parseInt(currentConfig.count);
-            const result = await window.bgpApi.withdrawRoutes({
-                ...currentConfig,
-                ipType: bgpData.value.routeConfig.ipType
-            });
-
-            if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
-                }
-                routesSent.value = false;
-            } else {
-                message.error(result.msg || '路由撤销失败');
-            }
-        } catch (e) {
-            console.error(e);
-            message.error('路由撤销失败');
-        }
-    };
+        },
+        { deep: true, immediate: true }
+    );
 </script>
 
 <style scoped>
-    :deep(.ant-input[disabled]) {
-        background-color: #f5f5f5;
-        color: rgba(0, 0, 0, 0.85);
-    }
-
-    :deep(.ant-select-disabled .ant-select-selector) {
-        background-color: #f5f5f5;
-        color: rgba(0, 0, 0, 0.85);
-    }
-
-    /* 增强禁用复选框的可见度 */
-    :deep(.ant-checkbox-disabled + span) {
-        color: rgba(0, 0, 0, 0.85) !important;
-    }
-
-    :deep(.ant-checkbox-disabled .ant-checkbox-inner) {
-        background-color: #e6e6e6 !important;
-        border-color: #d9d9d9 !important;
+    .route-config-container {
+        margin-top: 10px;
+        margin-left: 8px;
     }
 
     .route-config-card {
         margin-top: 10px;
     }
 
-    .custom-route-btn {
-        color: #1890ff;
-        padding: 0;
-        height: 32px;
-        font-size: 14px;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-left: 8px;
-    }
-
-    .custom-route-btn:hover {
-        color: #40a9ff;
-    }
-
-    .custom-route-btn:active {
-        color: #096dd9;
-    }
-
-    /* 调整路由配置部分的间距 */
     :deep(.ant-form-item) {
-        margin-bottom: 10px;
-    }
-
-    :deep(.ant-radio-group) {
         margin-bottom: 8px;
     }
 
-    /* 调整路由配置输入框的间距 */
-    :deep(.ant-row) {
-        margin-bottom: 8px;
-    }
-
-    :deep(.ant-col) {
-        padding-right: 8px;
-    }
-
-    :deep(.ant-col:last-child) {
-        padding-right: 0;
-    }
-
-    /* Remove error message styling since we're using tooltips now */
     .error-message {
         display: none;
     }
 
-    /* Update error input styling */
     :deep(.ant-input-status-error) {
         border-color: #ff4d4f;
     }
@@ -722,7 +712,6 @@
         box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
     }
 
-    /* Add tooltip styling */
     :deep(.ant-tooltip) {
         z-index: 1000;
     }
@@ -746,5 +735,30 @@
 
     :deep(.ant-card-head-title) {
         padding: 10px 0;
+    }
+
+    /* 路由列表样式 */
+    .route-list-section {
+        margin-top: 16px;
+    }
+
+    .route-list-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding: 8px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .header-text {
+        margin-right: 8px;
+        font-weight: 500;
+    }
+
+    /* 表格样式调整 */
+    :deep(.ant-table-small) {
+        font-size: 12px;
     }
 </style>

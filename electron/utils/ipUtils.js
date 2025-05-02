@@ -3,7 +3,7 @@ const BgpConst = require('../const/bgpConst');
 
 /**
  * Generate a list of IP networks based on route type, IP, mask and count
- * @param {number} routeType - BGP_AFI_TYPE.AFI_IPV4 or BGP_AFI_TYPE.AFI_IPV6
+ * @param {number} routeType - IP_TYPE.IPV4 or IP_TYPE.IPV6
  * @param {string} routeIp - Starting IP address
  * @param {number} routeMask - Network mask
  * @param {number} routeCnt - Number of routes to generate
@@ -12,7 +12,7 @@ const BgpConst = require('../const/bgpConst');
 function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
     const routes = [];
 
-    if (routeType === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
+    if (routeType === BgpConst.IP_TYPE.IPV4) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray();
         let baseInt = (baseBytes[0] << 24) | (baseBytes[1] << 16) | (baseBytes[2] << 8) | baseBytes[3];
@@ -34,7 +34,7 @@ function genRouteIps(routeType, routeIp, routeMask, routeCnt) {
                 mask: routeMask
             });
         }
-    } else if (routeType === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
+    } else if (routeType === BgpConst.IP_TYPE.IPV6) {
         const baseAddress = ipaddr.parse(routeIp);
         const baseBytes = baseAddress.toByteArray(); // 16 bytes
         let baseBigInt = BigInt(0);
@@ -146,6 +146,17 @@ function getAfiAndSafi(addrFamily) {
     return { afi, safi };
 }
 
+// 判断地址是ipv4还是ipv6
+function getIpType(ip) {
+    if (ipaddr.IPv4.isIPv4(ip)) {
+        return BgpConst.IP_TYPE.IPV4;
+    } else if (ipaddr.IPv6.isIPv6(ip)) {
+        return BgpConst.IP_TYPE.IPV6;
+    }
+
+    return null;
+}
+
 module.exports = {
     genRouteIps,
     writeUInt16,
@@ -153,5 +164,6 @@ module.exports = {
     ipToBytes,
     rdBufferToString,
     getAddrFamilyType,
-    getAfiAndSafi
+    getAfiAndSafi,
+    getIpType
 };

@@ -11,7 +11,7 @@
         <div class="content-container">
             <router-view v-slot="{ Component }">
                 <keep-alive :include="$store.state.cachedViews">
-                <component :is="Component" ref="currentTab" />
+                    <component :is="Component" ref="currentTab" />
                 </keep-alive>
             </router-view>
         </div>
@@ -45,23 +45,23 @@
 </script>
 
 <style scoped>
-.tool-main-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh; /* 确保撑满屏幕 */
-    overflow: hidden;
-}
+    .tool-main-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* 确保撑满屏幕 */
+        overflow: hidden;
+    }
 
-.fixed-tabs {
-    height: 48px; /* 你实际 Tab 高度 */
-    flex-shrink: 0;
-    background-color: #fff;
-    z-index: 10;
-    margin-left: 8px;
-}
+    .fixed-tabs {
+        height: 48px; /* 你实际 Tab 高度 */
+        flex-shrink: 0;
+        background-color: #fff;
+        z-index: 10;
+        margin-left: 8px;
+    }
 
-.content-container {
-    flex: 1;
-    overflow-y: auto;
-}
+    .content-container {
+        flex: 1;
+        overflow-y: auto;
+    }
 </style>

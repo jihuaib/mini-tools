@@ -10,6 +10,7 @@
                                 :open="!!bgpConfigvalidationErrors.localAs"
                             >
                                 <a-input
+                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.localAs"
                                     @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
                                     :status="bgpConfigvalidationErrors.localAs ? 'error' : ''"
@@ -24,6 +25,7 @@
                                 :open="!!bgpConfigvalidationErrors.routerId"
                             >
                                 <a-input
+                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.routerId"
                                     @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
                                     :status="bgpConfigvalidationErrors.routerId ? 'error' : ''"
@@ -32,167 +34,303 @@
                         </a-form-item>
                     </a-col>
                 </a-row>
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="地址族" name="addressFamily">
+                            <a-select
+                                :disabled="bgpRunning"
+                                v-model:value="bgpConfigData.addressFamily"
+                                mode="multiple"
+                                style="width: 100%"
+                                :options="bgpAddressFamilyOptions"
+                            />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
                 <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                     <a-space size="middle">
-                        <a-button type="primary" html-type="submit" :loading="bgpLoading">启动BGP</a-button>
+                        <a-button type="primary" html-type="submit" :loading="bgpLoading" :disabled="bgpRunning">
+                            启动BGP
+                        </a-button>
                         <a-button type="primary" danger @click="stopBgp" :disabled="!bgpRunning">停止BGP</a-button>
                     </a-space>
                 </a-form-item>
             </a-card>
         </a-form>
 
-        <a-form :model="peerConfigData" @finish="configPeer" :label-col="labelCol" :wrapper-col="wrapperCol">
-            <a-card title="邻居配置" class="route-config-card">
-                <a-row>
-                    <a-col :span="12">
-                        <a-form-item label="Peer IP" name="peerIp">
-                            <a-tooltip
-                                :title="peerConfigvalidationErrors.peerIp"
-                                :open="!!peerConfigvalidationErrors.peerIp"
-                            >
-                                <a-input
-                                    v-model:value="peerConfigData.peerIp"
-                                    @blur="e => validatePeerConfigField(e.target.value, 'peerIp', validatePeerIp)"
-                                    :status="peerConfigvalidationErrors.peerIp ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                        <a-form-item label="Peer AS" name="peerAs">
-                            <a-tooltip
-                                :title="peerConfigvalidationErrors.peerAs"
-                                :open="!!peerConfigvalidationErrors.peerAs"
-                            >
-                                <a-input
-                                    v-model:value="peerConfigData.peerAs"
-                                    @blur="e => validatePeerConfigField(e.target.value, 'peerAs', validatePeerAs)"
-                                    :status="peerConfigvalidationErrors.peerAs ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
+        <a-card title="邻居配置" class="route-config-card">
+            <a-tabs v-model:activeKey="activeTabKey">
+                <a-tab-pane :key="IP_TYPE.IPV4" tab="IPv4邻居">
+                    <a-form
+                        :model="ipv4PeerConfigData"
+                        @finish="configIpv4Peer"
+                        :label-col="labelCol"
+                        :wrapper-col="wrapperCol"
+                    >
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Peer IP" name="peerIp">
+                                    <a-tooltip
+                                        :title="ipv4PeerConfigvalidationErrors.peerIp"
+                                        :open="!!ipv4PeerConfigvalidationErrors.peerIp"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4PeerConfigData.peerIp"
+                                            @blur="
+                                                e =>
+                                                    validateIpv4PeerConfigField(
+                                                        e.target.value,
+                                                        'peerIp',
+                                                        validatePeerIp
+                                                    )
+                                            "
+                                            :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="Peer AS" name="peerAs">
+                                    <a-tooltip
+                                        :title="ipv4PeerConfigvalidationErrors.peerAs"
+                                        :open="!!ipv4PeerConfigvalidationErrors.peerAs"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4PeerConfigData.peerAs"
+                                            @blur="
+                                                e =>
+                                                    validateIpv4PeerConfigField(
+                                                        e.target.value,
+                                                        'peerAs',
+                                                        validatePeerAs
+                                                    )
+                                            "
+                                            :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
 
-                <a-row>
-                    <a-col :span="12">
-                        <a-form-item label="Hold Time" name="holdTime">
-                            <a-tooltip
-                                :title="peerConfigvalidationErrors.holdTime"
-                                :open="!!peerConfigvalidationErrors.holdTime"
-                            >
-                                <a-input
-                                    v-model:value="peerConfigData.holdTime"
-                                    @blur="e => validatePeerConfigField(e.target.value, 'holdTime', validateHoldTime)"
-                                    :status="peerConfigvalidationErrors.holdTime ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Hold Time" name="holdTime">
+                                    <a-tooltip
+                                        :title="ipv4PeerConfigvalidationErrors.holdTime"
+                                        :open="!!ipv4PeerConfigvalidationErrors.holdTime"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv4PeerConfigData.holdTime"
+                                            @blur="
+                                                e =>
+                                                    validateIpv4PeerConfigField(
+                                                        e.target.value,
+                                                        'holdTime',
+                                                        validateHoldTime
+                                                    )
+                                            "
+                                            :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
 
-                <a-row>
-                    <a-col :span="24">
-                        <a-form-item label="Open Cap" name="openCap">
-                            <a-space>
-                                <a-checkbox-group v-model:value="peerConfigData.openCap" :options="openCapOptions" />
-                                <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
-                                    <template #icon><SettingOutlined /></template>
-                                    配置自定义能力
-                                </a-button>
-                            </a-space>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
+                        <a-row>
+                            <a-col :span="24">
+                                <a-form-item label="Open Cap" name="openCap">
+                                    <a-space>
+                                        <a-checkbox-group
+                                            v-model:value="ipv4PeerConfigData.openCap"
+                                            :options="ipv4OpenCapOptions"
+                                        />
+                                        <a-button type="link" @click="showCustomOpenCap" class="custom-route-btn">
+                                            <template #icon><SettingOutlined /></template>
+                                            配置自定义能力
+                                        </a-button>
+                                    </a-space>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
 
-                <a-row>
-                    <a-col :span="12">
-                        <a-form-item label="Addr Family" name="addressFamily">
-                            <a-select
-                                v-model:value="peerConfigData.addressFamily"
-                                mode="multiple"
-                                style="width: 100%"
-                                :options="addressFamilyOptions"
-                            />
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                        <a-form-item label="Role" name="role">
-                            <a-select
-                                v-model:value="peerConfigData.role"
-                                style="width: 100%"
-                                :options="roleOptions"
-                                :disabled="!peerConfigData.openCap.includes(BGP_CAPABILITY.ROLE)"
-                            />
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-                <a-row>
-                    <a-col :span="24">
-                        <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                            <a-space size="middle">
-                                <a-button type="primary" html-type="submit" :disabled="!bgpRunning">配置邻居</a-button>
-                            </a-space>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-            </a-card>
-        </a-form>
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Addr Family" name="addressFamily">
+                                    <a-select
+                                        v-model:value="ipv4PeerConfigData.addressFamily"
+                                        mode="multiple"
+                                        style="width: 100%"
+                                        :options="addressFamilyOptions"
+                                    />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="Role" name="role">
+                                    <a-select
+                                        v-model:value="ipv4PeerConfigData.role"
+                                        style="width: 100%"
+                                        :options="roleOptions"
+                                        :disabled="!ipv4PeerConfigData.openCap.includes(BGP_CAPABILITY.ROLE)"
+                                    />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
 
-        <a-row>
-            <a-col :span="24">
-                <a-card title="邻居信息" class="route-config-card">
-                    <div>
-                        <a-tabs v-model:activeKey="activePeerInfoTabKey">
-                            <a-tab-pane key="ipv4-unc-peer" tab="IPv4-UNC邻居">
-                                <a-table
-                                    :columns="PeerInfoColumns"
-                                    :data-source="ipv4UncPeerList"
-                                    :rowKey="
-                                        record =>
-                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
-                                    "
-                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                                    :scroll="{ y: 200 }"
-                                    size="small"
-                                >
-                                    <template #bodyCell="{ column, record }">
-                                        <template v-if="column.key === 'action'">
-                                            <a-button type="link" @click="viewRouteDetails(record)">详情</a-button>
-                                        </template>
-                                    </template>
-                                </a-table>
-                            </a-tab-pane>
-                            <a-tab-pane key="ipv6-unc-peer" tab="IPv6-UNC邻居">
-                                <a-table
-                                    :columns="PeerInfoColumns"
-                                    :data-source="ipv6UncPeerList"
-                                    :rowKey="
-                                        record =>
-                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
-                                    "
-                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                                    :scroll="{ y: 200 }"
-                                    size="small"
-                                >
-                                    <template #bodyCell="{ column, record }">
-                                        <template v-if="column.key === 'action'">
-                                            <a-button type="link" @click="viewRouteDetails(record)">详情</a-button>
-                                        </template>
-                                    </template>
-                                </a-table>
-                            </a-tab-pane>
-                        </a-tabs>
-                    </div>
-                </a-card>
-            </a-col>
-        </a-row>
+                        <a-row>
+                            <a-col :span="24">
+                                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                                    <a-space size="middle">
+                                        <a-button type="primary" html-type="submit" :disabled="!bgpRunning">
+                                            配置IPv4邻居
+                                        </a-button>
+                                    </a-space>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                    </a-form>
+                </a-tab-pane>
+                <a-tab-pane :key="IP_TYPE.IPV6" tab="IPv6邻居">
+                    <a-form
+                        :model="ipv6PeerConfigData"
+                        @finish="configIpv6Peer"
+                        :label-col="labelCol"
+                        :wrapper-col="wrapperCol"
+                    >
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Peer IPv6" name="peerIpv6">
+                                    <a-tooltip
+                                        :title="ipv6PeerConfigvalidationErrors.peerIpv6"
+                                        :open="!!ipv6PeerConfigvalidationErrors.peerIpv6"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6PeerConfigData.peerIpv6"
+                                            @blur="
+                                                e =>
+                                                    validateIpv6PeerConfigField(
+                                                        e.target.value,
+                                                        'peerIpv6',
+                                                        validatePeerIpv6
+                                                    )
+                                            "
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="Peer AS" name="peerIpv6As">
+                                    <a-tooltip
+                                        :title="ipv6PeerConfigvalidationErrors.peerIpv6As"
+                                        :open="!!ipv6PeerConfigvalidationErrors.peerIpv6As"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6PeerConfigData.peerIpv6As"
+                                            @blur="
+                                                e =>
+                                                    validateIpv6PeerConfigField(
+                                                        e.target.value,
+                                                        'peerIpv6As',
+                                                        validatePeerAs
+                                                    )
+                                            "
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Hold Time" name="holdTimeIpv6">
+                                    <a-tooltip
+                                        :title="ipv6PeerConfigvalidationErrors.holdTimeIpv6"
+                                        :open="!!ipv6PeerConfigvalidationErrors.holdTimeIpv6"
+                                    >
+                                        <a-input
+                                            v-model:value="ipv6PeerConfigData.holdTimeIpv6"
+                                            @blur="
+                                                e =>
+                                                    validateIpv6PeerConfigField(
+                                                        e.target.value,
+                                                        'holdTimeIpv6',
+                                                        validateHoldTime
+                                                    )
+                                            "
+                                            :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+
+                        <a-row>
+                            <a-col :span="24">
+                                <a-form-item label="Open Cap" name="openCapIpv6">
+                                    <a-space>
+                                        <a-checkbox-group
+                                            v-model:value="ipv6PeerConfigData.openCapIpv6"
+                                            :options="ipv6OpenCapOptions"
+                                        />
+                                        <a-button type="link" @click="showCustomOpenCapIpv6" class="custom-route-btn">
+                                            <template #icon><SettingOutlined /></template>
+                                            配置自定义能力
+                                        </a-button>
+                                    </a-space>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+
+                        <a-row>
+                            <a-col :span="12">
+                                <a-form-item label="Addr Family" name="addressFamilyIpv6">
+                                    <a-select
+                                        v-model:value="ipv6PeerConfigData.addressFamilyIpv6"
+                                        mode="multiple"
+                                        style="width: 100%"
+                                        :options="addressFamilyOptionsIpv6"
+                                    />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="Role" name="roleIpv6">
+                                    <a-select
+                                        v-model:value="ipv6PeerConfigData.roleIpv6"
+                                        style="width: 100%"
+                                        :options="roleOptions"
+                                        :disabled="!ipv6PeerConfigData.openCapIpv6.includes(BGP_CAPABILITY.ROLE)"
+                                    />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+
+                        <a-row>
+                            <a-col :span="24">
+                                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                                    <a-space size="middle">
+                                        <a-button type="primary" html-type="submit" :disabled="!bgpRunning">
+                                            配置IPv6邻居
+                                        </a-button>
+                                    </a-space>
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                    </a-form>
+                </a-tab-pane>
+            </a-tabs>
+        </a-card>
 
         <CustomPktDrawer
             v-model:visible="customOpenCapVisible"
-            v-model:inputValue="peerConfigData.openCapCustom"
+            v-model:inputValue="ipv4PeerConfigData.openCapCustom"
             @submit="handleCustomOpenCapSubmit"
+        />
+        <CustomPktDrawer
+            v-model:visible="customOpenCapIpv6Visible"
+            v-model:inputValue="ipv6PeerConfigData.openCapCustomIpv6"
+            @submit="handleCustomOpenCapIpv6Submit"
         />
     </div>
 </template>
@@ -207,10 +345,11 @@
     import {
         validateLocalAs,
         validatePeerIp,
+        validatePeerIpv6,
         validatePeerAs,
         validateRouterId,
         validateHoldTime
-    } from '../../utils/bgpSimulatorValidation';
+    } from '../../utils/bgpValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({
@@ -220,11 +359,19 @@
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
 
-    const openCapOptions = [
+    const ipv4OpenCapOptions = [
         { label: 'Addr Family', value: BGP_CAPABILITY.ADDR_FAMILY, disabled: true },
         { label: 'Route-Refresh', value: BGP_CAPABILITY.ROUTE_REFRESH },
         { label: 'AS4', value: BGP_CAPABILITY.AS4 },
         { label: 'Role', value: BGP_CAPABILITY.ROLE }
+    ];
+
+    const ipv6OpenCapOptions = [
+        { label: 'Addr Family', value: BGP_CAPABILITY.ADDR_FAMILY, disabled: true },
+        { label: 'Route-Refresh', value: BGP_CAPABILITY.ROUTE_REFRESH },
+        { label: 'AS4', value: BGP_CAPABILITY.AS4 },
+        { label: 'Role', value: BGP_CAPABILITY.ROLE },
+        { label: 'Extended Next Hop Encoding', value: BGP_CAPABILITY.EXTENDED_NEXT_HOP_ENCODING }
     ];
 
     const roleOptions = [
@@ -235,17 +382,30 @@
         { label: 'Lateral Peer', value: BGP_ROLE.LATERAL_PEER }
     ];
 
+    const bgpAddressFamilyOptions = [
+        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC, disabled: true },
+        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC }
+    ];
+
     const addressFamilyOptions = [
         { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC, disabled: true },
         { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC }
     ];
 
+    const addressFamilyOptionsIpv6 = [
+        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC },
+        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC, disabled: true }
+    ];
+
     const bgpConfigData = ref({
         localAs: DEFAULT_VALUES.LOCAL_AS,
-        routerId: DEFAULT_VALUES.ROUTER_ID
+        routerId: DEFAULT_VALUES.ROUTER_ID,
+        addressFamily: [ADDRESS_FAMILY.IPV4_UNC]
     });
 
-    const peerConfigData = ref({
+    const activeTabKey = ref(IP_TYPE.IPV4);
+
+    const ipv4PeerConfigData = ref({
         peerIp: DEFAULT_VALUES.PEER_IP,
         peerAs: DEFAULT_VALUES.PEER_AS,
         holdTime: DEFAULT_VALUES.HOLD_TIME,
@@ -255,46 +415,15 @@
         openCapCustom: ''
     });
 
-    const ipv4UncPeerList = ref([]);
-    const ipv6UncPeerList = ref([]);
-    const activePeerInfoTabKey = ref('ipv4-unc-peer');
-    const PeerInfoColumns = [
-        {
-            title: 'Local IP',
-            dataIndex: 'localIp',
-            ellipsis: true
-        },
-        {
-            title: 'Local AS',
-            dataIndex: 'localAs',
-            ellipsis: true
-        },
-        {
-            title: 'Peer IP',
-            dataIndex: 'peerIp',
-            key: 'peerIp',
-            ellipsis: true
-        },
-        {
-            title: 'Peer AS',
-            dataIndex: 'peerAs',
-            ellipsis: true
-        },
-        {
-            title: 'Router ID',
-            dataIndex: 'routerId',
-            ellipsis: true
-        },
-        {
-            title: 'Peer State',
-            dataIndex: 'peerState',
-            ellipsis: true
-        },
-        {
-            title: '操作',
-            key: 'action'
-        }
-    ];
+    const ipv6PeerConfigData = ref({
+        peerIpv6: DEFAULT_VALUES.PEER_IPV6,
+        peerIpv6As: DEFAULT_VALUES.PEER_IPV6_AS,
+        holdTimeIpv6: DEFAULT_VALUES.HOLD_TIME_IPV6,
+        openCapIpv6: DEFAULT_VALUES.DEFAULT_OPEN_CAP_IPV6,
+        addressFamilyIpv6: DEFAULT_VALUES.DEFAULT_ADDRESS_FAMILY_IPV6,
+        roleIpv6: '',
+        openCapCustomIpv6: ''
+    });
 
     const saveBgpConfig = debounce(async data => {
         const result = await window.bgpApi.saveBgpConfig(data);
@@ -305,8 +434,17 @@
         }
     }, 300);
 
-    const savePeerConfig = debounce(async data => {
-        const result = await window.bgpApi.savePeerConfig(data);
+    const saveIpv4PeerConfig = debounce(async data => {
+        const result = await window.bgpApi.saveIpv4PeerConfig(data);
+        if (result.status === 'success') {
+            console.info(result.msg);
+        } else {
+            console.error(result.msg);
+        }
+    }, 300);
+
+    const saveIpv6PeerConfig = debounce(async data => {
+        const result = await window.bgpApi.saveIpv6PeerConfig(data);
         if (result.status === 'success') {
             console.info(result.msg);
         } else {
@@ -319,17 +457,24 @@
         routerId: ''
     });
 
-    const peerConfigvalidationErrors = ref({
+    const ipv4PeerConfigvalidationErrors = ref({
         peerIp: '',
         peerAs: '',
         holdTime: ''
+    });
+
+    const ipv6PeerConfigvalidationErrors = ref({
+        peerIpv6: '',
+        peerIpv6As: '',
+        holdTimeIpv6: ''
     });
 
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
             clearValidationErrors(bgpConfigvalidationErrors);
-            clearValidationErrors(peerConfigvalidationErrors);
+            clearValidationErrors(ipv4PeerConfigvalidationErrors);
+            clearValidationErrors(ipv6PeerConfigvalidationErrors);
         }
     });
 
@@ -337,8 +482,12 @@
         validationFn(value, bgpConfigvalidationErrors);
     };
 
-    const validatePeerConfigField = (value, fieldName, validationFn) => {
-        validationFn(value, peerConfigvalidationErrors);
+    const validateIpv4PeerConfigField = (value, fieldName, validationFn) => {
+        validationFn(value, ipv4PeerConfigvalidationErrors);
+    };
+
+    const validateIpv6PeerConfigField = (value, fieldName, validationFn) => {
+        validationFn(value, ipv6PeerConfigvalidationErrors);
     };
 
     const bgpLoading = ref(false);
@@ -364,79 +513,99 @@
     );
 
     watch(
-        peerConfigData,
+        ipv4PeerConfigData,
         newValue => {
-            clearValidationErrors(peerConfigvalidationErrors);
-            validatePeerIp(newValue.peerIp, peerConfigvalidationErrors);
-            validatePeerAs(newValue.peerAs, peerConfigvalidationErrors);
-            validateHoldTime(newValue.holdTime, peerConfigvalidationErrors);
+            clearValidationErrors(ipv4PeerConfigvalidationErrors);
+            validatePeerIp(newValue.peerIp, ipv4PeerConfigvalidationErrors);
+            validatePeerAs(newValue.peerAs, ipv4PeerConfigvalidationErrors);
+            validateHoldTime(newValue.holdTime, ipv4PeerConfigvalidationErrors);
 
-            const hasErrors = Object.values(peerConfigvalidationErrors.value).some(error => error !== '');
+            const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('Validation failed, configuration not saved');
+                console.log('IPv4 Validation failed, configuration not saved');
                 return;
             }
 
             const raw = toRaw(newValue);
-            savePeerConfig(raw);
+            saveIpv4PeerConfig(raw);
+        },
+        { deep: true, immediate: true }
+    );
+
+    watch(
+        ipv6PeerConfigData,
+        newValue => {
+            clearValidationErrors(ipv6PeerConfigvalidationErrors);
+            validatePeerIpv6(newValue.peerIpv6, ipv6PeerConfigvalidationErrors);
+            validatePeerAs(newValue.peerIpv6As, ipv6PeerConfigvalidationErrors);
+            validateHoldTime(newValue.holdTimeIpv6, ipv6PeerConfigvalidationErrors);
+
+            const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
+            if (hasErrors) {
+                console.log('IPv6 Validation failed, configuration not saved');
+                return;
+            }
+
+            const raw = toRaw(newValue);
+            saveIpv6PeerConfig(raw);
         },
         { deep: true, immediate: true }
     );
 
     onMounted(async () => {
-        window.bgpApi.onPeerChange(data => {
-            if (data.status === 'success') {
-                const response = data.data;
-                // 根据地址族类型更新对应的表格数据
-                if (response.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
-                    const index = ipv4UncPeerList.value.findIndex(
-                        peer => `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
-                               `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
-                    );
-                    if (index !== -1) {
-                        ipv4UncPeerList.value[index] = { ...ipv4UncPeerList.value[index], ...response };
-                    }
-                } else if (response.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
-                    const index = ipv6UncPeerList.value.findIndex(
-                        peer => `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
-                               `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
-                    );
-                    if (index !== -1) {
-                        ipv6UncPeerList.value[index] = { ...ipv6UncPeerList.value[index], ...response };
-                    }
-                }
-            } else {
-                message.error(data.msg);
-            }
-        });
-
         // 加载Bgp保存的配置
         const savedBgpConfig = await window.bgpApi.loadBgpConfig();
         if (savedBgpConfig.status === 'success' && savedBgpConfig.data) {
             console.log('Loading saved config:', savedBgpConfig.data);
             bgpConfigData.value.localAs = savedBgpConfig.data.localAs;
             bgpConfigData.value.routerId = savedBgpConfig.data.routerId;
+            bgpConfigData.value.addressFamily = Array.isArray(savedBgpConfig.data.addressFamily)
+                ? [...savedBgpConfig.data.addressFamily]
+                : [ADDRESS_FAMILY.IPV4_UNC];
         } else {
-            console.error('配置文件加载失败', savedBgpConfig.msg);
+            console.error('BGP 配置文件加载失败', savedBgpConfig.msg);
         }
 
-        // 加载Peer保存的配置
-        const savedPeerConfig = await window.bgpApi.loadPeerConfig();
-        if (savedPeerConfig.status === 'success' && savedPeerConfig.data) {
-            console.log('Loading saved config:', savedPeerConfig.data);
-            peerConfigData.value.peerIp = savedPeerConfig.data.peerIp;
-            peerConfigData.value.peerAs = savedPeerConfig.data.peerAs;
-            peerConfigData.value.holdTime = savedPeerConfig.data.holdTime;
-            peerConfigData.value.openCap = Array.isArray(savedPeerConfig.data.openCap)
-                ? [...savedPeerConfig.data.openCap]
+        // 加载IPv4 Peer保存的配置
+        const savedIpv4PeerConfig = await window.bgpApi.loadIpv4PeerConfig();
+        if (savedIpv4PeerConfig.status === 'success' && savedIpv4PeerConfig.data) {
+            console.log('Loading saved ipv4 peer config:', savedIpv4PeerConfig.data);
+
+            // IPv4 settings
+            ipv4PeerConfigData.value.peerIp = savedIpv4PeerConfig.data.peerIp;
+            ipv4PeerConfigData.value.peerAs = savedIpv4PeerConfig.data.peerAs;
+            ipv4PeerConfigData.value.holdTime = savedIpv4PeerConfig.data.holdTime;
+            ipv4PeerConfigData.value.openCap = Array.isArray(savedIpv4PeerConfig.data.openCap)
+                ? [...savedIpv4PeerConfig.data.openCap]
                 : [];
-            peerConfigData.value.addressFamily = Array.isArray(savedPeerConfig.data.addressFamily)
-                ? [...savedPeerConfig.data.addressFamily]
+            ipv4PeerConfigData.value.addressFamily = Array.isArray(savedIpv4PeerConfig.data.addressFamily)
+                ? [...savedIpv4PeerConfig.data.addressFamily]
                 : [];
-            peerConfigData.value.role = savedPeerConfig.data.role || '';
-            peerConfigData.value.openCapCustom = savedPeerConfig.data.openCapCustom || '';
+            ipv4PeerConfigData.value.role = savedIpv4PeerConfig.data.role || '';
+            ipv4PeerConfigData.value.openCapCustom = savedIpv4PeerConfig.data.openCapCustom || '';
         } else {
-            console.error('配置文件加载失败', savedPeerConfig.msg);
+            console.error('IPv4 Peer 配置文件加载失败', savedIpv4PeerConfig.msg);
+        }
+
+        // 加载IPv6 Peer保存的配置
+        const savedIpv6PeerConfig = await window.bgpApi.loadIpv6PeerConfig();
+        if (savedIpv6PeerConfig.status === 'success' && savedIpv6PeerConfig.data) {
+            console.log('Loading saved ipv6 peer config:', savedIpv6PeerConfig.data);
+
+            // IPv6 settings
+            ipv6PeerConfigData.value.peerIpv6 = savedIpv6PeerConfig.data.peerIpv6;
+            ipv6PeerConfigData.value.peerIpv6As = savedIpv6PeerConfig.data.peerIpv6As;
+            ipv6PeerConfigData.value.holdTimeIpv6 = savedIpv6PeerConfig.data.holdTimeIpv6;
+            ipv6PeerConfigData.value.openCapIpv6 = Array.isArray(savedIpv6PeerConfig.data.openCapIpv6)
+                ? [...savedIpv6PeerConfig.data.openCapIpv6]
+                : [];
+            ipv6PeerConfigData.value.addressFamilyIpv6 = Array.isArray(savedIpv6PeerConfig.data.addressFamilyIpv6)
+                ? [...savedIpv6PeerConfig.data.addressFamilyIpv6]
+                : [];
+            ipv6PeerConfigData.value.roleIpv6 = savedIpv6PeerConfig.data.roleIpv6 || '';
+            ipv6PeerConfigData.value.openCapCustomIpv6 = savedIpv6PeerConfig.data.openCapCustomIpv6 || '';
+        } else {
+            console.error('IPv6 Peer 配置文件加载失败', savedIpv6PeerConfig.msg);
         }
     });
 
@@ -446,18 +615,40 @@
     };
 
     const handleCustomOpenCapSubmit = data => {
-        console.log(data);
-        peerConfigData.value.openCapCustom = data;
+        ipv4PeerConfigData.value.openCapCustom = data;
     };
 
     watch(
-        () => peerConfigData.value.openCap,
+        () => ipv4PeerConfigData.value.openCap,
         newValue => {
             if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
-                peerConfigData.value.role = '';
+                ipv4PeerConfigData.value.role = '';
             } else {
-                if (peerConfigData.value.role === '') {
-                    peerConfigData.value.role = BGP_ROLE.PROVIDER;
+                if (ipv4PeerConfigData.value.role === '') {
+                    ipv4PeerConfigData.value.role = BGP_ROLE.PROVIDER;
+                }
+            }
+        },
+        { deep: true }
+    );
+
+    const customOpenCapIpv6Visible = ref(false);
+    const showCustomOpenCapIpv6 = () => {
+        customOpenCapIpv6Visible.value = true;
+    };
+
+    const handleCustomOpenCapIpv6Submit = data => {
+        ipv6PeerConfigData.value.openCapCustomIpv6 = data;
+    };
+
+    watch(
+        () => ipv6PeerConfigData.value.openCapIpv6,
+        newValue => {
+            if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
+                ipv6PeerConfigData.value.roleIpv6 = '';
+            } else {
+                if (ipv6PeerConfigData.value.roleIpv6 === '') {
+                    ipv6PeerConfigData.value.roleIpv6 = BGP_ROLE.PROVIDER;
                 }
             }
         },
@@ -472,6 +663,11 @@
         const hasErrors = Object.values(bgpConfigvalidationErrors.value).some(error => error !== '');
         if (hasErrors) {
             message.error('请检查BGP配置信息是否正确');
+            return;
+        }
+
+        if (!bgpConfigData.value.addressFamily || bgpConfigData.value.addressFamily.length === 0) {
+            message.error('请至少选择一个地址族');
             return;
         }
 
@@ -497,47 +693,53 @@
         }
     };
 
-    const configPeer = async () => {
-        clearValidationErrors(peerConfigvalidationErrors);
-        validatePeerIp(peerConfigData.value.peerIp, peerConfigvalidationErrors);
-        validatePeerAs(peerConfigData.value.peerAs, peerConfigvalidationErrors);
-        validateHoldTime(peerConfigData.value.holdTime, peerConfigvalidationErrors);
+    const configIpv4Peer = async () => {
+        clearValidationErrors(ipv4PeerConfigvalidationErrors);
+        validatePeerIp(ipv4PeerConfigData.value.peerIp, ipv4PeerConfigvalidationErrors);
+        validatePeerAs(ipv4PeerConfigData.value.peerAs, ipv4PeerConfigvalidationErrors);
+        validateHoldTime(ipv4PeerConfigData.value.holdTime, ipv4PeerConfigvalidationErrors);
 
-        const hasErrors = Object.values(peerConfigvalidationErrors.value).some(error => error !== '');
+        const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
         if (hasErrors) {
-            message.error('请检查Peer配置信息是否正确');
+            message.error('请检查IPv4 Peer配置信息是否正确');
             return;
         }
 
         try {
-            const payload = JSON.parse(JSON.stringify(peerConfigData.value));
-            const result = await window.bgpApi.configPeer(payload);
+            const payload = JSON.parse(JSON.stringify(ipv4PeerConfigData.value));
+            const result = await window.bgpApi.configIpv4Peer(payload);
             if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
-                }
-                const peerInfo = await window.bgpApi.getPeerInfo();
-                if (peerInfo.status === 'success') {
-                    // 处理 IPv4-UNC 邻居信息 (addrFamilyType: 1)
-                    ipv4UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV4_UNC])
-                        ? [...peerInfo.data[ADDRESS_FAMILY.IPV4_UNC]]
-                        : [];
-
-                    // 处理 IPv6-UNC 邻居信息 (addrFamilyType: 2)
-                    ipv6UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV6_UNC])
-                        ? [...peerInfo.data[ADDRESS_FAMILY.IPV6_UNC]]
-                        : [];
-                } else {
-                    console.error(peerInfo.msg || 'Peer信息查询失败');
-                    ipv4UncPeerList.value = [];
-                    ipv6UncPeerList.value = [];
-                }
+                message.success(result.msg);
             } else {
-                bgpLoading.value = false;
-                message.error(result.msg || 'Peer配置失败');
+                message.error(result.msg || 'IPv4 Peer配置失败');
             }
         } catch (e) {
-            bgpLoading.value = false;
+            message.error(e);
+            console.error(e);
+        }
+    };
+
+    const configIpv6Peer = async () => {
+        clearValidationErrors(ipv6PeerConfigvalidationErrors);
+        validatePeerIpv6(ipv6PeerConfigData.value.peerIpv6, ipv6PeerConfigvalidationErrors);
+        validatePeerAs(ipv6PeerConfigData.value.peerIpv6As, ipv6PeerConfigvalidationErrors);
+        validateHoldTime(ipv6PeerConfigData.value.holdTimeIpv6, ipv6PeerConfigvalidationErrors);
+
+        const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
+        if (hasErrors) {
+            message.error('请检查IPv6 Peer配置信息是否正确');
+            return;
+        }
+
+        try {
+            const payload = JSON.parse(JSON.stringify(ipv6PeerConfigData.value));
+            const result = await window.bgpApi.configIpv6Peer(payload);
+            if (result.status === 'success') {
+                message.success(result.msg);
+            } else {
+                message.error(result.msg || 'IPv6 Peer配置失败');
+            }
+        } catch (e) {
             message.error(e);
             console.error(e);
         }
@@ -546,13 +748,20 @@
     const stopBgp = async () => {
         const result = await window.bgpApi.stopBgp();
         if (result.status === 'success') {
-            if (result.msg !== '') {
-                message.success(result.msg);
-            }
+            message.success(result.msg);
             bgpRunning.value = false;
-            peerConfigData.value.peerState = '';
         } else {
             message.error(result.msg || 'BGP停止失败');
+        }
+    };
+
+    const deletePeer = async record => {
+        const payload = JSON.parse(JSON.stringify(record));
+        const result = await window.bgpApi.deletePeer(payload);
+        if (result.status === 'success') {
+            message.success(result.msg);
+        } else {
+            message.error(result.msg || '删除Peer失败');
         }
     };
 </script>

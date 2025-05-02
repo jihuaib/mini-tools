@@ -4,6 +4,7 @@ import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
+import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
 import RouteConfig from '../view/bgp/RouteConfig.vue';
 import BmpEmulator from '../view/BmpEmulator.vue';
 import store from '../store';
@@ -42,6 +43,12 @@ const routes = [
                         path: 'bgp-config',
                         name: 'BgpConfig',
                         component: BgpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bgp-peer-info',
+                        name: 'BgpPeerInfo',
+                        component: BgpPeerInfo,
                         meta: { keepAlive: true }
                     },
                     {

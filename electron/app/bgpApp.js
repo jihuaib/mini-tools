@@ -5,13 +5,14 @@ const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
-
 class BgpApp {
     constructor(ipc, store) {
-        this.bgpStart = false;
         this.worker = null;
         this.bgpConfigFileKey = 'bgp-config';
-        this.peerConfigFileKey = 'peer-config';
+        this.ipv4PeerConfigFileKey = 'ipv4-peer-config';
+        this.ipv6PeerConfigFileKey = 'ipv6-peer-config';
+        this.ipv4UNCRouteConfigFileKey = 'ipv4-unc-route-config';
+        this.ipv6UNCRouteConfigFileKey = 'ipv6-unc-route-config';
         this.isDev = !app.isPackaged;
         this.logger = new Logger();
         this.peerChangeHandler = null;
@@ -24,20 +25,39 @@ class BgpApp {
         // 配置相关
         ipc.handle('bgp:saveBgpConfig', async (event, config) => this.handleSaveBgpConfig(event, config));
         ipc.handle('bgp:loadBgpConfig', async () => this.handleLoadBgpConfig());
-        ipc.handle('bgp:savePeerConfig', async (event, config) => this.handleSavePeerConfig(event, config));
-        ipc.handle('bgp:loadPeerConfig', async () => this.handleLoadPeerConfig());
+        ipc.handle('bgp:saveIpv4PeerConfig', async (event, config) => this.handleSaveIpv4PeerConfig(event, config));
+        ipc.handle('bgp:loadIpv4PeerConfig', async () => this.handleLoadIpv4PeerConfig());
+        ipc.handle('bgp:saveIpv6PeerConfig', async (event, config) => this.handleSaveIpv6PeerConfig(event, config));
+        ipc.handle('bgp:loadIpv6PeerConfig', async () => this.handleLoadIpv6PeerConfig());
+        ipc.handle('bgp:saveIpv4UNCRouteConfig', async (event, config) =>
+            this.handleSaveIpv4UNCRouteConfig(event, config)
+        );
+        ipc.handle('bgp:loadIpv4UNCRouteConfig', async () => this.handleLoadIpv4UNCRouteConfig());
+        ipc.handle('bgp:saveIpv6UNCRouteConfig', async (event, config) =>
+            this.handleSaveIpv6UNCRouteConfig(event, config)
+        );
+        ipc.handle('bgp:loadIpv6UNCRouteConfig', async () => this.handleLoadIpv6UNCRouteConfig());
 
         // bgp
         ipc.handle('bgp:startBgp', async (event, bgpConfigData) => this.handleStartBgp(event, bgpConfigData));
         ipc.handle('bgp:stopBgp', async () => this.handleStopBgp());
 
         // peer
-        ipc.handle('bgp:configPeer', async (event, peerConfigData) => this.handleConfigPeer(event, peerConfigData));
+        ipc.handle('bgp:configIpv4Peer', async (event, ipv4PeerConfigData) =>
+            this.handleConfigIpv4Peer(event, ipv4PeerConfigData)
+        );
+        ipc.handle('bgp:configIpv6Peer', async (event, ipv6PeerConfigData) =>
+            this.handleConfigIpv6Peer(event, ipv6PeerConfigData)
+        );
         ipc.handle('bgp:getPeerInfo', async () => this.handleGetPeerInfo());
+        ipc.handle('bgp:deletePeer', async (event, peer) => this.handleDeletePeer(event, peer));
 
         // route
-        ipc.handle('bgp:sendRoute', async (event, config) => this.handleSendRoute(event, config));
-        ipc.handle('bgp:withdrawRoute', async (event, config) => this.handleWithdrawRoute(event, config));
+        ipc.handle('bgp:generateIpv4Routes', async (event, config) => this.handleGenerateIpv4Routes(event, config));
+        ipc.handle('bgp:generateIpv6Routes', async (event, config) => this.handleGenerateIpv6Routes(event, config));
+        ipc.handle('bgp:deleteIpv4Routes', async (event, config) => this.handleDeleteIpv4Routes(event, config));
+        ipc.handle('bgp:deleteIpv6Routes', async (event, config) => this.handleDeleteIpv6Routes(event, config));
+        ipc.handle('bgp:getRoutes', async (event, addressFamily) => this.handleGetRoutes(event, addressFamily));
     }
 
     // 保存配置
@@ -46,7 +66,7 @@ class BgpApp {
             this.store.set(this.bgpConfigFileKey, config);
             return successResponse(null, 'BGP配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving config:', error);
+            this.logger.error('Error saving Bgp config:', error);
             return errorResponse(error.message);
         }
     }
@@ -60,67 +80,172 @@ class BgpApp {
             }
             return successResponse(config, 'BGP配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading config:', error);
+            this.logger.error('Error loading Bgp config:', error);
             return errorResponse(error.message);
         }
     }
 
     // 保存配置
-    async handleSavePeerConfig(event, config) {
+    async handleSaveIpv4PeerConfig(event, config) {
         try {
-            this.store.set(this.peerConfigFileKey, config);
-            return successResponse(null, 'Peer配置文件保存成功');
+            this.store.set(this.ipv4PeerConfigFileKey, config);
+            return successResponse(null, 'IPv4 Peer配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving config:', error);
+            this.logger.error('Error saving ipv4 peer config:', error);
             return errorResponse(error.message);
         }
     }
 
     // 加载配置
-    async handleLoadPeerConfig() {
+    async handleLoadIpv4PeerConfig() {
         try {
-            const config = this.store.get(this.peerConfigFileKey);
+            const config = this.store.get(this.ipv4PeerConfigFileKey);
             if (!config) {
-                return successResponse(null, 'Peer配置文件不存在');
+                return successResponse(null, 'IPv4 Peer配置文件不存在');
             }
-            return successResponse(config, 'Peer配置文件加载成功');
+            return successResponse(config, 'IPv4 Peer配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading config:', error);
+            this.logger.error('Error loading ipv4 peer config:', error);
             return errorResponse(error.message);
         }
     }
 
-    async handleConfigPeer(event, peerConfigData) {
-        const webContents = event.sender;
+    // 保存配置
+    async handleSaveIpv6PeerConfig(event, config) {
         try {
-            if (this.bgpStart) {
+            this.store.set(this.ipv6PeerConfigFileKey, config);
+            return successResponse(null, 'IPv6 Peer配置文件保存成功');
+        } catch (error) {
+            this.logger.error('Error saving ipv6 peer config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    // 加载配置
+    async handleLoadIpv6PeerConfig() {
+        try {
+            const config = this.store.get(this.ipv6PeerConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv6 Peer配置文件不存在');
+            }
+            return successResponse(config, 'IPv6 Peer配置文件加载成功');
+        } catch (error) {
+            this.logger.error('Error loading ipv6 peer config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSaveIpv4UNCRouteConfig(event, config) {
+        try {
+            this.store.set(this.ipv4UNCRouteConfigFileKey, config);
+            return successResponse(null, 'IPv4 UNC Route配置文件保存成功');
+        } catch (error) {
+            this.logger.error('Error saving ipv4 unc route config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadIpv4UNCRouteConfig() {
+        try {
+            const config = this.store.get(this.ipv4UNCRouteConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv4 UNC Route配置文件不存在');
+            }
+            return successResponse(config, 'IPv4 UNC Route配置文件加载成功');
+        } catch (error) {
+            this.logger.error('Error loading ipv4 unc route config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSaveIpv6UNCRouteConfig(event, config) {
+        try {
+            this.store.set(this.ipv6UNCRouteConfigFileKey, config);
+            return successResponse(null, 'IPv6 UNC Route配置文件保存成功');
+        } catch (error) {
+            this.logger.error('Error saving ipv6 unc route config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadIpv6UNCRouteConfig() {
+        try {
+            const config = this.store.get(this.ipv6UNCRouteConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv6 UNC Route配置文件不存在');
+            }
+            return successResponse(config, 'IPv6 UNC Route配置文件加载成功');
+        } catch (error) {
+            this.logger.error('Error loading ipv6 unc route config:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeletePeer(event, peer) {
+        try {
+            if (null == this.worker) {
+                this.logger.error('bgp协议没有运行');
+                return errorResponse('bgp协议没有运行');
             }
 
-            this.logger.info(`${JSON.stringify(peerConfigData)}`);
+            this.logger.info(`delete peer: ${JSON.stringify(peer)}`);
 
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_PEER, peer);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error deleting peer:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleConfigIpv4Peer(event, ipv4PeerConfigData) {
+        const webContents = event.sender;
+        try {
             if (null == this.worker) {
                 this.logger.error(`bgp协议没有启动`);
                 return errorResponse('bgp协议没有启动');
             }
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_PEER, peerConfigData);
+            this.logger.info(`ipv4 peer config: ${JSON.stringify(ipv4PeerConfigData)}`);
+
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_IPV4_PEER, ipv4PeerConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
-            this.logger.info(`config peer成功 result: ${JSON.stringify(result)}`);
+            this.logger.info(`ipv4 config peer成功 result: ${JSON.stringify(result)}`);
 
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error config Peer:', error);
+            this.logger.error(`ipv4 Error config Peer:`, error);
             return errorResponse(error.message);
         }
     }
 
+    async handleConfigIpv6Peer(event, ipv6PeerConfigData) {
+        const webContents = event.sender;
+        try {
+            if (null == this.worker) {
+                this.logger.error(`bgp协议没有启动`);
+                return errorResponse('bgp协议没有启动');
+            }
 
+            this.logger.info(`ipv6 peer config: ${JSON.stringify(ipv6PeerConfigData)}`);
+
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_IPV6_PEER, ipv6PeerConfigData);
+
+            // 这里肯定是启动成功了，如果失败，会抛出异常
+            this.logger.info(`ipv6 config peer成功 result: ${JSON.stringify(result)}`);
+
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error(`ipv6 Error config Peer:`, error);
+            return errorResponse(error.message);
+        }
+    }
 
     async handleStartBgp(event, bgpConfigData) {
         const webContents = event.sender;
         try {
-            if (this.bgpStart) {
+            if (null != this.worker) {
                 this.logger.error(`bgp协议已经启动`);
                 return errorResponse('bgp协议已经启动');
             }
@@ -147,8 +272,6 @@ class BgpApp {
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             this.logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);
-
-            this.bgpStart = true;
             return successResponse(null, result.msg);
         } catch (error) {
             this.logger.error('Error starting BGP:', error);
@@ -157,14 +280,13 @@ class BgpApp {
     }
 
     async handleStopBgp() {
-        if (!this.bgpStart) {
+        if (null == this.worker) {
             this.logger.error('BGP未启动');
             return errorResponse('BGP未启动');
         }
 
         try {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
-            this.bgpStart = false;
             return successResponse(null, result.msg);
         } catch (error) {
             this.logger.error('Error stopping BGP:', error);
@@ -173,13 +295,13 @@ class BgpApp {
             // 移除事件监听器
             this.worker.removeEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
+            this.worker = null;
         }
     }
 
     async handleGetPeerInfo() {
-        if (!this.bgpStart) {
-            this.logger.error('bgp协议没有运行');
-            return errorResponse('bgp协议没有运行');
+        if (null == this.worker) {
+            return successResponse({}, 'bgp协议没有运行');
         }
 
         try {
@@ -192,42 +314,90 @@ class BgpApp {
         }
     }
 
-    async handleSendRoute(event, config) {
-        if (!this.bgpStart) {
+    async handleGenerateIpv4Routes(event, config) {
+        if (null == this.worker) {
             this.logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
 
-        this.logger.info('handleSendRoute config:', config);
+        this.logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.SEND_ROUTE, config);
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV4_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error sending route:', error);
+            this.logger.error('Error generating ipv4 routes:', error);
             return errorResponse(error.message);
         }
     }
 
-    async handleWithdrawRoute(event, config) {
-        if (!this.bgpStart) {
+    async handleGenerateIpv6Routes(event, config) {
+        if (null == this.worker) {
             this.logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
 
-        this.logger.info('handleWithdrawRoute config:', config);
+        this.logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.WITHDRAW_ROUTE, config);
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV6_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error withdrawing route:', error);
+            this.logger.error('Error generating ipv6 routes:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteIpv4Routes(event, config) {
+        if (null == this.worker) {
+            this.logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        this.logger.info(`${JSON.stringify(config)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV4_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error deleting ipv4 routes:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteIpv6Routes(event, config) {
+        if (null == this.worker) {
+            this.logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        this.logger.info(`${JSON.stringify(config)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV6_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            this.logger.error('Error deleting ipv6 routes:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetRoutes(event, addressFamily) {
+        if (null == this.worker) {
+            return successResponse({}, 'bgp协议没有运行');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GET_ROUTES, addressFamily);
+            return successResponse(result.data, '获取路由信息成功');
+        } catch (error) {
+            this.logger.error('Error getting routes:', error);
             return errorResponse(error.message);
         }
     }
 
     async handleWindowClose(win) {
-        if (this.bgpStart) {
+        if (null != this.worker) {
             const { dialog } = require('electron');
             const { response } = await dialog.showMessageBox(win, {
                 type: 'warning',

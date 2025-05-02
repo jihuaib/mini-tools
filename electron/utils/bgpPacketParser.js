@@ -182,6 +182,16 @@ function parseOpenMessage(buffer) {
                                 tempPosition += 1;
                             }
                             break;
+                        case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING: // Extended Next Hop Encoding
+                            if (capLen >= 6) {
+                                capability.afi = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                                capability.safi = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                                capability.ipType = buffer.readUInt16BE(tempPosition);
+                                tempPosition += 2;
+                            }
+                            break;
                         // Other capabilities could be added here
                     }
                     result.capabilities.push(capability);
@@ -614,6 +624,8 @@ function getCapabilityName(code) {
             return '4-octet AS Number';
         case BgpConst.BGP_OPEN_CAP_CODE.BGP_ROLE:
             return 'BGP Role';
+        case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING:
+            return 'Extended Next Hop Encoding';
         default:
             return `Unknown (${code})`;
     }
@@ -653,6 +665,15 @@ function getSafiName(safi) {
         default:
             return `Unknown (${safi})`;
     }
+}
+
+/**
+ * Get IP type name from code
+ * @param {Number} ipType - IP type code
+ * @returns {String} IP type name
+ */
+function getIpTypeName(ipType) {
+    return ipType === BgpConst.IP_TYPE.IPV4 ? 'IPv4' : 'IPv6';
 }
 
 /**
@@ -890,6 +911,12 @@ function getBgpPacketSummary(parsedPacket) {
                         // BGP Role
                         const roleName = getRoleName(cap.role);
                         summary += ` (${roleName})`;
+                    } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING) {
+                        // Extended Next Hop Encoding
+                        const afiName = getAfiName(cap.afi);
+                        const safiName = getSafiName(cap.safi);
+                        const ipTypeName = getIpTypeName(cap.ipType);
+                        summary += ` (${afiName}/${safiName}/${ipTypeName})`;
                     }
                 });
             }
