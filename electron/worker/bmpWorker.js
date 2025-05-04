@@ -211,7 +211,7 @@ class BmpWorker {
     }
 
     getRoutes(messageId, data) {
-        const { client, peer } = data;
+        const { client, peer, ribType } = data;
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const routeList = [];
@@ -228,9 +228,23 @@ class BmpWorker {
             this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
             return;
         }
-        bgpPeer.routeMap.forEach((route, key) => {
-            routeList.push(route.getRouteInfo());
-        });
+        if (ribType === 'preRibIn') {
+            bgpPeer.preRibInMap.forEach((route, key) => {
+                routeList.push(route.getRouteInfo());
+            });
+        } else if (ribType === 'ribIn') {
+            bgpPeer.ribInMap.forEach((route, key) => {
+                routeList.push(route.getRouteInfo());
+            });
+        } else if (ribType === 'postLocRib') {
+            bgpPeer.postLocRibMap.forEach((route, key) => {
+                routeList.push(route.getRouteInfo());
+            });
+        } else if (ribType === 'locRib') {
+            bgpPeer.locRibMap.forEach((route, key) => {
+                routeList.push(route.getRouteInfo());
+            });
+        }
 
         this.messageHandler.sendSuccessResponse(messageId, routeList, '获取路由列表成功');
     }

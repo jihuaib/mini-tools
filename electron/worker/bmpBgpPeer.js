@@ -22,7 +22,10 @@ class BmpBgpPeer {
         this.bgpPacket = [];
         this.peerState = null;
 
-        this.routeMap = new Map();
+        this.preRibInMap = new Map();
+        this.ribInMap = new Map();
+        this.locRibMap = new Map();
+        this.postLocRibMap = new Map();
     }
 
     static makeKey(afi, safi, peerIp, peerRd) {

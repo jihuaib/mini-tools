@@ -65,7 +65,7 @@ contextBridge.exposeInMainWorld('bmpApi', {
     // 数据获取
     getClientList: () => ipcRenderer.invoke('bmp:getClientList'),
     getPeers: client => ipcRenderer.invoke('bmp:getPeers', client),
-    getRoutes: (client, peer) => ipcRenderer.invoke('bmp:getRoutes', client, peer),
+    getRoutes: (client, peer, ribType) => ipcRenderer.invoke('bmp:getRoutes', client, peer, ribType),
     getClient: client => ipcRenderer.invoke('bmp:getClient', client),
     getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
 

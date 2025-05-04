@@ -34,12 +34,11 @@ const BMP_PEER_TYPE = {
     LOCAL_L3VPN: 3
 };
 
-// BMP peer flags
 const BMP_PEER_FLAGS = {
-    IPV6: 0x80,
-    POST_POLICY: 0x40,
-    AS_PATH: 0x20,
-    ADJ_RIB_OUT: 0x10
+    IPV6: 0x80,             // V 位: 使用 IPv6 地址
+    LOC_RIB: 0x40,          // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
+    POST_POLICY: 0x20,      // A 位: Adj-RIB-In 是策略后导出的（post-policy）
+    ADJ_RIB_OUT: 0x10       // O 位: Adj-RIB-Out 正在被传输
 };
 
 const BMP_PEER_STATE = {

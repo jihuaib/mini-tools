@@ -36,6 +36,30 @@ class BmpSession {
         return { localIp, localPort, remoteIp, remotePort };
     }
 
+    getRouteMapsByFlags(peer, peerFlags) {
+        const routeMaps = [];
+
+        // 默认最基础的 pre-rib-in
+        routeMaps.push({ name: 'preRibIn', map: peer.preRibInMap });
+
+        // 如果有 POST_POLICY 标志
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.POST_POLICY) {
+            routeMaps.push({ name: 'ribIn', map: peer.ribInMap });
+        }
+
+        // 如果有 ADJ_RIB_OUT 标志
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.ADJ_RIB_OUT) {
+            routeMaps.push({ name: 'postLocRib', map: peer.postLocRibMap });
+        }
+
+        // 如果有 LOC_RIB 标志
+        if (peerFlags & BmpConst.BMP_PEER_FLAGS.LOC_RIB) {
+            routeMaps.push({ name: 'locRib', map: peer.locRibMap });
+        }
+
+        return routeMaps;
+    }
+
     processRouteMonitoring(message) {
         try {
             let position = 0;
@@ -93,17 +117,21 @@ class BmpSession {
                 );
                 if (peer) {
                     // 删除所有撤销的路由
-                    for (const withdrawn of parsedBgpUpdate.withdrawnRoutes) {
-                        const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
-                        const route = peer.routeMap.get(key);
-                        if (route) {
-                            routeUpdates.push({
-                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                                client: this.getClientInfo(),
-                                peer: peer.getPeerInfo(),
-                                route: route.getRouteInfo()
-                            });
-                            peer.routeMap.delete(key);
+                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
+                    for (const routeMap of routeMaps) {
+                        for (const withdrawn of parsedBgpUpdate.withdrawnRoutes) {
+                            const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
+                            const route = routeMap.map.get(key);
+                            if (route) {
+                                routeUpdates.push({
+                                    type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
+                                    ribType: routeMap.name,
+                                    client: this.getClientInfo(),
+                                    peer: peer.getPeerInfo(),
+                                    route: route.getRouteInfo()
+                                });
+                                routeMap.map.delete(key);
+                            }
                         }
                     }
 
@@ -128,17 +156,21 @@ class BmpSession {
                 const peer = this.findPeer(peerAddress, peerRd, mpUnreachNlri.afi, mpUnreachNlri.safi);
                 if (peer) {
                     // 删除所有撤销的路由
-                    for (const withdrawn of mpUnreachNlri.withdrawnRoutes) {
-                        const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
-                        const route = peer.routeMap.get(key);
-                        if (route) {
-                            routeUpdates.push({
-                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                                client: this.getClientInfo(),
-                                peer: peer.getPeerInfo(),
-                                route: route.getRouteInfo()
-                            });
-                            peer.routeMap.delete(key);
+                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
+                    for (const routeMap of routeMaps) {
+                        for (const withdrawn of mpUnreachNlri.withdrawnRoutes) {
+                            const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
+                            const route = routeMap.map.get(key);
+                            if (route) {
+                                routeUpdates.push({
+                                    type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
+                                    ribType: routeMap.name,
+                                    client: this.getClientInfo(),
+                                    peer: peer.getPeerInfo(),
+                                    route: route.getRouteInfo()
+                                });
+                                routeMap.map.delete(key);
+                            }
                         }
                     }
 
@@ -160,29 +192,33 @@ class BmpSession {
                 );
                 if (peer) {
                     // 处理所有NLRI条目
-                    for (const nlri of parsedBgpUpdate.nlri) {
-                        const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
+                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
+                    for (const routeMap of routeMaps) {
+                        for (const nlri of parsedBgpUpdate.nlri) {
+                            const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
 
-                        let bmpBgpRoute = peer.routeMap.get(key);
-                        if (!bmpBgpRoute) {
-                            bmpBgpRoute = new BmpBgpRoute(peer);
-                            peer.routeMap.set(key, bmpBgpRoute);
-                        } else {
-                            bmpBgpRoute.clearAttributes();
+                            let bmpBgpRoute = routeMap.map.get(key);
+                            if (!bmpBgpRoute) {
+                                bmpBgpRoute = new BmpBgpRoute(peer);
+                                routeMap.map.set(key, bmpBgpRoute);
+                            } else {
+                                bmpBgpRoute.clearAttributes();
+                            }
+
+                            bmpBgpRoute.ip = nlri.prefix;
+                            bmpBgpRoute.mask = nlri.length;
+
+                            // 设置路由属性
+                            this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
+
+                            routeUpdates.push({
+                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
+                                ribType: routeMap.name,
+                                client: this.getClientInfo(),
+                                peer: peer.getPeerInfo(),
+                                route: bmpBgpRoute.getRouteInfo()
+                            });
                         }
-
-                        bmpBgpRoute.ip = nlri.prefix;
-                        bmpBgpRoute.mask = nlri.length;
-
-                        // 设置路由属性
-                        this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
-
-                        routeUpdates.push({
-                            type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
-                            client: this.getClientInfo(),
-                            peer: peer.getPeerInfo(),
-                            route: bmpBgpRoute.getRouteInfo()
-                        });
                     }
 
                     if (routeUpdates.length > 0) {
@@ -205,29 +241,33 @@ class BmpSession {
                 const peer = this.findPeer(peerAddress, peerRd, mpReachNlri.afi, mpReachNlri.safi);
                 if (peer) {
                     // 处理所有MP_REACH_NLRI条目
-                    for (const nlri of mpReachNlri.nlri) {
-                        const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
+                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
+                    for (const routeMap of routeMaps) {
+                        for (const nlri of mpReachNlri.nlri) {
+                            const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
 
-                        let bmpBgpRoute = peer.routeMap.get(key);
-                        if (!bmpBgpRoute) {
-                            bmpBgpRoute = new BmpBgpRoute(peer);
-                            peer.routeMap.set(key, bmpBgpRoute);
-                        } else {
-                            bmpBgpRoute.clearAttributes();
+                            let bmpBgpRoute = routeMap.map.get(key);
+                            if (!bmpBgpRoute) {
+                                bmpBgpRoute = new BmpBgpRoute(peer);
+                                routeMap.map.set(key, bmpBgpRoute);
+                            } else {
+                                bmpBgpRoute.clearAttributes();
+                            }
+
+                            bmpBgpRoute.ip = nlri.prefix;
+                            bmpBgpRoute.mask = nlri.length;
+
+                            // 设置路由属性
+                            this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
+
+                            routeUpdates.push({
+                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
+                                ribType: routeMap.name,
+                                client: this.getClientInfo(),
+                                peer: peer.getPeerInfo(),
+                                route: bmpBgpRoute.getRouteInfo()
+                            });
                         }
-
-                        bmpBgpRoute.ip = nlri.prefix;
-                        bmpBgpRoute.mask = nlri.length;
-
-                        // 设置路由属性
-                        this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
-
-                        routeUpdates.push({
-                            type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
-                            client: this.getClientInfo(),
-                            peer: peer.getPeerInfo(),
-                            route: bmpBgpRoute.getRouteInfo()
-                        });
                     }
 
                     if (routeUpdates.length > 0) {

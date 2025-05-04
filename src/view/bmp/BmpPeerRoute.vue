@@ -1,6 +1,13 @@
 <template>
     <div class="bmp-peer-route-container">
         <a-card :title="`BGP路由 - ${peerName}`">
+            <a-tabs v-model:activeKey="activeRibType" @change="onRibTypeChange">
+                <a-tab-pane key="preRibIn" tab="Pre-RIB-In"></a-tab-pane>
+                <a-tab-pane key="ribIn" tab="RIB-In"></a-tab-pane>
+                <a-tab-pane key="locRib" tab="Loc-Rib"></a-tab-pane>
+                <a-tab-pane key="postLocRib" tab="Post-Loc-RIB"></a-tab-pane>
+            </a-tabs>
+
             <a-row class="route-filters">
                 <a-col :span="8">
                     <a-input-search
@@ -24,13 +31,13 @@
                     </a-select>
                 </a-col>
                 <a-col :span="10" class="route-stats">
-                    <a-tag color="blue">总路由数: {{ filteredRouteList.length }}</a-tag>
+                    <a-tag color="blue">总路由数: {{ routeList.length }}</a-tag>
                 </a-col>
             </a-row>
 
             <a-table
                 :columns="routeColumns"
-                :data-source="filteredRouteList"
+                :data-source="routeList"
                 :rowKey="record => `${record.addrFamilyType}|${record.ip}|${record.mask}`"
                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                 :scroll="{ y: 400 }"
@@ -76,30 +83,7 @@
     const addrFamilyFilter = ref(null);
     const clientInfo = ref(null);
     const peerInfo = ref(null);
-
-    // Computed filtered routes
-    const filteredRouteList = computed(() => {
-        let filtered = [...routeList.value];
-
-        // Apply address family filter
-        if (addrFamilyFilter.value) {
-            filtered = filtered.filter(route => route.addrFamilyType == addrFamilyFilter.value);
-        }
-
-        // Apply search filter
-        if (searchText.value) {
-            const search = searchText.value.toLowerCase();
-            filtered = filtered.filter(
-                route =>
-                    route.ip.toLowerCase().includes(search) ||
-                    route.mask.toString().includes(search) ||
-                    (route.asPath && route.asPath.toLowerCase().includes(search)) ||
-                    (route.nextHop && route.nextHop.toLowerCase().includes(search))
-            );
-        }
-
-        return filtered;
-    });
+    const activeRibType = ref('preRibIn');
 
     // Route table columns
     const routeColumns = [
@@ -177,6 +161,11 @@
 
     const onFilterChange = () => {
         // Filter is handled by the computed property
+    };
+
+    const onRibTypeChange = newRibType => {
+        activeRibType.value = newRibType;
+        loadPeerRoutes();
     };
 
     onMounted(async () => {
@@ -268,7 +257,7 @@
                 peerIp: peerIdArray[1],
                 peerRd: peerIdArray[2]
             };
-            const result = await window.bmpApi.getRoutes(client, peer);
+            const result = await window.bmpApi.getRoutes(client, peer, activeRibType.value);
             if (result.status === 'success') {
                 routeList.value = result.data;
             } else {
@@ -289,6 +278,7 @@
                 const updateClient = routeData.client;
                 const updatePeer = routeData.peer;
                 const updateRoute = routeData.route;
+                const updateRibType = routeData.ribType;
 
                 const currentPeerId = decodeURIComponent(peerId.value);
                 const currentClientId = decodeURIComponent(clientId.value);
@@ -297,6 +287,10 @@
                 const updateClientId = `${updateClient.localIp}|${updateClient.localPort}|${updateClient.remoteIp}|${updateClient.remotePort}`;
 
                 if (currentPeerId !== updatePeerId || currentClientId !== updateClientId) {
+                    return;
+                }
+
+                if (updateRibType !== activeRibType.value) {
                     return;
                 }
 
@@ -363,6 +357,7 @@
 
     .route-filters {
         margin-bottom: 16px;
+        margin-top: 16px;
     }
 
     .route-stats {
