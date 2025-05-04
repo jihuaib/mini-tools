@@ -89,6 +89,29 @@ const routes = [
                         meta: { keepAlive: true }
                     }
                 ]
+            },
+            {
+                path: '/rpki',
+                name: 'Rpki',
+                component: () => import('../view/rpki/RpkiMain.vue'),
+                redirect: '/rpki/rpki-config',
+                children: [
+                    {
+                        path: 'rpki-config',
+                        name: 'RpkiConfig',
+                        component: () => import('../view/rpki/RpkiConfig.vue')
+                    },
+                    {
+                        path: 'rpki-client',
+                        name: 'RpkiClient',
+                        component: () => import('../view/rpki/RpkiClient.vue')
+                    },
+                    {
+                        path: 'client/:clientId',
+                        name: 'RpkiClientDetail',
+                        component: () => import('../view/rpki/RpkiClientDetail.vue')
+                    }
+                ]
             }
         ]
     }

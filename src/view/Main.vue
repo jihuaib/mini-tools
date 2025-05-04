@@ -71,7 +71,8 @@
         RadarChartOutlined,
         SettingOutlined,
         ToolOutlined,
-        InfoCircleOutlined
+        InfoCircleOutlined,
+        SafetyCertificateOutlined
     } from '@ant-design/icons-vue';
 
     const router = useRouter();
@@ -103,6 +104,13 @@
             label: 'BMP',
             title: 'BMP',
             route: '/bmp'
+        },
+        {
+            key: 'rpki',
+            icon: () => h(SafetyCertificateOutlined),
+            label: 'RPKI',
+            title: 'RPKI',
+            route: '/rpki'
         }
     ]);
 
