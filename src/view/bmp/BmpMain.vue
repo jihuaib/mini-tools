@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-    import { ref, onActivated, watch } from 'vue';
+    import { ref, onActivated, watch, onMounted, onBeforeUnmount } from 'vue';
     import { useRouter, useRoute } from 'vue-router';
     import { CloseOutlined } from '@ant-design/icons-vue';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
@@ -157,6 +157,89 @@
 
         activeTabKey.value = `peer-${id}`;
     };
+
+    // 监听客户端和对等体关闭事件
+    const handleTermination = terminationInfo => {
+        console.log('handleTermination', terminationInfo);
+        if (terminationInfo && terminationInfo.data) {
+            // 客户端终止时，关闭该客户端的所有对等体标签页
+            const clientInfo = terminationInfo.data;
+            const clientId = `${clientInfo.localIp}|${clientInfo.localPort}|${clientInfo.remoteIp}|${clientInfo.remotePort}`;
+            const encodedClientId = encodeURIComponent(clientId);
+
+            // 找到所有与该客户端相关的对等体标签页
+            const clientPeers = activePeers.value.filter(p => p.clientId === encodedClientId);
+            if (clientPeers.length > 0) {
+                // 保存当前标签页状态
+                const currentKey = activeTabKey.value;
+                let shouldRedirect = false;
+
+                // 删除所有与该客户端相关的对等体标签页
+                clientPeers.forEach(peer => {
+                    const peerIndex = activePeers.value.findIndex(p => p.id === peer.id);
+                    if (peerIndex > -1) {
+                        activePeers.value.splice(peerIndex, 1);
+                        if (activeTabKey.value === `peer-${peer.id}`) {
+                            shouldRedirect = true;
+                        }
+                    }
+                });
+
+                // 如果当前标签页是被删除的某个对等体，则重定向到BMP邻居页
+                if (shouldRedirect) {
+                    activeTabKey.value = 'bmp-peer';
+                    router.push('/bmp/bmp-peer');
+                }
+            }
+        } else {
+            // BMP 服务终止时，关闭所有标签页
+            if (activePeers.value.length > 0) {
+                // 保存当前标签页状态
+                const currentKey = activeTabKey.value;
+
+                // 清空所有标签页
+                activePeers.value = [];
+
+                // 如果当前是对等体标签页，则切换到BMP邻居页
+                if (currentKey.startsWith('peer-')) {
+                    activeTabKey.value = 'bmp-peer';
+                    router.push('/bmp/bmp-peer');
+                }
+            }
+        }
+    };
+
+    const handlePeerUpdate = peerInfo => {
+        console.log('handlePeerUpdate', peerInfo);
+        // 当对等体状态更新且状态为"DOWN"时关闭对应标签页
+        if (peerInfo && peerInfo.operation === 'down' && peerInfo.client && peerInfo.peer) {
+            const clientInfo = peerInfo.client;
+            const peerData = peerInfo.peer;
+
+            const clientId = `${clientInfo.localIp}|${clientInfo.localPort}|${clientInfo.remoteIp}|${clientInfo.remotePort}`;
+            const peerId = `${peerData.addrFamilyType}|${peerData.peerIp}|${peerData.peerRd || ''}`;
+
+            const id = `${encodeURIComponent(clientId)}|${encodeURIComponent(peerId)}`;
+
+            // 查找并关闭对应的标签页
+            const peerIndex = activePeers.value.findIndex(p => p.id === id);
+            if (peerIndex > -1) {
+                closePeerTab(id);
+            }
+        }
+    };
+
+    // 注册和移除事件监听器
+    onMounted(() => {
+        window.bmpApi.onTermination(handleTermination);
+        window.bmpApi.onPeerUpdate(handlePeerUpdate);
+    });
+
+    onBeforeUnmount(() => {
+        // 只移除当前页面注册的监听器
+        window.bmpApi.offTermination(handleTermination);
+        window.bmpApi.offPeerUpdate(handlePeerUpdate);
+    });
 
     defineExpose({
         clearValidationErrors: () => {

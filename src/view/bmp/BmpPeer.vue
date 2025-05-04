@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onActivated, watch } from 'vue';
+    import { ref, onMounted, onActivated, watch, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { UnorderedListOutlined, InfoCircleOutlined, ZoomInOutlined } from '@ant-design/icons-vue';
     import { useRouter } from 'vue-router';
@@ -191,12 +191,47 @@
         });
     };
 
+    const onTerminationHandler = result => {
+        console.log('onTerminationHandler', result);
+        if (result.status === 'success') {
+            const data = result.data;
+            if (data) {
+                // 特定客户端终止的情况
+                const existingIndex = clientList.value.findIndex(
+                    client =>
+                        `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
+                        `${data.localIp || ''}-${data.localPort || ''}-${data.remoteIp || ''}-${data.remotePort || ''}`
+                );
+                if (existingIndex !== -1) {
+                    clientList.value.splice(existingIndex, 1);
+
+                    if (clientList.value.length > 0 && !activeClientKey.value) {
+                        activeClientKey.value = `${clientList.value[0].localIp}|${clientList.value[0].localPort}|${clientList.value[0].remoteIp}|${clientList.value[0].remotePort}`;
+                    }
+                }
+            } else {
+                // BMP 服务停止，清空所有数据
+                clientList.value = [];
+                activeClientKey.value = '';
+                peerList.value = [];
+            }
+
+            if (clientList.value.length === 0) {
+                activeClientKey.value = '';
+                peerList.value = [];
+            }
+        } else {
+            console.error('termination handler error', result.msg);
+        }
+    };
+
     onMounted(async () => {
         // 监听对等体更新事件
         window.bmpApi.onPeerUpdate(onPeerUpdate);
 
         // 监听Client列表更新事件
         window.bmpApi.onInitiation(onClientListUpdate);
+        window.bmpApi.onTermination(onTerminationHandler);
     });
 
     const onPeerUpdate = result => {
@@ -302,11 +337,20 @@
     });
 
     onActivated(async () => {
+        clientList.value = [];
+        activeClientKey.value = '';
+        peerList.value = [];
         await loadClientList();
         // 如果有选中的客户端，则加载对应的peer列表
         if (activeClientKey.value) {
             await loadPeerList(activeClientKey.value);
         }
+    });
+
+    onBeforeUnmount(() => {
+        window.bmpApi.offPeerUpdate(onPeerUpdate);
+        window.bmpApi.offInitiation(onClientListUpdate);
+        window.bmpApi.offTermination(onTerminationHandler);
     });
 </script>
 

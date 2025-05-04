@@ -19,8 +19,8 @@
                         </a-row>
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
-                                <a-button type="primary" html-type="submit" :loading="serverLoading">
-                                    {{ serverRunning ? '重启服务器' : '启动服务器' }}
+                                <a-button type="primary" html-type="submit" :loading="serverLoading" :disabled="serverRunning">
+                                    启动服务器
                                 </a-button>
                                 <a-button type="primary" danger @click="stopBmp" :disabled="!serverRunning">
                                     停止服务器
@@ -226,7 +226,6 @@
             const result = await window.bmpApi.stopBmp();
             if (result.status === 'success') {
                 serverRunning.value = false;
-                // Clear the client list when stopping the server
                 clientList.value = [];
                 message.success(`${result.msg}`);
             } else {
@@ -248,17 +247,43 @@
         currentDetails.value = null;
     };
 
-    const initiationHandler = data => {
-        // 存在则更新，否则添加
-        const existingIndex = clientList.value.findIndex(
-            client =>
-                `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
-                `${data.localIp || ''}-${data.localPort || ''}-${data.remoteIp || ''}-${data.remotePort || ''}`
-        );
-        if (existingIndex !== -1) {
-            clientList.value[existingIndex] = data;
+    const onInitiationHandler = result => {
+        const data = result.data;
+        if (result.status === 'success') {
+            // 存在则更新，否则添加
+            const existingIndex = clientList.value.findIndex(
+                client =>
+                    `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
+                    `${data.localIp || ''}-${data.localPort || ''}-${data.remoteIp || ''}-${data.remotePort || ''}`
+            );
+            if (existingIndex !== -1) {
+                clientList.value[existingIndex] = data;
+            } else {
+                clientList.value.push(data);
+            }
         } else {
-            clientList.value.push(data);
+            console.error('initiation handler error', data.msg);
+        }
+    };
+
+    const onTerminationHandler = result => {
+        console.log('onTerminationHandler', result);
+        if (result && result.data) {
+            const data = result.data;
+            if (result.status === 'success') {
+                const existingIndex = clientList.value.findIndex(
+                    client =>
+                        `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
+                        `${data.localIp || ''}-${data.localPort || ''}-${data.remoteIp || ''}-${data.remotePort || ''}`
+                );
+                if (existingIndex !== -1) {
+                    clientList.value.splice(existingIndex, 1);
+                }
+            } else {
+                console.error('termination handler error', data.msg);
+            }
+        } else {
+            clientList.value = [];
         }
     };
 
@@ -275,17 +300,13 @@
         mounted.value = true;
 
         // 注册事件监听
-        window.bmpApi.onInitiation(data => {
-            if (data.status === 'success') {
-                initiationHandler(data.data);
-            } else {
-                console.error('客户端列表获取失败', data.msg);
-            }
-        });
+        window.bmpApi.onInitiation(onInitiationHandler);
+        window.bmpApi.onTermination(onTerminationHandler);
     });
 
     onBeforeUnmount(() => {
-        window.bmpApi.removeAllListeners();
+        window.bmpApi.offInitiation(onInitiationHandler);
+        window.bmpApi.offTermination(onTerminationHandler);
     });
 </script>
 

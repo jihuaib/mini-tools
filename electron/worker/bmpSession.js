@@ -9,11 +9,11 @@ const { rdBufferToString, ipv4BufferToString, ipv6BufferToString } = require('..
 const { parseBgpPacket } = require('../utils/bgpPacketParser');
 
 class BmpSession {
-    constructor(messageHandler) {
+    constructor(messageHandler, bmpWorker) {
         this.socket = null;
         this.logger = new Logger();
         this.messageHandler = messageHandler;
-
+        this.bmpWorker = bmpWorker;
         this.localIp = null;
         this.localPort = null;
         this.remoteIp = null;
@@ -644,6 +644,15 @@ class BmpSession {
         }
     }
 
+    processTermination(message) {
+        const clientInfo = this.getClientInfo();
+        this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: clientInfo });
+        this.closeSession();
+
+        const key = BmpSession.makeKey(this.localIp, this.localPort, this.remoteIp, this.remotePort);
+        this.bmpWorker.bmpSessionMap.delete(key);
+    }
+
     processMessage(message) {
         try {
             const clientAddress = `${this.remoteIp}:${this.remotePort}`;
@@ -662,31 +671,18 @@ class BmpSession {
                 case BmpConst.BMP_MSG_TYPE.ROUTE_MONITORING:
                     this.processRouteMonitoring(msg);
                     break;
-
-                case BmpConst.BMP_MSG_TYPE.STATISTICS_REPORT:
-                    this.processStatisticsReport(msg);
-                    break;
-
                 case BmpConst.BMP_MSG_TYPE.PEER_DOWN_NOTIFICATION:
                     this.processPeerDown(msg);
                     break;
-
                 case BmpConst.BMP_MSG_TYPE.PEER_UP_NOTIFICATION:
                     this.processPeerUp(msg);
                     break;
-
                 case BmpConst.BMP_MSG_TYPE.INITIATION:
                     this.processInitiation(msg);
                     break;
-
                 case BmpConst.BMP_MSG_TYPE.TERMINATION:
                     this.processTermination(msg);
                     break;
-
-                case BmpConst.BMP_MSG_TYPE.ROUTE_MIRRORING:
-                    this.processRouteMirroring(msg);
-                    break;
-
                 default:
                     this.logger.warn(`Unknown message type: ${type}`);
             }
@@ -714,6 +710,19 @@ class BmpSession {
             this.messageBuffer = this.messageBuffer.subarray(messageLength);
             this.processMessage(completeMessage);
         }
+    }
+
+    closeSession() {
+        if (this.socket) {
+            this.socket.destroy();
+            this.socket = null;
+        }
+
+        this.peerMap.forEach((peer, key) => {
+            peer.closePeer();
+        });
+
+        this.peerMap.clear();
     }
 }
 

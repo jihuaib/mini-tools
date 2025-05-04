@@ -1,6 +1,7 @@
 const net = require('net');
 const util = require('util');
 const { BMP_REQ_TYPES } = require('../const/bmpReqConst');
+const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BmpSession = require('./bmpSession');
@@ -71,16 +72,12 @@ class BmpWorker {
                 const sessionKey = BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 bmpSession = this.bmpSessionMap.get(sessionKey);
                 if (null != bmpSession) {
-                    if (null != bmpSession.socket) {
-                        if (bmpSession.socket) {
-                            bmpSession.socket.destroy();
-                            bmpSession.socket = null;
-                        }
-                    }
+                    bmpSession.closeSession();
+                    this.bmpSessionMap.delete(sessionKey);
                 } else {
-                    bmpSession = new BmpSession(this.messageHandler);
-                    this.bmpSessionMap.set(sessionKey, bmpSession);
+                    bmpSession = new BmpSession(this.messageHandler, this);
                 }
+                this.bmpSessionMap.set(sessionKey, bmpSession);
 
                 bmpSession.socket = socket;
                 bmpSession.localIp = socket.localAddress;
@@ -126,16 +123,12 @@ class BmpWorker {
                 const sessionKey = BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 bmpSession = this.bmpSessionMap.get(sessionKey);
                 if (null != bmpSession) {
-                    if (null != bmpSession.socket) {
-                        if (bmpSession.socket) {
-                            bmpSession.socket.destroy();
-                            bmpSession.socket = null;
-                        }
-                    }
+                    bmpSession.closeSession();
+                    this.bmpSessionMap.delete(sessionKey);
                 } else {
-                    bmpSession = new BmpSession(this.messageHandler);
-                    this.bmpSessionMap.set(sessionKey, bmpSession);
+                    bmpSession = new BmpSession(this.messageHandler, this);
                 }
+                this.bmpSessionMap.set(sessionKey, bmpSession);
 
                 bmpSession.socket = socket;
                 bmpSession.localIp = socket.localAddress;
@@ -168,7 +161,30 @@ class BmpWorker {
         this.startTcpServer(messageId);
     }
 
-    stopBmp(messageId) {}
+    stopBmp(messageId) {
+        if (this.server) {
+            this.server.close();
+            this.server = null;
+        }
+
+        if (this.ipv6Server) {
+            this.ipv6Server.close();
+            this.ipv6Server = null;
+        }
+
+        // 清空配置数据
+        this.bmpConfigData = null;
+
+        // 发送全局终止事件通知前端
+        this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: null });
+
+        // 清空会话
+        this.bmpSessionMap.forEach((session, sessionKey) => {
+            session.closeSession();
+        });
+        this.bmpSessionMap.clear();
+        this.messageHandler.sendSuccessResponse(messageId, null, 'bmp协议停止成功');
+    }
 
     getClientList(messageId) {
         const clientList = [];

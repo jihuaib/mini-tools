@@ -122,34 +122,36 @@
         }
     ];
 
-    onMounted(async () => {
-        window.bgpApi.onPeerChange(data => {
-            if (data.status === 'success') {
-                const response = data.data;
-                // 根据地址族类型更新对应的表格数据
-                if (response.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
-                    const index = ipv4UncPeerList.value.findIndex(
-                        peer =>
-                            `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
-                            `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
-                    );
-                    if (index !== -1) {
-                        ipv4UncPeerList.value[index] = { ...ipv4UncPeerList.value[index], ...response };
-                    }
-                } else if (response.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
-                    const index = ipv6UncPeerList.value.findIndex(
-                        peer =>
-                            `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
-                            `${response.vrfIndex || ''}-${response.peerIp || ''}-${response.addressFamily || ''}`
-                    );
-                    if (index !== -1) {
-                        ipv6UncPeerList.value[index] = { ...ipv6UncPeerList.value[index], ...response };
-                    }
+    const onPeerChange = result => {
+        const data = result.data;
+        if (result.status === 'success') {
+            // 根据地址族类型更新对应的表格数据
+            if (data.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+                const index = ipv4UncPeerList.value.findIndex(
+                    peer =>
+                        `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                        `${data.vrfIndex || ''}-${data.peerIp || ''}-${data.addressFamily || ''}`
+                );
+                if (index !== -1) {
+                    ipv4UncPeerList.value[index] = { ...ipv4UncPeerList.value[index], ...data };
                 }
-            } else {
-                message.error(data.msg);
+            } else if (data.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+                const index = ipv6UncPeerList.value.findIndex(
+                    peer =>
+                        `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                        `${data.vrfIndex || ''}-${data.peerIp || ''}-${data.addressFamily || ''}`
+                );
+                if (index !== -1) {
+                    ipv6UncPeerList.value[index] = { ...ipv6UncPeerList.value[index], ...data };
+                }
             }
-        });
+        } else {
+            message.error(data.msg);
+        }
+    }
+
+    onMounted(async () => {
+        window.bgpApi.onPeerChange(onPeerChange);
     });
 
     const refreshPeerInfo = async () => {
@@ -187,7 +189,7 @@
     });
 
     onBeforeUnmount(() => {
-        window.bgpApi.removeAllListeners();
+        window.bgpApi.offPeerChange(onPeerChange);
     });
 </script>
 

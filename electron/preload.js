@@ -35,7 +35,6 @@ contextBridge.exposeInMainWorld('bgpApi', {
     // peer
     configIpv4Peer: ipv4PeerConfigData => ipcRenderer.invoke('bgp:configIpv4Peer', ipv4PeerConfigData),
     configIpv6Peer: ipv6PeerConfigData => ipcRenderer.invoke('bgp:configIpv6Peer', ipv6PeerConfigData),
-    onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
     getPeerInfo: () => ipcRenderer.invoke('bgp:getPeerInfo'),
     deletePeer: peer => ipcRenderer.invoke('bgp:deletePeer', peer),
 
@@ -46,10 +45,11 @@ contextBridge.exposeInMainWorld('bgpApi', {
     deleteIpv6Routes: config => ipcRenderer.invoke('bgp:deleteIpv6Routes', config),
     getRoutes: addressFamily => ipcRenderer.invoke('bgp:getRoutes', addressFamily),
 
+    // 事件监听
+    onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
+
     // 移除事件监听
-    removeAllListeners: () => {
-        ipcRenderer.removeAllListeners('bgp:peerChange');
-    }
+    offPeerChange: callback => ipcRenderer.removeListener('bgp:peerChange', callback),
 });
 
 // bmp模块
@@ -73,11 +73,11 @@ contextBridge.exposeInMainWorld('bmpApi', {
     onPeerUpdate: callback => ipcRenderer.on('bmp:peerUpdate', (_event, data) => callback(data)),
     onRouteUpdate: callback => ipcRenderer.on('bmp:routeUpdate', (_event, data) => callback(data)),
     onInitiation: callback => ipcRenderer.on('bmp:initiation', (_event, data) => callback(data)),
+    onTermination: callback => ipcRenderer.on('bmp:termination', (_event, data) => callback(data)),
 
-    // 移除事件监听
-    removeAllListeners: () => {
-        ipcRenderer.removeAllListeners('bmp:peerUpdate');
-        ipcRenderer.removeAllListeners('bmp:routeUpdate');
-        ipcRenderer.removeAllListeners('bmp:initiation');
-    }
+    // 移除指定监听器（推荐在页面卸载时调用）
+    offPeerUpdate: callback => ipcRenderer.removeListener('bmp:peerUpdate', callback),
+    offRouteUpdate: callback => ipcRenderer.removeListener('bmp:routeUpdate', callback),
+    offInitiation: callback => ipcRenderer.removeListener('bmp:initiation', callback),
+    offTermination: callback => ipcRenderer.removeListener('bmp:termination', callback),
 });

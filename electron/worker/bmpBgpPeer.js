@@ -58,6 +58,10 @@ class BmpBgpPeer {
             peerState: this.peerState
         };
     }
+
+    closePeer() {
+        this.routeMap.clear();
+    }
 }
 
 module.exports = BmpBgpPeer;

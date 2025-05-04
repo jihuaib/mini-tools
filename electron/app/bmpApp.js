@@ -17,6 +17,7 @@ class BmpApp {
         this.bmpInitiationHandler = null;
         this.bmpPeerUpdateHandler = null;
         this.bmpRouteUpdateHandler = null;
+        this.bmpTerminationHandler = null;
 
         this.registerHandlers();
     }
@@ -89,10 +90,16 @@ class BmpApp {
                 webContents.send('bmp:routeUpdate', successResponse(data.data));
             };
 
+            this.bmpTerminationHandler = data => {
+                this.logger.info(`bmpTerminationHandler data: ${JSON.stringify(data)}`);
+                webContents.send('bmp:termination', successResponse(data.data));
+            };
+
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.addEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
             this.worker.addEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.addEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
             const result = await this.worker.sendRequest(BMP_REQ_TYPES.START_BMP, bmpConfigData);
 
@@ -122,6 +129,7 @@ class BmpApp {
             this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.removeEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
             this.worker.removeEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
         }

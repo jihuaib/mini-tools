@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, computed, watch, onActivated } from 'vue';
+    import { ref, onMounted, computed, watch, onActivated, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { useRoute } from 'vue-router';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
@@ -210,14 +210,8 @@
                 peerRd: peerIdArray[2]
             };
 
-            console.log('client', client);
-            console.log('peer', peer);
-
             const clientResult = await window.bmpApi.getClient(client);
             const peerResult = await window.bmpApi.getPeer(client, peer);
-
-            console.log('clientInfo', clientResult);
-            console.log('peerInfo', peerResult);
 
             if (clientResult.status === 'success' && peerResult.status === 'success') {
                 clientInfo.value = clientResult.data;
@@ -234,7 +228,17 @@
 
         loadPeerRoutes();
         window.bmpApi.onRouteUpdate(onRouteUpdate);
+        window.bmpApi.onTermination(onTerminationHandler);
     });
+
+    // 处理BMP服务终止事件
+    const onTerminationHandler = result => {
+        console.log('onTerminationHandler', result);
+        if (result.data === null) {
+            // 清空路由数据
+            routeList.value = [];
+        }
+    };
 
     const loadPeerRoutes = async () => {
         try {
@@ -339,6 +343,11 @@
             }
         }
     );
+
+    onBeforeUnmount(() => {
+        window.bmpApi.offRouteUpdate(onRouteUpdate);
+        window.bmpApi.offTermination(onTerminationHandler);
+    });
 </script>
 
 <style scoped>
