@@ -54,6 +54,8 @@ function createWindow() {
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
+
+    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {

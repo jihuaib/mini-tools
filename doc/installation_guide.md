@@ -11,12 +11,14 @@ Mini-Tools 可以在以下操作系统上运行：
 ## 硬件要求
 
 最低配置：
+
 - 处理器：双核 2.0 GHz 或更高
 - 内存：4 GB RAM
 - 存储空间：200 MB 可用磁盘空间
 - 显示器：分辨率至少为 1280 x 720
 
 推荐配置：
+
 - 处理器：四核 2.5 GHz 或更高
 - 内存：8 GB RAM 或更高
 - 存储空间：500 MB 可用磁盘空间
@@ -44,31 +46,31 @@ Mini-Tools 可以在以下操作系统上运行：
 
 1. 从 [releases 页面](https://github.com/jihuaib/mini-tools/releases) 下载最新的 `.AppImage` 文件
 2. 为 AppImage 文件添加执行权限：
-   ```bash
-   chmod +x Mini-Tools-x.x.x.AppImage
-   ```
+    ```bash
+    chmod +x Mini-Tools-x.x.x.AppImage
+    ```
 3. 直接运行 AppImage 文件：
-   ```bash
-   ./Mini-Tools-x.x.x.AppImage
-   ```
+    ```bash
+    ./Mini-Tools-x.x.x.AppImage
+    ```
 
 #### 使用 Debian/Ubuntu 包
 
 1. 从 [releases 页面](https://github.com/jihuaib/mini-tools/releases) 下载最新的 `.deb` 文件
 2. 安装 `.deb` 包：
-   ```bash
-   sudo dpkg -i mini-tools_x.x.x_amd64.deb
-   sudo apt-get install -f # 解决依赖问题（如果有）
-   ```
+    ```bash
+    sudo dpkg -i mini-tools_x.x.x_amd64.deb
+    sudo apt-get install -f # 解决依赖问题（如果有）
+    ```
 3. 从应用菜单启动 Mini-Tools
 
 #### 使用 RPM 包
 
 1. 从 [releases 页面](https://github.com/jihuaib/mini-tools/releases) 下载最新的 `.rpm` 文件
 2. 安装 `.rpm` 包：
-   ```bash
-   sudo rpm -i mini-tools-x.x.x.x86_64.rpm
-   ```
+    ```bash
+    sudo rpm -i mini-tools-x.x.x.x86_64.rpm
+    ```
 3. 从应用菜单启动 Mini-Tools
 
 ## 从源码构建
@@ -84,37 +86,42 @@ Mini-Tools 可以在以下操作系统上运行：
 ### 构建步骤
 
 1. 克隆仓库：
-   ```bash
-   git clone https://github.com/jihuaib/mini-tools.git
-   cd mini-tools
-   ```
+
+    ```bash
+    git clone https://github.com/jihuaib/mini-tools.git
+    cd mini-tools
+    ```
 
 2. 安装依赖：
-   ```bash
-   npm install
-   ```
+
+    ```bash
+    npm install
+    ```
 
 3. 开发模式运行：
-   ```bash
-   npm run dev
-   ```
+
+    ```bash
+    npm run dev
+    ```
 
 4. 构建分发版本：
-   ```bash
-   npm run dist
-   ```
 
-   构建特定平台版本：
-   ```bash
-   # Windows
-   npm run dist:win
+    ```bash
+    npm run dist
+    ```
 
-   # macOS
-   npm run dist:mac
+    构建特定平台版本：
 
-   # Linux
-   npm run dist:linux
-   ```
+    ```bash
+    # Windows
+    npm run dist:win
+
+    # macOS
+    npm run dist:mac
+
+    # Linux
+    npm run dist:linux
+    ```
 
 5. 构建完成后，可在 `dist` 目录下找到打包好的应用
 
@@ -126,27 +133,27 @@ Mini-Tools 提供了多种配置选项，可以根据个人偏好进行调整。
 
 1. 启动 Mini-Tools 后，点击左侧导航栏底部的"设置"图标
 2. 在设置面板中，可以配置以下选项：
-   - **主题**：选择浅色主题或深色主题
-   - **语言**：选择界面语言（支持中文、英文）
-   - **自动更新**：启用或禁用自动检查更新
-   - **启动选项**：设置启动时的默认工具
-   - **数据存储位置**：配置工具数据保存位置
+    - **主题**：选择浅色主题或深色主题
+    - **语言**：选择界面语言（支持中文、英文）
+    - **自动更新**：启用或禁用自动检查更新
+    - **启动选项**：设置启动时的默认工具
+    - **数据存储位置**：配置工具数据保存位置
 
 ### BGP 模拟器设置
 
 1. 在 BGP 模拟器界面，点击右上角的设置图标
 2. 配置以下选项：
-   - **显示设置**：配置界面显示样式和元素
-   - **模拟参数**：调整模拟速度和精度
-   - **日志记录**：设置日志详细程度和保存位置
+    - **显示设置**：配置界面显示样式和元素
+    - **模拟参数**：调整模拟速度和精度
+    - **日志记录**：设置日志详细程度和保存位置
 
 ### 字符串生成器设置
 
 1. 在字符串生成器界面，点击设置选项卡
 2. 配置以下选项：
-   - **默认生成数量**：设置默认的字符串生成数量
-   - **结果显示格式**：配置结果显示的格式选项
-   - **导出选项**：设置导出文件的默认格式和位置
+    - **默认生成数量**：设置默认的字符串生成数量
+    - **结果显示格式**：配置结果显示的格式选项
+    - **导出选项**：设置导出文件的默认格式和位置
 
 ## 故障排除
 

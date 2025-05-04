@@ -15,6 +15,8 @@ class BmpApp {
         this.worker = null;
 
         this.bmpInitiationHandler = null;
+        this.bmpPeerUpdateHandler = null;
+        this.bmpRouteUpdateHandler = null;
 
         this.registerHandlers();
     }
@@ -24,7 +26,11 @@ class BmpApp {
         this.ipcMain.handle('bmp:loadBmpConfig', this.handleLoadBmpConfig.bind(this));
         this.ipcMain.handle('bmp:startBmp', this.handleStartBmp.bind(this));
         this.ipcMain.handle('bmp:stopBmp', this.handleStopBmp.bind(this));
-        // this.ipcMain.handle('bmp:getServerStatus', handleGetServerStatus);
+        this.ipcMain.handle('bmp:getClientList', this.handleGetClientList.bind(this));
+        this.ipcMain.handle('bmp:getPeers', this.handleGetPeers.bind(this));
+        this.ipcMain.handle('bmp:getRoutes', this.handleGetRoutes.bind(this));
+        this.ipcMain.handle('bmp:getClient', this.handleGetClient.bind(this));
+        this.ipcMain.handle('bmp:getPeer', this.handleGetPeer.bind(this));
     }
 
     async handleSaveBmpConfig(event, config) {
@@ -73,8 +79,20 @@ class BmpApp {
                 webContents.send('bmp:initiation', successResponse(data.data));
             };
 
+            this.bmpPeerUpdateHandler = data => {
+                this.logger.info(`bmpPeerUpdateHandler data: ${JSON.stringify(data)}`);
+                webContents.send('bmp:peerUpdate', successResponse(data.data));
+            };
+
+            this.bmpRouteUpdateHandler = data => {
+                this.logger.info(`bmpRouteUpdateHandler data: ${JSON.stringify(data)}`);
+                webContents.send('bmp:routeUpdate', successResponse(data.data));
+            };
+
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.addEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.addEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
 
             const result = await this.worker.sendRequest(BMP_REQ_TYPES.START_BMP, bmpConfigData);
 
@@ -102,227 +120,97 @@ class BmpApp {
         } finally {
             // 移除事件监听器
             this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
             await this.worker.terminate();
             this.worker = null;
         }
     }
+
+    async handleGetClientList() {
+        if (null == this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_CLIENT_LIST, null);
+            this.logger.info(`获取客户端列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取客户端列表成功');
+        } catch (error) {
+            this.logger.error('Error getting client list:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetPeers(event, client) {
+        if (null == this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        this.logger.info(`获取对等体列表 client: ${JSON.stringify(client)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_PEERS, client);
+            this.logger.info(`获取对等体列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取对等体列表成功');
+        } catch (error) {
+            this.logger.error('Error getting peers:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetRoutes(event, client, peer) {
+        if (null == this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        this.logger.info(`获取路由列表 client: ${JSON.stringify(client)}`);
+        this.logger.info(`获取路由列表 peer: ${JSON.stringify(peer)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_ROUTES, { client, peer });
+            this.logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取路由列表成功');
+        } catch (error) {
+            this.logger.error('Error getting routes:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetClient(event, client) {
+        if (null == this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        this.logger.info(`获取客户端信息 client: ${JSON.stringify(client)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_CLIENT, client);
+            this.logger.info(`获取客户端信息成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取客户端信息成功');
+        } catch (error) {
+            this.logger.error('Error getting client:', error);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetPeer(event, client, peer) {
+        if (null == this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        this.logger.info(`获取对等体信息 client: ${JSON.stringify(client)}`);
+        this.logger.info(`获取对等体信息 peer: ${JSON.stringify(peer)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_PEER, { client, peer });
+            this.logger.info(`获取对等体信息成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取对等体信息成功');
+        } catch (error) {
+            this.logger.error('Error getting peer:', error);
+            return errorResponse(error.message);
+        }
+    }
 }
-
-// // Get server status
-// async function handleGetServerStatus() {
-//     try {
-//         if (!bmpServerRunning) {
-//             return successResponse({ running: false });
-//         }
-
-//         // Send a message to the worker to get the current configuration
-//         return successResponse({
-//             running: bmpServerRunning
-//             // You can add more information here if needed
-//         });
-//     } catch (error) {
-//         log.error('[Main] Error getting BMP server status:', error);
-//         return errorResponse(error.message);
-//     }
-// }
-
-// // Start BMP server
-// async function handleStartServer(event, config) {
-//     const webContents = event.sender;
-//     const win = BrowserWindow.fromWebContents(webContents);
-
-//     if (bmpServerRunning) {
-//         log.error('[Main] BMP服务器已经在运行');
-//         return errorResponse('BMP服务器已经在运行');
-//     }
-
-//     log.info('[Main] Starting BMP server with config:', config);
-
-//     const workerPath = isDev
-//         ? path.join(__dirname, '../worker/bmpEmulatorWorker.js')
-//         : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bmpEmulatorWorker.js');
-
-//     try {
-//         worker = new Worker(workerPath);
-
-//         bmpServerRunning = true;
-
-//         const msg = {
-//             op: BMP_OPERATIONS.START_SERVER,
-//             data: config
-//         };
-
-//         worker.postMessage(msg);
-
-//         worker.on('message', async result => {
-//             log.info(`[Main] Received message from BMP worker ${worker.threadId}:`, result);
-
-//             if (result.status === 'success') {
-//                 const { op, data } = result.data;
-
-//                 switch (op) {
-//                     case BMP_OPERATIONS.PEER_CONNECTED:
-//                     case BMP_OPERATIONS.PEER_DISCONNECTED:
-//                         webContents.send('bmp:peerUpdate', data);
-//                         break;
-
-//                     case BMP_OPERATIONS.ROUTE_ANNOUNCED:
-//                     case BMP_OPERATIONS.ROUTE_WITHDRAWN:
-//                         webContents.send('bmp:routeUpdate', data);
-//                         break;
-
-//                     case BMP_OPERATIONS.SERVER_LOG:
-//                         webContents.send('bmp:serverLog', data);
-//                         break;
-
-//                     case BMP_OPERATIONS.INITIATION_RECEIVED:
-//                         webContents.send('bmp:initiationReceived', data);
-//                         break;
-
-//                     case BMP_OPERATIONS.STOP_SERVER:
-//                         await worker.terminate();
-//                         bmpServerRunning = false;
-//                         webContents.send('bmp:serverLog', {
-//                             type: 'warning',
-//                             message: 'BMP服务器已停止'
-//                         });
-//                         break;
-//                 }
-//             } else {
-//                 log.error(`[Main] Received error from BMP worker ${worker.threadId}:`, result);
-//                 webContents.send('bmp:serverLog', {
-//                     type: 'error',
-//                     message: `服务器错误: ${result.msg || '未知错误'}`
-//                 });
-//             }
-//         });
-
-//         worker.on('error', err => {
-//             log.error(`[Main] Error from BMP worker ${worker.threadId}:`, err);
-//         });
-
-//         worker.on('exit', code => {
-//             bmpServerRunning = false;
-//             if (code !== 0) {
-//                 log.error(`[Main] BMP worker ${worker.threadId} exited with code ${code}`);
-//             } else {
-//                 log.info(`[Main] BMP worker ${worker.threadId} exited successfully`);
-//             }
-//         });
-//     } catch (error) {
-//         log.error('[Main] Error starting BMP server:', error);
-//         bmpServerRunning = false;
-//         return errorResponse('BMP服务器启动失败: ' + error.message);
-//     }
-
-//     log.info(`[Main] BMP启动成功 in thread ${worker.threadId}`);
-//     return successResponse(null, '');
-// }
-
-// // Stop BMP server
-// async function handleStopServer() {
-//     if (!bmpServerRunning) {
-//         log.warn('[Main] Attempted to stop BMP server, but it was not running');
-//         return successResponse(null, 'BMP服务器未运行');
-//     }
-
-//     try {
-//         log.info('[Main] Stopping BMP server');
-
-//         const msg = {
-//             op: BMP_OPERATIONS.STOP_SERVER,
-//             data: null
-//         };
-
-//         worker.postMessage(msg);
-
-//         // Wait for server to stop (handled in message event)
-//         return successResponse(null, 'BMP服务器停止命令已发送');
-//     } catch (error) {
-//         log.error('[Main] Error stopping BMP server:', error);
-
-//         // Force terminate if sending message fails
-//         try {
-//             await worker.terminate();
-//         } catch (termError) {
-//             log.error('[Main] Error terminating BMP worker:', termError);
-//         }
-
-//         bmpServerRunning = false;
-//         return errorResponse('BMP服务器停止失败: ' + error.message);
-//     }
-// }
-
-// // Get peers list
-// async function handleGetPeers() {
-//     if (!bmpServerRunning) {
-//         return successResponse([]);
-//     }
-
-//     try {
-//         // Request peer list from worker
-//         worker.postMessage({
-//             op: 'get_peers',
-//             data: null
-//         });
-
-//         // This would normally wait for a response, but for simplicity we'll return an empty array
-//         // In a real implementation, you'd use a promise and resolve it when the worker responds
-//         return successResponse([]);
-//     } catch (error) {
-//         log.error('[Main] Error getting peers:', error);
-//         return errorResponse(error.message);
-//     }
-// }
-
-// // Get routes
-// async function handleGetRoutes(event, ipType) {
-//     if (!bmpServerRunning) {
-//         return successResponse([]);
-//     }
-
-//     try {
-//         // Request routes from worker
-//         worker.postMessage({
-//             op: 'get_routes',
-//             data: { ipType }
-//         });
-
-//         // Similarly, we'd wait for a response in a real implementation
-//         return successResponse([]);
-//     } catch (error) {
-//         log.error('[Main] Error getting routes:', error);
-//         return errorResponse(error.message);
-//     }
-// }
-
-// // Handle window close
-// async function handleWindowClose(win) {
-//     if (bmpServerRunning) {
-//         const { dialog } = require('electron');
-//         const { response } = await dialog.showMessageBox(win, {
-//             type: 'warning',
-//             title: '确认关闭',
-//             message: 'BMP 服务器正在运行，确定要关闭吗？',
-//             buttons: ['确定', '取消'],
-//             defaultId: 1,
-//             cancelId: 1
-//         });
-
-//         if (response === 1) {
-//             // Cancel closing
-//             return false;
-//         }
-
-//         // User confirmed, stop the server
-//         try {
-//             await handleStopServer();
-//         } catch (error) {
-//             log.error('[Main] Error stopping BMP server during window close:', error);
-//         }
-//     }
-
-//     return true;
-// }
 
 module.exports = BmpApp;

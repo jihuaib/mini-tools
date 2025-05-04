@@ -40,7 +40,10 @@
                         <a-table
                             :columns="clientColumns"
                             :data-source="clientList"
-                            :rowKey="record => `${record.clientAddress || ''}-${record.clientPort || ''}`"
+                            :rowKey="
+                                record =>
+                                    `${record.localIp || ''}-${record.localPort || ''}-${record.remoteIp || ''}-${record.remotePort || ''}`
+                            "
                             :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                             :scroll="{ y: 200 }"
                             size="small"
@@ -94,14 +97,14 @@
     const clientColumns = [
         {
             title: '客户端IP',
-            dataIndex: 'clientAddress',
-            key: 'clientAddress',
+            dataIndex: 'remoteIp',
+            key: 'remoteIp',
             ellipsis: true
         },
         {
             title: '客户端端口',
-            dataIndex: 'clientPort',
-            key: 'clientPort',
+            dataIndex: 'remotePort',
+            key: 'remotePort',
             ellipsis: true
         },
         {
@@ -236,7 +239,7 @@
 
     const viewClientDetails = record => {
         currentDetails.value = record;
-        detailsDrawerTitle.value = `BMP客户端信息: ${record.clientAddress}:${record.clientPort}`;
+        detailsDrawerTitle.value = `BMP客户端信息: ${record.remoteIp}:${record.remotePort}`;
         detailsDrawerVisible.value = true;
     };
 
@@ -246,11 +249,16 @@
     };
 
     const initiationHandler = data => {
-        console.log('initiation', data);
-        if (data && !Array.isArray(data)) {
-            clientList.value.push(data);
+        // 存在则更新，否则添加
+        const existingIndex = clientList.value.findIndex(
+            client =>
+                `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
+                `${data.localIp || ''}-${data.localPort || ''}-${data.remoteIp || ''}-${data.remotePort || ''}`
+        );
+        if (existingIndex !== -1) {
+            clientList.value[existingIndex] = data;
         } else {
-            clientList.value = data || [];
+            clientList.value.push(data);
         }
     };
 

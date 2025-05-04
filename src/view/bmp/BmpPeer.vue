@@ -1,37 +1,54 @@
 <template>
-    <div class="bmp-container">
-        <!-- 已连接的BGP Peer -->
+    <div class="bmp-peer-container">
         <a-row>
             <a-col :span="24">
-                <a-card title="已连接的BGP Peer" class="data-card">
+                <a-card title="BMP Client">
                     <div>
-                        <a-table
-                            :columns="peerColumns"
-                            :data-source="peerList"
-                            :rowKey="record => record.peerIp"
-                            :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                            :loading="peerLoading"
-                            :scroll="{ y: 200 }"
-                            size="small"
-                        >
-                            <template #bodyCell="{ column, record }">
-                                <template v-if="column.key === 'action'">
-                                    <a-button type="link" @click="viewPeerDetails(record)">详情</a-button>
-                                </template>
-                                <template v-if="column.key === 'status'">
-                                    <a-tag :color="record.status === 'connected' ? 'green' : 'red'">
-                                        {{ record.status === 'connected' ? '已连接' : '已断开' }}
+                        <a-tabs v-model:activeKey="activeClientKey">
+                            <a-tab-pane
+                                v-for="client in clientList"
+                                :key="`${client.localIp}|${client.localPort}|${client.remoteIp}|${client.remotePort}`"
+                                :tab="`${client.sysDesc}[${client.remoteIp}]`"
+                            >
+                                <div class="bgp-peer-info-header">
+                                    <UnorderedListOutlined />
+                                    <span class="bgp-peer-info-header-text">BGP邻居列表</span>
+                                    <a-tag v-if="peerList.length > 0" color="blue">
+                                        {{ peerList.length }}
                                     </a-tag>
-                                </template>
-                            </template>
-                        </a-table>
+                                </div>
+                                <a-table
+                                    :columns="peerColumns"
+                                    :data-source="peerList"
+                                    :rowKey="record => `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`"
+                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                    :scroll="{ y: 400, x: 900 }"
+                                    size="small"
+                                >
+                                    <template #bodyCell="{ column, record }">
+                                        <template v-if="column.key === 'action'">
+                                            <a-space size="small">
+                                                <a-button type="primary" size="small" @click="viewPeerDetails(record)">
+                                                    <template #icon><InfoCircleOutlined /></template>
+                                                    详情
+                                                </a-button>
+                                                <a-button type="primary" size="small" @click="viewPeerRoutes(record)">
+                                                    <template #icon><ZoomInOutlined /></template>
+                                                    查看路由
+                                                </a-button>
+                                            </a-space>
+                                        </template>
+                                    </template>
+                                </a-table>
+                            </a-tab-pane>
+                        </a-tabs>
                     </div>
                 </a-card>
             </a-col>
         </a-row>
 
         <a-drawer
-            v-model:visible="detailsDrawerVisible"
+            v-model:open="detailsDrawerVisible"
             :title="detailsDrawerTitle"
             placement="right"
             width="500px"
@@ -43,245 +60,112 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
+    import { ref, onMounted, onActivated, watch } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validatePort } from '../../utils/bmpValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
-    import { debounce } from 'lodash-es';
-    import { DEFAULT_VALUES } from '../../const/bgpConst';
+    import { UnorderedListOutlined, InfoCircleOutlined, ZoomInOutlined } from '@ant-design/icons-vue';
+    import { useRouter } from 'vue-router';
+    import { BMP_PEER_TYPE_NAME, BMP_PEER_FLAGS_NAME, BMP_PEER_STATE_NAME, BMP_PEER_STATE } from '../../const/bmpConst';
+    import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
     defineOptions({
         name: 'BmpPeer'
     });
 
-    const labelCol = { style: { width: '100px' } };
-    const wrapperCol = { span: 40 };
+    // 客户端
+    const clientList = ref([]);
+    const activeClientKey = ref('');
 
-    const bmpConfig = ref({
-        port: DEFAULT_VALUES.DEFAULT_BMP_PORT
-    });
-
-    const serverLoading = ref(false);
-    const serverRunning = ref(false);
-
-    // Peer list
     const peerList = ref([]);
-    const peerLoading = ref(false);
+
+    // 对等体列表
     const peerColumns = [
+        {
+            title: '地址族',
+            dataIndex: 'addrFamilyType',
+            key: 'addrFamilyType',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => {
+                return ADDRESS_FAMILY_NAME[text] || text;
+            }
+        },
+        {
+            title: 'Peer Type',
+            dataIndex: 'peerType',
+            key: 'peerType',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => {
+                return BMP_PEER_TYPE_NAME[text] || text;
+            }
+        },
         {
             title: 'Peer IP',
             dataIndex: 'peerIp',
             key: 'peerIp',
-            width: '150px',
+            width: 100,
             ellipsis: true
         },
         {
             title: 'AS',
             dataIndex: 'peerAs',
             key: 'peerAs',
-            width: '100px',
+            width: 100,
             ellipsis: true
         },
         {
-            title: '状态',
-            dataIndex: 'status',
-            key: 'status',
-            width: '100px',
+            title: 'RD',
+            dataIndex: 'peerRd',
+            key: 'peerRd',
+            width: 100,
             ellipsis: true
         },
         {
-            title: '操作',
-            key: 'action',
-            width: '100px'
-        }
-    ];
-
-    // Route lists
-    const ipv4RouteList = ref([]);
-    const ipv6RouteList = ref([]);
-    const routeLoading = ref(false);
-    const activeTabKey = ref('ipv4');
-    const routeColumns = [
-        {
-            title: '网络前缀',
-            dataIndex: 'prefix',
-            key: 'prefix',
-            width: '150px',
+            title: 'Router ID',
+            dataIndex: 'peerRouterId',
+            key: 'peerRouterId',
+            width: 100,
             ellipsis: true
         },
         {
-            title: '掩码',
-            dataIndex: 'mask',
-            key: 'mask',
-            width: '80px',
-            ellipsis: true
-        },
-        {
-            title: '下一跳',
-            dataIndex: 'nextHop',
-            key: 'nextHop',
-            width: '150px',
-            ellipsis: true
-        },
-        {
-            title: '操作',
-            key: 'action',
-            width: '100px'
-        }
-    ];
-
-    // Initiation messages list
-    const initiationList = ref([]);
-    const initiationLoading = ref(false);
-    const initiationColumns = [
-        {
-            title: '客户端',
-            dataIndex: 'clientAddress',
-            key: 'clientAddress',
-            width: '150px',
-            ellipsis: true
-        },
-        {
-            title: '系统名称',
-            dataIndex: 'sysName',
-            key: 'sysName',
-            width: '120px',
-            ellipsis: true
-        },
-        {
-            title: '接收时间',
-            dataIndex: 'receivedAt',
-            key: 'receivedAt',
-            width: '150px',
-            ellipsis: true
-        },
-        {
-            title: '操作',
-            key: 'action',
-            width: '80px'
-        }
-    ];
-
-    const saveConfig = {
-        networkValue: '',
-        port: ''
-    };
-
-    const saveDebounced = debounce(async data => {
-        const result = await window.bmpApi.saveConfig(data);
-        if (result.status === 'success') {
-            if (result.msg !== '') {
-                message.success(result.msg);
-            }
-        } else {
-            message.error(result.msg || '配置文件保存失败');
-        }
-    }, 300);
-
-    const validationErrors = ref({
-        port: ''
-    });
-
-    // 暴露清空验证错误的方法给父组件
-    defineExpose({
-        clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
-        }
-    });
-
-    const validateField = (value, fieldName, validationFn) => {
-        validationFn(value, validationErrors);
-    };
-
-    watch(
-        [bmpConfig],
-        async ([newBmpConfig]) => {
-            // 转换为saveBgpConfig
-            saveConfig.networkValue = networkValue.value;
-            saveConfig.port = newBmpConfig.port;
-
-            try {
-                clearValidationErrors(validationErrors);
-                validatePort(newBmpConfig.port, validationErrors);
-
-                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    console.log('Validation failed, configuration not saved');
-                    return;
-                }
-
-                const raw = toRaw(saveConfig);
-                saveDebounced(raw);
-            } catch (error) {
-                console.error(error);
+            title: 'Peer Flags',
+            dataIndex: 'peerFlags',
+            key: 'peerFlags',
+            ellipsis: true,
+            width: 80,
+            customRender: ({ text }) => {
+                return Object.keys(BMP_PEER_FLAGS_NAME)
+                    .filter(key => text & key)
+                    .map(key => BMP_PEER_FLAGS_NAME[key])
+                    .join(', ');
             }
         },
-        { deep: true, immediate: true }
-    );
+        {
+            title: 'Peer状态',
+            dataIndex: 'peerState',
+            key: 'peerState',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => {
+                return BMP_PEER_STATE_NAME[text] || text;
+            }
+        },
+        {
+            title: '操作',
+            key: 'action',
+            fixed: 'right',
+            width: 200
+        }
+    ];
 
     // Details drawer
     const detailsDrawerVisible = ref(false);
     const detailsDrawerTitle = ref('');
     const currentDetails = ref(null);
 
-    const startBmpServer = async () => {
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-        if (hasErrors) {
-            message.error('请检查配置信息是否正确');
-            return;
-        }
-
-        serverLoading.value = true;
-        try {
-            const payload = JSON.parse(JSON.stringify(bmpConfig.value));
-            const result = await window.bmpApi.startServer(payload);
-            if (result.status === 'success') {
-                serverRunning.value = true;
-                message.success('BMP服务器启动成功');
-            } else {
-                message.error(result.msg || 'BMP服务器启动失败');
-            }
-        } catch (error) {
-            message.error('BMP服务器启动出错');
-        } finally {
-            serverLoading.value = false;
-        }
-    };
-
-    // Stop BMP server
-    const stopBmpServer = async () => {
-        try {
-            const result = await window.bmpApi.stopServer();
-            if (result.status === 'success') {
-                serverRunning.value = false;
-                message.success('BMP服务器已停止');
-            } else {
-                message.error(result.msg || 'BMP服务器停止失败');
-            }
-        } catch (error) {
-            message.error('BMP服务器停止出错');
-        }
-    };
-
     // View peer details
     const viewPeerDetails = record => {
         currentDetails.value = record;
         detailsDrawerTitle.value = `Peer 详情: ${record.peerIp}`;
-        detailsDrawerVisible.value = true;
-    };
-
-    // View route details
-    const viewRouteDetails = record => {
-        currentDetails.value = record;
-        detailsDrawerTitle.value = `路由详情: ${record.prefix}/${record.mask}`;
-        detailsDrawerVisible.value = true;
-    };
-
-    // View initiation details
-    const viewInitiationDetails = record => {
-        currentDetails.value = record;
-        detailsDrawerTitle.value = `BMP初始化信息: ${record.sysName || record.clientAddress}`;
         detailsDrawerVisible.value = true;
     };
 
@@ -291,153 +175,145 @@
         currentDetails.value = null;
     };
 
-    // Listen for BMP updates
+    const router = useRouter();
+
+    const viewPeerRoutes = record => {
+        const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
+        const clientKey = `${localIp}|${localPort}|${remoteIp}|${remotePort}`;
+        const peerKey = `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`;
+
+        router.push({
+            name: 'BmpPeerRoute',
+            params: {
+                clientId: encodeURIComponent(clientKey),
+                peerId: encodeURIComponent(peerKey)
+            }
+        });
+    };
+
     onMounted(async () => {
-        const result = await window.bmpApi.getNetworkInfo();
+        // 监听对等体更新事件
+        window.bmpApi.onPeerUpdate(onPeerUpdate);
+
+        // 监听Client列表更新事件
+        window.bmpApi.onInitiation(onClientListUpdate);
+    });
+
+    const onPeerUpdate = result => {
         if (result.status === 'success') {
-            for (const [name, addresses] of Object.entries(result.data)) {
-                addresses.forEach(addr => {
-                    if (addr.family === 'IPv4' && !addr.internal) {
-                        networkList.push({
-                            name: name,
-                            ip: addr.address
-                        });
-                    }
-                });
-            }
+            const peerData = result.data;
+            // 创建唯一标识符
+            const peerKey = `${peerData.addrFamilyType}|${peerData.peerIp}|${peerData.peerRd}`;
 
-            // 默认选中第一个
-            if (networkList.length > 0) {
-                for (let i = 0; i < networkList.length; i++) {
-                    networkInfo.value.push({
-                        value: networkList[i].name
-                    });
+            // 查找现有记录
+            const existingIndex = peerList.value.findIndex(
+                peer => `${peer.addrFamilyType}|${peer.peerIp}|${peer.peerRd}` === peerKey
+            );
+
+            if (existingIndex !== -1) {
+                // 更新现有记录
+                if (peerData.peerState === BMP_PEER_STATE.PEER_UP) {
+                    peerList.value[existingIndex] = peerData;
+                } else {
+                    peerList.value.splice(existingIndex, 1);
                 }
-                networkValue.value = networkInfo.value[0].value;
-                handleNetworkChange(networkValue.value);
-            }
-        } else {
-            console.error(result.msg);
-        }
-
-        try {
-            const result = await window.bmpApi.getServerStatus();
-            if (result.status === 'success' && result.data) {
-                serverRunning.value = result.data.running;
-                if (serverRunning.value) {
-                    bmpConfig.value.port = result.data.port;
+            } else {
+                // 使用展开运算符创建新数组以确保响应式更新
+                if (peerList.value.length === 0) {
+                    // 首次添加，直接赋值一个新数组以确保触发响应式更新
+                    peerList.value = [peerData];
+                } else {
+                    peerList.value = [...peerList.value, peerData];
                 }
             }
-        } catch (error) {
-            console.error(error);
-        }
-
-        // Setup event listeners
-        window.bmpApi.onPeerUpdate((event, data) => {
-            console.log('收到Peer列表更新', data);
-            peerList.value = data;
-        });
-
-        window.bmpApi.onRouteUpdate((event, data) => {
-            if (data.type === 'ipv4') {
-                ipv4RouteList.value = data.routes;
-            } else if (data.type === 'ipv6') {
-                ipv6RouteList.value = data.routes;
-            }
-        });
-
-        window.bmpApi.onInitiationReceived((event, data) => {
-            console.log('收到BMP初始化消息', data);
-            // Add to the list, keeping the most recent first
-            initiationList.value = [data, ...initiationList.value];
-        });
-
-        // Initial load of peers and routes
-        loadPeersAndRoutes();
-
-        // 加载保存的配置
-        const savedConfig = await window.bmpApi.loadConfig();
-        if (savedConfig.status === 'success' && savedConfig.data) {
-            console.log('Loading saved config:', savedConfig.data);
-            networkValue.value = savedConfig.data.networkValue;
-            handleNetworkChange(networkValue.value);
-            bmpConfig.value.port = savedConfig.data.port;
         } else {
-            console.error('[BmpEmulator] 配置文件加载失败', savedConfig.msg);
+            message.error('获取BGP邻居列表失败');
         }
-    });
+    };
 
-    // Clean up event listeners
-    onBeforeUnmount(() => {
-        window.bmpApi.removeAllListeners();
-    });
+    const onClientListUpdate = result => {
+        if (result.status === 'success') {
+            // 存在则更新，否则添加
+            const existingIndex = clientList.value.findIndex(
+                client =>
+                    `${client.localIp || ''}-${client.localPort || ''}-${client.remoteIp || ''}-${client.remotePort || ''}` ===
+                    `${result.data.localIp || ''}-${result.data.localPort || ''}-${result.data.remoteIp || ''}-${result.data.remotePort || ''}`
+            );
+            if (existingIndex !== -1) {
+                clientList.value[existingIndex] = result.data;
+            } else {
+                clientList.value.push(result.data);
+            }
+            if (clientList.value.length > 0 && !activeClientKey.value) {
+                activeClientKey.value = `${clientList.value[0].localIp}|${clientList.value[0].localPort}|${clientList.value[0].remoteIp}|${clientList.value[0].remotePort}`;
+            }
+        } else {
+            message.error('客户端列表获取失败');
+        }
+    };
 
-    // Load peers and routes
-    const loadPeersAndRoutes = async () => {
-        if (!serverRunning.value) return;
-
-        peerLoading.value = true;
-        routeLoading.value = true;
-
+    const loadClientList = async () => {
         try {
-            const peerResult = await window.bmpApi.getPeers();
-            if (peerResult.status === 'success') {
-                peerList.value = peerResult.data || [];
-            }
+            const clientListResult = await window.bmpApi.getClientList();
+            if (clientListResult.status === 'success') {
+                clientList.value = clientListResult.data;
 
-            const ipv4RoutesResult = await window.bmpApi.getRoutes('ipv4');
-            if (ipv4RoutesResult.status === 'success') {
-                ipv4RouteList.value = ipv4RoutesResult.data || [];
-            }
-
-            const ipv6RoutesResult = await window.bmpApi.getRoutes('ipv6');
-            if (ipv6RoutesResult.status === 'success') {
-                ipv6RouteList.value = ipv6RoutesResult.data || [];
+                // 设置默认选中第一个客户端
+                if (clientList.value.length > 0 && !activeClientKey.value) {
+                    activeClientKey.value = `${clientList.value[0].localIp}|${clientList.value[0].localPort}|${clientList.value[0].remoteIp}|${clientList.value[0].remotePort}`;
+                }
             }
         } catch (error) {
             console.error(error);
             message.error('加载数据失败');
-        } finally {
-            peerLoading.value = false;
-            routeLoading.value = false;
         }
     };
+
+    // 加载对等体列表
+    const loadPeerList = async clientKey => {
+        if (!clientKey) return;
+
+        try {
+            const [localIp, localPort, remoteIp, remotePort] = clientKey.split('|');
+            const clientInfo = {
+                localIp,
+                localPort,
+                remoteIp,
+                remotePort
+            };
+
+            const peerListResult = await window.bmpApi.getPeers(clientInfo);
+            if (peerListResult.status === 'success') {
+                peerList.value = peerListResult.data || [];
+            } else {
+                peerList.value = [];
+                message.error('获取BGP邻居列表失败');
+            }
+        } catch (error) {
+            console.error(error);
+            peerList.value = [];
+            message.error('获取BGP邻居列表失败');
+        }
+    };
+
+    // 监听activeClientKey变化，加载对应的peer列表
+    watch(activeClientKey, newKey => {
+        loadPeerList(newKey);
+    });
+
+    onActivated(async () => {
+        await loadClientList();
+        // 如果有选中的客户端，则加载对应的peer列表
+        if (activeClientKey.value) {
+            await loadPeerList(activeClientKey.value);
+        }
+    });
 </script>
 
 <style scoped>
-    .bmp-container {
-        padding: 10px;
-    }
-
-    .data-card {
-        width: 100%;
-        height: 100%;
-    }
-
-    /* Make form items more compact */
-    :deep(.ant-form-item) {
-        margin-bottom: 12px;
-    }
-
-    /* Fixed height table rows with ellipsis */
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    :deep(.ant-table-body) {
-        height: 200px !important;
-        overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .bmp-peer-container {
+        margin-top: 10px;
+        margin-left: 8px;
     }
 
     :deep(.ant-card-body) {
@@ -451,5 +327,45 @@
 
     :deep(.ant-card-head-title) {
         padding: 10px 0;
+    }
+
+    :deep(.ant-table-tbody > tr > td) {
+        height: 30px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    :deep(.ant-table-body) {
+        height: 400px !important;
+        overflow-y: auto !important;
+    }
+
+    :deep(.ant-table-cell) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bgp-peer-info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding: 8px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .bgp-peer-info-header-text {
+        margin-right: 8px;
+        font-weight: 500;
+    }
+
+    /* 表格样式调整 */
+    :deep(.ant-table-small) {
+        font-size: 12px;
     }
 </style>

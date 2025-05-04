@@ -9,7 +9,7 @@ import RouteConfig from '../view/bgp/RouteConfig.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
 import BmpPeer from '../view/bmp/BmpPeer.vue';
-import BmpRoute from '../view/bmp/BmpRoute.vue';
+import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
 import store from '../store';
 
 const routes = [
@@ -82,9 +82,10 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bmp-route',
-                        name: 'BmpRoute',
-                        component: BmpRoute,
+                        path: 'peer/:clientId/:peerId',
+                        name: 'BmpPeerRoute',
+                        component: BmpPeerRoute,
+                        props: true,
                         meta: { keepAlive: true }
                     }
                 ]

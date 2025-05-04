@@ -389,6 +389,7 @@ class BgpApp {
 
         try {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.GET_ROUTES, addressFamily);
+            this.logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {
             this.logger.error('Error getting routes:', error);

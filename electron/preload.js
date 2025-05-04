@@ -63,20 +63,21 @@ contextBridge.exposeInMainWorld('bmpApi', {
     stopBmp: () => ipcRenderer.invoke('bmp:stopBmp'),
 
     // 数据获取
-    getPeers: () => ipcRenderer.invoke('bmp:getPeers'),
-    getRoutes: ipType => ipcRenderer.invoke('bmp:getRoutes', ipType),
+    getClientList: () => ipcRenderer.invoke('bmp:getClientList'),
+    getPeers: client => ipcRenderer.invoke('bmp:getPeers', client),
+    getRoutes: (client, peer) => ipcRenderer.invoke('bmp:getRoutes', client, peer),
+    getClient: client => ipcRenderer.invoke('bmp:getClient', client),
+    getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
 
     // 事件监听
     onPeerUpdate: callback => ipcRenderer.on('bmp:peerUpdate', (_event, data) => callback(data)),
     onRouteUpdate: callback => ipcRenderer.on('bmp:routeUpdate', (_event, data) => callback(data)),
-    onServerLog: callback => ipcRenderer.on('bmp:serverLog', (_event, data) => callback(data)),
     onInitiation: callback => ipcRenderer.on('bmp:initiation', (_event, data) => callback(data)),
 
     // 移除事件监听
     removeAllListeners: () => {
         ipcRenderer.removeAllListeners('bmp:peerUpdate');
         ipcRenderer.removeAllListeners('bmp:routeUpdate');
-        ipcRenderer.removeAllListeners('bmp:serverLog');
         ipcRenderer.removeAllListeners('bmp:initiation');
     }
 });
