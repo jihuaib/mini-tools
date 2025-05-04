@@ -281,42 +281,47 @@
     };
 
     const onRouteUpdate = result => {
+        console.log('onRouteUpdate', result);
         if (result.status === 'success') {
-            const routeData = result.data;
-            const opType = routeData.type;
-            const updateClient = routeData.client;
-            const updatePeer = routeData.peer;
-            const updateRoute = routeData.route;
+            const routeDataArray = result.data;
+            routeDataArray.forEach(routeData => {
+                const opType = routeData.type;
+                const updateClient = routeData.client;
+                const updatePeer = routeData.peer;
+                const updateRoute = routeData.route;
 
-            const currentPeerId = decodeURIComponent(peerId.value);
-            const currentClientId = decodeURIComponent(clientId.value);
+                const currentPeerId = decodeURIComponent(peerId.value);
+                const currentClientId = decodeURIComponent(clientId.value);
 
-            const updatePeerId = `${updatePeer.addrFamilyType}|${updatePeer.peerIp}|${updatePeer.peerRd}`;
-            const updateClientId = `${updateClient.localIp}|${updateClient.localPort}|${updateClient.remoteIp}|${updateClient.remotePort}`;
+                const updatePeerId = `${updatePeer.addrFamilyType}|${updatePeer.peerIp}|${updatePeer.peerRd}`;
+                const updateClientId = `${updateClient.localIp}|${updateClient.localPort}|${updateClient.remoteIp}|${updateClient.remotePort}`;
 
-            if (currentPeerId !== updatePeerId || currentClientId !== updateClientId) {
-                return;
-            }
-
-            if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE) {
-                const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
-                const existingIndex = routeList.value.findIndex(
-                    route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
-                );
-                if (existingIndex !== -1) {
-                    routeList.value.splice(existingIndex, 1);
+                if (currentPeerId !== updatePeerId || currentClientId !== updateClientId) {
+                    return;
                 }
-            } else if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE) {
-                const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
-                const existingIndex = routeList.value.findIndex(
-                    route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
-                );
-                if (existingIndex !== -1) {
-                    routeList.value[existingIndex] = updateRoute;
-                } else {
-                    routeList.value.push(updateRoute);
+
+                if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE) {
+                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
+                    const existingIndex = routeList.value.findIndex(
+                        route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
+                    );
+                    if (existingIndex !== -1) {
+                        routeList.value.splice(existingIndex, 1);
+                    }
+                } else if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE) {
+                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
+                    const existingIndex = routeList.value.findIndex(
+                        route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
+                    );
+                    if (existingIndex !== -1) {
+                        routeList.value[existingIndex] = updateRoute;
+                    } else {
+                        routeList.value.push(updateRoute);
+                    }
                 }
-            }
+            });
+        } else {
+            console.error('route update handler error', result.msg);
         }
     };
 

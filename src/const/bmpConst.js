@@ -40,6 +40,6 @@ export const BMP_PEER_STATE_NAME = {
 
 // BMP route update types
 export const BMP_ROUTE_UPDATE_TYPE = {
-    ROUTE_UPDATE: 0,
-    ROUTE_DELETE: 1
+    ROUTE_DELETE: 0,
+    ROUTE_UPDATE: 1
 };

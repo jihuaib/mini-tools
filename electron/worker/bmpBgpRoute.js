@@ -44,8 +44,7 @@ class BmpBgpRoute {
             nextHop: this.nextHop,
             localPref: this.localPref,
             communities: this.communities,
-            otc: this.otc,
-            bgpPacket: this.bgpPacket
+            otc: this.otc
         };
     }
 
