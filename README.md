@@ -11,7 +11,20 @@
 - 可视化 BGP 路由信息
 - 支持路由策略配置
 
-![BGP 模拟器界面](doc/images/bgp_simulator.png)
+![BGP 配置界面](doc/images/bgp_config.png)
+![BGP 对等体信息](doc/images/bgp_peer.png)
+![BGP 路由信息](doc/images/bgp_route.png)
+
+### BMP 监控器
+
+- 支持 BGP 监控协议(BMP)配置
+- 监控和显示 BMP 对等体信息
+- 实时查看 BMP 对等体路由信息
+- 详细的路由属性展示
+
+![BMP 配置界面](doc/images/bmp_config.png)
+![BMP 对等体信息](doc/images/bmp_peer.png)
+![BMP 路由信息](doc/images/bmp_peer_route.png)
 
 ### 字符串生成器
 
@@ -20,7 +33,7 @@
 - 支持批量生成和自定义设置
 - 快速复制和导出功能
 
-![字符串生成器界面](doc/images/string_generator.png)
+![字符串生成器界面](doc/images/tools_string_generator.png)
 
 ### 未来计划
 
@@ -32,8 +45,8 @@
 ## 技术栈
 
 - **前端框架**: Vue 3 + Composition API
-- **UI 组件库**: Ant Design Vue 3.x
-- **桌面应用**: Electron 22+
+- **UI 组件库**: Ant Design Vue 4.x
+- **桌面应用**: Electron 15+
 - **构建工具**: Vite
 - **状态管理**: Vuex 4
 - **路由**: Vue Router 4
@@ -62,27 +75,18 @@ npm install
 3. 开发模式运行
 
 ```bash
-# 启动 Vue 开发服务器
+# 启动开发环境
 npm run dev
-
-# 启动 Electron 开发环境
-npm run electron:dev
 ```
 
 4. 打包应用
 
 ```bash
-# 打包所有平台
+# 打包应用
 npm run dist
 
-# 仅打包 Windows 版本
-npm run dist:win
-
-# 仅打包 macOS 版本
-npm run dist:mac
-
-# 仅打包 Linux 版本
-npm run dist:linux
+# 打包并发布
+npm run release
 ```
 
 ## 使用指南
@@ -90,17 +94,24 @@ npm run dist:linux
 ### BGP 模拟器
 
 1. 在主界面选择 "BGP 模拟器"
-2. 添加 BGP 对等体并配置 AS 号、IP 地址等信息
-3. 设置路由策略和路由通告
-4. 启动模拟，观察路由传播过程
+2. 在 BGP 配置页面添加 BGP 对等体并配置 AS 号、IP 地址等信息
+3. 通过路由配置页面设置路由策略和路由通告
+4. 在 BGP 对等体信息页面查看路由传播状态
+
+### BMP 监控器
+
+1. 在主界面选择 "BMP 监控器"
+2. 在 BMP 配置页面设置监听地址和端口
+3. 在 BMP 对等体页面查看连接的 BMP 客户端和对等体信息
+4. 点击对等体查看详细的路由信息
 
 ### 字符串生成器
 
-1. 在主界面选择 "字符串生成器"
+1. 在主界面选择 "工具" 下的 "字符串生成器"
 2. 选择所需的字符串格式或输入自定义正则表达式
 3. 设置生成数量和其他参数
 4. 点击生成按钮获取结果
-5. 使用复制或导出功能保存结果
+5. 使用复制功能保存结果
 
 ## 项目结构
 
@@ -118,7 +129,7 @@ mini-tools/
 │   ├── utils/         # 工具函数
 │   ├── view/          # 视图组件
 │   │   ├── bgp/       # BGP 模拟器相关视图
-│   │   ├── bmp/       # BMP 相关功能视图
+│   │   ├── bmp/       # BMP 监控器相关视图
 │   │   └── tools/     # 通用工具视图
 │   ├── App.vue        # 应用根组件
 │   └── main.js        # 渲染进程入口
