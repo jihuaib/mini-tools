@@ -68,7 +68,7 @@ class RpkiApp {
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/rpkiWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/rpkiWorker.js');
+                : path.join(process.resourcesPath, 'app', 'electron/worker/rpkiWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
