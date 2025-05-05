@@ -19,7 +19,12 @@
                         </a-row>
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
-                                <a-button type="primary" html-type="submit" :loading="serverLoading" :disabled="serverRunning">
+                                <a-button
+                                    type="primary"
+                                    html-type="submit"
+                                    :loading="serverLoading"
+                                    :disabled="serverRunning"
+                                >
                                     启动服务器
                                 </a-button>
                                 <a-button type="primary" danger @click="stopBmp" :disabled="!serverRunning">
@@ -77,7 +82,7 @@
     import { validatePort } from '../../utils/bmpValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
     import { debounce } from 'lodash-es';
-    import { DEFAULT_VALUES } from '../../const/bgpConst';
+    import { DEFAULT_VALUES } from '../../const/bmpConst';
     defineOptions({
         name: 'BmpConfig'
     });

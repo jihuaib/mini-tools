@@ -4,6 +4,7 @@ const log = require('electron-log');
 const BgpApp = require('./app/bgpApp');
 const ToolsApp = require('./app/toolsApp');
 const BmpApp = require('./app/bmpApp');
+const RpkiApp = require('./app/rpkiApp');
 const SystemMenuApp = require('./app/systemMenuApp');
 const Store = require('electron-store');
 // 配置 electron-log
@@ -16,6 +17,7 @@ let mainWindow = null;
 
 let bgpApp = null;
 let bmpApp = null;
+let rpkiApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -54,8 +56,6 @@ function createWindow() {
     const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
-
-    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -74,6 +74,7 @@ app.whenReady().then(() => {
     new ToolsApp(ipcMain, store);
     new SystemMenuApp(ipcMain, mainWindow);
     bmpApp = new BmpApp(ipcMain, store);
+    rpkiApp = new RpkiApp(ipcMain, store);
 });
 
 app.on('window-all-closed', () => {

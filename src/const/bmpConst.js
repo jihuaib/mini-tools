@@ -43,3 +43,8 @@ export const BMP_ROUTE_UPDATE_TYPE = {
     ROUTE_DELETE: 0,
     ROUTE_UPDATE: 1
 };
+
+// Default Values
+export const DEFAULT_VALUES = {
+    DEFAULT_BMP_PORT: '1790'
+};

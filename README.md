@@ -26,6 +26,16 @@
 ![BMP 对等体信息](doc/images/bmp_peer.png)
 ![BMP 路由信息](doc/images/bmp_peer_route.png)
 
+### RPKI 验证器
+
+- 支持 RPKI 路由源验证
+- 配置和管理 ROA 记录
+- 实时验证路由的有效性
+- 与 BGP 路由信息集成
+
+![RPKI 配置界面](doc/images/rpki_config.png)
+![RPKI ROA 配置](doc/images/rpki_roa_config.png)
+
 ### 字符串生成器
 
 - 生成多种格式的字符串
@@ -55,7 +65,7 @@
 
 - Node.js 16.x 或更高版本
 - npm 8.x 或更高版本
-- 支持的操作系统: Windows 10+, macOS 11+, Linux
+- 支持的操作系统: Windows 7+, macOS 11+, Linux
 
 ## 安装与运行
 
@@ -104,6 +114,13 @@ npm run release
 2. 在 BMP 配置页面设置监听地址和端口
 3. 在 BMP 对等体页面查看连接的 BMP 客户端和对等体信息
 4. 点击对等体查看详细的路由信息
+
+### RPKI 验证器
+
+1. 在主界面选择 "RPKI 验证器"
+2. 在 RPKI 配置页面设置验证参数
+3. 添加和管理 ROA 记录
+4. 查看验证结果和与 BGP 路由的集成信息
 
 ### 字符串生成器
 

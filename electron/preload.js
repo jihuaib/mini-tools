@@ -49,7 +49,7 @@ contextBridge.exposeInMainWorld('bgpApi', {
     onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
 
     // 移除事件监听
-    offPeerChange: callback => ipcRenderer.removeListener('bgp:peerChange', callback),
+    offPeerChange: callback => ipcRenderer.removeListener('bgp:peerChange', callback)
 });
 
 // bmp模块
@@ -79,5 +79,27 @@ contextBridge.exposeInMainWorld('bmpApi', {
     offPeerUpdate: callback => ipcRenderer.removeListener('bmp:peerUpdate', callback),
     offRouteUpdate: callback => ipcRenderer.removeListener('bmp:routeUpdate', callback),
     offInitiation: callback => ipcRenderer.removeListener('bmp:initiation', callback),
-    offTermination: callback => ipcRenderer.removeListener('bmp:termination', callback),
+    offTermination: callback => ipcRenderer.removeListener('bmp:termination', callback)
+});
+
+// rpki模块
+contextBridge.exposeInMainWorld('rpkiApi', {
+    // 配置相关
+    saveRpkiConfig: config => ipcRenderer.invoke('rpki:saveRpkiConfig', config),
+    loadRpkiConfig: () => ipcRenderer.invoke('rpki:loadRpkiConfig'),
+
+    // rpki
+    startRpki: config => ipcRenderer.invoke('rpki:startRpki', config),
+    stopRpki: () => ipcRenderer.invoke('rpki:stopRpki'),
+
+    // roa
+    addRoa: roa => ipcRenderer.invoke('rpki:addRoa', roa),
+    deleteRoa: roa => ipcRenderer.invoke('rpki:deleteRoa', roa),
+    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList'),
+
+    // 事件监听
+    onClientConnection: callback => ipcRenderer.on('rpki:clientConnection', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offClientConnection: callback => ipcRenderer.removeListener('rpki:clientConnection', callback)
 });

@@ -148,7 +148,7 @@
         } else {
             message.error(data.msg);
         }
-    }
+    };
 
     onMounted(async () => {
         window.bgpApi.onPeerChange(onPeerChange);

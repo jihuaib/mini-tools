@@ -63,7 +63,10 @@ class BmpBgpPeer {
     }
 
     closePeer() {
-        this.routeMap.clear();
+        this.preRibInMap.clear();
+        this.ribInMap.clear();
+        this.locRibMap.clear();
+        this.postLocRibMap.clear();
     }
 }
 

@@ -19,8 +19,13 @@
                         </a-row>
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
-                                <a-button type="primary" html-type="submit" :loading="serverLoading">
-                                    {{ serverRunning ? '重启服务器' : '启动服务器' }}
+                                <a-button
+                                    type="primary"
+                                    html-type="submit"
+                                    :loading="serverLoading"
+                                    :disabled="serverRunning"
+                                >
+                                    启动服务器
                                 </a-button>
                                 <a-button type="primary" danger @click="stopRpki" :disabled="!serverRunning">
                                     停止服务器
@@ -42,7 +47,7 @@
                             :data-source="clientList"
                             :rowKey="
                                 record =>
-                                    `${record.remoteIp || ''}-${record.remotePort || ''}`
+                                    `${record.localIp}|${record.localPort}|${record.remoteIp}|${record.remotePort}`
                             "
                             :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                             :scroll="{ y: 200 }"
@@ -74,9 +79,10 @@
 <script setup>
     import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validatePort } from '../../utils/bmpValidation';
+    import { validatePort } from '../../utils/rpkiValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
     import { debounce } from 'lodash-es';
+    import { DEFAULT_VALUES } from '../../const/rpkiConst';
 
     defineOptions({
         name: 'RpkiConfig'
@@ -86,7 +92,7 @@
     const wrapperCol = { span: 40 };
 
     const rpkiConfig = ref({
-        port: 8282 // RPKI默认端口
+        port: DEFAULT_VALUES.DEFAULT_RPKI_PORT
     });
 
     const serverLoading = ref(false);
@@ -95,6 +101,18 @@
     // 客户端列表
     const clientList = ref([]);
     const clientColumns = [
+        {
+            title: '本地IP',
+            dataIndex: 'localIp',
+            key: 'localIp',
+            ellipsis: true
+        },
+        {
+            title: '本地端口',
+            dataIndex: 'localPort',
+            key: 'localPort',
+            ellipsis: true
+        },
         {
             title: '客户端IP',
             dataIndex: 'remoteIp',
@@ -106,23 +124,6 @@
             dataIndex: 'remotePort',
             key: 'remotePort',
             ellipsis: true
-        },
-        {
-            title: '主机名',
-            dataIndex: 'hostname',
-            key: 'hostname',
-            ellipsis: true
-        },
-        {
-            title: '连接时间',
-            dataIndex: 'connectedAt',
-            key: 'connectedAt',
-            ellipsis: true,
-            customRender: ({ text }) => {
-                if (!text) return '';
-                const date = new Date(text);
-                return date.toLocaleString();
-            }
         },
         {
             title: '操作',
@@ -242,24 +243,26 @@
         currentDetails.value = null;
     };
 
-    // 定期获取客户端列表
-    let clientListTimer = null;
-
-    const fetchClientList = async () => {
-        try {
-            const result = await window.rpkiApi.getClientList();
-            if (result.status === 'success') {
-                clientList.value = result.data;
+    const onClientConnection = result => {
+        console.log('onClientConnection', result);
+        if (result.status === 'success') {
+            const data = result.data;
+            if (data.opType === 'add') {
+                clientList.value.push(data.data);
+            } else if (data.opType === 'delete') {
+                const index = clientList.value.findIndex(
+                    item =>
+                        item.localIp === data.data.localIp &&
+                        item.localPort === data.data.localPort &&
+                        item.remoteIp === data.data.remoteIp &&
+                        item.remotePort === data.data.remotePort
+                );
+                if (index !== -1) {
+                    clientList.value.splice(index, 1);
+                }
             }
-        } catch (error) {
-            console.error('获取客户端列表失败:', error);
-        }
-    };
-
-    // 监听客户端连接事件
-    const handleClientConnection = data => {
-        if (data.status === 'success') {
-            fetchClientList();
+        } else {
+            message.error(result.msg || '获取客户端列表失败');
         }
     };
 
@@ -272,40 +275,92 @@
             if (result.status === 'success' && result.data) {
                 rpkiConfig.value = result.data;
             }
-
-            // 获取服务器状态
-            const statusResult = await window.rpkiApi.getRpkiStatus();
-            if (statusResult.status === 'success') {
-                serverRunning.value = statusResult.data.running;
-                if (serverRunning.value) {
-                    fetchClientList();
-                }
-            }
-
-            // 设置客户端列表定时器
-            clientListTimer = setInterval(() => {
-                if (serverRunning.value) {
-                    fetchClientList();
-                }
-            }, 5000);
-
-            // 注册客户端连接事件
-            window.addEventListener('rpki:clientConnection', handleClientConnection);
         } catch (error) {
             console.error('初始化RPKI配置出错:', error);
         }
+
+        window.rpkiApi.onClientConnection(onClientConnection);
     });
 
     onBeforeUnmount(() => {
-        if (clientListTimer) {
-            clearInterval(clientListTimer);
-        }
-        window.removeEventListener('rpki:clientConnection', handleClientConnection);
+        window.rpkiApi.offClientConnection(onClientConnection);
     });
 </script>
 
 <style scoped>
     .rpki-config-container {
-        padding: 16px;
+        margin-top: 10px;
+        margin-left: 8px;
+    }
+
+    :deep(.ant-form-item) {
+        margin-bottom: 8px;
+    }
+
+    .error-message {
+        display: none;
+    }
+
+    :deep(.ant-input-status-error) {
+        border-color: #ff4d4f;
+    }
+
+    :deep(.ant-input-status-error:hover) {
+        border-color: #ff4d4f;
+    }
+
+    :deep(.ant-input-status-error:focus) {
+        border-color: #ff4d4f;
+        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+    }
+
+    :deep(.ant-tooltip) {
+        z-index: 1000;
+    }
+
+    :deep(.ant-tooltip-inner) {
+        background-color: #ff4d4f;
+        color: white;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    :deep(.ant-card-body) {
+        padding: 10px;
+    }
+
+    :deep(.ant-card-head) {
+        padding: 0 10px;
+        min-height: 40px;
+    }
+
+    :deep(.ant-card-head-title) {
+        padding: 10px 0;
+    }
+
+    :deep(.ant-table-tbody > tr > td) {
+        height: 30px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    :deep(.ant-table-body) {
+        height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    :deep(.ant-table-cell) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 表格样式调整 */
+    :deep(.ant-table-small) {
+        font-size: 12px;
     }
 </style>

@@ -1,7 +1,6 @@
-// RPKI event types for worker communication
+// 事件类型
 const RPKI_EVT_TYPES = {
-    CLIENT_CONNECTION: 'client-connection',
-    ROA_UPDATE: 'roa-update'
+    CLIENT_CONNECTION: 1
 };
 
 module.exports = {

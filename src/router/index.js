@@ -10,6 +10,9 @@ import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
 import BmpPeer from '../view/bmp/BmpPeer.vue';
 import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
+import RpkiMain from '../view/rpki/RpkiMain.vue';
+import RpkiConfig from '../view/rpki/RpkiConfig.vue';
+import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
 import store from '../store';
 
 const routes = [
@@ -92,24 +95,22 @@ const routes = [
             },
             {
                 path: '/rpki',
-                name: 'Rpki',
-                component: () => import('../view/rpki/RpkiMain.vue'),
-                redirect: '/rpki/rpki-config',
+                name: 'RpkiMain',
+                component: RpkiMain,
+                meta: { keepAlive: true },
                 children: [
+                    { path: '', redirect: '/rpki/rpki-config' },
                     {
                         path: 'rpki-config',
                         name: 'RpkiConfig',
-                        component: () => import('../view/rpki/RpkiConfig.vue')
+                        component: RpkiConfig,
+                        meta: { keepAlive: true }
                     },
                     {
-                        path: 'rpki-client',
-                        name: 'RpkiClient',
-                        component: () => import('../view/rpki/RpkiClient.vue')
-                    },
-                    {
-                        path: 'client/:clientId',
-                        name: 'RpkiClientDetail',
-                        component: () => import('../view/rpki/RpkiClientDetail.vue')
+                        path: 'rpki-roa-config',
+                        name: 'RpkiRoaConfig',
+                        component: RpkiRoaConfig,
+                        meta: { keepAlive: true }
                     }
                 ]
             }
@@ -122,13 +123,9 @@ const router = createRouter({
     routes
 });
 
-// Add and remove cached views when route changes
 router.beforeEach((to, from, next) => {
-    // Add the target route to cached views
     if (to.name && to.meta && to.meta.keepAlive) {
         store.dispatch('addCachedView', to);
-
-        // Also cache parent routes if they have keepAlive
         let matched = to.matched;
         matched.forEach(record => {
             if (record.name && record.meta.keepAlive) {
