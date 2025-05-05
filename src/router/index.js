@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import Main from '../view/Main.vue';
 import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
+import PacketParser from '../view/tools/PacketParser.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
@@ -34,6 +35,12 @@ const routes = [
                         path: 'string-generator',
                         name: 'StringGenerator',
                         component: StringGenerator,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'packet-parser',
+                        name: 'PacketParser',
+                        component: PacketParser,
                         meta: { keepAlive: true }
                     }
                 ]
