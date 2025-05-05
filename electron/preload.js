@@ -11,7 +11,12 @@ contextBridge.exposeInMainWorld('toolsApi', {
     // 字符串生成模块
     generateString: templateData => ipcRenderer.invoke('tools:generateString', templateData),
     saveGenerateStringConfig: config => ipcRenderer.invoke('tools:saveGenerateStringConfig', config),
-    loadGenerateStringConfig: () => ipcRenderer.invoke('tools:loadGenerateStringConfig')
+    loadGenerateStringConfig: () => ipcRenderer.invoke('tools:loadGenerateStringConfig'),
+
+    // 报文解析模块
+    parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
+    savePacketParserConfig: config => ipcRenderer.invoke('tools:savePacketParserConfig', config),
+    loadPacketParserConfig: () => ipcRenderer.invoke('tools:loadPacketParserConfig')
 });
 
 // bgp模块
