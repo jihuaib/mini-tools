@@ -1,79 +1,83 @@
 <template>
     <a-card title="报文解析器" class="packet-parser-card">
-        <a-form :model="formState" @finish="handleParsePacket" :label-col="labelCol" :wrapper-col="wrapperCol">
-            <!-- 报文类型选择 -->
-            <a-form-item label="报文类型" name="packetType">
-                <a-select v-model:value="formState.packetType">
-                    <a-select-option value="bgp">BGP</a-select-option>
-                    <!-- 预留其他报文类型 -->
-                </a-select>
-            </a-form-item>
+        <div class="packet-parser-container">
+            <!-- 表单区域（放在最上面） -->
+            <div class="parser-form-section">
+                <a-form :model="formState" @finish="handleParsePacket" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <!-- 报文类型选择 -->
+                    <a-form-item label="报文类型" name="packetType">
+                        <a-select v-model:value="formState.packetType">
+                            <a-select-option value="bgp">BGP</a-select-option>
+                            <!-- 预留其他报文类型 -->
+                        </a-select>
+                    </a-form-item>
 
-            <!-- 报文输入框 -->
-            <a-form-item label="报文数据" name="packetData">
-                <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
-                    <ScrollTextarea
-                        v-model:modelValue="formState.packetData"
-                        :height="100"
-                        placeholder="请输入16进制格式的报文内容，如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
-                        @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
-                        :status="validationErrors.packetData ? 'error' : ''"
-                    />
-                </a-tooltip>
-            </a-form-item>
+                    <!-- 报文输入框 -->
+                    <a-form-item label="报文数据" name="packetData">
+                        <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
+                            <ScrollTextarea
+                                v-model:modelValue="formState.packetData"
+                                :height="100"
+                                placeholder="请输入16进制格式的报文内容，如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
+                                @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
+                                :status="validationErrors.packetData ? 'error' : ''"
+                            />
+                        </a-tooltip>
+                    </a-form-item>
 
-            <!-- 操作按钮 -->
-            <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-button type="primary" html-type="submit">解析报文</a-button>
-            </a-form-item>
-        </a-form>
-
-        <div v-if="parsedResult" class="packet-result-container">
-            <div class="result-row">
-                <div class="packet-hex-view">
-                    <a-card title="报文十六进制视图" class="hex-view-card">
-                        <div class="hex-content" ref="hexViewRef">
-                            <table class="hex-table">
-                                <tbody>
-                                    <tr v-for="(row, rowIndex) in hexRows" :key="`row-${rowIndex}`">
-                                        <td class="offset-cell">{{ formatOffset(rowIndex * 16) }}</td>
-                                        <td
-                                            v-for="(byte, byteIndex) in row"
-                                            :key="`byte-${rowIndex}-${byteIndex}`"
-                                            :class="{ highlighted: isHighlighted(rowIndex * 16 + byteIndex) }"
-                                        >
-                                            {{ byte }}
-                                        </td>
-                                        <td class="ascii-cell">
-                                            <span
-                                                v-for="(byte, byteIndex) in row"
-                                                :key="`ascii-${rowIndex}-${byteIndex}`"
-                                                :class="{ highlighted: isHighlighted(rowIndex * 16 + byteIndex) }"
-                                            >
-                                                {{ formatAscii(byte) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <!-- 操作按钮 -->
+                    <a-form-item :wrapper-col="{ span: 24 }">
+                        <div class="form-buttons">
+                            <a-button type="primary" html-type="submit">解析报文</a-button>
                         </div>
-                    </a-card>
-                </div>
+                    </a-form-item>
+                </a-form>
+            </div>
 
-                <div class="packet-tree-view">
-                    <a-card title="报文结构树" class="tree-view-card">
-                        <a-tree
-                            v-if="parsedTreeData.length > 0"
-                            :tree-data="parsedTreeData"
-                            :defaultExpandAll="true"
-                            @select="onTreeNodeSelect"
-                        ></a-tree>
-                        <div v-else class="no-data-message">暂无解析数据</div>
-                    </a-card>
-                </div>
+            <!-- 结果显示区域（十六进制和树结构左右排列） -->
+            <div class="parser-result-section" v-if="parsedResult">
+                <!-- 十六进制视图 -->
+                <a-card title="报文十六进制视图" class="result-card hex-view-card">
+                    <div class="hex-content" ref="hexViewRef">
+                        <div v-for="(row, rowIndex) in hexRows" :key="rowIndex" class="hex-data-row">
+                            <div class="offset-col">{{ formatOffset(rowIndex * 16) }}</div>
+                            <div class="hex-col">
+                                <div
+                                    v-for="(byte, byteIndex) in row"
+                                    :key="byteIndex"
+                                    :class="getByteCellClass(rowIndex * 16 + byteIndex)"
+                                >
+                                    {{ byte }}
+                                </div>
+                            </div>
+                            <div class="ascii-col">
+                                <div
+                                    v-for="(byte, byteIndex) in row"
+                                    :key="byteIndex"
+                                    :class="getAsciiCellClass(rowIndex * 16 + byteIndex)"
+                                >
+                                    {{ formatAscii(byte) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+
+                <!-- 结构树视图 -->
+                <a-card title="报文结构树" class="result-card tree-view-card">
+                    <a-tree
+                        v-if="parsedTreeData.length > 0"
+                        :tree-data="parsedTreeData"
+                        :defaultExpandAll="true"
+                        @select="onTreeNodeSelect"
+                    ></a-tree>
+                    <div v-else class="no-data-message">暂无解析数据</div>
+                </a-card>
+            </div>
+            <div v-else class="no-result-message">
+                <a-empty description="请输入报文数据并点击解析报文按钮开始解析" />
             </div>
         </div>
-        <div v-else class="no-result-message">请输入报文数据并点击"解析报文"按钮开始解析</div>
     </a-card>
 </template>
 
@@ -155,6 +159,20 @@
         return byteIndex >= offset && byteIndex < offset + length;
     };
 
+    const getByteCellClass = byteIndex => {
+        return {
+            'hex-byte': true,
+            highlighted: isHighlighted(byteIndex)
+        };
+    };
+
+    const getAsciiCellClass = byteIndex => {
+        return {
+            'ascii-byte': true,
+            highlighted: isHighlighted(byteIndex)
+        };
+    };
+
     // 将十六进制字符串转换为字节数组
     const parseHexString = hexString => {
         const sanitized = hexString.replace(/\s+/g, '');
@@ -177,9 +195,10 @@
             // 滚动到相应的hex view位置
             if (hexViewRef.value) {
                 const rowIndex = Math.floor(selectedNode.value.offset / 16);
-                const rowElement = hexViewRef.value.querySelector(`tbody tr:nth-child(${rowIndex + 1})`);
-                if (rowElement) {
-                    rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 直接查找 .hex-data-row 元素而不是通过 tbody tr 选择器
+                const rows = hexViewRef.value.querySelectorAll('.hex-data-row');
+                if (rows && rows.length > rowIndex) {
+                    rows[rowIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
         } else {
@@ -318,20 +337,72 @@
 
 <style scoped>
     .packet-parser-card {
-        margin-top: 10px;
-        margin-left: 8px;
+        margin: 10px;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 80px);
+        overflow: hidden;
     }
 
-    :deep(.ant-form-item) {
-        margin-bottom: 10px;
+    .packet-parser-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 16px;
+    }
+
+    .parser-form-section {
+        border-bottom: 1px solid #f0f0f0;
+        overflow-y: auto;
+        min-height: 221px;
+        max-height: 221px;
+        flex-shrink: 0;
+    }
+
+    .parser-result-section {
+        flex: 1;
+        display: flex;
+        gap: 16px;
+        overflow: hidden;
+        height: calc(100% - 240px);
+        min-height: 300px;
+    }
+
+    .packet-result-container {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .result-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .hex-view-card {
+        width: 50%;
+    }
+
+    .tree-view-card {
+        width: 50%;
     }
 
     :deep(.ant-card-body) {
-        padding: 10px;
+        padding: 12px;
+        flex: 1;
+        overflow: auto;
+        height: calc(100% - 56px);
+        display: flex;
+        flex-direction: column;
     }
 
     :deep(.ant-card-head) {
-        padding: 0 10px;
+        padding: 0 12px;
         min-height: 40px;
     }
 
@@ -339,70 +410,114 @@
         padding: 10px 0;
     }
 
-    .packet-result-container {
+    :deep(.ant-form-item) {
+        margin-bottom: 16px;
+    }
+
+    .form-buttons {
         display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .result-row {
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
-    }
-
-    .packet-hex-view {
-        flex: 3;
-        height: 400px;
-        overflow: hidden;
-    }
-
-    .packet-tree-view {
-        flex: 2;
-        height: 400px;
-        overflow: auto;
+        justify-content: center;
+        margin-top: 8px;
     }
 
     .hex-content {
         font-family: monospace;
         white-space: pre;
         font-size: 12px;
+        height: 100%;
+        overflow: auto;
+        max-height: 100%;
     }
 
-    .hex-table {
-        width: 100%;
-        border-collapse: collapse;
+    .hex-header-row {
+        display: flex;
+        padding: 8px 4px;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
-    .hex-table td {
-        padding: 1px 3px;
+    .hex-data-row {
+        display: flex;
+        padding: 2px 4px;
+        border-bottom: 1px solid #f0f0f0;
     }
 
-    .offset-cell {
+    .hex-data-row:hover {
+        background-color: #f9f9f9;
+    }
+
+    .offset-col {
+        width: 60px;
+        flex-shrink: 0;
         color: #666;
-        padding-right: 12px;
+        font-weight: 500;
     }
 
-    .ascii-cell {
-        padding-left: 14px;
-        color: #444;
+    .hex-col {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .ascii-col {
+        width: 110px;
+        flex-shrink: 0;
+        display: flex;
+        border-left: 1px solid #eee;
+        padding-left: 8px;
+    }
+
+    .hex-byte {
+        width: 7px;
+        text-align: center;
+        display: inline-block;
+    }
+
+    .ascii-byte {
+        width: 6px;
+        text-align: center;
+        display: inline-block;
     }
 
     .highlighted {
         background-color: #fff3cd;
         color: #856404;
         font-weight: bold;
+        border-radius: 2px;
     }
 
     .no-data-message,
     .no-result-message {
-        text-align: center;
-        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
         color: #999;
+        overflow: auto;
     }
 
     /* 树结构区域字体样式 */
     :deep(.ant-tree) {
-        font-size: 12px;
+        font-size: 13px;
+        height: 100%;
+        overflow: auto;
+        max-height: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .parser-result-section {
+            flex-direction: column;
+        }
+
+        .hex-view-card,
+        .tree-view-card {
+            width: 100%;
+        }
     }
 </style>
