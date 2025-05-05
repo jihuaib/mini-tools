@@ -91,19 +91,80 @@ function ipToBytes(ip) {
 }
 
 /**
- * 将 8 字节的 RD buffer 转换为字符串
- * @param {Buffer} buffer - 8 字节的 RD buffer
- * @returns {string} - 格式化的 RD 字符串
+ * 将 8 字节 RD Buffer 转换为字符串形式
+ * 支持三种格式：Type 0, Type 1, Type 2
+ * @param {Buffer} buffer - 长度为 8 的 Buffer
+ * @returns {string} - 可读的 RD 字符串（如 '65000:100'）
  */
 function rdBufferToString(buffer) {
-    if (buffer.length !== 8) {
-        throw new Error('Invalid RD buffer length. Expected 8 bytes.');
+    if (!Buffer.isBuffer(buffer) || buffer.length !== 8) {
+        throw new Error('RD must be a Buffer of length 8');
     }
 
-    const highOrder = buffer.readUInt32BE(0);
-    const lowOrder = buffer.readUInt32BE(4);
+    const type = buffer.readUInt16BE(0); // 前2字节是 Type
+    let admin, assigned;
 
-    return `${highOrder}:${lowOrder}`;
+    switch (type) {
+        case 0:
+            // Type 0: Admin (2 bytes) + Assigned (4 bytes)
+            admin = buffer.readUInt16BE(2);
+            assigned = buffer.readUInt32BE(4);
+            return `${admin}:${assigned}`;
+
+        case 1:
+            // Type 1: Admin (4 bytes IP) + Assigned (2 bytes)
+            admin = Array.from(buffer.slice(2, 6)).join('.');
+            assigned = buffer.readUInt16BE(6);
+            return `${admin}:${assigned}`;
+
+        case 2:
+            // Type 2: Admin (4 bytes ASN) + Assigned (2 bytes)
+            admin = buffer.readUInt32BE(2);
+            assigned = buffer.readUInt16BE(6);
+            return `${admin}:${assigned}`;
+
+        default:
+            return `unknown(${type})`;
+    }
+}
+
+function ipv4BufferToString(buffer, length) {
+    const fullBytes = Math.floor(length / 8);
+    const remainingBits = length % 8;
+
+    const ipBuffer = Buffer.alloc(4);
+    buffer.copy(ipBuffer, 0, 0, buffer.length);
+
+    if (remainingBits > 0 && fullBytes < 4) {
+        const mask = 0xff & (0xff << (8 - remainingBits));
+        ipBuffer[fullBytes] &= mask;
+    }
+
+    return Array.from(ipBuffer).join('.');
+}
+
+function ipv6BufferToString(buffer, length) {
+    const fullBytes = Math.floor(length / 8);
+    const remainingBits = length % 8;
+
+    const ipBuffer = Buffer.alloc(16);
+    buffer.copy(ipBuffer, 0, 0, buffer.length);
+
+    if (remainingBits > 0 && fullBytes < 16) {
+        const mask = 0xff & (0xff << (8 - remainingBits));
+        ipBuffer[fullBytes] &= mask;
+    }
+
+    const segments = [];
+    for (let i = 0; i < 16; i += 2) {
+        segments.push(ipBuffer.readUInt16BE(i).toString(16));
+    }
+
+    // 简化为 "::" 格式
+    return segments
+        .join(':')
+        .replace(/(^|:)0(:0)+(:|$)/, '::')
+        .replace(/:{3,}/g, '::');
 }
 
 /**
@@ -132,6 +193,7 @@ function getAddrFamilyType(afi, safi) {
 function getAfiAndSafi(addrFamily) {
     let afi;
     let safi;
+    addrFamily = parseInt(addrFamily);
     switch (addrFamily) {
         case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST:
             afi = BgpConst.BGP_AFI_TYPE.AFI_IPV4;
@@ -165,5 +227,7 @@ module.exports = {
     rdBufferToString,
     getAddrFamilyType,
     getAfiAndSafi,
-    getIpType
+    getIpType,
+    ipv4BufferToString,
+    ipv6BufferToString
 };

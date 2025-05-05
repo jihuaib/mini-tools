@@ -35,7 +35,6 @@ contextBridge.exposeInMainWorld('bgpApi', {
     // peer
     configIpv4Peer: ipv4PeerConfigData => ipcRenderer.invoke('bgp:configIpv4Peer', ipv4PeerConfigData),
     configIpv6Peer: ipv6PeerConfigData => ipcRenderer.invoke('bgp:configIpv6Peer', ipv6PeerConfigData),
-    onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
     getPeerInfo: () => ipcRenderer.invoke('bgp:getPeerInfo'),
     deletePeer: peer => ipcRenderer.invoke('bgp:deletePeer', peer),
 
@@ -44,37 +43,63 @@ contextBridge.exposeInMainWorld('bgpApi', {
     generateIpv6Routes: config => ipcRenderer.invoke('bgp:generateIpv6Routes', config),
     deleteIpv4Routes: config => ipcRenderer.invoke('bgp:deleteIpv4Routes', config),
     deleteIpv6Routes: config => ipcRenderer.invoke('bgp:deleteIpv6Routes', config),
-    getRoutes: addressFamily => ipcRenderer.invoke('bgp:getRoutes', addressFamily)
+    getRoutes: addressFamily => ipcRenderer.invoke('bgp:getRoutes', addressFamily),
+
+    // 事件监听
+    onPeerChange: callback => ipcRenderer.on('bgp:peerChange', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offPeerChange: callback => ipcRenderer.removeListener('bgp:peerChange', callback)
 });
 
 // bmp模块
-contextBridge.exposeInMainWorld('bmpEmulatorApi', {
-    getNetworkInfo: () => ipcRenderer.invoke('bmp-emulator:getNetworkInfo'),
-    // Server control
-    startServer: config => ipcRenderer.invoke('bmp-emulator:startServer', config),
-    stopServer: () => ipcRenderer.invoke('bmp-emulator:stopServer'),
-    getServerStatus: () => ipcRenderer.invoke('bmp-emulator:getServerStatus'),
+contextBridge.exposeInMainWorld('bmpApi', {
+    // 配置相关
+    saveBmpConfig: config => ipcRenderer.invoke('bmp:saveBmpConfig', config),
+    loadBmpConfig: () => ipcRenderer.invoke('bmp:loadBmpConfig'),
 
-    // Configuration
-    saveConfig: config => ipcRenderer.invoke('bmp-emulator:saveConfig', config),
-    loadConfig: () => ipcRenderer.invoke('bmp-emulator:loadConfig'),
+    // bmp
+    startBmp: config => ipcRenderer.invoke('bmp:startBmp', config),
+    stopBmp: () => ipcRenderer.invoke('bmp:stopBmp'),
 
-    // Data retrieval
-    getPeers: () => ipcRenderer.invoke('bmp-emulator:getPeers'),
-    getRoutes: ipType => ipcRenderer.invoke('bmp-emulator:getRoutes', ipType),
+    // 数据获取
+    getClientList: () => ipcRenderer.invoke('bmp:getClientList'),
+    getPeers: client => ipcRenderer.invoke('bmp:getPeers', client),
+    getRoutes: (client, peer, ribType) => ipcRenderer.invoke('bmp:getRoutes', client, peer, ribType),
+    getClient: client => ipcRenderer.invoke('bmp:getClient', client),
+    getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
 
-    // Event listeners
-    onPeerUpdate: callback => ipcRenderer.on('bmp-emulator:peerUpdate', (_event, data) => callback(_event, data)),
-    onRouteUpdate: callback => ipcRenderer.on('bmp-emulator:routeUpdate', (_event, data) => callback(_event, data)),
-    onServerLog: callback => ipcRenderer.on('bmp-emulator:serverLog', (_event, data) => callback(_event, data)),
-    onInitiationReceived: callback =>
-        ipcRenderer.on('bmp-emulator:initiationReceived', (_event, data) => callback(_event, data)),
+    // 事件监听
+    onPeerUpdate: callback => ipcRenderer.on('bmp:peerUpdate', (_event, data) => callback(data)),
+    onRouteUpdate: callback => ipcRenderer.on('bmp:routeUpdate', (_event, data) => callback(data)),
+    onInitiation: callback => ipcRenderer.on('bmp:initiation', (_event, data) => callback(data)),
+    onTermination: callback => ipcRenderer.on('bmp:termination', (_event, data) => callback(data)),
 
-    // Clean up event listeners
-    removeAllListeners: () => {
-        ipcRenderer.removeAllListeners('bmp-emulator:peerUpdate');
-        ipcRenderer.removeAllListeners('bmp-emulator:routeUpdate');
-        ipcRenderer.removeAllListeners('bmp-emulator:serverLog');
-        ipcRenderer.removeAllListeners('bmp-emulator:initiationReceived');
-    }
+    // 移除指定监听器（推荐在页面卸载时调用）
+    offPeerUpdate: callback => ipcRenderer.removeListener('bmp:peerUpdate', callback),
+    offRouteUpdate: callback => ipcRenderer.removeListener('bmp:routeUpdate', callback),
+    offInitiation: callback => ipcRenderer.removeListener('bmp:initiation', callback),
+    offTermination: callback => ipcRenderer.removeListener('bmp:termination', callback)
+});
+
+// rpki模块
+contextBridge.exposeInMainWorld('rpkiApi', {
+    // 配置相关
+    saveRpkiConfig: config => ipcRenderer.invoke('rpki:saveRpkiConfig', config),
+    loadRpkiConfig: () => ipcRenderer.invoke('rpki:loadRpkiConfig'),
+
+    // rpki
+    startRpki: config => ipcRenderer.invoke('rpki:startRpki', config),
+    stopRpki: () => ipcRenderer.invoke('rpki:stopRpki'),
+
+    // roa
+    addRoa: roa => ipcRenderer.invoke('rpki:addRoa', roa),
+    deleteRoa: roa => ipcRenderer.invoke('rpki:deleteRoa', roa),
+    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList'),
+
+    // 事件监听
+    onClientConnection: callback => ipcRenderer.on('rpki:clientConnection', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offClientConnection: callback => ipcRenderer.removeListener('rpki:clientConnection', callback)
 });

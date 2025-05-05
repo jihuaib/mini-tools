@@ -7,6 +7,7 @@
 
 // Import constants from existing BGP constants file
 const BgpConst = require('../const/bgpConst');
+const { ipv4BufferToString, ipv6BufferToString } = require('./ipUtils');
 
 /**
  * Parse a BGP packet from a buffer
@@ -232,7 +233,7 @@ function parseUpdateMessage(buffer) {
         position += prefixBytes;
 
         // Convert to dotted decimal format for IPv4
-        const prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
+        const prefix = ipv4BufferToString(prefixBuffer, prefixLength);
 
         withdrawnRoutes.push({
             prefix,
@@ -328,7 +329,7 @@ function parseUpdateMessage(buffer) {
         position += prefixBytes;
 
         // Convert to dotted decimal format for IPv4
-        const prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
+        const prefix = ipv4BufferToString(prefixBuffer, prefixLength);
 
         nlri.push({
             prefix,
@@ -384,31 +385,6 @@ function parseRouteRefreshMessage(buffer) {
         subType,
         safi
     };
-}
-
-/**
- * Helper function to format IPv4 prefix from buffer
- * @param {Buffer} buffer - Buffer containing the IP prefix
- * @param {Number} length - Prefix length in bits
- * @returns {String} Formatted IP prefix
- */
-function formatIpv4Prefix(buffer, length) {
-    const fullBytes = Math.floor(length / 8);
-    const remainingBits = length % 8;
-
-    // Create a 4-byte buffer filled with zeros
-    const ipBuffer = Buffer.alloc(4);
-
-    // Copy the available bytes
-    buffer.copy(ipBuffer, 0, 0, buffer.length);
-
-    // If there are remaining bits, mask the last byte
-    if (remainingBits > 0 && fullBytes < 4) {
-        const mask = 0xff & (0xff << (8 - remainingBits));
-        ipBuffer[fullBytes] &= mask;
-    }
-
-    return `${ipBuffer[0]}.${ipBuffer[1]}.${ipBuffer[2]}.${ipBuffer[3]}`;
 }
 
 /**
@@ -482,10 +458,10 @@ function parseMpReachNlri(buffer) {
     // Parse next hop based on AFI
     if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
         // IPv4
-        nextHop = `${buffer[position]}.${buffer[position + 1]}.${buffer[position + 2]}.${buffer[position + 3]}`;
+        nextHop = ipv4BufferToString(buffer.subarray(position, position + 4), 32);
     } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
         // IPv6
-        nextHop = formatIpv6Address(buffer.subarray(position, position + 16));
+        nextHop = ipv6BufferToString(buffer.subarray(position, position + 16), 128);
     }
 
     position += nextHopLength;
@@ -510,10 +486,10 @@ function parseMpReachNlri(buffer) {
         let prefix;
         if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
-            prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
+            prefix = ipv4BufferToString(prefixBuffer, prefixLength);
         } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
-            prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
+            prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         }
 
         nlri.push({
@@ -560,10 +536,10 @@ function parseMpUnreachNlri(buffer) {
         let prefix;
         if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
             // IPv4
-            prefix = formatIpv4Prefix(prefixBuffer, prefixLength);
+            prefix = ipv4BufferToString(prefixBuffer, prefixLength);
         } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
             // IPv6
-            prefix = formatIpv6Prefix(prefixBuffer, prefixLength);
+            prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         }
 
         withdrawnRoutes.push({
@@ -577,36 +553,6 @@ function parseMpUnreachNlri(buffer) {
         safi,
         withdrawnRoutes
     };
-}
-
-/**
- * Format IPv6 address from buffer
- * @param {Buffer} buffer - Buffer containing the IPv6 address
- * @returns {String} Formatted IPv6 address
- */
-function formatIpv6Address(buffer) {
-    const segments = [];
-    for (let i = 0; i < 16; i += 2) {
-        segments.push(buffer.readUInt16BE(i).toString(16));
-    }
-    return segments.join(':');
-}
-
-/**
- * Format IPv6 prefix from buffer
- * @param {Buffer} buffer - Buffer containing the IPv6 prefix
- * @param {Number} length - Prefix length in bits
- * @returns {String} Formatted IPv6 prefix
- */
-function formatIpv6Prefix(buffer, length) {
-    // Create a 16-byte buffer filled with zeros
-    const ipBuffer = Buffer.alloc(16);
-
-    // Copy the available bytes
-    buffer.copy(ipBuffer, 0, 0, buffer.length);
-
-    // Format as IPv6 address
-    return formatIpv6Address(ipBuffer);
 }
 
 /**

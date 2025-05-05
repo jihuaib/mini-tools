@@ -11,6 +11,8 @@ const BGP_VERSION = 4;
 // BGP marker length (16 bytes of 0xff)
 const BGP_MARKER_LEN = 16;
 
+const BGP_RD_LEN = 8;
+
 const BGP_PEER_STATE = {
     IDLE: 0,
     CONNECT: 1,
@@ -258,5 +260,6 @@ module.exports = {
     BGP_STATE_MAP,
     IP_TYPE,
     BGP_CAP_FLAGS,
-    BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS
+    BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS,
+    BGP_RD_LEN
 };

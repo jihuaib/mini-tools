@@ -3,7 +3,8 @@ const path = require('path');
 const log = require('electron-log');
 const BgpApp = require('./app/bgpApp');
 const ToolsApp = require('./app/toolsApp');
-const bmpEmulatorApp = require('./app/bmpEmulatorApp');
+const BmpApp = require('./app/bmpApp');
+const RpkiApp = require('./app/rpkiApp');
 const SystemMenuApp = require('./app/systemMenuApp');
 const Store = require('electron-store');
 // 配置 electron-log
@@ -15,6 +16,8 @@ const isDev = !app.isPackaged;
 let mainWindow = null;
 
 let bgpApp = null;
+let bmpApp = null;
+let rpkiApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -70,7 +73,8 @@ app.whenReady().then(() => {
     bgpApp = new BgpApp(ipcMain, store);
     new ToolsApp(ipcMain, store);
     new SystemMenuApp(ipcMain, mainWindow);
-    bmpEmulatorApp.registerHandlers(ipcMain);
+    bmpApp = new BmpApp(ipcMain, store);
+    rpkiApp = new RpkiApp(ipcMain, store);
 });
 
 app.on('window-all-closed', () => {

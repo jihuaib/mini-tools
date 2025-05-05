@@ -1,3 +1,10 @@
+const BMP_HEADER_LENGTH = 6;
+
+const BMP_INITIATION_TLV_TYPE = {
+    SYS_NAME: 1,
+    SYS_DESC: 2
+};
+
 // BMP message types (RFC 7854)
 const BMP_MSG_TYPE = {
     ROUTE_MONITORING: 0,
@@ -9,6 +16,16 @@ const BMP_MSG_TYPE = {
     ROUTE_MIRRORING: 6
 };
 
+const BMP_MSG_TYPE_NAME = {
+    [BMP_MSG_TYPE.ROUTE_MONITORING]: 'ROUTE_MONITORING',
+    [BMP_MSG_TYPE.STATISTICS_REPORT]: 'STATISTICS_REPORT',
+    [BMP_MSG_TYPE.PEER_DOWN_NOTIFICATION]: 'PEER_DOWN_NOTIFICATION',
+    [BMP_MSG_TYPE.PEER_UP_NOTIFICATION]: 'PEER_UP_NOTIFICATION',
+    [BMP_MSG_TYPE.INITIATION]: 'INITIATION',
+    [BMP_MSG_TYPE.TERMINATION]: 'TERMINATION',
+    [BMP_MSG_TYPE.ROUTE_MIRRORING]: 'ROUTE_MIRRORING'
+};
+
 // BMP peer types
 const BMP_PEER_TYPE = {
     GLOBAL: 0,
@@ -17,12 +34,30 @@ const BMP_PEER_TYPE = {
     LOCAL_L3VPN: 3
 };
 
-// BMP peer flags
 const BMP_PEER_FLAGS = {
-    IPV6: 0x80,
-    POST_POLICY: 0x40,
-    AS_PATH: 0x20,
-    ADJ_RIB_OUT: 0x10
+    IPV6: 0x80, // V 位: 使用 IPv6 地址
+    LOC_RIB: 0x40, // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
+    POST_POLICY: 0x20, // A 位: Adj-RIB-In 是策略后导出的（post-policy）
+    ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out 正在被传输
 };
 
-module.exports = { BMP_MSG_TYPE, BMP_PEER_TYPE, BMP_PEER_FLAGS };
+const BMP_PEER_STATE = {
+    PEER_UP: 0,
+    PEER_DOWN: 1
+};
+
+const BMP_ROUTE_UPDATE_TYPE = {
+    ROUTE_DELETE: 0,
+    ROUTE_UPDATE: 1
+};
+
+module.exports = {
+    BMP_HEADER_LENGTH,
+    BMP_MSG_TYPE,
+    BMP_PEER_TYPE,
+    BMP_PEER_FLAGS,
+    BMP_MSG_TYPE_NAME,
+    BMP_INITIATION_TLV_TYPE,
+    BMP_PEER_STATE,
+    BMP_ROUTE_UPDATE_TYPE
+};

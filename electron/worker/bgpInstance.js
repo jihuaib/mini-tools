@@ -1,5 +1,4 @@
 const BgpPeer = require('./bgpPeer');
-const BgpConst = require('../const/bgpConst');
 
 class BgpInstance {
     constructor(vrfIndex, afi, safi) {

@@ -6,7 +6,13 @@ import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
 import RouteConfig from '../view/bgp/RouteConfig.vue';
-import BmpEmulator from '../view/BmpEmulator.vue';
+import BmpMain from '../view/bmp/BmpMain.vue';
+import BmpConfig from '../view/bmp/BmpConfig.vue';
+import BmpPeer from '../view/bmp/BmpPeer.vue';
+import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
+import RpkiMain from '../view/rpki/RpkiMain.vue';
+import RpkiConfig from '../view/rpki/RpkiConfig.vue';
+import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
 import store from '../store';
 
 const routes = [
@@ -60,10 +66,53 @@ const routes = [
                 ]
             },
             {
-                path: '/bmp-emulator',
-                name: 'BmpEmulator',
-                component: BmpEmulator,
-                meta: { keepAlive: true }
+                path: '/bmp',
+                name: 'BmpMain',
+                component: BmpMain,
+                meta: { keepAlive: true },
+                children: [
+                    { path: '', redirect: '/bmp/bmp-config' },
+                    {
+                        path: 'bmp-config',
+                        name: 'BmpConfig',
+                        component: BmpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bmp-peer',
+                        name: 'BmpPeer',
+                        component: BmpPeer,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'peer/:clientId/:peerId',
+                        name: 'BmpPeerRoute',
+                        component: BmpPeerRoute,
+                        props: true,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/rpki',
+                name: 'RpkiMain',
+                component: RpkiMain,
+                meta: { keepAlive: true },
+                children: [
+                    { path: '', redirect: '/rpki/rpki-config' },
+                    {
+                        path: 'rpki-config',
+                        name: 'RpkiConfig',
+                        component: RpkiConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'rpki-roa-config',
+                        name: 'RpkiRoaConfig',
+                        component: RpkiRoaConfig,
+                        meta: { keepAlive: true }
+                    }
+                ]
             }
         ]
     }
@@ -74,13 +123,9 @@ const router = createRouter({
     routes
 });
 
-// Add and remove cached views when route changes
 router.beforeEach((to, from, next) => {
-    // Add the target route to cached views
     if (to.name && to.meta && to.meta.keepAlive) {
         store.dispatch('addCachedView', to);
-
-        // Also cache parent routes if they have keepAlive
         let matched = to.matched;
         matched.forEach(record => {
             if (record.name && record.meta.keepAlive) {

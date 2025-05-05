@@ -1,8 +1,7 @@
 const net = require('net');
 const util = require('util');
 const BgpConst = require('../const/bgpConst');
-const { genRouteIps, writeUInt16, writeUInt32, ipToBytes, getAfiAndSafi } = require('../utils/ipUtils');
-const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
+const { getAfiAndSafi, genRouteIps } = require('../utils/ipUtils');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');

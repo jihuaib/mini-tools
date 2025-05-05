@@ -1,18 +1,7 @@
 const BgpConst = require('../const/bgpConst');
-const BgpPeer = require('./bgpPeer');
-const {
-    genRouteIps,
-    writeUInt16,
-    writeUInt32,
-    ipToBytes,
-    getAddrFamilyType,
-    getAfiAndSafi
-} = require('../utils/ipUtils');
+const { writeUInt16, writeUInt32, ipToBytes, getAddrFamilyType, getAfiAndSafi } = require('../utils/ipUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
-const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
-const WorkerMessageHandler = require('./workerMessageHandler');
-const { BGP_EVT_TYPES } = require('../const/BgpEvtConst');
 const CommonUtils = require('../utils/commonUtils');
 const BgpInstance = require('./bgpInstance');
 

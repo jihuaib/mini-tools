@@ -28,6 +28,11 @@ export const IP_TYPE = {
     IPV6: 2
 };
 
+export const ADDRESS_FAMILY_NAME = {
+    [ADDRESS_FAMILY.IPV4_UNC]: 'IPv4 UNC',
+    [ADDRESS_FAMILY.IPV6_UNC]: 'IPv6 UNC'
+};
+
 // Default Values
 export const DEFAULT_VALUES = {
     LOCAL_AS: '65535',

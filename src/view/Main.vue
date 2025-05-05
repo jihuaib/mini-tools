@@ -71,7 +71,8 @@
         RadarChartOutlined,
         SettingOutlined,
         ToolOutlined,
-        InfoCircleOutlined
+        InfoCircleOutlined,
+        SafetyCertificateOutlined
     } from '@ant-design/icons-vue';
 
     const router = useRouter();
@@ -98,11 +99,18 @@
             route: '/bgp'
         },
         {
-            key: 'bmp-emulator',
+            key: 'bmp',
             icon: () => h(RadarChartOutlined),
             label: 'BMP',
             title: 'BMP',
-            route: '/bmp-emulator'
+            route: '/bmp'
+        },
+        {
+            key: 'rpki',
+            icon: () => h(SafetyCertificateOutlined),
+            label: 'RPKI',
+            title: 'RPKI',
+            route: '/rpki'
         }
     ]);
 
@@ -207,6 +215,7 @@
         transition: all 0.2s;
         width: calc(100% - 155px);
         display: flex;
+        padding-right: 20px;
     }
 
     .content-container.content-expanded {
