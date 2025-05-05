@@ -254,7 +254,7 @@ class BgpApp {
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/bgpWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bgpWorker.js');
+                : path.join(process.resourcesPath, 'app', 'electron/worker/bgpWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();

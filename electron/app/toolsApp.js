@@ -88,7 +88,7 @@ class ToolsApp {
         try {
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/StringGeneratorWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/StringGeneratorWorker.js');
+                : path.join(process.resourcesPath, 'app', 'electron/worker/StringGeneratorWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), templateData);
@@ -107,7 +107,7 @@ class ToolsApp {
         try {
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/packetParserWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/packetParserWorker.js');
+                : path.join(process.resourcesPath, 'app', 'electron/worker/packetParserWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), packetData);

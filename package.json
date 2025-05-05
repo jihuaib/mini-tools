@@ -30,13 +30,7 @@
             "electron/**/*",
             "package.json"
         ],
-        "asarUnpack": [
-            "electron/worker/**",
-            "electron/utils/**",
-            "electron/const/**",
-            "electron/log/**",
-            "node_modules/**/*"
-        ],
+        "asar": false,
         "publish": {
             "provider": "github",
             "owner": "jihuaib",

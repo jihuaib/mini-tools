@@ -69,7 +69,7 @@ class BmpApp {
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/bmpWorker.js')
-                : path.join(process.resourcesPath, 'app.asar.unpacked', 'electron/worker/bmpWorker.js');
+                : path.join(process.resourcesPath, 'app', 'electron/worker/bmpWorker.js');
 
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
