@@ -10,7 +10,7 @@
                     <template #tab>
                         <a-space :size="2">
                             {{ peer.peerName }}@{{ peer.clientName }}
-                            <a-button type="text" size="small" @click.stop="closePeerTab(peer.id)" class="close-btn">
+                            <a-button type="text" size="small" class="close-btn" @click.stop="closePeerTab(peer.id)">
                                 <close-outlined />
                             </a-button>
                         </a-space>

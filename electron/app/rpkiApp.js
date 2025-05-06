@@ -202,7 +202,7 @@ class RpkiApp {
         }
     }
 
-    async handleGetRoaList(event) {
+    async handleGetRoaList() {
         try {
             let currentRoaList = [];
             const config = this.store.get(this.rpkiRoaFileKey);

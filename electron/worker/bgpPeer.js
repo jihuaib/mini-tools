@@ -448,7 +448,7 @@ class BgpPeer {
             return;
         }
 
-        this.instance.routeMap.forEach((route, key) => {
+        this.instance.routeMap.forEach((route, _) => {
             routes.push(route);
         });
 

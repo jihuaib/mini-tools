@@ -64,7 +64,7 @@ class BmpSession {
         try {
             let position = 0;
 
-            const peerType = message[position];
+            const _peerType = message[position];
             position += 1;
             const peerFlags = message[position];
             position += 1;
@@ -85,18 +85,18 @@ class BmpSession {
                 position += 4;
             }
 
-            const peerAs = message.readUInt32BE(position);
+            const _peerAs = message.readUInt32BE(position);
             position += 4;
-            const peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const _peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const peerTimestamp = message.readUInt32BE(position);
+            const _peerTimestamp = message.readUInt32BE(position);
             position += 4;
-            const peerTimestampMs = message.readUInt32BE(position);
+            const _peerTimestampMs = message.readUInt32BE(position);
             position += 4;
 
             // BGP update message
             const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-            const { length: updateLength, type: updateType } = this.parseBgpHeader(bgpUpdateHeader);
+            const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
             const bgpUpdate = message.subarray(position, position + updateLength);
             const parsedBgpUpdate = parseBgpPacket(bgpUpdate);
             if (!parsedBgpUpdate.valid) {
@@ -422,7 +422,7 @@ class BmpSession {
         try {
             let position = 0;
 
-            const peerType = message[position];
+            const _peerType = message[position];
             position += 1;
             const peerFlags = message[position];
             position += 1;
@@ -443,23 +443,23 @@ class BmpSession {
                 position += 4;
             }
 
-            const peerAs = message.readUInt32BE(position);
+            const _peerAs = message.readUInt32BE(position);
             position += 4;
-            const peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const _peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const peerTimestamp = message.readUInt32BE(position);
+            const _peerTimestamp = message.readUInt32BE(position);
             position += 4;
-            const peerTimestampMs = message.readUInt32BE(position);
+            const _peerTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            const reason = message[position];
+            const _reason = message[position];
             position += 1;
 
             let parsedBgpNotification = null;
             if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
                 // BGP notification message
                 const bgpNotificationHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-                const { length: notificationLength, type: notificationType } =
+                const { length: notificationLength, type: _notificationType } =
                     this.parseBgpHeader(bgpNotificationHeader);
                 const bgpNotification = message.subarray(position, position + notificationLength);
                 parsedBgpNotification = parseBgpPacket(bgpNotification);
@@ -551,7 +551,7 @@ class BmpSession {
             if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
                 // BGP recv Open message
                 const bgpRecvOpenHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-                const { length: recvOpenLength, type: recvOpenType } = this.parseBgpHeader(bgpRecvOpenHeader);
+                const { length: recvOpenLength, type: _recvOpenType } = this.parseBgpHeader(bgpRecvOpenHeader);
                 const bgpRecvOpen = message.subarray(position, position + recvOpenLength);
                 parsedRecvBgpOpen = parseBgpPacket(bgpRecvOpen);
                 if (!parsedRecvBgpOpen.valid) {
@@ -563,7 +563,7 @@ class BmpSession {
             if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
                 // BGP send Open message
                 const bgpSendOpenHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-                const { length: sendOpenLength, type: sendOpenType } = this.parseBgpHeader(bgpSendOpenHeader);
+                const { length: sendOpenLength, type: _sendOpenType } = this.parseBgpHeader(bgpSendOpenHeader);
                 const bgpSendOpen = message.subarray(position, position + sendOpenLength);
                 parsedSendBgpOpen = parseBgpPacket(bgpSendOpen);
                 if (!parsedSendBgpOpen.valid) {
@@ -684,7 +684,7 @@ class BmpSession {
         }
     }
 
-    processTermination(message) {
+    processTermination(_message) {
         const clientInfo = this.getClientInfo();
         this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: clientInfo });
         this.closeSession();
@@ -697,7 +697,7 @@ class BmpSession {
         try {
             const clientAddress = `${this.remoteIp}:${this.remotePort}`;
 
-            const version = message[0];
+            const _version = message[0];
             const length = message.readUInt32BE(1);
             const type = message[5];
 
@@ -758,7 +758,7 @@ class BmpSession {
             this.socket = null;
         }
 
-        this.peerMap.forEach((peer, key) => {
+        this.peerMap.forEach((peer, _) => {
             peer.closePeer();
         });
 

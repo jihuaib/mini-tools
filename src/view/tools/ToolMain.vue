@@ -2,9 +2,9 @@
     <div class="tool-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange" style="height: 55px">
-                <a-tab-pane key="string-generator" tab="字符串生成"></a-tab-pane>
-                <a-tab-pane key="packet-parser" tab="报文解析"></a-tab-pane>
+            <a-tabs v-model:activeKey="activeTabKey" style="height: 55px" @change="handleTabChange">
+                <a-tab-pane key="string-generator" tab="字符串生成"/>
+                <a-tab-pane key="packet-parser" tab="报文解析"/>
             </a-tabs>
         </div>
 

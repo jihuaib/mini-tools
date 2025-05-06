@@ -183,7 +183,7 @@ function getIpType(ip) {
  * @param {Number} ipType - IP type code
  * @returns {String} IP type name
  */
- function getIpTypeName(ipType) {
+function getIpTypeName(ipType) {
     return ipType === BgpConst.IP_TYPE.IPV4 ? 'IPv4' : 'IPv6';
 }
 

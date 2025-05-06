@@ -1,6 +1,6 @@
 <template>
     <div class="bgp-config-container">
-        <a-form :model="bgpConfigData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol">
+        <a-form :model="bgpConfigData" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="startBgp">
             <a-card title="BGP配置">
                 <a-row>
                     <a-col :span="12">
@@ -10,10 +10,10 @@
                                 :open="!!bgpConfigvalidationErrors.localAs"
                             >
                                 <a-input
-                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.localAs"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
+                                    :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.localAs ? 'error' : ''"
+                                    @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -25,10 +25,10 @@
                                 :open="!!bgpConfigvalidationErrors.routerId"
                             >
                                 <a-input
-                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.routerId"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
+                                    :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.routerId ? 'error' : ''"
+                                    @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -38,8 +38,8 @@
                     <a-col :span="12">
                         <a-form-item label="地址族" name="addressFamily">
                             <a-select
-                                :disabled="bgpRunning"
                                 v-model:value="bgpConfigData.addressFamily"
+                                :disabled="bgpRunning"
                                 mode="multiple"
                                 style="width: 100%"
                                 :options="bgpAddressFamilyOptions"
@@ -53,7 +53,7 @@
                         <a-button type="primary" html-type="submit" :loading="bgpLoading" :disabled="bgpRunning">
                             启动BGP
                         </a-button>
-                        <a-button type="primary" danger @click="stopBgp" :disabled="!bgpRunning">停止BGP</a-button>
+                        <a-button type="primary" danger :disabled="!bgpRunning" @click="stopBgp">停止BGP</a-button>
                     </a-space>
                 </a-form-item>
             </a-card>
@@ -64,9 +64,9 @@
                 <a-tab-pane :key="IP_TYPE.IPV4" tab="IPv4邻居">
                     <a-form
                         :model="ipv4PeerConfigData"
-                        @finish="configIpv4Peer"
                         :label-col="labelCol"
                         :wrapper-col="wrapperCol"
+                        @finish="configIpv4Peer"
                     >
                         <a-row>
                             <a-col :span="12">
@@ -77,6 +77,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerIp"
+                                            :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -85,7 +86,6 @@
                                                         validatePeerIp
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -98,6 +98,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerAs"
+                                            :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -106,7 +107,6 @@
                                                         validatePeerAs
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -122,6 +122,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.holdTime"
+                                            :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -130,7 +131,6 @@
                                                         validateHoldTime
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -193,9 +193,9 @@
                 <a-tab-pane :key="IP_TYPE.IPV6" tab="IPv6邻居">
                     <a-form
                         :model="ipv6PeerConfigData"
-                        @finish="configIpv6Peer"
                         :label-col="labelCol"
                         :wrapper-col="wrapperCol"
+                        @finish="configIpv6Peer"
                     >
                         <a-row>
                             <a-col :span="12">
@@ -206,6 +206,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6"
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -214,7 +215,6 @@
                                                         validatePeerIpv6
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -227,6 +227,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6As"
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -235,7 +236,6 @@
                                                         validatePeerAs
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -251,6 +251,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.holdTimeIpv6"
+                                            :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -259,7 +260,6 @@
                                                         validateHoldTime
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>

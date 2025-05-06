@@ -41,13 +41,13 @@ class BgpInstance {
     }
 
     sendRoute() {
-        this.peerMap.forEach((peer, peerKey) => {
+        this.peerMap.forEach((peer, _) => {
             peer.sendRoute();
         });
     }
 
     withdrawRoute(withdrawnRoutes) {
-        this.peerMap.forEach((peer, peerKey) => {
+        this.peerMap.forEach((peer, _) => {
             peer.withdrawRoute(withdrawnRoutes);
         });
     }

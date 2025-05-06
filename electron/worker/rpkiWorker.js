@@ -283,7 +283,7 @@ class RpkiWorker {
         this.rpkiConfigData = null;
 
         // 清空会话
-        this.rpkiSessionMap.forEach((session, sessionKey) => {
+        this.rpkiSessionMap.forEach((session, _) => {
             session.closeSession();
         });
         this.rpkiSessionMap.clear();

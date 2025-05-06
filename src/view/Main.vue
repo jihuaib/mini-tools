@@ -14,11 +14,11 @@
                 v-model:selectedKeys="current"
                 mode="inline"
                 :items="items"
-                @select="handleSelect"
                 class="main-menu"
                 :inline-collapsed="isCollapsed"
-                :openKeys="!isCollapsed ? openKeys : []"
-                @openChange="onOpenChange"
+                :open-keys="!isCollapsed ? openKeys : []"
+                @select="handleSelect"
+                @open-change="onOpenChange"
             />
             <!-- 底部菜单按钮 -->
             <div class="bottom-menu-btn">

@@ -183,7 +183,7 @@ class BgpWorker {
             bgpSession.clearSession();
             bgpSession.resetSession();
             // 清空peer
-            bgpSession.instanceMap.forEach((instance, key) => {
+            bgpSession.instanceMap.forEach((instance, _) => {
                 instance.peerMap.delete(bgpSession.peerIp);
             });
         } else {
@@ -283,7 +283,7 @@ class BgpWorker {
             bgpSession.clearSession();
             bgpSession.resetSession();
             // 清空peer
-            bgpSession.instanceMap.forEach((instance, key) => {
+            bgpSession.instanceMap.forEach((instance, _) => {
                 instance.peerMap.delete(bgpSession.peerIp);
             });
         } else {
@@ -358,7 +358,7 @@ class BgpWorker {
         const ipv6PeerInfoList = [];
         this.bgpInstanceMap.forEach((instance, instanceKey) => {
             if (instance.peerMap && instance.peerMap.size > 0) {
-                instance.peerMap.forEach((peer, peerkey) => {
+                instance.peerMap.forEach((peer, _) => {
                     const peerInfo = peer.getPeerInfo();
                     if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
                         ipv4PeerInfoList.push(peerInfo);
@@ -390,17 +390,17 @@ class BgpWorker {
         }
 
         // 清空peerMap
-        this.bgpInstanceMap.forEach((instance, instanceKey) => {
+        this.bgpInstanceMap.forEach((instance, _) => {
             instance.peerMap.clear();
         });
 
         // 清空routeMap
-        this.bgpInstanceMap.forEach((instance, instanceKey) => {
+        this.bgpInstanceMap.forEach((instance, _) => {
             instance.routeMap.clear();
         });
 
         // 关闭session socket
-        this.bgpSessionMap.forEach((session, sessionKey) => {
+        this.bgpSessionMap.forEach((session, _) => {
             session.clearSession();
             session.resetSession();
         });
@@ -542,9 +542,9 @@ class BgpWorker {
 
         // 查询是否还有其他实例使用该Session
         let hasOtherInstance = false;
-        this.bgpInstanceMap.forEach((tempInstance, instanceKey) => {
+        this.bgpInstanceMap.forEach((tempInstance, _) => {
             if (tempInstance.peerMap.size > 0) {
-                tempInstance.peerMap.forEach((tempPeer, peerKey) => {
+                tempInstance.peerMap.forEach((tempPeer, _) => {
                     const peerSessionKey = BgpSession.makeKey(0, tempPeer.session.peerIp);
                     if (peerSessionKey === sessionKey) {
                         hasOtherInstance = true;
@@ -575,7 +575,7 @@ class BgpWorker {
             return;
         }
         const routes = [];
-        instance.routeMap.forEach((route, routeKey) => {
+        instance.routeMap.forEach((route, _) => {
             const routeInfo = route.getRouteInfo();
             routes.push(routeInfo);
         });

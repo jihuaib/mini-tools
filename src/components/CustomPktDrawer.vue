@@ -1,5 +1,5 @@
 <template>
-    <a-drawer :title="title" placement="right" :open="visible" @close="onClose" width="500">
+    <a-drawer :title="title" placement="right" :open="visible" width="500" @close="onClose">
         <a-form layout="vertical">
             <a-form-item :label="inputLabel" :validate-status="validateStatus" :help="validateMessage">
                 <a-textarea v-model:value="localInputValue" :rows="rows" :placeholder="placeholder" />

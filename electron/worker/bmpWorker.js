@@ -179,7 +179,7 @@ class BmpWorker {
         this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: null });
 
         // 清空会话
-        this.bmpSessionMap.forEach((session, sessionKey) => {
+        this.bmpSessionMap.forEach((session, _) => {
             session.closeSession();
         });
         this.bmpSessionMap.clear();
@@ -188,7 +188,7 @@ class BmpWorker {
 
     getClientList(messageId) {
         const clientList = [];
-        this.bmpSessionMap.forEach((session, sessionKey) => {
+        this.bmpSessionMap.forEach((session, _) => {
             const clientInfo = session.getClientInfo();
             clientList.push(clientInfo);
         });
@@ -204,7 +204,7 @@ class BmpWorker {
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
         }
-        bmpSession.peerMap.forEach((peer, peerIp) => {
+        bmpSession.peerMap.forEach((peer, _) => {
             peerList.push(peer.getPeerInfo());
         });
         this.messageHandler.sendSuccessResponse(messageId, peerList, '获取对等体列表成功');
@@ -229,19 +229,19 @@ class BmpWorker {
             return;
         }
         if (ribType === 'preRibIn') {
-            bgpPeer.preRibInMap.forEach((route, key) => {
+            bgpPeer.preRibInMap.forEach((route, _) => {
                 routeList.push(route.getRouteInfo());
             });
         } else if (ribType === 'ribIn') {
-            bgpPeer.ribInMap.forEach((route, key) => {
+            bgpPeer.ribInMap.forEach((route, _) => {
                 routeList.push(route.getRouteInfo());
             });
         } else if (ribType === 'postLocRib') {
-            bgpPeer.postLocRibMap.forEach((route, key) => {
+            bgpPeer.postLocRibMap.forEach((route, _) => {
                 routeList.push(route.getRouteInfo());
             });
         } else if (ribType === 'locRib') {
-            bgpPeer.locRibMap.forEach((route, key) => {
+            bgpPeer.locRibMap.forEach((route, _) => {
                 routeList.push(route.getRouteInfo());
             });
         }

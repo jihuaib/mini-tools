@@ -3,15 +3,15 @@
         <a-row>
             <a-col :span="24">
                 <a-card title="BMP服务器配置">
-                    <a-form :model="bmpConfig" @finish="startBmp" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <a-form :model="bmpConfig" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="startBmp">
                         <a-row>
                             <a-col :span="24">
                                 <a-form-item label="服务端端口" name="port">
                                     <a-tooltip :title="validationErrors.port" :open="!!validationErrors.port">
                                         <a-input
                                             v-model:value="bmpConfig.port"
-                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                             :status="validationErrors.port ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -27,7 +27,7 @@
                                 >
                                     启动服务器
                                 </a-button>
-                                <a-button type="primary" danger @click="stopBmp" :disabled="!serverRunning">
+                                <a-button type="primary" danger :disabled="!serverRunning" @click="stopBmp">
                                     停止服务器
                                 </a-button>
                             </a-space>
@@ -45,7 +45,7 @@
                         <a-table
                             :columns="clientColumns"
                             :data-source="clientList"
-                            :rowKey="
+                            :row-key="
                                 record =>
                                     `${record.localIp || ''}-${record.localPort || ''}-${record.remoteIp || ''}-${record.remotePort || ''}`
                             "

@@ -36,7 +36,7 @@ class BgpSession {
     // 更新session状态
     changeSessionFsmState(sessionState) {
         // 更新peer状态
-        this.instanceMap.forEach((instance, key) => {
+        this.instanceMap.forEach((instance, _) => {
             this.changePeerState(instance, sessionState);
         });
 
@@ -115,7 +115,7 @@ class BgpSession {
     }
 
     resetPeer() {
-        this.instanceMap.forEach((instance, key) => {
+        this.instanceMap.forEach((instance, _) => {
             instance.resetPeer(this.peerIp);
         });
     }
@@ -220,8 +220,8 @@ class BgpSession {
                     this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.ESTABLISHED);
 
                     const sessionKey = BgpSession.makeKey(0, this.peerIp);
-                    this.instanceMap.forEach((instance, key) => {
-                        instance.peerMap.forEach((peer, peerKey) => {
+                    this.instanceMap.forEach((instance, _) => {
+                        instance.peerMap.forEach((peer, _) => {
                             const peerSessionKey = BgpSession.makeKey(0, peer.session.peerIp);
                             if (peerSessionKey === sessionKey) {
                                 peer.sendRoute();

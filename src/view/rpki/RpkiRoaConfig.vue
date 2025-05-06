@@ -5,9 +5,9 @@
                 <a-card title="RPKI ROA配置">
                     <a-form
                         :model="roaConfig"
-                        @finish="submitRoaConfig"
                         :label-col="labelCol"
                         :wrapper-col="wrapperCol"
+                        @finish="submitRoaConfig"
                     >
                         <a-row>
                             <a-col :span="24">
@@ -25,8 +25,8 @@
                                     <a-tooltip :title="validationErrors.ip" :open="!!validationErrors.ip">
                                         <a-input
                                             v-model:value="roaConfig.ip"
-                                            @blur="e => validateField(e.target.value, 'ip', validateIp)"
                                             :status="validationErrors.ip ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'ip', validateIp)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -36,8 +36,8 @@
                                     <a-tooltip :title="validationErrors.mask" :open="!!validationErrors.mask">
                                         <a-input
                                             v-model:value="roaConfig.mask"
-                                            @blur="e => validateField(e.target.value, 'mask', validateMask)"
                                             :status="validationErrors.mask ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'mask', validateMask)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -49,8 +49,8 @@
                                     <a-tooltip :title="validationErrors.asn" :open="!!validationErrors.asn">
                                         <a-input
                                             v-model:value="roaConfig.asn"
-                                            @blur="e => validateField(e.target.value, 'asn', validateAsn)"
                                             :status="validationErrors.asn ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'asn', validateAsn)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -62,8 +62,8 @@
                                     <a-tooltip :title="validationErrors.maxLength" :open="!!validationErrors.maxLength">
                                         <a-input
                                             v-model:value="roaConfig.maxLength"
-                                            @blur="e => validateField(e.target.value, 'maxLength', validateMaxLength)"
                                             :status="validationErrors.maxLength ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'maxLength', validateMaxLength)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -88,7 +88,7 @@
                         <a-table
                             :columns="roaColumns"
                             :data-source="roaList"
-                            :rowKey="record => `${record.asn}-${record.ip}-${record.mask}-${record.maxLength}`"
+                            :row-key="record => `${record.asn}-${record.ip}-${record.mask}-${record.maxLength}`"
                             :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                             :scroll="{ y: 200 }"
                             size="small"
@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, computed, watch } from 'vue';
+    import { ref, onMounted, watch } from 'vue';
     import { message } from 'ant-design-vue';
     import { clearValidationErrors } from '../../utils/validationCommon';
     import {

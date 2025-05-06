@@ -16,7 +16,7 @@
                                 <a-table
                                     :columns="PeerInfoColumns"
                                     :data-source="ipv4UncPeerList"
-                                    :rowKey="
+                                    :row-key="
                                         record =>
                                             `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
                                     "
@@ -45,7 +45,7 @@
                                 <a-table
                                     :columns="PeerInfoColumns"
                                     :data-source="ipv6UncPeerList"
-                                    :rowKey="
+                                    :row-key="
                                         record =>
                                             `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
                                     "

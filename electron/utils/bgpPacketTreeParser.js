@@ -6,8 +6,16 @@
  */
 
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString, ipv6BufferToString } = require('./ipUtils');
-
+const { ipv4BufferToString } = require('./ipUtils');
+const {
+    getBgpPacketTypeName,
+    getBgpOpenCapabilityName,
+    getBgpAfiName,
+    getBgpSafiName,
+    getBgpOpenRoleName,
+    getBgpPathAttrTypeName,
+    getBgpNotificationErrorName
+} = require('./bgpUtils');
 /**
  * Parse a BGP packet into a tree structure
  * @param {Buffer} buffer - The raw BGP packet buffer
@@ -377,6 +385,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                 break;
 
                             default:
+                            {
                                 const valueNode = {
                                     name: 'Value',
                                     offset: valueOffset,
@@ -385,6 +394,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                     children: []
                                 };
                                 capabilityNode.children.push(valueNode);
+                            }
                         }
                     }
 
@@ -591,14 +601,16 @@ function parseUpdateMessageTree(buffer, parentNode) {
                 // Add specific attribute parsing if needed
                 // For brevity, many specific attribute parsers are omitted in this example
                 default:
-                    const valueNode = {
-                        name: 'Value',
-                        offset: valueOffset,
-                        length: attrLength,
-                        value: buffer.subarray(valueOffset, valueOffset + attrLength).toString('hex'),
-                        children: []
-                    };
-                    attrNode.children.push(valueNode);
+                    {
+                        const valueNode = {
+                            name: 'Value',
+                            offset: valueOffset,
+                            length: attrLength,
+                            value: buffer.subarray(valueOffset, valueOffset + attrLength).toString('hex'),
+                            children: []
+                        };
+                        attrNode.children.push(valueNode);
+                }
             }
 
             position += headerLength + attrLength;

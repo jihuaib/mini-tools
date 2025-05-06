@@ -1,10 +1,10 @@
-
+const BgpConst = require('../const/bgpConst');
 /**
  * Get readable packet type name
  * @param {Number} type - BGP packet type number
  * @returns {String} Name of the packet type
  */
- function getBgpPacketTypeName(type) {
+function getBgpPacketTypeName(type) {
     switch (type) {
         case BgpConst.BGP_PACKET_TYPE.OPEN:
             return 'OPEN';
@@ -26,7 +26,7 @@
  * @param {Number} code - Capability code
  * @returns {String} Capability name
  */
- function getBgpOpenCapabilityName(code) {
+function getBgpOpenCapabilityName(code) {
     switch (code) {
         case BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS:
             return 'Multiprotocol Extensions';
@@ -48,7 +48,7 @@
  * @param {Number} afi - Address Family Identifier
  * @returns {String} AFI name
  */
- function getBgpAfiName(afi) {
+function getBgpAfiName(afi) {
     switch (afi) {
         case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
             return 'IPv4';
@@ -64,7 +64,7 @@
  * @param {Number} safi - Subsequent Address Family Identifier
  * @returns {String} SAFI name
  */
- function getBgpSafiName(safi) {
+function getBgpSafiName(safi) {
     switch (safi) {
         case BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST:
             return 'Unicast';
@@ -73,13 +73,12 @@
     }
 }
 
-
 /**
  * Get BGP role name from code
  * @param {Number} role - BGP role code
  * @returns {String} Role name
  */
- function getBgpOpenRoleName(role) {
+function getBgpOpenRoleName(role) {
     switch (role) {
         case BgpConst.BGP_ROLE_TYPE.ROLE_PROVIDER:
             return 'Provider';
@@ -101,7 +100,7 @@
  * @param {Number} typeCode - Attribute type code
  * @returns {String} Attribute type name
  */
- function getAttributeTypeName(typeCode) {
+function getBgpPathAttrTypeName(typeCode) {
     switch (typeCode) {
         case BgpConst.BGP_PATH_ATTR.ORIGIN:
             return 'ORIGIN';
@@ -145,7 +144,7 @@
  * @param {Number} origin - Origin code
  * @returns {String} Origin name
  */
- function getBgpOriginType(origin) {
+function getBgpOriginType(origin) {
     switch (origin) {
         case BgpConst.BGP_ORIGIN_TYPE.IGP:
             return 'IGP';
@@ -184,7 +183,7 @@ function getBgpAsPathTypeName(segmentType) {
  * @param {Number} errorSubcode - Error Subcode
  * @returns {String} Name of the Error
  */
- function getBgpNotificationErrorName(errorCode, errorSubcode) {
+function getBgpNotificationErrorName(errorCode, errorSubcode) {
     switch (errorCode) {
         case BgpConst.BGP_ERROR_CODE.MESSAGE_HEADER_ERROR:
             switch (errorSubcode) {
@@ -213,11 +212,33 @@ function getBgpAsPathTypeName(segmentType) {
                     return 'Unacceptable Hold Time';
                 case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.UNSUPPORTED_CAPABILITY:
                     return 'Unsupported Capability';
+                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.ROLE_MISMATCH:
+                    return 'Role Mismatch';
                 default:
                     return 'Unknown Open Message Error';
             }
         case BgpConst.BGP_ERROR_CODE.UPDATE_MESSAGE_ERROR:
             switch (errorSubcode) {
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.ATTR_LIST_ERR:
+                    return 'Attribute List Error';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.UNKNOWN_ATTR:
+                    return 'Unknown Attribute';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.ATTR_MISSING:
+                    return 'Attribute Missing';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.ATTR_FLAGS_ERROR:
+                    return 'Attribute Flags Error';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.ATTR_LENGTH_ERROR:
+                    return 'Attribute Length Error';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.INVALID_ORIGIN_ATTR:
+                    return 'Invalid ORIGIN Attribute';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.ATTR_ASLOOP:
+                    return 'Attribute AS Loop';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.INVALID_NEXT_HOP_ATTR:
+                    return 'Invalid Next Hop Attribute';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.OPTIONAL_ATTR_ERROR:
+                    return 'Optional Attribute Error';
+                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.INVALID_NETWORK:
+                    return 'Invalid Network';
                 case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.MALFORMED_AS_PATH:
                     return 'Malformed AS_PATH';
                 default:
@@ -225,7 +246,7 @@ function getBgpAsPathTypeName(segmentType) {
             }
         case BgpConst.BGP_ERROR_CODE.HOLD_TIMER_EXPIRED:
             return 'Hold Timer Expired';
-        case BgpConst.BGP_ERROR_CODE.FINITE_STATE_MACHINE_ERROR:
+        case BgpConst.BGP_ERROR_CODE.FSM_ERROR:
             return 'Finite State Machine Error';
         case BgpConst.BGP_ERROR_CODE.CONNECTION_REJECTED:
             switch (errorSubcode) {
@@ -233,12 +254,18 @@ function getBgpAsPathTypeName(segmentType) {
                     return 'Maximum Number of Prefixes Reached';
                 case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.ADMIN_SHUTDOWN:
                     return 'Administrative Shutdown';
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.ADMIN_RESET:
-                    return 'Administrative Reset';
                 case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.PEER_DE_CONFIGURED:
                     return 'Peer De-configured';
+                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.ADMIN_RESET:
+                    return 'Administrative Reset';
                 case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.CONNECTION_REJECTED:
                     return 'Connection Rejected';
+                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.CONNECTION_COLLISION_RESOLUTION:
+                    return 'Connection Collision Resolution';
+                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.OTHER_CONFIGURATION_CHANGE:
+                    return 'Other Configuration Change';
+                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.OUT_OF_RESOURCES:
+                    return 'Out of Resources';
                 default:
                     return 'Unknown Connection Rejection';
             }
@@ -252,7 +279,7 @@ function getBgpAsPathTypeName(segmentType) {
  * @param {BGP_AFI_TYPE} afi 地址族
  * @param {BGP_SAFI_TYPE} safi 子地址族
  */
- function getAddrFamilyType(afi, safi) {
+function getAddrFamilyType(afi, safi) {
     let addrFamily;
     switch (afi) {
         case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
@@ -289,5 +316,15 @@ function getAfiAndSafi(addrFamily) {
 }
 
 module.exports = {
-
+    getBgpPacketTypeName,
+    getBgpOpenCapabilityName,
+    getBgpAfiName,
+    getBgpSafiName,
+    getBgpOpenRoleName,
+    getBgpPathAttrTypeName,
+    getBgpOriginType,
+    getBgpAsPathTypeName,
+    getBgpNotificationErrorName,
+    getAddrFamilyType,
+    getAfiAndSafi
 };

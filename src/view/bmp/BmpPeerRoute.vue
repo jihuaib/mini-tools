@@ -2,10 +2,10 @@
     <div class="bmp-peer-route-container">
         <a-card :title="`BGP路由 - ${peerName}`">
             <a-tabs v-model:activeKey="activeRibType" @change="onRibTypeChange">
-                <a-tab-pane key="preRibIn" tab="Pre-RIB-In"></a-tab-pane>
-                <a-tab-pane key="ribIn" tab="RIB-In"></a-tab-pane>
-                <a-tab-pane key="locRib" tab="Loc-Rib"></a-tab-pane>
-                <a-tab-pane key="postLocRib" tab="Post-Loc-RIB"></a-tab-pane>
+                <a-tab-pane key="preRibIn" tab="Pre-RIB-In"/>
+                <a-tab-pane key="ribIn" tab="RIB-In"/>
+                <a-tab-pane key="locRib" tab="Loc-Rib"/>
+                <a-tab-pane key="postLocRib" tab="Post-Loc-RIB"/>
             </a-tabs>
 
             <a-row class="route-filters">
@@ -38,7 +38,7 @@
             <a-table
                 :columns="routeColumns"
                 :data-source="routeList"
-                :rowKey="record => `${record.addrFamilyType}|${record.ip}|${record.mask}`"
+                :row-key="record => `${record.addrFamilyType}|${record.ip}|${record.mask}`"
                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                 :scroll="{ y: 400 }"
                 size="small"
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, computed, watch, onActivated, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, watch, onActivated, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { useRoute } from 'vue-router';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';

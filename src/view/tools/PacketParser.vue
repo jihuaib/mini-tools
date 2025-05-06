@@ -3,7 +3,7 @@
         <div class="packet-parser-container">
             <!-- 表单区域（放在最上面） -->
             <div class="parser-form-section">
-                <a-form :model="formState" @finish="handleParsePacket" :label-col="labelCol" :wrapper-col="wrapperCol">
+                <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleParsePacket">
                     <!-- 报文类型选择 -->
                     <a-form-item label="报文类型" name="packetType">
                         <a-select v-model:value="formState.packetType">
@@ -19,8 +19,8 @@
                                 v-model:modelValue="formState.packetData"
                                 :height="100"
                                 placeholder="请输入16进制格式的报文内容，如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
-                                @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
                                 :status="validationErrors.packetData ? 'error' : ''"
+                                @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
                             />
                         </a-tooltip>
                     </a-form-item>
@@ -35,10 +35,10 @@
             </div>
 
             <!-- 结果显示区域（十六进制和树结构左右排列） -->
-            <div class="parser-result-section" v-if="parsedResult">
+            <div v-if="parsedResult" class="parser-result-section">
                 <!-- 十六进制视图 -->
                 <a-card title="报文十六进制视图" class="result-card hex-view-card">
-                    <div class="hex-content" ref="hexViewRef">
+                    <div ref="hexViewRef" class="hex-content">
                         <div v-for="(row, rowIndex) in hexRows" :key="rowIndex" class="hex-data-row">
                             <div class="offset-col">{{ formatOffset(rowIndex * 16) }}</div>
                             <div class="hex-col">
@@ -68,9 +68,9 @@
                     <a-tree
                         v-if="parsedTreeData.length > 0"
                         :tree-data="parsedTreeData"
-                        :defaultExpandAll="true"
+                        :default-expand-all="true"
                         @select="onTreeNodeSelect"
-                    ></a-tree>
+                    />
                     <div v-else class="no-data-message">暂无解析数据</div>
                 </a-card>
             </div>
@@ -83,7 +83,7 @@
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, reactive, toRaw, watch, onMounted, computed } from 'vue';
+    import { ref, toRaw, watch, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { clearValidationErrors } from '../../utils/validationCommon';

@@ -13,6 +13,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.prefix"
+                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4UNCField(
@@ -21,7 +22,6 @@
                                                         validateIpv4Prefix
                                                     )
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -34,10 +34,10 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.mask"
+                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
                                             @blur="
                                                 e => validateIpv4UNCField(e.target.value, 'ipv4Mask', validateIpv4Mask)
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -50,11 +50,11 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.count"
+                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4UNCField(e.target.value, 'ipv4Count', validateIpv4Count)
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -69,7 +69,7 @@
                         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
                             <a-space size="middle">
                                 <a-button type="primary" @click="generateIpv4Routes">生成IPv4路由</a-button>
-                                <a-button type="primary" danger @click="deleteIpv4Routes" :disabled="!hasIpv4Routes">
+                                <a-button type="primary" danger :disabled="!hasIpv4Routes" @click="deleteIpv4Routes">
                                     删除IPv4路由
                                 </a-button>
                             </a-space>
@@ -85,11 +85,11 @@
                                 </a-tag>
                             </div>
                             <a-table
-                                :dataSource="sentIpv4Routes"
+                                :data-source="sentIpv4Routes"
                                 :columns="routeColumns"
                                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                 size="small"
-                                :rowKey="record => `${record.prefix}-${record.addressFamily}`"
+                                :row-key="record => `${record.prefix}-${record.addressFamily}`"
                                 :scroll="{ y: 240 }"
                             >
                                 <template #bodyCell="{ column, record }">
@@ -122,6 +122,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.prefix"
+                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6UNCField(
@@ -130,7 +131,6 @@
                                                         validateIpv6Prefix
                                                     )
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -143,10 +143,10 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.mask"
+                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
                                             @blur="
                                                 e => validateIpv6UNCField(e.target.value, 'ipv6Mask', validateIpv6Mask)
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -159,11 +159,11 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.count"
+                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6UNCField(e.target.value, 'ipv6Count', validateIpv6Count)
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -178,7 +178,7 @@
                         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
                             <a-space size="middle">
                                 <a-button type="primary" @click="generateIpv6Routes">生成IPv6路由</a-button>
-                                <a-button type="primary" danger @click="deleteIpv6Routes" :disabled="!hasIpv6Routes">
+                                <a-button type="primary" danger :disabled="!hasIpv6Routes" @click="deleteIpv6Routes">
                                     删除IPv6路由
                                 </a-button>
                             </a-space>
@@ -194,11 +194,11 @@
                                 </a-tag>
                             </div>
                             <a-table
-                                :dataSource="sentIpv6Routes"
+                                :data-source="sentIpv6Routes"
                                 :columns="routeColumns"
                                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                 size="small"
-                                :rowKey="record => `${record.ip}-${record.mask}`"
+                                :row-key="record => `${record.ip}-${record.mask}`"
                                 :scroll="{ y: 240 }"
                             >
                                 <template #bodyCell="{ column, record }">

@@ -1,14 +1,14 @@
 <template>
     <a-card title="字符串生成配置" class="string-generator-card">
-        <a-form :model="formState" @finish="handleFinish" :label-col="labelCol" :wrapper-col="wrapperCol">
+        <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
             <!-- 字符串模板输入 -->
             <a-form-item label="字符串模板" name="template">
                 <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
                     <ScrollTextarea
                         v-model:modelValue="formState.template"
                         :height="120"
-                        @blur="e => validateField(e.target.value, 'template', validateTemplate)"
                         :status="validationErrors.template ? 'error' : ''"
+                        @blur="e => validateField(e.target.value, 'template', validateTemplate)"
                     />
                 </a-tooltip>
             </a-form-item>
@@ -20,8 +20,8 @@
                         <a-tooltip :title="validationErrors.placeholder" :open="!!validationErrors.placeholder">
                             <a-input
                                 v-model:value="formState.placeholder"
-                                @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
                                 :status="validationErrors.placeholder ? 'error' : ''"
+                                @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
                             />
                         </a-tooltip>
                     </a-form-item>
@@ -31,8 +31,8 @@
                         <a-tooltip :title="validationErrors.start" :open="!!validationErrors.start">
                             <a-input
                                 v-model:value="formState.start"
-                                @blur="e => validateField(e.target.value, 'start', validateStart)"
                                 :status="validationErrors.start ? 'error' : ''"
+                                @blur="e => validateField(e.target.value, 'start', validateStart)"
                             />
                         </a-tooltip>
                     </a-form-item>
@@ -42,8 +42,8 @@
                         <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
                             <a-input
                                 v-model:value="formState.end"
-                                @blur="e => validateField(e.target.value, 'end', validateEnd)"
                                 :status="validationErrors.end ? 'error' : ''"
+                                @blur="e => validateField(e.target.value, 'end', validateEnd)"
                             />
                         </a-tooltip>
                     </a-form-item>

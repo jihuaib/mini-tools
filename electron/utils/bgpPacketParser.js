@@ -7,8 +7,18 @@
 
 // Import constants from existing BGP constants file
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString, ipv6BufferToString } = require('./ipUtils');
-
+const { ipv4BufferToString, ipv6BufferToString, getIpTypeName } = require('./ipUtils');
+const {
+    getBgpPacketTypeName,
+    getBgpOpenCapabilityName,
+    getBgpAfiName,
+    getBgpSafiName,
+    getBgpOpenRoleName,
+    getBgpPathAttrTypeName,
+    getBgpOriginType,
+    getBgpAsPathTypeName,
+    getBgpNotificationErrorName
+} = require('./bgpUtils');
 /**
  * Parse a BGP packet from a buffer
  * @param {Buffer} buffer - The raw BGP packet buffer
@@ -654,10 +664,12 @@ function getBgpPacketSummary(parsedPacket) {
             break;
 
         case BgpConst.BGP_PACKET_TYPE.NOTIFICATION: // NOTIFICATION
-            const errorName = getBgpNotificationErrorName(parsedPacket.errorCode, parsedPacket.errorSubcode);
-            summary += `\nError: ${errorName}`;
-            summary += `\nError Code: ${parsedPacket.errorCode}`;
-            summary += `\nError Subcode: ${parsedPacket.errorSubcode}`;
+            {
+                const errorName = getBgpNotificationErrorName(parsedPacket.errorCode, parsedPacket.errorSubcode);
+                summary += `\nError: ${errorName}`;
+                summary += `\nError Code: ${parsedPacket.errorCode}`;
+                summary += `\nError Subcode: ${parsedPacket.errorSubcode}`;
+            }
             break;
 
         case BgpConst.BGP_PACKET_TYPE.KEEPALIVE: // KEEPALIVE
@@ -665,10 +677,12 @@ function getBgpPacketSummary(parsedPacket) {
             break;
 
         case BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH: // ROUTE-REFRESH
-            const afiName = getBgpAfiName(parsedPacket.afi);
-            const safiName = getBgpSafiName(parsedPacket.safi);
-            summary += `\nAddress Family: ${afiName}`;
-            summary += `\nSubsequent Address Family: ${safiName}`;
+            {
+                const afiName = getBgpAfiName(parsedPacket.afi);
+                const safiName = getBgpSafiName(parsedPacket.safi);
+                summary += `\nAddress Family: ${afiName}`;
+                summary += `\nSubsequent Address Family: ${safiName}`;
+            }
             break;
     }
 

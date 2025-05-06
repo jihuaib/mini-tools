@@ -20,7 +20,7 @@
                                 <a-table
                                     :columns="peerColumns"
                                     :data-source="peerList"
-                                    :rowKey="record => `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`"
+                                    :row-key="record => `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`"
                                     :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                     :scroll="{ y: 400, x: 900 }"
                                     size="small"

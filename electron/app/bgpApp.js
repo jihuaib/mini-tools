@@ -199,7 +199,6 @@ class BgpApp {
     }
 
     async handleConfigIpv4Peer(event, ipv4PeerConfigData) {
-        const webContents = event.sender;
         try {
             if (null == this.worker) {
                 this.logger.error(`bgp协议没有启动`);
@@ -221,7 +220,6 @@ class BgpApp {
     }
 
     async handleConfigIpv6Peer(event, ipv6PeerConfigData) {
-        const webContents = event.sender;
         try {
             if (null == this.worker) {
                 this.logger.error(`bgp协议没有启动`);
