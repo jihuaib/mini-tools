@@ -1,6 +1,7 @@
 const BgpConst = require('../const/bgpConst');
 const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
-const { getAddrFamilyType, writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
+const { writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
+const { getAddrFamilyType } = require('../utils/bgpUtils');
 const Logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
 class BgpPeer {

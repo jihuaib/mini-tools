@@ -5,7 +5,7 @@ const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BmpSession = require('./bmpSession');
-const { getAfiAndSafi } = require('../utils/ipUtils');
+const { getAfiAndSafi } = require('../utils/bgpUtils');
 const BmpBgpPeer = require('./bmpBgpPeer');
 
 class BmpWorker {

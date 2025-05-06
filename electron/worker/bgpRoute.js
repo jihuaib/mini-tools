@@ -1,4 +1,4 @@
-const { getAddrFamilyType } = require('../utils/ipUtils');
+const { getAddrFamilyType } = require('../utils/bgpUtils');
 class BgpRoute {
     constructor(bgpInstance) {
         this.bgpInstance = bgpInstance;

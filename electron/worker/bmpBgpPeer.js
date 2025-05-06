@@ -1,5 +1,5 @@
 const Logger = require('../log/logger');
-const { getAddrFamilyType } = require('../utils/ipUtils');
+const { getAddrFamilyType } = require('../utils/bgpUtils');
 
 class BmpBgpPeer {
     constructor(bmpSession) {

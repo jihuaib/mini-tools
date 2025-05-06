@@ -1,5 +1,6 @@
 const BgpConst = require('../const/bgpConst');
-const { writeUInt16, writeUInt32, ipToBytes, getAddrFamilyType, getAfiAndSafi } = require('../utils/ipUtils');
+const { writeUInt16, writeUInt32, ipToBytes} = require('../utils/ipUtils');
+const { getAddrFamilyType, getAfiAndSafi } = require('../utils/bgpUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
 const Logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
