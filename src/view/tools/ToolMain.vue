@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-    import { ref } from 'vue';
+    import { ref, onActivated } from 'vue';
     import { useRouter } from 'vue-router';
 
     defineOptions({
@@ -42,6 +42,11 @@
                 currentTab.value.clearValidationErrors();
             }
         }
+    });
+
+    onActivated(() => {
+        activeTabKey.value = 'string-generator';
+        router.push('/tools/string-generator');
     });
 </script>
 
