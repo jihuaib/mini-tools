@@ -75,7 +75,7 @@ function parseBgpPacketTree(buffer) {
 
         // Parse Type
         const type = buffer[BgpConst.BGP_MARKER_LEN + 2];
-        const typeName = getPacketTypeName(type);
+        const typeName = getBgpPacketTypeName(type);
         const typeNode = {
             name: 'Type',
             offset: BgpConst.BGP_MARKER_LEN + 2,
@@ -276,7 +276,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                     const capLen = buffer[capPosition + 1];
 
                     const capabilityNode = {
-                        name: `Capability (Code: ${capCode} - ${getCapabilityName(capCode)})`,
+                        name: `Capability (Code: ${capCode} - ${getBgpOpenCapabilityName(capCode)})`,
                         offset: capPosition,
                         length: capLen + 2, // Including code and length fields
                         value: '',
@@ -289,7 +289,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                         name: 'Code',
                         offset: capPosition,
                         length: 1,
-                        value: `${capCode} (${getCapabilityName(capCode)})`,
+                        value: `${capCode} (${getBgpOpenCapabilityName(capCode)})`,
                         children: []
                     };
                     capabilityNode.children.push(capCodeNode);
@@ -319,7 +319,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                         name: 'AFI',
                                         offset: valueOffset,
                                         length: 2,
-                                        value: `${afi} (${getAfiName(afi)})`,
+                                        value: `${afi} (${getBgpAfiName(afi)})`,
                                         children: []
                                     };
                                     capabilityNode.children.push(afiNode);
@@ -341,7 +341,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                         name: 'SAFI',
                                         offset: valueOffset,
                                         length: 1,
-                                        value: `${safi} (${getSafiName(safi)})`,
+                                        value: `${safi} (${getBgpSafiName(safi)})`,
                                         children: []
                                     };
                                     capabilityNode.children.push(safiNode);
@@ -369,7 +369,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                         name: 'Role',
                                         offset: valueOffset,
                                         length: 1,
-                                        value: `${role} (${getRoleName(role)})`,
+                                        value: `${role} (${getBgpOpenRoleName(role)})`,
                                         children: []
                                     };
                                     capabilityNode.children.push(roleNode);
@@ -536,7 +536,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
             const headerLength = 2 + attrLengthSize; // Flags + Type + Length field
 
             const attrNode = {
-                name: `Attribute (Type: ${attrTypeCode} - ${getAttributeTypeName(attrTypeCode)})`,
+                name: `Attribute (Type: ${attrTypeCode} - ${getBgpPathAttrTypeName(attrTypeCode)})`,
                 offset: position,
                 length: headerLength + attrLength,
                 value: '',
@@ -568,7 +568,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
                 name: 'Type',
                 offset: position + 1,
                 length: 1,
-                value: `${attrTypeCode} (${getAttributeTypeName(attrTypeCode)})`,
+                value: `${attrTypeCode} (${getBgpPathAttrTypeName(attrTypeCode)})`,
                 children: []
             };
             attrNode.children.push(attrTypeNode);
@@ -705,7 +705,7 @@ function parseNotificationMessageTree(buffer, parentNode) {
         name: 'Error Subcode',
         offset: position,
         length: 1,
-        value: `${errorSubcode} (${getErrorName(errorCode, errorSubcode)})`,
+        value: `${errorSubcode} (${getBgpNotificationErrorName(errorCode, errorSubcode)})`,
         children: []
     };
     notificationNode.children.push(errorSubcodeNode);
@@ -749,7 +749,7 @@ function parseRouteRefreshMessageTree(buffer, parentNode) {
         name: 'AFI',
         offset: position,
         length: 2,
-        value: `${afi} (${getAfiName(afi)})`,
+        value: `${afi} (${getBgpAfiName(afi)})`,
         children: []
     };
     routeRefreshNode.children.push(afiNode);
@@ -773,219 +773,10 @@ function parseRouteRefreshMessageTree(buffer, parentNode) {
         name: 'SAFI',
         offset: position,
         length: 1,
-        value: `${safi} (${getSafiName(safi)})`,
+        value: `${safi} (${getBgpSafiName(safi)})`,
         children: []
     };
     routeRefreshNode.children.push(safiNode);
-}
-
-/**
- * Get readable packet type name
- * @param {Number} type - BGP packet type number
- * @returns {String} Name of the packet type
- */
-function getPacketTypeName(type) {
-    switch (type) {
-        case BgpConst.BGP_PACKET_TYPE.OPEN:
-            return 'OPEN';
-        case BgpConst.BGP_PACKET_TYPE.UPDATE:
-            return 'UPDATE';
-        case BgpConst.BGP_PACKET_TYPE.NOTIFICATION:
-            return 'NOTIFICATION';
-        case BgpConst.BGP_PACKET_TYPE.KEEPALIVE:
-            return 'KEEPALIVE';
-        case BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH:
-            return 'ROUTE_REFRESH';
-        default:
-            return 'UNKNOWN';
-    }
-}
-
-/**
- * Get readable capability name
- * @param {Number} code - Capability code
- * @returns {String} Name of the capability
- */
-function getCapabilityName(code) {
-    switch (code) {
-        case BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS:
-            return 'Multiprotocol Extensions';
-        case BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH:
-            return 'Route Refresh';
-        case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING:
-            return 'Extended Next Hop Encoding';
-        case BgpConst.BGP_OPEN_CAP_CODE.FOUR_OCTET_AS:
-            return '4-octet AS Number';
-        case BgpConst.BGP_OPEN_CAP_CODE.BGP_ROLE:
-            return 'BGP Role';
-        default:
-            return 'Unknown';
-    }
-}
-
-/**
- * Get readable AFI name
- * @param {Number} afi - Address Family Identifier
- * @returns {String} Name of the AFI
- */
-function getAfiName(afi) {
-    switch (afi) {
-        case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
-            return 'IPv4';
-        case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
-            return 'IPv6';
-        default:
-            return 'Unknown';
-    }
-}
-
-/**
- * Get readable SAFI name
- * @param {Number} safi - Subsequent Address Family Identifier
- * @returns {String} Name of the SAFI
- */
-function getSafiName(safi) {
-    switch (safi) {
-        case BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST:
-            return 'Unicast';
-        default:
-            return 'Unknown';
-    }
-}
-
-/**
- * Get readable Role name
- * @param {Number} role - BGP Role value
- * @returns {String} Name of the Role
- */
-function getRoleName(role) {
-    switch (role) {
-        case BgpConst.BGP_ROLE_TYPE.ROLE_PROVIDER:
-            return 'Provider';
-        case BgpConst.BGP_ROLE_TYPE.ROLE_RS:
-            return 'Route Server';
-        case BgpConst.BGP_ROLE_TYPE.ROLE_RS_CLIENT:
-            return 'Route Server Client';
-        case BgpConst.BGP_ROLE_TYPE.ROLE_CUSTOMER:
-            return 'Customer';
-        case BgpConst.BGP_ROLE_TYPE.ROLE_PEER:
-            return 'Peer';
-        default:
-            return 'Unknown';
-    }
-}
-
-/**
- * Get readable Attribute Type name
- * @param {Number} typeCode - Path Attribute Type Code
- * @returns {String} Name of the Attribute Type
- */
-function getAttributeTypeName(typeCode) {
-    switch (typeCode) {
-        case BgpConst.BGP_PATH_ATTR.ORIGIN:
-            return 'ORIGIN';
-        case BgpConst.BGP_PATH_ATTR.AS_PATH:
-            return 'AS_PATH';
-        case BgpConst.BGP_PATH_ATTR.NEXT_HOP:
-            return 'NEXT_HOP';
-        case BgpConst.BGP_PATH_ATTR.MED:
-            return 'MULTI_EXIT_DISC';
-        case BgpConst.BGP_PATH_ATTR.LOCAL_PREF:
-            return 'LOCAL_PREF';
-        case BgpConst.BGP_PATH_ATTR.ATOMIC_AGGREGATE:
-            return 'ATOMIC_AGGREGATE';
-        case BgpConst.BGP_PATH_ATTR.AGGREGATOR:
-            return 'AGGREGATOR';
-        case BgpConst.BGP_PATH_ATTR.COMMUNITY:
-            return 'COMMUNITY';
-        case BgpConst.BGP_PATH_ATTR.ORIGINATOR_ID:
-            return 'ORIGINATOR_ID';
-        case BgpConst.BGP_PATH_ATTR.CLUSTER_LIST:
-            return 'CLUSTER_LIST';
-        case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI:
-            return 'MP_REACH_NLRI';
-        case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI:
-            return 'MP_UNREACH_NLRI';
-        case BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES:
-            return 'EXTENDED_COMMUNITIES';
-        case BgpConst.BGP_PATH_ATTR.AS4_PATH:
-            return 'AS4_PATH';
-        case BgpConst.BGP_PATH_ATTR.AS4_AGGREGATOR:
-            return 'AS4_AGGREGATOR';
-        case BgpConst.BGP_PATH_ATTR.PATH_OTC:
-            return 'PATH_OTC';
-        default:
-            return 'Unknown';
-    }
-}
-
-/**
- * Get readable Error name based on code and subcode
- * @param {Number} errorCode - Error Code
- * @param {Number} errorSubcode - Error Subcode
- * @returns {String} Name of the Error
- */
-function getErrorName(errorCode, errorSubcode) {
-    switch (errorCode) {
-        case BgpConst.BGP_ERROR_CODE.MESSAGE_HEADER_ERROR:
-            switch (errorSubcode) {
-                case BgpConst.BGP_ERROR_MESSAGE_HEADER_SUBCODE.CONNECTION_NOT_SYNCHRONIZED:
-                    return 'Connection Not Synchronized';
-                case BgpConst.BGP_ERROR_MESSAGE_HEADER_SUBCODE.BAD_MESSAGE_LENGTH:
-                    return 'Bad Message Length';
-                case BgpConst.BGP_ERROR_MESSAGE_HEADER_SUBCODE.BAD_MESSAGE_TYPE:
-                    return 'Bad Message Type';
-                default:
-                    return 'Unknown Message Header Error';
-            }
-        case BgpConst.BGP_ERROR_CODE.OPEN_MESSAGE_ERROR:
-            switch (errorSubcode) {
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.UNSUPPORTED_VERSION_NUMBER:
-                    return 'Unsupported Version Number';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.BAD_PEER_AS:
-                    return 'Bad Peer AS';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.BAD_BGP_IDENTIFIER:
-                    return 'Bad BGP Identifier';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.UNSUPPORTED_OPTIONAL_PARAMETER:
-                    return 'Unsupported Optional Parameter';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.AUTHENTICATION_FAILURE:
-                    return 'Authentication Failure';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.UNACCEPTABLE_HOLD_TIME:
-                    return 'Unacceptable Hold Time';
-                case BgpConst.BGP_ERROR_OPEN_MESSAGE_SUBCODE.UNSUPPORTED_CAPABILITY:
-                    return 'Unsupported Capability';
-                default:
-                    return 'Unknown Open Message Error';
-            }
-        case BgpConst.BGP_ERROR_CODE.UPDATE_MESSAGE_ERROR:
-            switch (errorSubcode) {
-                case BgpConst.BGP_ERROR_UPDATE_MESSAGE_SUBCODE.MALFORMED_AS_PATH:
-                    return 'Malformed AS_PATH';
-                default:
-                    return 'Unknown Update Message Error';
-            }
-        case BgpConst.BGP_ERROR_CODE.HOLD_TIMER_EXPIRED:
-            return 'Hold Timer Expired';
-        case BgpConst.BGP_ERROR_CODE.FINITE_STATE_MACHINE_ERROR:
-            return 'Finite State Machine Error';
-        case BgpConst.BGP_ERROR_CODE.CONNECTION_REJECTED:
-            switch (errorSubcode) {
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.MAX_PREFIXES:
-                    return 'Maximum Number of Prefixes Reached';
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.ADMIN_SHUTDOWN:
-                    return 'Administrative Shutdown';
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.ADMIN_RESET:
-                    return 'Administrative Reset';
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.PEER_DE_CONFIGURED:
-                    return 'Peer De-configured';
-                case BgpConst.BGP_ERROR_CONNECTION_REJECTED_SUBCODE.CONNECTION_REJECTED:
-                    return 'Connection Rejected';
-                default:
-                    return 'Unknown Connection Rejection';
-            }
-        default:
-            return 'Unknown Error';
-    }
 }
 
 module.exports = {
