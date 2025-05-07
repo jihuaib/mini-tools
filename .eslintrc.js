@@ -5,11 +5,7 @@ module.exports = {
         node: true,
         es6: true
     },
-    extends: [
-        'eslint:recommended',
-        'plugin:vue/vue3-recommended',
-        'prettier'
-    ],
+    extends: ['eslint:recommended', 'plugin:vue/vue3-recommended', 'prettier'],
     parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
@@ -70,8 +66,8 @@ module.exports = {
                 node: false
             },
             rules: {
-                'import/no-commonjs': 'error',
+                'import/no-commonjs': 'error'
             }
         }
     ]
-}
+};

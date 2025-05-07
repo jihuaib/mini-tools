@@ -137,7 +137,6 @@
 
     // 监听客户端和对等体关闭事件
     const handleTermination = terminationInfo => {
-        console.log('handleTermination', terminationInfo);
         if (terminationInfo && terminationInfo.data) {
             // 客户端终止时，关闭该客户端的所有对等体标签页
             const clientInfo = terminationInfo.data;
@@ -186,7 +185,6 @@
     };
 
     const handlePeerUpdate = peerInfo => {
-        console.log('handlePeerUpdate', peerInfo);
         if (peerInfo.status === 'success') {
             const data = peerInfo.data;
             if (data) {

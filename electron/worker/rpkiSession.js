@@ -242,7 +242,9 @@ class RpkiSession {
             RpkiConst.RPKI_HEADER_LENGTH + 6 + pduLength
         );
 
-        this.logger.error(`RPKI Error Report: Code ${errorCode}, PDU Length: ${pduLength}, Erroneous PDU: ${Buffer.from(erroneousPdu).toString('hex')}`);
+        this.logger.error(
+            `RPKI Error Report: Code ${errorCode}, PDU Length: ${pduLength}, Erroneous PDU: ${Buffer.from(erroneousPdu).toString('hex')}`
+        );
     }
 
     handleError(message) {

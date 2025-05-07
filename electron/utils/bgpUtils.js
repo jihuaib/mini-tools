@@ -284,12 +284,12 @@ function getAddrFamilyType(afi, safi) {
     switch (afi) {
         case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
             if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST;
+                addrFamily = BgpConst.BGP_ADDR_FAMILY.IPV4_UNC;
             }
             break;
         case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST;
+                addrFamily = BgpConst.BGP_ADDR_FAMILY.IPV6_UNC;
             }
             break;
     }
@@ -302,11 +302,11 @@ function getAfiAndSafi(addrFamily) {
     let safi;
     addrFamily = parseInt(addrFamily);
     switch (addrFamily) {
-        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST:
+        case BgpConst.BGP_ADDR_FAMILY.IPV4_UNC:
             afi = BgpConst.BGP_AFI_TYPE.AFI_IPV4;
             safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
             break;
-        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST:
+        case BgpConst.BGP_ADDR_FAMILY.IPV6_UNC:
             afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
             safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
             break;

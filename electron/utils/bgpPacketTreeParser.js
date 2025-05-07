@@ -384,8 +384,7 @@ function parseOpenMessageTree(buffer, parentNode) {
                                 }
                                 break;
 
-                            default:
-                            {
+                            default: {
                                 const valueNode = {
                                     name: 'Value',
                                     offset: valueOffset,
@@ -600,16 +599,15 @@ function parseUpdateMessageTree(buffer, parentNode) {
             switch (attrTypeCode) {
                 // Add specific attribute parsing if needed
                 // For brevity, many specific attribute parsers are omitted in this example
-                default:
-                    {
-                        const valueNode = {
-                            name: 'Value',
-                            offset: valueOffset,
-                            length: attrLength,
-                            value: buffer.subarray(valueOffset, valueOffset + attrLength).toString('hex'),
-                            children: []
-                        };
-                        attrNode.children.push(valueNode);
+                default: {
+                    const valueNode = {
+                        name: 'Value',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: buffer.subarray(valueOffset, valueOffset + attrLength).toString('hex'),
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
                 }
             }
 

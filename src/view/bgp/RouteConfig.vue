@@ -2,7 +2,7 @@
     <div class="route-config-container">
         <a-card title="BGP路由配置" class="route-config-card">
             <a-tabs>
-                <a-tab-pane :key="ADDRESS_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
+                <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
                     <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="8">
@@ -111,7 +111,7 @@
                     </a-form>
                 </a-tab-pane>
 
-                <a-tab-pane :key="ADDRESS_FAMILY.IPV6_UNC" tab="IPv6-UNC路由">
+                <a-tab-pane :key="BGP_ADDR_FAMILY.IPV6_UNC" tab="IPv6-UNC路由">
                     <a-form :model="ipv6Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="8">
@@ -236,7 +236,7 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
-    import { ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
         validateIpv4Prefix,
         validateIpv4Mask,
@@ -260,7 +260,7 @@
         mask: DEFAULT_VALUES.IPV4_MASK,
         count: DEFAULT_VALUES.IPV4_COUNT,
         customAttr: '',
-        addressFamily: ADDRESS_FAMILY.IPV4_UNC
+        addressFamily: BGP_ADDR_FAMILY.IPV4_UNC
     });
 
     const ipv6Data = ref({
@@ -268,7 +268,7 @@
         mask: DEFAULT_VALUES.IPV6_MASK,
         count: DEFAULT_VALUES.IPV6_COUNT,
         customAttr: '',
-        addressFamily: ADDRESS_FAMILY.IPV6_UNC
+        addressFamily: BGP_ADDR_FAMILY.IPV6_UNC
     });
 
     const saveIpv4UNCRouteConfig = debounce(async data => {
@@ -420,19 +420,19 @@
             };
 
             let result;
-            if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+            if (route.addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
                 result = await window.bgpApi.deleteIpv4Routes(config);
-            } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+            } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 result = await window.bgpApi.deleteIpv6Routes(config);
             }
 
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
-                    await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
-                } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
-                    await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                if (route.addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
+                    await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
+                } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
+                    await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
                 }
             } else {
                 message.error(`路由删除失败: ${result.msg}`);
@@ -448,9 +448,9 @@
         if (result.status === 'success') {
             // 将结果转换为表格数据
             const routes = result.data;
-            if (addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+            if (addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
                 sentIpv4Routes.value = Array.isArray(routes) ? [...routes] : [];
-            } else if (addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+            } else if (addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 sentIpv6Routes.value = Array.isArray(routes) ? [...routes] : [];
             }
         } else {
@@ -480,7 +480,7 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
@@ -513,7 +513,7 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
@@ -546,7 +546,7 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
@@ -578,7 +578,7 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
@@ -653,8 +653,8 @@
     );
 
     onActivated(async () => {
-        await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
-        await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+        await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
+        await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
     });
 </script>
 

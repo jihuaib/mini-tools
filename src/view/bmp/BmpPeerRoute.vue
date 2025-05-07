@@ -2,10 +2,10 @@
     <div class="bmp-peer-route-container">
         <a-card :title="`BGP路由 - ${peerName}`">
             <a-tabs v-model:activeKey="activeRibType" @change="onRibTypeChange">
-                <a-tab-pane key="preRibIn" tab="Pre-RIB-In"/>
-                <a-tab-pane key="ribIn" tab="RIB-In"/>
-                <a-tab-pane key="locRib" tab="Loc-Rib"/>
-                <a-tab-pane key="postLocRib" tab="Post-Loc-RIB"/>
+                <a-tab-pane key="preRibIn" tab="Pre-RIB-In" />
+                <a-tab-pane key="ribIn" tab="RIB-In" />
+                <a-tab-pane key="locRib" tab="Loc-Rib" />
+                <a-tab-pane key="postLocRib" tab="Post-Loc-RIB" />
             </a-tabs>
 
             <a-row class="route-filters">
@@ -169,6 +169,22 @@
     };
 
     onMounted(async () => {
+        loadClientAndPeer();
+        loadPeerRoutes();
+        window.bmpApi.onRouteUpdate(onRouteUpdate);
+        window.bmpApi.onTermination(onTerminationHandler);
+    });
+
+    // 处理BMP服务终止事件
+    const onTerminationHandler = result => {
+        console.log('onTerminationHandler', result);
+        if (result.data === null) {
+            // 清空路由数据
+            routeList.value = [];
+        }
+    };
+
+    const loadClientAndPeer = async () => {
         try {
             if (!clientId.value || !peerId.value) {
                 console.log('Missing clientId or peerId, skipping peer info loading');
@@ -205,7 +221,7 @@
             if (clientResult.status === 'success' && peerResult.status === 'success') {
                 clientInfo.value = clientResult.data;
                 peerInfo.value = peerResult.data;
-                peerName.value = `${peerResult.data.peerIp} (AS${peerResult.data.peerAs})`;
+                peerName.value = `[${ADDRESS_FAMILY_NAME[peerResult.data.addrFamilyType]}]${peerResult.data.peerIp} (AS ${peerResult.data.peerAs})`;
             } else {
                 peerName.value = peerId.value;
             }
@@ -213,19 +229,6 @@
             console.error('获取对等体信息失败', error);
             message.error('获取对等体信息失败');
             peerName.value = peerId.value || 'Unknown Peer';
-        }
-
-        loadPeerRoutes();
-        window.bmpApi.onRouteUpdate(onRouteUpdate);
-        window.bmpApi.onTermination(onTerminationHandler);
-    });
-
-    // 处理BMP服务终止事件
-    const onTerminationHandler = result => {
-        console.log('onTerminationHandler', result);
-        if (result.data === null) {
-            // 清空路由数据
-            routeList.value = [];
         }
     };
 
@@ -270,7 +273,6 @@
     };
 
     const onRouteUpdate = result => {
-        console.log('onRouteUpdate', result);
         if (result.status === 'success') {
             const routeDataArray = result.data;
             routeDataArray.forEach(routeData => {
@@ -338,6 +340,7 @@
             if (newClientId !== clientId.value || newPeerId !== peerId.value) {
                 clientId.value = newClientId;
                 peerId.value = newPeerId;
+                loadClientAndPeer();
                 loadPeerRoutes();
             }
         }
