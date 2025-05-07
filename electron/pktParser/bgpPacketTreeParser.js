@@ -6,7 +6,7 @@
  */
 
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString } = require('./ipUtils');
+const { ipv4BufferToString } = require('../utils/ipUtils');
 const {
     getBgpPacketTypeName,
     getBgpOpenCapabilityName,
@@ -15,7 +15,7 @@ const {
     getBgpOpenRoleName,
     getBgpPathAttrTypeName,
     getBgpNotificationErrorName
-} = require('./bgpUtils');
+} = require('../utils/bgpUtils');
 /**
  * Parse a BGP packet into a tree structure
  * @param {Buffer} buffer - The raw BGP packet buffer

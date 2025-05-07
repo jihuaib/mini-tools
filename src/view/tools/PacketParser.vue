@@ -7,6 +7,8 @@
                     <!-- 报文类型选择 -->
                     <a-form-item label="报文类型" name="packetType">
                         <a-select v-model:value="formState.packetType">
+                            <a-select-option value="auto">自动识别</a-select-option>
+                            <a-select-option value="ethernet">以太网</a-select-option>
                             <a-select-option value="bgp">BGP</a-select-option>
                             <!-- 预留其他报文类型 -->
                         </a-select>
@@ -274,7 +276,10 @@
                 packetData: formState.value.packetData
             };
 
-            const resp = await window.toolsApi.parsePacket(payload);
+            let resp;
+
+            // 根据报文类型选择不同的解析方法
+            resp = await window.toolsApi.parsePacket(payload);
 
             if (resp.status === 'success') {
                 parsedResult.value = resp.data;

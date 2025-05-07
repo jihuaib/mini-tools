@@ -1,5 +1,6 @@
 const { parentPort } = require('worker_threads');
-const { parseBgpPacketTree } = require('../utils/bgpPacketTreeParser');
+const { parseBgpPacketTree } = require('../pktParser/bgpPacketTreeParser');
+const registry = require('../pktParser/packetParserRegistry');
 const { hexStringToBuffer } = require('../utils/commonUtils');
 
 // 处理传入的消息
@@ -17,6 +18,11 @@ parentPort.on('message', data => {
                 // 解析BGP报文
                 result = parseBgpPacketTree(buffer);
                 break;
+            case 'ethernet': {
+                // 解析以太网报文
+                result = registry.parse('ethernet', 0, buffer);
+                break;
+            }
             default:
                 result = {
                     status: 'error',

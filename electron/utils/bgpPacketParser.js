@@ -7,7 +7,7 @@
 
 // Import constants from existing BGP constants file
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString, ipv6BufferToString, getIpTypeName } = require('./ipUtils');
+const { ipv4BufferToString, ipv6BufferToString, getIpTypeName } = require('../utils/ipUtils');
 const {
     getBgpPacketTypeName,
     getBgpOpenCapabilityName,
@@ -18,7 +18,7 @@ const {
     getBgpOriginType,
     getBgpAsPathTypeName,
     getBgpNotificationErrorName
-} = require('./bgpUtils');
+} = require('../utils/bgpUtils');
 /**
  * Parse a BGP packet from a buffer
  * @param {Buffer} buffer - The raw BGP packet buffer
