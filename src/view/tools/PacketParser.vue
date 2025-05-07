@@ -18,9 +18,9 @@
                             <ScrollTextarea
                                 v-model:modelValue="formState.packetData"
                                 :height="100"
-                                placeholder="请输入16进制格式的报文内容，如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
+                                placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
                                 :status="validationErrors.packetData ? 'error' : ''"
-                                @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
+                                @blur="e => validateField(e.target.value, 'packetData', validateInputPacketData)"
                             />
                         </a-tooltip>
                     </a-form-item>
@@ -87,6 +87,7 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { clearValidationErrors } from '../../utils/validationCommon';
+    import { validateInputPacketData } from '../../utils/toolsValidation';
 
     defineOptions({
         name: 'PacketParser'
@@ -104,23 +105,6 @@
         packetType: 'bgp',
         packetData: ''
     });
-
-    const validatePacketData = (value, errors) => {
-        if (!value || value.trim() === '') {
-            errors.value.packetData = '请输入报文数据';
-            return false;
-        }
-
-        // 简单验证是否是16进制格式
-        const hexPattern = /^[0-9A-Fa-f\s]+$/;
-        if (!hexPattern.test(value)) {
-            errors.value.packetData = '报文数据必须是16进制格式，例如: FF FF FF FF';
-            return false;
-        }
-
-        errors.value.packetData = '';
-        return true;
-    };
 
     const validateField = (value, field, validator) => {
         return validator(value, validationErrors);
@@ -240,7 +224,7 @@
     const saveConfig = debounce(async data => {
         const resp = await window.toolsApi.savePacketParserConfig(data);
         if (resp.status === 'success') {
-            console.info(resp.msg);
+            console.log(resp.msg);
         } else {
             console.error(resp.msg);
         }
@@ -252,8 +236,23 @@
         formState,
         newValue => {
             if (!mounted.value) return;
-            const raw = toRaw(newValue);
-            saveConfig(raw);
+
+            try {
+                clearValidationErrors(validationErrors);
+                validateField(formState.value.packetData, 'packetData', validateInputPacketData);
+
+                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
+
+                if (hasErrors) {
+                    console.log('Validation failed, configuration not saved');
+                    return;
+                }
+
+                const raw = toRaw(newValue);
+                saveConfig(raw);
+            } catch (error) {
+                console.error(error);
+            }
         },
         { deep: true }
     );
@@ -263,7 +262,7 @@
         try {
             // 验证字段
             clearValidationErrors(validationErrors);
-            validateField(formState.value.packetData, 'packetData', validatePacketData);
+            validateField(formState.value.packetData, 'packetData', validateInputPacketData);
 
             if (validationErrors.value.packetData) {
                 message.error('请检查报文数据是否正确');

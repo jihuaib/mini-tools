@@ -177,7 +177,6 @@
 
     // 处理BMP服务终止事件
     const onTerminationHandler = result => {
-        console.log('onTerminationHandler', result);
         if (result.data === null) {
             // 清空路由数据
             routeList.value = [];

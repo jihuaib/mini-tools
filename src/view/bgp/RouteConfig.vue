@@ -274,7 +274,7 @@
     const saveIpv4UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4UNCRouteConfig(data);
         if (result.status === 'success') {
-            console.info(result.msg);
+            console.log(result.msg);
         } else {
             console.error(result.msg);
         }
@@ -283,7 +283,7 @@
     const saveIpv6UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6UNCRouteConfig(data);
         if (result.status === 'success') {
-            console.info(result.msg);
+            console.log(result.msg);
         } else {
             console.error(result.msg);
         }

@@ -16,6 +16,7 @@
 
 <script setup>
     import { ref, watch } from 'vue';
+    import { validatePacketData } from '../utils/validationCommon';;
 
     const props = defineProps({
         visible: {
@@ -62,32 +63,6 @@
     const validateStatus = ref('');
     const validateMessage = ref('');
 
-    const validationRule = value => {
-        const lines = value.split('\n');
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const numbers = line.split(/\s+/).filter(num => num !== '');
-
-            // 检查每个数字的格式
-            for (const num of numbers) {
-                if (!/^[0-9A-Fa-f]{2}$/.test(num)) {
-                    return {
-                        status: 'error',
-                        message: `第 ${i + 1} 行包含无效的16进制数字: "${num}", 请输入2位的16进制数字`
-                    };
-                }
-            }
-        }
-
-        return {
-            status: 'success',
-            message: ''
-        };
-    };
-
     const onClose = () => {
         emit('update:visible', false);
         validateStatus.value = '';
@@ -95,7 +70,7 @@
     };
 
     const onSubmit = () => {
-        const result = validationRule(localInputValue.value);
+        const result = validatePacketData(localInputValue.value);
         validateStatus.value = result.status;
         validateMessage.value = result.message;
 

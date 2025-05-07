@@ -244,7 +244,6 @@
     };
 
     const onClientConnection = result => {
-        console.log('onClientConnection', result);
         if (result.status === 'success') {
             const data = result.data;
             if (data.opType === 'add') {

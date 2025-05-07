@@ -259,7 +259,7 @@ class BgpApp {
 
             // 定义事件处理函数
             this.peerChangeHandler = data => {
-                console.log(`peerChangeHandler data: ${JSON.stringify(data)}`);
+                this.logger.info(`peerChangeHandler data: ${JSON.stringify(data)}`);
                 webContents.send('bgp:peerChange', successResponse(data.data));
             };
 

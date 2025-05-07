@@ -203,7 +203,6 @@
     });
 
     const validateField = (value, fieldName, validationFn) => {
-        console.log('validateField', value, fieldName, validationFn);
         validationFn(value, validationErrors);
     };
 

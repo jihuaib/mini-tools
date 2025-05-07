@@ -114,7 +114,7 @@
     const saveDebounced = debounce(async data => {
         const resp = await window.toolsApi.saveGenerateStringConfig(data);
         if (resp.status === 'success') {
-            console.info(resp.msg);
+            console.log(resp.msg);
         } else {
             console.error(resp.msg);
         }

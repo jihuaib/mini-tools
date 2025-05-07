@@ -272,7 +272,6 @@
     };
 
     const onTerminationHandler = result => {
-        console.log('onTerminationHandler', result);
         if (result && result.data) {
             const data = result.data;
             if (result.status === 'success') {

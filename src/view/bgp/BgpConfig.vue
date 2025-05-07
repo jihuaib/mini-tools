@@ -428,7 +428,7 @@
     const saveBgpConfig = debounce(async data => {
         const result = await window.bgpApi.saveBgpConfig(data);
         if (result.status === 'success') {
-            console.info(result.msg);
+            console.log(result.msg);
         } else {
             console.error(result.msg);
         }
@@ -437,7 +437,7 @@
     const saveIpv4PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4PeerConfig(data);
         if (result.status === 'success') {
-            console.info(result.msg);
+            console.log(result.msg);
         } else {
             console.error(result.msg);
         }
@@ -446,7 +446,7 @@
     const saveIpv6PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6PeerConfig(data);
         if (result.status === 'success') {
-            console.info(result.msg);
+            console.log(result.msg);
         } else {
             console.error(result.msg);
         }
