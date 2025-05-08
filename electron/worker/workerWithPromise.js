@@ -160,7 +160,7 @@ class WorkerWithPromise {
             worker.on('error', err => {
                 // reject会向上抛异常
                 this.logger.error(`发生错误: ${err}`);
-                reject(new Error(err.message || 'Worker execution failed') );
+                reject(new Error(err.message || 'Worker execution failed'));
             });
 
             // 提前退出也算失败

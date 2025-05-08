@@ -1,5 +1,5 @@
 // Template and placeholder validation functions
-import { isNumber, validatePacketData } from './validationCommon';
+import { isNumber, validatePacketData, isValidPort } from './validationCommon';
 
 export const validateTemplate = (value, validationErrors) => {
     if (!value) {
@@ -43,10 +43,24 @@ export const validateEnd = (value, startValue, validationErrors) => {
 
 // 报文数据验证
 export const validateInputPacketData = (value, validationErrors) => {
-    const {status, message} = validatePacketData(value);
+    const { status, message } = validatePacketData(value);
     if (status === 'error') {
         validationErrors.value.packetData = message;
     } else {
         validationErrors.value.packetData = '';
+    }
+};
+
+// 协议端口验证
+export const validateInputProtocolPort = (value, validationErrors) => {
+    console.log(value);
+    if (value === '') {
+        validationErrors.value.protocolPort = '';
+        return;
+    }
+    if (!isValidPort(value)) {
+        validationErrors.value.protocolPort = '请输入1024-65535之间的数字';
+    } else {
+        validationErrors.value.protocolPort = '';
     }
 };

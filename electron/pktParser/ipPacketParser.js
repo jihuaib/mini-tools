@@ -3,7 +3,6 @@
  *
  * Parses IPv4 and IPv6 packets from raw buffers and returns structured data.
  */
-
 const IPV4_HEADER_LEN = 20; // Minimum IPv4 header length
 const IPV6_HEADER_LEN = 40; // IPv6 header length
 
@@ -45,8 +44,8 @@ function parseIPv4Packet(buffer, tree, offset = 0) {
 
         // Version and IHL
         const versionIhl = buffer[curOffset];
-        const version = (versionIhl >> 4) & 0x0F;
-        const ihl = (versionIhl & 0x0F) * 4;
+        const version = (versionIhl >> 4) & 0x0f;
+        const ihl = (versionIhl & 0x0f) * 4;
 
         const versionNode = {
             name: 'Version',
@@ -165,7 +164,7 @@ function parseIPv4Packet(buffer, tree, offset = 0) {
 
         // Options
         if (ihl > IPV4_HEADER_LEN) {
-            const optLen = (offset + ihl) - curOffset;
+            const optLen = offset + ihl - curOffset;
             const options = {
                 name: 'Options',
                 offset: curOffset,
@@ -204,7 +203,6 @@ function parseIPv4Packet(buffer, tree, offset = 0) {
     } catch (error) {
         return {
             valid: false,
-            payload,
             error: `Error parsing IPv4 packet: ${error.message}`
         };
     }
@@ -213,10 +211,11 @@ function parseIPv4Packet(buffer, tree, offset = 0) {
 /**
  * Parse an IPv6 packet into a tree structure
  * @param {Buffer} buffer - The raw IP packet buffer
+ * @param {Object} tree - The tree structure to add nodes to
  * @param {number} offset - The starting offset in the buffer
  * @returns {Object} Tree structure with offsets and lengths for each field
  */
-function parseIPv6Packet(buffer, offset = 0) {
+function parseIPv6Packet(buffer, tree, offset = 0) {
     try {
         if (!Buffer.isBuffer(buffer) || buffer.length < offset + IPV6_HEADER_LEN) {
             return {
@@ -225,92 +224,132 @@ function parseIPv6Packet(buffer, offset = 0) {
             };
         }
 
-        const tree = {
-            name: 'IPv6 Packet',
-            offset: offset,
-            length: buffer.length - offset,
-            value: '',
-            children: []
-        };
+        let curOffset = offset;
 
         // Parse IP Header
         const headerNode = {
-            name: 'IPv6 Header',
-            offset: offset,
+            name: 'IPv6 Packet',
+            offset: curOffset,
             length: IPV6_HEADER_LEN,
             value: '',
             children: []
         };
         tree.children.push(headerNode);
 
-        // Version and Traffic Class
-        const versionTc = buffer[offset];
-        const version = (versionTc >> 4) & 0x0F;
+        // Version, Traffic Class, and Flow Label
+        const versionTc = buffer[curOffset];
+        const version = (versionTc >> 4) & 0x0f;
 
         const versionNode = {
             name: 'Version',
-            offset: offset,
+            offset: curOffset,
             length: 1,
             value: `IPv${version}`,
             children: []
         };
         headerNode.children.push(versionNode);
 
+        // Traffic Class & Flow Label (4 bytes total for version + traffic class + flow label)
+        const trafficClass = ((buffer[curOffset] & 0x0f) << 4) | ((buffer[curOffset + 1] & 0xf0) >> 4);
+        const tcNode = {
+            name: 'Traffic Class',
+            offset: curOffset,
+            length: 1,
+            value: `0x${trafficClass.toString(16).padStart(2, '0')}`,
+            children: []
+        };
+        headerNode.children.push(tcNode);
+
+        const flowLabel = ((buffer[curOffset + 1] & 0x0f) << 16) | (buffer[curOffset + 2] << 8) | buffer[curOffset + 3];
+        const flowLabelNode = {
+            name: 'Flow Label',
+            offset: curOffset + 1,
+            length: 3,
+            value: flowLabel,
+            children: []
+        };
+        curOffset += 4; // Move past version, traffic class, and flow label
+        headerNode.children.push(flowLabelNode);
+
+        // Payload Length
+        const payloadLength = buffer.readUInt16BE(curOffset);
+        const payloadLengthNode = {
+            name: 'Payload Length',
+            offset: curOffset,
+            length: 2,
+            value: payloadLength.toString(),
+            children: []
+        };
+        curOffset += 2;
+        headerNode.children.push(payloadLengthNode);
+
         // Next Header (Protocol)
-        const nextHeader = buffer[offset + 6];
+        const nextHeader = buffer[curOffset];
         const protocolNode = {
             name: 'Next Header',
-            offset: offset + 6,
+            offset: curOffset,
             length: 1,
             value: getProtocolName(nextHeader),
             children: []
         };
+        curOffset += 1;
         headerNode.children.push(protocolNode);
+
+        // Hop Limit
+        const hopLimit = buffer[curOffset];
+        const hopLimitNode = {
+            name: 'Hop Limit',
+            offset: curOffset,
+            length: 1,
+            value: hopLimit,
+            children: []
+        };
+        curOffset += 1;
+        headerNode.children.push(hopLimitNode);
 
         // Source IP
         const srcIpNode = {
             name: 'Source IP',
-            offset: offset + 8,
+            offset: curOffset,
             length: 16,
-            value: formatIPv6Address(buffer.subarray(offset + 8, offset + 24)),
+            value: formatIPv6Address(buffer.subarray(curOffset, curOffset + 16)),
             children: []
         };
+        curOffset += 16;
         headerNode.children.push(srcIpNode);
 
         // Destination IP
         const dstIpNode = {
             name: 'Destination IP',
-            offset: offset + 24,
+            offset: curOffset,
             length: 16,
-            value: formatIPv6Address(buffer.subarray(offset + 24, offset + 40)),
+            value: formatIPv6Address(buffer.subarray(curOffset, curOffset + 16)),
             children: []
         };
+        curOffset += 16;
         headerNode.children.push(dstIpNode);
 
         // Parse Payload
         let payload = null;
-        if (buffer.length > offset + IPV6_HEADER_LEN) {
+        if (buffer.length > curOffset) {
             payload = {
                 name: 'Payload',
-                offset: offset + IPV6_HEADER_LEN,
-                length: buffer.length - (offset + IPV6_HEADER_LEN),
+                offset: curOffset,
+                length: buffer.length - curOffset,
                 value: '',
                 children: [],
                 type: nextHeader,
                 nextLayer: getNextLayer(nextHeader)
             };
-            tree.children.push(payloadNode);
         }
 
         return {
             valid: true,
-            payload,
-            tree
+            payload
         };
     } catch (error) {
         return {
             valid: false,
-            payload,
             error: `Error parsing IPv6 packet: ${error.message}`
         };
     }

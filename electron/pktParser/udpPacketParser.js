@@ -7,31 +7,27 @@
 /**
  * Parse a UDP packet into a tree structure
  * @param {Buffer} buffer - The raw UDP packet buffer
- * @returns {Object} Tree structure with offsets and lengths for each field
+ * @param {Object} tree - The tree structure to add UDP information to
+ * @param {number} offset - Starting offset in the buffer
+ * @returns {Object} Parse result with valid flag, payload info, and tree structure
  */
-function parseUdpPacketTree(buffer) {
+function parseUdpPacket(buffer, tree, offset = 0) {
     try {
         // Check if buffer is valid
-        if (!Buffer.isBuffer(buffer) || buffer.length < 8) { // UDP header length
+        if (!Buffer.isBuffer(buffer) || buffer.length < offset + 8) {
+            // UDP header length
             return {
                 valid: false,
                 error: 'Invalid buffer or buffer too small'
             };
         }
 
-        // Start building the tree structure
-        const tree = {
-            name: 'UDP Packet',
-            offset: 0,
-            length: buffer.length,
-            value: '',
-            children: []
-        };
+        let curOffset = offset;
 
         // Parse UDP Header
         const headerNode = {
             name: 'UDP Header',
-            offset: 0,
+            offset: curOffset,
             length: 8,
             value: '',
             children: []
@@ -39,51 +35,56 @@ function parseUdpPacketTree(buffer) {
         tree.children.push(headerNode);
 
         // Source Port
-        const sourcePort = buffer.readUInt16BE(0);
+        const sourcePort = buffer.readUInt16BE(curOffset);
         const sourcePortNode = {
             name: 'Source Port',
-            offset: 0,
+            offset: curOffset,
             length: 2,
             value: sourcePort,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(sourcePortNode);
 
         // Destination Port
-        const destPort = buffer.readUInt16BE(2);
+        const destPort = buffer.readUInt16BE(curOffset);
         const destPortNode = {
             name: 'Destination Port',
-            offset: 2,
+            offset: curOffset,
             length: 2,
             value: destPort,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(destPortNode);
 
         // Length
-        const length = buffer.readUInt16BE(4);
+        const length = buffer.readUInt16BE(curOffset);
         const lengthNode = {
             name: 'Length',
-            offset: 4,
+            offset: curOffset,
             length: 2,
             value: length,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(lengthNode);
 
         // Checksum
-        const checksum = buffer.readUInt16BE(6);
+        const checksum = buffer.readUInt16BE(curOffset);
         const checksumNode = {
             name: 'Checksum',
-            offset: 6,
+            offset: curOffset,
             length: 2,
             value: `0x${checksum.toString(16).padStart(4, '0')}`,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(checksumNode);
 
         // Parse Payload
-        if (buffer.length > 8) {
+        let payload = null;
+        if (buffer.length > offset + 8) {
             // 根据端口判断下一层协议
             let nextLayer = null;
             let type = 0;
@@ -94,22 +95,34 @@ function parseUdpPacketTree(buffer) {
             } else if (sourcePort === 67 || sourcePort === 68 || destPort === 67 || destPort === 68) {
                 nextLayer = 'dhcp';
                 type = 67; // Using 67 as the primary DHCP port
+            } else if (sourcePort === 123 || destPort === 123) {
+                nextLayer = 'ntp';
+                type = 123;
+            } else if (sourcePort === 1812 || destPort === 1812 || sourcePort === 1813 || destPort === 1813) {
+                nextLayer = 'radius';
+                type = 1812;
+            } else if (sourcePort === 161 || destPort === 161 || sourcePort === 162 || destPort === 162) {
+                nextLayer = 'snmp';
+                type = 161;
+            } else if (sourcePort === 520 || destPort === 520) {
+                nextLayer = 'rip';
+                type = 520;
             }
 
-            const payloadNode = {
+            payload = {
                 name: 'Payload',
-                offset: 8,
-                length: buffer.length - 8,
+                offset: curOffset,
+                length: buffer.length - curOffset,
                 value: '',
                 children: [],
                 nextLayer: nextLayer,
                 type: type
             };
-            tree.children.push(payloadNode);
         }
 
         return {
             valid: true,
+            payload,
             tree
         };
     } catch (error) {
@@ -120,25 +133,6 @@ function parseUdpPacketTree(buffer) {
     }
 }
 
-/**
- * Parse a UDP packet through the registry system
- * @param {Buffer} buffer - The raw UDP packet buffer
- * @param {number} offset - Starting offset in the buffer
- * @returns {Object} Parse result with a valid flag and tree structure
- */
-function parseUdpPacket(buffer, offset = 0) {
-    // Use the existing parseUdpPacketTree function to do the actual parsing
-    const result = parseUdpPacketTree(buffer.subarray(offset));
-
-    // Return in the format expected by the registry system
-    return {
-        valid: result.valid,
-        error: result.error,
-        tree: result.tree
-    };
-}
-
 module.exports = {
-    parseUdpPacketTree,
     parseUdpPacket
 };

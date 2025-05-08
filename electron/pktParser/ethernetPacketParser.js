@@ -13,13 +13,13 @@ const ETH_MAC_LEN = 6;
 // Ethernet Type/Length field values
 const ETH_TYPE = {
     IPV4: 0x0800,
-    IPV6: 0x86DD,
+    IPV6: 0x86dd,
     ARP: 0x0806,
     VLAN: 0x8100,
     MPLS: 0x8847,
     PPPOE_DISCOVERY: 0x8863,
     PPPOE_SESSION: 0x8864,
-    LLDP: 0x88CC
+    LLDP: 0x88cc
 };
 
 // Helper function to format MAC address
@@ -65,7 +65,7 @@ function parseEthernetPacket(buffer, tree, offset = 0) {
 
         // Parse Ethernet Header
         const headerNode = {
-            name: 'Ethernet Header',
+            name: 'Ethernet II',
             offset: curOffset,
             length: ETH_HEADER_LEN,
             value: '',
@@ -104,7 +104,7 @@ function parseEthernetPacket(buffer, tree, offset = 0) {
             value: `0x${type.toString(16).padStart(4, '0')} (${getEthernetTypeName(type)})`,
             children: []
         };
-        curOffset += 2
+        curOffset += 2;
         headerNode.children.push(typeNode);
 
         // Parse Payload
@@ -123,12 +123,11 @@ function parseEthernetPacket(buffer, tree, offset = 0) {
 
         return {
             valid: true,
-            payload,
+            payload
         };
     } catch (error) {
         return {
             valid: false,
-            payload,
             error: `Error parsing Ethernet packet: ${error.message}`
         };
     }

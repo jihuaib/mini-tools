@@ -16,7 +16,7 @@
 
 <script setup>
     import { ref, watch } from 'vue';
-    import { validatePacketData } from '../utils/validationCommon';;
+    import { validatePacketData } from '../utils/validationCommon';
 
     const props = defineProps({
         visible: {

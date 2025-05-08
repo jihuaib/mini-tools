@@ -4,6 +4,8 @@
  * Parses TCP protocol packets from raw buffers and returns structured data.
  */
 
+const registry = require('./registryInstance');
+
 const TCP_FLAGS = {
     FIN: 0x01,
     SYN: 0x02,
@@ -37,7 +39,8 @@ function getTcpFlagsString(flags) {
 function parseTcpPacket(buffer, tree, offset = 0) {
     try {
         // Check if buffer is valid
-        if (!Buffer.isBuffer(buffer) || buffer.length < offset + 20) { // Minimum TCP header length
+        if (!Buffer.isBuffer(buffer) || buffer.length < offset + 20) {
+            // Minimum TCP header length
             return {
                 valid: false,
                 error: 'Invalid buffer or buffer too small'
@@ -48,7 +51,7 @@ function parseTcpPacket(buffer, tree, offset = 0) {
 
         // Parse TCP Header
         const headerNode = {
-            name: 'TCP Header',
+            name: 'TCP Packet',
             offset: curOffset,
             length: 0, // 解析完成赋值
             value: '',
@@ -105,7 +108,7 @@ function parseTcpPacket(buffer, tree, offset = 0) {
         headerNode.children.push(ackNumNode);
 
         // Data Offset and Flags
-        const dataOffset = (buffer[curOffset] >> 4) & 0x0F;
+        const dataOffset = (buffer[curOffset] >> 4) & 0x0f;
         const flags = buffer[curOffset + 1];
         const dataOffsetFlagsNode = {
             name: 'Data Offset/Flags',
@@ -158,7 +161,7 @@ function parseTcpPacket(buffer, tree, offset = 0) {
 
         // Parse Options if present
         if (headerLength > 20) {
-            const optLen = (offset + headerLength) - curOffset;
+            const optLen = offset + headerLength - curOffset;
             const optionsNode = {
                 name: 'TCP Options',
                 offset: curOffset,
@@ -169,13 +172,15 @@ function parseTcpPacket(buffer, tree, offset = 0) {
             headerNode.children.push(optionsNode);
 
             let position = curOffset;
-            while (position < (offset + headerLength)) {
+            while (position < offset + headerLength) {
                 const kind = buffer[position];
                 let length = 1;
 
-                if (kind === 0) { // End of Options List
+                if (kind === 0) {
+                    // End of Options List
                     break;
-                } else if (kind === 1) { // No-Operation
+                } else if (kind === 1) {
+                    // No-Operation
                     position += 1;
                     continue;
                 } else {
@@ -205,22 +210,23 @@ function parseTcpPacket(buffer, tree, offset = 0) {
 
         // Parse Payload
         let payload = null;
-        if (buffer.length > headerLength) {
+        if (buffer.length > offset + headerLength) {
             // 根据端口判断下一层协议
             let nextLayer = null;
-            let type = 0;
+            let type = null;
 
-            if (sourcePort === 179 || destPort === 179) {
-                nextLayer = 'bgp';
-                type = 179; // BGP type，使用端口号
+            // 检查源端口和目的端口是否对应已注册的协议
+            if (registry.hasProtocolForPort(sourcePort)) {
+                nextLayer = registry.getProtocolByPort(sourcePort);
+                type = sourcePort;
+            } else if (registry.hasProtocolForPort(destPort)) {
+                nextLayer = registry.getProtocolByPort(destPort);
+                type = destPort;
             }
 
             payload = {
-                name: 'Payload',
                 offset: curOffset,
                 length: buffer.length - curOffset,
-                value: '',
-                children: [],
                 nextLayer: nextLayer,
                 type: type
             };
@@ -234,7 +240,6 @@ function parseTcpPacket(buffer, tree, offset = 0) {
     } catch (error) {
         return {
             valid: false,
-            payload,
             error: `Error parsing TCP packet: ${error.message}`
         };
     }
