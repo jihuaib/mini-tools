@@ -22,7 +22,7 @@ const IP_PROTOCOL = {
  * @param {number} offset - The starting offset in the buffer
  * @returns {Object} Tree structure with offsets and lengths for each field
  */
-function parseIPv4Packet(buffer, offset = 0) {
+function parseIPv4Packet(buffer, tree, offset = 0) {
     try {
         if (!Buffer.isBuffer(buffer) || buffer.length < offset + IPV4_HEADER_LEN) {
             return {
@@ -31,18 +31,12 @@ function parseIPv4Packet(buffer, offset = 0) {
             };
         }
 
-        const tree = {
-            name: 'IPv4 Packet',
-            offset: offset,
-            length: buffer.length - offset,
-            value: '',
-            children: []
-        };
+        let curOffset = offset;
 
         // Parse IP Header
         const headerNode = {
-            name: 'IPv4 Header',
-            offset: offset,
+            name: 'IPv4 Packet',
+            offset: curOffset,
             length: IPV4_HEADER_LEN,
             value: '',
             children: []
@@ -50,92 +44,167 @@ function parseIPv4Packet(buffer, offset = 0) {
         tree.children.push(headerNode);
 
         // Version and IHL
-        const versionIhl = buffer[offset];
+        const versionIhl = buffer[curOffset];
         const version = (versionIhl >> 4) & 0x0F;
         const ihl = (versionIhl & 0x0F) * 4;
 
         const versionNode = {
             name: 'Version',
-            offset: offset,
+            offset: curOffset,
             length: 1,
             value: `IPv${version}`,
             children: []
         };
+        curOffset += 1;
         headerNode.children.push(versionNode);
 
         // TOS
         const tosNode = {
             name: 'Type of Service',
-            offset: offset + 1,
+            offset: curOffset,
             length: 1,
-            value: `0x${buffer[offset + 1].toString(16).padStart(2, '0')}`,
+            value: `0x${buffer[curOffset].toString(16).padStart(2, '0')}`,
             children: []
         };
+        curOffset += 1;
         headerNode.children.push(tosNode);
 
         // Total Length
-        const totalLength = buffer.readUInt16BE(offset + 2);
+        const totalLength = buffer.readUInt16BE(curOffset);
         const lengthNode = {
             name: 'Total Length',
-            offset: offset + 2,
+            offset: curOffset,
             length: 2,
             value: totalLength.toString(),
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(lengthNode);
 
+        // identification
+        const identification = buffer.readUInt16BE(curOffset);
+        const identificationNode = {
+            name: 'Identification',
+            offset: curOffset,
+            length: 2,
+            value: identification,
+            children: []
+        };
+        curOffset += 2;
+        headerNode.children.push(identificationNode);
+
+        // flags
+        const flags = buffer.readUInt16BE(curOffset);
+        const flagsNode = {
+            name: 'Flags',
+            offset: curOffset,
+            length: 2,
+            value: flags,
+            children: []
+        };
+        curOffset += 2;
+        headerNode.children.push(flagsNode);
+
+        // ttl
+        const ttl = buffer[curOffset];
+        const ttlNode = {
+            name: 'TTL',
+            offset: curOffset,
+            length: 1,
+            value: ttl,
+            children: []
+        };
+        curOffset += 1;
+        headerNode.children.push(ttlNode);
+
         // Protocol
-        const protocol = buffer[offset + 9];
+        const protocol = buffer[curOffset];
         const protocolNode = {
             name: 'Protocol',
-            offset: offset + 9,
+            offset: curOffset,
             length: 1,
             value: getProtocolName(protocol),
             children: []
         };
+        curOffset += 1;
         headerNode.children.push(protocolNode);
+
+        // CheckSum
+        const checksum = buffer.readUInt16BE(curOffset);
+        const checksumNode = {
+            name: 'CheckSum',
+            offset: curOffset,
+            length: 2,
+            value: checksum,
+            children: []
+        };
+        curOffset += 2;
+        headerNode.children.push(checksumNode);
 
         // Source IP
         const srcIpNode = {
             name: 'Source IP',
-            offset: offset + 12,
+            offset: offset,
             length: 4,
-            value: formatIPv4Address(buffer.subarray(offset + 12, offset + 16)),
+            value: formatIPv4Address(buffer.subarray(curOffset, curOffset + 4)),
             children: []
         };
+        curOffset += 4;
         headerNode.children.push(srcIpNode);
 
         // Destination IP
         const dstIpNode = {
             name: 'Destination IP',
-            offset: offset + 16,
+            offset: curOffset,
             length: 4,
-            value: formatIPv4Address(buffer.subarray(offset + 16, offset + 20)),
+            value: formatIPv4Address(buffer.subarray(curOffset, curOffset + 4)),
             children: []
         };
+        curOffset += 4;
         headerNode.children.push(dstIpNode);
 
+        // Options
+        if (ihl > IPV4_HEADER_LEN) {
+            const optLen = (offset + ihl) - curOffset;
+            const options = {
+                name: 'Options',
+                offset: curOffset,
+                length: optLen,
+                value: buffer.subarray(curOffset, curOffset + optLen).toString('hex'),
+                children: []
+            };
+            curOffset += optLen;
+            headerNode.children.push(options);
+        }
+        if (curOffset - offset != ihl) {
+            return {
+                valid: false,
+                error: 'ipv4 packet parse error'
+            };
+        }
+
         // Parse Payload
-        if (buffer.length > offset + ihl) {
-            const payloadNode = {
+        let payload = null;
+        if (buffer.length > curOffset) {
+            payload = {
                 name: 'Payload',
-                offset: offset + ihl,
-                length: buffer.length - (offset + ihl),
+                offset: curOffset,
+                length: buffer.length - curOffset,
                 value: '',
                 children: [],
                 type: protocol,
                 nextLayer: getNextLayer(protocol)
             };
-            tree.children.push(payloadNode);
         }
 
         return {
             valid: true,
-            tree
+            payload
         };
     } catch (error) {
         return {
             valid: false,
+            payload,
             error: `Error parsing IPv4 packet: ${error.message}`
         };
     }
@@ -219,8 +288,9 @@ function parseIPv6Packet(buffer, offset = 0) {
         headerNode.children.push(dstIpNode);
 
         // Parse Payload
+        let payload = null;
         if (buffer.length > offset + IPV6_HEADER_LEN) {
-            const payloadNode = {
+            payload = {
                 name: 'Payload',
                 offset: offset + IPV6_HEADER_LEN,
                 length: buffer.length - (offset + IPV6_HEADER_LEN),
@@ -234,11 +304,13 @@ function parseIPv6Packet(buffer, offset = 0) {
 
         return {
             valid: true,
+            payload,
             tree
         };
     } catch (error) {
         return {
             valid: false,
+            payload,
             error: `Error parsing IPv6 packet: ${error.message}`
         };
     }

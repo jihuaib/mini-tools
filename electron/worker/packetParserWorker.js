@@ -20,7 +20,7 @@ parentPort.on('message', data => {
                 break;
             case 'ethernet': {
                 // 解析以太网报文
-                result = registry.parse('ethernet', 0, buffer);
+                result = registry.parsePacket(buffer);
                 break;
             }
             default:
@@ -29,8 +29,14 @@ parentPort.on('message', data => {
                     msg: `不支持的报文类型: ${packetType}`
                 };
         }
-
-        parentPort.postMessage({ status: 'success', data: result });
+        if (result.status === 'success') {
+            parentPort.postMessage({ status: 'success', data: result.tree });
+        } else {
+            parentPort.postMessage({
+                status: 'error',
+                msg: `解析报文时出错: ${result.msg}`
+            });
+        }
     } catch (err) {
         parentPort.postMessage({
             status: 'error',

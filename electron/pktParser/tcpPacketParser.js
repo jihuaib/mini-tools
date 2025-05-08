@@ -34,138 +34,142 @@ function getTcpFlagsString(flags) {
  * @param {Buffer} buffer - The raw TCP packet buffer
  * @returns {Object} Tree structure with offsets and lengths for each field
  */
-function parseTcpPacketTree(buffer) {
+function parseTcpPacket(buffer, tree, offset = 0) {
     try {
         // Check if buffer is valid
-        if (!Buffer.isBuffer(buffer) || buffer.length < 20) { // Minimum TCP header length
+        if (!Buffer.isBuffer(buffer) || buffer.length < offset + 20) { // Minimum TCP header length
             return {
                 valid: false,
                 error: 'Invalid buffer or buffer too small'
             };
         }
 
-        // Start building the tree structure
-        const tree = {
-            name: 'TCP Packet',
-            offset: 0,
-            length: buffer.length,
-            value: '',
-            children: []
-        };
+        let curOffset = offset;
 
         // Parse TCP Header
         const headerNode = {
             name: 'TCP Header',
-            offset: 0,
-            length: 20, // Basic TCP header length
+            offset: curOffset,
+            length: 0, // 解析完成赋值
             value: '',
             children: []
         };
         tree.children.push(headerNode);
 
         // Source Port
-        const sourcePort = buffer.readUInt16BE(0);
+        const sourcePort = buffer.readUInt16BE(curOffset);
         const sourcePortNode = {
             name: 'Source Port',
-            offset: 0,
+            offset: curOffset,
             length: 2,
             value: sourcePort,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(sourcePortNode);
 
         // Destination Port
-        const destPort = buffer.readUInt16BE(2);
+        const destPort = buffer.readUInt16BE(curOffset);
         const destPortNode = {
             name: 'Destination Port',
-            offset: 2,
+            offset: curOffset,
             length: 2,
             value: destPort,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(destPortNode);
 
         // Sequence Number
-        const seqNum = buffer.readUInt32BE(4);
+        const seqNum = buffer.readUInt32BE(curOffset);
         const seqNumNode = {
             name: 'Sequence Number',
-            offset: 4,
+            offset: curOffset,
             length: 4,
             value: seqNum,
             children: []
         };
+        curOffset += 4;
         headerNode.children.push(seqNumNode);
 
         // Acknowledgment Number
-        const ackNum = buffer.readUInt32BE(8);
+        const ackNum = buffer.readUInt32BE(curOffset);
         const ackNumNode = {
             name: 'Acknowledgment Number',
-            offset: 8,
+            offset: curOffset,
             length: 4,
             value: ackNum,
             children: []
         };
+        curOffset += 4;
         headerNode.children.push(ackNumNode);
 
         // Data Offset and Flags
-        const dataOffset = (buffer[12] >> 4) & 0x0F;
-        const flags = buffer[13];
+        const dataOffset = (buffer[curOffset] >> 4) & 0x0F;
+        const flags = buffer[curOffset + 1];
         const dataOffsetFlagsNode = {
             name: 'Data Offset/Flags',
-            offset: 12,
+            offset: curOffset,
             length: 2,
             value: `Data Offset: ${dataOffset * 4} bytes, Flags: ${getTcpFlagsString(flags)}`,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(dataOffsetFlagsNode);
 
+        const headerLength = dataOffset * 4;
+        headerNode.length = headerLength;
+
         // Window Size
-        const windowSize = buffer.readUInt16BE(14);
+        const windowSize = buffer.readUInt16BE(curOffset);
         const windowSizeNode = {
             name: 'Window Size',
-            offset: 14,
+            offset: curOffset,
             length: 2,
             value: windowSize,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(windowSizeNode);
 
         // Checksum
-        const checksum = buffer.readUInt16BE(16);
+        const checksum = buffer.readUInt16BE(curOffset);
         const checksumNode = {
             name: 'Checksum',
-            offset: 16,
+            offset: curOffset,
             length: 2,
             value: `0x${checksum.toString(16).padStart(4, '0')}`,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(checksumNode);
 
         // Urgent Pointer
-        const urgentPtr = buffer.readUInt16BE(18);
+        const urgentPtr = buffer.readUInt16BE(curOffset);
         const urgentPtrNode = {
             name: 'Urgent Pointer',
-            offset: 18,
+            offset: curOffset,
             length: 2,
             value: urgentPtr,
             children: []
         };
+        curOffset += 2;
         headerNode.children.push(urgentPtrNode);
 
         // Parse Options if present
-        const headerLength = dataOffset * 4;
         if (headerLength > 20) {
+            const optLen = (offset + headerLength) - curOffset;
             const optionsNode = {
                 name: 'TCP Options',
-                offset: 20,
-                length: headerLength - 20,
+                offset: curOffset,
+                length: optLen,
                 value: '',
                 children: []
             };
             headerNode.children.push(optionsNode);
 
-            let position = 20;
-            while (position < headerLength) {
+            let position = curOffset;
+            while (position < (offset + headerLength)) {
                 const kind = buffer[position];
                 let length = 1;
 
@@ -189,9 +193,18 @@ function parseTcpPacketTree(buffer) {
 
                 position += length;
             }
+            curOffset += optLen;
+        }
+
+        if (curOffset - offset != headerLength) {
+            return {
+                valid: false,
+                error: 'tcp packet parse error'
+            };
         }
 
         // Parse Payload
+        let payload = null;
         if (buffer.length > headerLength) {
             // 根据端口判断下一层协议
             let nextLayer = null;
@@ -202,50 +215,32 @@ function parseTcpPacketTree(buffer) {
                 type = 179; // BGP type，使用端口号
             }
 
-            const payloadNode = {
+            payload = {
                 name: 'Payload',
-                offset: headerLength,
-                length: buffer.length - headerLength,
+                offset: curOffset,
+                length: buffer.length - curOffset,
                 value: '',
                 children: [],
                 nextLayer: nextLayer,
                 type: type
             };
-            tree.children.push(payloadNode);
         }
 
         return {
             valid: true,
+            payload,
             tree
         };
     } catch (error) {
         return {
             valid: false,
+            payload,
             error: `Error parsing TCP packet: ${error.message}`
         };
     }
 }
 
-/**
- * Parse a TCP packet through the registry system
- * @param {Buffer} buffer - The raw TCP packet buffer
- * @param {number} offset - Starting offset in the buffer
- * @returns {Object} Parse result with a valid flag and tree structure
- */
-function parseTcpPacket(buffer, offset = 0) {
-    // Use the existing parseTcpPacketTree function to do the actual parsing
-    const result = parseTcpPacketTree(buffer.subarray(offset));
-
-    // Return in the format expected by the registry system
-    return {
-        valid: result.valid,
-        error: result.error,
-        tree: result.tree
-    };
-}
-
 module.exports = {
-    parseTcpPacketTree,
     parseTcpPacket,
     TCP_FLAGS
 };

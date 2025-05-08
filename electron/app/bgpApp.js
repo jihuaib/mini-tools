@@ -66,7 +66,7 @@ class BgpApp {
             this.store.set(this.bgpConfigFileKey, config);
             return successResponse(null, 'BGP配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving Bgp config:', error);
+            this.logger.error('Error saving Bgp config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -80,7 +80,7 @@ class BgpApp {
             }
             return successResponse(config, 'BGP配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading Bgp config:', error);
+            this.logger.error('Error loading Bgp config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -91,7 +91,7 @@ class BgpApp {
             this.store.set(this.ipv4PeerConfigFileKey, config);
             return successResponse(null, 'IPv4 Peer配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving ipv4 peer config:', error);
+            this.logger.error('Error saving ipv4 peer config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -105,7 +105,7 @@ class BgpApp {
             }
             return successResponse(config, 'IPv4 Peer配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading ipv4 peer config:', error);
+            this.logger.error('Error loading ipv4 peer config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -116,7 +116,7 @@ class BgpApp {
             this.store.set(this.ipv6PeerConfigFileKey, config);
             return successResponse(null, 'IPv6 Peer配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving ipv6 peer config:', error);
+            this.logger.error('Error saving ipv6 peer config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -130,7 +130,7 @@ class BgpApp {
             }
             return successResponse(config, 'IPv6 Peer配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading ipv6 peer config:', error);
+            this.logger.error('Error loading ipv6 peer config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -140,7 +140,7 @@ class BgpApp {
             this.store.set(this.ipv4UNCRouteConfigFileKey, config);
             return successResponse(null, 'IPv4 UNC Route配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving ipv4 unc route config:', error);
+            this.logger.error('Error saving ipv4 unc route config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -153,7 +153,7 @@ class BgpApp {
             }
             return successResponse(config, 'IPv4 UNC Route配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading ipv4 unc route config:', error);
+            this.logger.error('Error loading ipv4 unc route config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -163,7 +163,7 @@ class BgpApp {
             this.store.set(this.ipv6UNCRouteConfigFileKey, config);
             return successResponse(null, 'IPv6 UNC Route配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving ipv6 unc route config:', error);
+            this.logger.error('Error saving ipv6 unc route config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -176,7 +176,7 @@ class BgpApp {
             }
             return successResponse(config, 'IPv6 UNC Route配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading ipv6 unc route config:', error);
+            this.logger.error('Error loading ipv6 unc route config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -193,7 +193,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_PEER, peer);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error deleting peer:', error);
+            this.logger.error('Error deleting peer:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -214,7 +214,7 @@ class BgpApp {
 
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error(`ipv4 Error config Peer:`, error);
+            this.logger.error(`ipv4 Error config Peer:`, error.message);
             return errorResponse(error.message);
         }
     }
@@ -235,7 +235,7 @@ class BgpApp {
 
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error(`ipv6 Error config Peer:`, error);
+            this.logger.error(`ipv6 Error config Peer:`, error.message);
             return errorResponse(error.message);
         }
     }
@@ -272,7 +272,7 @@ class BgpApp {
             this.logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error starting BGP:', error);
+            this.logger.error('Error starting BGP:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -287,7 +287,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error stopping BGP:', error);
+            this.logger.error('Error stopping BGP:', error.message);
             return errorResponse(error.message);
         } finally {
             // 移除事件监听器
@@ -307,7 +307,7 @@ class BgpApp {
             this.logger.info(`获取Peer信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取Peer信息成功');
         } catch (error) {
-            this.logger.error('Error getting peer info:', error);
+            this.logger.error('Error getting peer info:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -324,7 +324,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV4_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error generating ipv4 routes:', error);
+            this.logger.error('Error generating ipv4 routes:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -341,7 +341,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV6_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error generating ipv6 routes:', error);
+            this.logger.error('Error generating ipv6 routes:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -358,7 +358,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV4_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error deleting ipv4 routes:', error);
+            this.logger.error('Error deleting ipv4 routes:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -375,7 +375,7 @@ class BgpApp {
             const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV6_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error deleting ipv6 routes:', error);
+            this.logger.error('Error deleting ipv6 routes:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -390,7 +390,7 @@ class BgpApp {
             this.logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {
-            this.logger.error('Error getting routes:', error);
+            this.logger.error('Error getting routes:', error.message);
             return errorResponse(error.message);
         }
     }

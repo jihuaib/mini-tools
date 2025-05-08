@@ -38,7 +38,7 @@ class ToolsApp {
             this.store.set(this.stringGeneratorConfigFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving config:', error);
+            this.logger.error('Error saving config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -52,7 +52,7 @@ class ToolsApp {
             }
             return successResponse(config, '配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading config:', error);
+            this.logger.error('Error loading config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -63,7 +63,7 @@ class ToolsApp {
             this.store.set(this.packetParserConfigFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving packet parser config:', error);
+            this.logger.error('Error saving packet parser config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -77,7 +77,7 @@ class ToolsApp {
             }
             return successResponse(config, '配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading packet parser config:', error);
+            this.logger.error('Error loading packet parser config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -94,9 +94,9 @@ class ToolsApp {
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), templateData);
 
             this.logger.info('Worker处理结果:', result);
-            return successResponse(result, 'Worker处理结果');
+            return successResponse(result, 'Worker处理成功');
         } catch (err) {
-            this.logger.error('Worker处理错误:', err);
+            this.logger.error('Worker处理错误:', err.message);
             return errorResponse(err.message);
         }
     }
@@ -113,9 +113,9 @@ class ToolsApp {
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), packetData);
 
             this.logger.info('报文解析结果:', result);
-            return successResponse(result, '报文解析结果');
+            return successResponse(result, '报文解析成功');
         } catch (err) {
-            this.logger.error('报文解析错误:', err);
+            this.logger.error('报文解析错误:', err.message);
             return errorResponse(err.message);
         }
     }

@@ -281,6 +281,8 @@
             // 根据报文类型选择不同的解析方法
             resp = await window.toolsApi.parsePacket(payload);
 
+            console.log(resp);
+
             if (resp.status === 'success') {
                 parsedResult.value = resp.data;
                 hexBuffer.value = parseHexString(formState.value.packetData);

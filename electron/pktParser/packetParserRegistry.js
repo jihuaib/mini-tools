@@ -9,18 +9,18 @@ class ParserRegistry {
         this.parsers = new Map();
 
         // 注册解析器
-        // 顶层解析器
+        // 数据链路层解析器
         this.registerParser('ethernet', 0, parseEthernetPacket);
 
-        // 数据链路层解析器
+        // 网络层解析器
         this.registerParser('ip', 0x0800, parseIPv4Packet);
         this.registerParser('ip', 0x86DD, parseIPv6Packet);
 
-        // 网络层解析器
+        // 传输层解析器
         this.registerParser('tcp', 6, parseTcpPacket);
         this.registerParser('udp', 17, parseUdpPacket);
 
-        // 传输层解析器
+        // 协议层解析器
         this.registerParser('bgp', 179, parseBgpPacket);  // BGP使用TCP端口179
     }
 
@@ -35,6 +35,29 @@ class ParserRegistry {
             this.parsers.set(layer, new Map());
         }
         this.parsers.get(layer).set(type, parser);
+    }
+
+    parsePacket(buffer) {
+        let curOffset = 0;
+        const tree = {
+            name: `Ethernet Frame ${buffer.length} bytes`,
+            offset: curOffset,
+            length: buffer.length - curOffset,
+            value: '',
+            children: []
+        };
+
+        const result = this.parse('ethernet', 0, tree, buffer, curOffset);
+        if (!result.valid) {
+            return {
+                status: 'error',
+                msg: result.error
+            }
+        }
+        return {
+            status: 'success',
+            tree
+        }
     }
 
     /**
@@ -57,7 +80,7 @@ class ParserRegistry {
      * @param {number} offset - The starting offset in the buffer
      * @returns {Object} The parse result
      */
-    parse(layer, type, buffer, offset = 0) {
+    parse(layer, type, tree, buffer, offset = 0) {
         const parser = this.getParser(layer, type);
         if (!parser) {
             return {
@@ -67,25 +90,19 @@ class ParserRegistry {
         }
 
         try {
-            const result = parser(buffer, offset);
-            console.log('result', result);
+            const result = parser(buffer, tree, offset);
             if (!result.valid) return result;
-
-            // If the parser returned a tree with children, recursively parse them
-            if (result.tree && result.tree.children) {
-                for (const child of result.tree.children) {
-                    console.log('child', child);
-                    if (child.type && child.nextLayer) {
-                        const childResult = this.parse(
-                            child.nextLayer,
-                            child.type,
-                            buffer,
-                            child.offset
-                        );
-                        if (childResult.valid) {
-                            child.children = childResult.tree.children;
-                        }
-                    }
+            const payload = result.payload
+            if (payload) {
+                if (payload.type && payload.nextLayer) {
+                    const result = this.parse(
+                        payload.nextLayer,
+                        payload.type,
+                        tree,
+                        buffer,
+                        payload.offset
+                    );
+                    if (!result.valid) return result;
                 }
             }
 

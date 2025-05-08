@@ -8,6 +8,7 @@
 const ETH_HEADER_LEN = 14; // 6 bytes dest MAC + 6 bytes src MAC + 2 bytes type
 const ETH_MIN_LEN = 60; // Minimum Ethernet frame length
 const ETH_MAX_LEN = 1514; // Maximum Ethernet frame length (excluding FCS)
+const ETH_MAC_LEN = 6;
 
 // Ethernet Type/Length field values
 const ETH_TYPE = {
@@ -18,8 +19,7 @@ const ETH_TYPE = {
     MPLS: 0x8847,
     PPPOE_DISCOVERY: 0x8863,
     PPPOE_SESSION: 0x8864,
-    LLDP: 0x88CC,
-    BGP: 0x0800 // BGP runs over IPv4
+    LLDP: 0x88CC
 };
 
 // Helper function to format MAC address
@@ -51,7 +51,7 @@ function getEthernetTypeName(type) {
  * @param {number} offset - The starting offset in the buffer
  * @returns {Object} Tree structure with offsets and lengths for each field
  */
-function parseEthernetPacket(buffer, offset = 0) {
+function parseEthernetPacket(buffer, tree, offset = 0) {
     try {
         // Check if buffer is valid
         if (!Buffer.isBuffer(buffer) || buffer.length < offset + ETH_HEADER_LEN) {
@@ -61,19 +61,12 @@ function parseEthernetPacket(buffer, offset = 0) {
             };
         }
 
-        // Start building the tree structure
-        const tree = {
-            name: 'Ethernet Frame',
-            offset: offset,
-            length: buffer.length - offset,
-            value: '',
-            children: []
-        };
+        let curOffset = offset;
 
         // Parse Ethernet Header
         const headerNode = {
             name: 'Ethernet Header',
-            offset: offset,
+            offset: curOffset,
             length: ETH_HEADER_LEN,
             value: '',
             children: []
@@ -83,55 +76,59 @@ function parseEthernetPacket(buffer, offset = 0) {
         // Parse Destination MAC
         const destMacNode = {
             name: 'Destination MAC',
-            offset: offset,
-            length: 6,
-            value: formatMacAddress(buffer.subarray(offset, offset + 6)),
+            offset: curOffset,
+            length: ETH_MAC_LEN,
+            value: formatMacAddress(buffer.subarray(curOffset, curOffset + 6)),
             children: []
         };
+        curOffset += ETH_MAC_LEN;
         headerNode.children.push(destMacNode);
 
         // Parse Source MAC
         const srcMacNode = {
             name: 'Source MAC',
-            offset: offset + 6,
-            length: 6,
-            value: formatMacAddress(buffer.subarray(offset + 6, offset + 12)),
+            offset: curOffset,
+            length: ETH_MAC_LEN,
+            value: formatMacAddress(buffer.subarray(curOffset, curOffset + 6)),
             children: []
         };
+        curOffset += ETH_MAC_LEN;
         headerNode.children.push(srcMacNode);
 
         // Parse Type/Length
-        const type = buffer.readUInt16BE(offset + 12);
+        const type = buffer.readUInt16BE(curOffset);
         const typeNode = {
             name: 'Type/Length',
-            offset: offset + 12,
+            offset: curOffset,
             length: 2,
             value: `0x${type.toString(16).padStart(4, '0')} (${getEthernetTypeName(type)})`,
             children: []
         };
+        curOffset += 2
         headerNode.children.push(typeNode);
 
         // Parse Payload
-        if (buffer.length > offset + ETH_HEADER_LEN) {
-            const payloadNode = {
+        let payload = null;
+        if (buffer.length > curOffset) {
+            payload = {
                 name: 'Payload',
-                offset: offset + ETH_HEADER_LEN,
-                length: buffer.length - (offset + ETH_HEADER_LEN),
+                offset: curOffset,
+                length: buffer.length - curOffset,
                 value: '',
                 children: [],
                 type: type,
                 nextLayer: getNextLayer(type)
             };
-            tree.children.push(payloadNode);
         }
 
         return {
             valid: true,
-            tree
+            payload,
         };
     } catch (error) {
         return {
             valid: false,
+            payload,
             error: `Error parsing Ethernet packet: ${error.message}`
         };
     }

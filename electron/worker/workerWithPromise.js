@@ -66,7 +66,7 @@ class WorkerWithPromise {
             this.logger.error(`发生错误:`, err);
             // 拒绝所有待处理的请求
             for (const { reject } of callbacks.values()) {
-                reject(err);
+                reject(new Error(err));
             }
             callbacks.clear();
         });
@@ -152,7 +152,7 @@ class WorkerWithPromise {
                 if (result.status === 'success') {
                     resolve(result.data);
                 } else {
-                    reject(result.msg);
+                    reject(new Error(result.msg || 'Worker execution failed'));
                 }
             });
 
@@ -160,14 +160,14 @@ class WorkerWithPromise {
             worker.on('error', err => {
                 // reject会向上抛异常
                 this.logger.error(`发生错误: ${err}`);
-                reject(err.message);
+                reject(new Error(err.message || 'Worker execution failed') );
             });
 
             // 提前退出也算失败
             worker.on('exit', code => {
                 if (code !== 0) {
                     this.logger.error(`退出异常，退出码: ${code}`);
-                    reject(`Worker stopped with exit code ${code}`);
+                    reject(new Error(`Worker stopped with exit code ${code}`));
                 } else {
                     this.logger.info(`has completed successfully.`);
                 }

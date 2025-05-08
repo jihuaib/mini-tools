@@ -21,7 +21,7 @@ const {
  * @param {Buffer} buffer - The raw BGP packet buffer
  * @returns {Object} Tree structure with offsets and lengths for each field
  */
-function parseBgpPacketTree(buffer) {
+function parseBgpPacketTree(buffer, offset = 0) {
     try {
         // Check if buffer is valid
         if (!Buffer.isBuffer(buffer) || buffer.length < BgpConst.BGP_HEAD_LEN) {
@@ -30,6 +30,8 @@ function parseBgpPacketTree(buffer) {
                 error: 'Invalid buffer or buffer too small'
             };
         }
+
+        let curOffset = offset;
 
         // Start building the tree structure
         const tree = {
@@ -105,19 +107,19 @@ function parseBgpPacketTree(buffer) {
         // Parse message body based on message type
         switch (type) {
             case BgpConst.BGP_PACKET_TYPE.OPEN:
-                parseOpenMessageTree(buffer, tree);
+                parseOpenMessageTree(buffer, headerNode);
                 break;
             case BgpConst.BGP_PACKET_TYPE.UPDATE:
-                parseUpdateMessageTree(buffer, tree);
+                parseUpdateMessageTree(buffer, headerNode);
                 break;
             case BgpConst.BGP_PACKET_TYPE.NOTIFICATION:
-                parseNotificationMessageTree(buffer, tree);
+                parseNotificationMessageTree(buffer, headerNode);
                 break;
             case BgpConst.BGP_PACKET_TYPE.KEEPALIVE:
                 // Keepalive has no additional data
                 break;
             case BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH:
-                parseRouteRefreshMessageTree(buffer, tree);
+                parseRouteRefreshMessageTree(buffer, headerNode);
                 break;
             default:
                 return {
@@ -147,16 +149,6 @@ function parseBgpPacketTree(buffer) {
 function parseOpenMessageTree(buffer, parentNode) {
     let position = BgpConst.BGP_HEAD_LEN;
 
-    // Create Open Message node
-    const openNode = {
-        name: 'OPEN Message',
-        offset: position,
-        length: buffer.length - position,
-        value: '',
-        children: []
-    };
-    parentNode.children.push(openNode);
-
     // Version
     const version = buffer[position];
     const versionNode = {
@@ -166,7 +158,7 @@ function parseOpenMessageTree(buffer, parentNode) {
         value: version,
         children: []
     };
-    openNode.children.push(versionNode);
+    parentNode.children.push(versionNode);
     position += 1;
 
     // ASN
@@ -178,7 +170,7 @@ function parseOpenMessageTree(buffer, parentNode) {
         value: asn,
         children: []
     };
-    openNode.children.push(asnNode);
+    parentNode.children.push(asnNode);
     position += 2;
 
     // Hold Time
@@ -190,7 +182,7 @@ function parseOpenMessageTree(buffer, parentNode) {
         value: holdTime,
         children: []
     };
-    openNode.children.push(holdTimeNode);
+    parentNode.children.push(holdTimeNode);
     position += 2;
 
     // BGP Identifier (Router ID)
@@ -202,7 +194,7 @@ function parseOpenMessageTree(buffer, parentNode) {
         value: routerId,
         children: []
     };
-    openNode.children.push(routerIdNode);
+    parentNode.children.push(routerIdNode);
     position += 4;
 
     // Optional Parameters Length
@@ -214,7 +206,7 @@ function parseOpenMessageTree(buffer, parentNode) {
         value: optParamLen,
         children: []
     };
-    openNode.children.push(optParamLenNode);
+    parentNode.children.push(optParamLenNode);
     position += 1;
 
     // Optional Parameters
@@ -226,7 +218,7 @@ function parseOpenMessageTree(buffer, parentNode) {
             value: '',
             children: []
         };
-        openNode.children.push(optParamsNode);
+        parentNode.children.push(optParamsNode);
 
         const optParamsEnd = position + optParamLen;
 
@@ -424,16 +416,6 @@ function parseOpenMessageTree(buffer, parentNode) {
 function parseUpdateMessageTree(buffer, parentNode) {
     let position = BgpConst.BGP_HEAD_LEN;
 
-    // Create Update Message node
-    const updateNode = {
-        name: 'UPDATE Message',
-        offset: position,
-        length: buffer.length - position,
-        value: '',
-        children: []
-    };
-    parentNode.children.push(updateNode);
-
     // Withdrawn Routes Length
     const withdrawnRoutesLength = buffer.readUInt16BE(position);
     const withdrawnRoutesLengthNode = {
@@ -443,7 +425,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
         value: withdrawnRoutesLength,
         children: []
     };
-    updateNode.children.push(withdrawnRoutesLengthNode);
+    parentNode.children.push(withdrawnRoutesLengthNode);
     position += 2;
 
     // Withdrawn Routes
@@ -455,7 +437,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
             value: '',
             children: []
         };
-        updateNode.children.push(withdrawnRoutesNode);
+        parentNode.children.push(withdrawnRoutesNode);
 
         const withdrawnRoutesEnd = position + withdrawnRoutesLength;
         let routeIndex = 0;
@@ -517,7 +499,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
         value: pathAttributesLength,
         children: []
     };
-    updateNode.children.push(pathAttributesLengthNode);
+    parentNode.children.push(pathAttributesLengthNode);
     position += 2;
 
     // Path Attributes
@@ -529,7 +511,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
             value: '',
             children: []
         };
-        updateNode.children.push(pathAttributesNode);
+        parentNode.children.push(pathAttributesNode);
 
         const pathAttributesEnd = position + pathAttributesLength;
 
@@ -627,7 +609,7 @@ function parseUpdateMessageTree(buffer, parentNode) {
             value: '',
             children: []
         };
-        updateNode.children.push(nlriNode);
+        parentNode.children.push(nlriNode);
 
         let routeIndex = 0;
         while (position < buffer.length) {
@@ -687,16 +669,6 @@ function parseUpdateMessageTree(buffer, parentNode) {
 function parseNotificationMessageTree(buffer, parentNode) {
     let position = BgpConst.BGP_HEAD_LEN;
 
-    // Create Notification Message node
-    const notificationNode = {
-        name: 'NOTIFICATION Message',
-        offset: position,
-        length: buffer.length - position,
-        value: '',
-        children: []
-    };
-    parentNode.children.push(notificationNode);
-
     // Error Code
     const errorCode = buffer[position];
     const errorCodeNode = {
@@ -706,7 +678,7 @@ function parseNotificationMessageTree(buffer, parentNode) {
         value: errorCode,
         children: []
     };
-    notificationNode.children.push(errorCodeNode);
+    parentNode.children.push(errorCodeNode);
     position += 1;
 
     // Error Subcode
@@ -718,7 +690,7 @@ function parseNotificationMessageTree(buffer, parentNode) {
         value: `${errorSubcode} (${getBgpNotificationErrorName(errorCode, errorSubcode)})`,
         children: []
     };
-    notificationNode.children.push(errorSubcodeNode);
+    parentNode.children.push(errorSubcodeNode);
     position += 1;
 
     // Data
@@ -731,7 +703,7 @@ function parseNotificationMessageTree(buffer, parentNode) {
             value: buffer.subarray(position, buffer.length).toString('hex'),
             children: []
         };
-        notificationNode.children.push(dataNode);
+        parentNode.children.push(dataNode);
     }
 }
 
@@ -743,16 +715,6 @@ function parseNotificationMessageTree(buffer, parentNode) {
 function parseRouteRefreshMessageTree(buffer, parentNode) {
     let position = BgpConst.BGP_HEAD_LEN;
 
-    // Create Route Refresh Message node
-    const routeRefreshNode = {
-        name: 'ROUTE-REFRESH Message',
-        offset: position,
-        length: buffer.length - position,
-        value: '',
-        children: []
-    };
-    parentNode.children.push(routeRefreshNode);
-
     // AFI
     const afi = buffer.readUInt16BE(position);
     const afiNode = {
@@ -762,7 +724,7 @@ function parseRouteRefreshMessageTree(buffer, parentNode) {
         value: `${afi} (${getBgpAfiName(afi)})`,
         children: []
     };
-    routeRefreshNode.children.push(afiNode);
+    parentNode.children.push(afiNode);
     position += 2;
 
     // Reserved
@@ -774,7 +736,7 @@ function parseRouteRefreshMessageTree(buffer, parentNode) {
         value: reserved,
         children: []
     };
-    routeRefreshNode.children.push(reservedNode);
+    parentNode.children.push(reservedNode);
     position += 1;
 
     // SAFI
@@ -786,7 +748,7 @@ function parseRouteRefreshMessageTree(buffer, parentNode) {
         value: `${safi} (${getBgpSafiName(safi)})`,
         children: []
     };
-    routeRefreshNode.children.push(safiNode);
+    parentNode.children.push(safiNode);
 }
 
 module.exports = {
