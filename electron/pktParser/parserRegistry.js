@@ -77,29 +77,6 @@ class ParserRegistry {
         }
     }
 
-    parsePacket(buffer) {
-        let curOffset = 0;
-        const tree = {
-            name: `Ethernet Frame ${buffer.length} bytes`,
-            offset: curOffset,
-            length: buffer.length - curOffset,
-            value: '',
-            children: []
-        };
-
-        const result = this.parse('ethernet', 0, tree, buffer, curOffset);
-        if (!result.valid) {
-            return {
-                status: 'error',
-                msg: result.error
-            };
-        }
-        return {
-            status: 'success',
-            tree
-        };
-    }
-
     /**
      * Get a parser for a specific protocol type
      * @param {string} layer - The protocol layer

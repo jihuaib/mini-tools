@@ -13,13 +13,12 @@
                                 <a-select v-model:value="formState.startLayer">
                                     <a-select-option :value="START_LAYER.L2">数据链路层</a-select-option>
                                     <a-select-option :value="START_LAYER.L3">网络层</a-select-option>
-                                    <a-select-option :value="START_LAYER.L4">传输层</a-select-option>
                                     <a-select-option :value="START_LAYER.L5">应用层</a-select-option>
                                 </a-select>
                             </a-form-item>
 
                             <!-- 报文类型选择 -->
-                            <a-form-item label="协议类型" name="protocolType">
+                            <a-form-item label="应用协议类型" name="protocolType">
                                 <a-select v-model:value="formState.protocolType">
                                     <a-select-option :value="PROTOCOL_TYPE.AUTO">自动识别</a-select-option>
                                     <a-select-option :value="PROTOCOL_TYPE.BGP">BGP</a-select-option>
@@ -28,7 +27,7 @@
                             </a-form-item>
 
                             <!-- 协议端口输入 -->
-                            <a-form-item label="协议端口" name="protocolPort">
+                            <a-form-item label="应用协议端口" name="protocolPort">
                                 <a-tooltip
                                     :title="validationErrors.protocolPort"
                                     :open="!!validationErrors.protocolPort"
