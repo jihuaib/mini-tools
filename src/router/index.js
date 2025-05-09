@@ -30,7 +30,10 @@ const routes = [
                 name: 'ToolMain',
                 meta: { keepAlive: true },
                 children: [
-                    { path: '', redirect: '/tools/string-generator' },
+                    {
+                        path: '/',
+                        redirect: '/tools/string-generator'
+                    },
                     {
                         path: 'string-generator',
                         name: 'StringGenerator',
@@ -51,7 +54,10 @@ const routes = [
                 name: 'BgpMain',
                 meta: { keepAlive: true },
                 children: [
-                    { path: '', redirect: '/bgp/bgp-config' },
+                    {
+                        path: '/',
+                        redirect: '/bgp/bgp-config'
+                    },
                     {
                         path: 'bgp-config',
                         name: 'BgpConfig',
@@ -78,7 +84,10 @@ const routes = [
                 component: BmpMain,
                 meta: { keepAlive: true },
                 children: [
-                    { path: '', redirect: '/bmp/bmp-config' },
+                    {
+                        path: '/',
+                        redirect: '/bmp/bmp-config'
+                    },
                     {
                         path: 'bmp-config',
                         name: 'BmpConfig',
@@ -106,7 +115,10 @@ const routes = [
                 component: RpkiMain,
                 meta: { keepAlive: true },
                 children: [
-                    { path: '', redirect: '/rpki/rpki-config' },
+                    {
+                        path: '/',
+                        redirect: '/rpki/rpki-config'
+                    },
                     {
                         path: 'rpki-config',
                         name: 'RpkiConfig',

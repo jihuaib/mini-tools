@@ -2,7 +2,7 @@
     <div class="route-config-container">
         <a-card title="BGP路由配置" class="route-config-card">
             <a-tabs>
-                <a-tab-pane :key="ADDRESS_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
+                <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
                     <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="8">
@@ -13,6 +13,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.prefix"
+                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4UNCField(
@@ -21,7 +22,6 @@
                                                         validateIpv4Prefix
                                                     )
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -34,10 +34,10 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.mask"
+                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
                                             @blur="
                                                 e => validateIpv4UNCField(e.target.value, 'ipv4Mask', validateIpv4Mask)
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -50,11 +50,11 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.count"
+                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4UNCField(e.target.value, 'ipv4Count', validateIpv4Count)
                                             "
-                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -69,7 +69,7 @@
                         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
                             <a-space size="middle">
                                 <a-button type="primary" @click="generateIpv4Routes">生成IPv4路由</a-button>
-                                <a-button type="primary" danger @click="deleteIpv4Routes" :disabled="!hasIpv4Routes">
+                                <a-button type="primary" danger :disabled="!hasIpv4Routes" @click="deleteIpv4Routes">
                                     删除IPv4路由
                                 </a-button>
                             </a-space>
@@ -85,11 +85,11 @@
                                 </a-tag>
                             </div>
                             <a-table
-                                :dataSource="sentIpv4Routes"
+                                :data-source="sentIpv4Routes"
                                 :columns="routeColumns"
                                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                 size="small"
-                                :rowKey="record => `${record.prefix}-${record.addressFamily}`"
+                                :row-key="record => `${record.prefix}-${record.addressFamily}`"
                                 :scroll="{ y: 240 }"
                             >
                                 <template #bodyCell="{ column, record }">
@@ -111,7 +111,7 @@
                     </a-form>
                 </a-tab-pane>
 
-                <a-tab-pane :key="ADDRESS_FAMILY.IPV6_UNC" tab="IPv6-UNC路由">
+                <a-tab-pane :key="BGP_ADDR_FAMILY.IPV6_UNC" tab="IPv6-UNC路由">
                     <a-form :model="ipv6Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="8">
@@ -122,6 +122,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.prefix"
+                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6UNCField(
@@ -130,7 +131,6 @@
                                                         validateIpv6Prefix
                                                     )
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -143,10 +143,10 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.mask"
+                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
                                             @blur="
                                                 e => validateIpv6UNCField(e.target.value, 'ipv6Mask', validateIpv6Mask)
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -159,11 +159,11 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.count"
+                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6UNCField(e.target.value, 'ipv6Count', validateIpv6Count)
                                             "
-                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -178,7 +178,7 @@
                         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
                             <a-space size="middle">
                                 <a-button type="primary" @click="generateIpv6Routes">生成IPv6路由</a-button>
-                                <a-button type="primary" danger @click="deleteIpv6Routes" :disabled="!hasIpv6Routes">
+                                <a-button type="primary" danger :disabled="!hasIpv6Routes" @click="deleteIpv6Routes">
                                     删除IPv6路由
                                 </a-button>
                             </a-space>
@@ -194,11 +194,11 @@
                                 </a-tag>
                             </div>
                             <a-table
-                                :dataSource="sentIpv6Routes"
+                                :data-source="sentIpv6Routes"
                                 :columns="routeColumns"
                                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                                 size="small"
-                                :rowKey="record => `${record.ip}-${record.mask}`"
+                                :row-key="record => `${record.ip}-${record.mask}`"
                                 :scroll="{ y: 240 }"
                             >
                                 <template #bodyCell="{ column, record }">
@@ -236,7 +236,7 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
-    import { ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
         validateIpv4Prefix,
         validateIpv4Mask,
@@ -260,7 +260,7 @@
         mask: DEFAULT_VALUES.IPV4_MASK,
         count: DEFAULT_VALUES.IPV4_COUNT,
         customAttr: '',
-        addressFamily: ADDRESS_FAMILY.IPV4_UNC
+        addressFamily: BGP_ADDR_FAMILY.IPV4_UNC
     });
 
     const ipv6Data = ref({
@@ -268,23 +268,19 @@
         mask: DEFAULT_VALUES.IPV6_MASK,
         count: DEFAULT_VALUES.IPV6_COUNT,
         customAttr: '',
-        addressFamily: ADDRESS_FAMILY.IPV6_UNC
+        addressFamily: BGP_ADDR_FAMILY.IPV6_UNC
     });
 
     const saveIpv4UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4UNCRouteConfig(data);
-        if (result.status === 'success') {
-            console.info(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv6UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6UNCRouteConfig(data);
-        if (result.status === 'success') {
-            console.info(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
@@ -420,26 +416,25 @@
             };
 
             let result;
-            if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+            if (route.addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
                 result = await window.bgpApi.deleteIpv4Routes(config);
-            } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+            } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 result = await window.bgpApi.deleteIpv6Routes(config);
             }
 
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                if (route.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
-                    await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
-                } else if (route.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
-                    await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                if (route.addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
+                    await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
+                } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
+                    await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
                 }
             } else {
                 message.error(`路由删除失败: ${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('路由删除失败');
+            message.error(`路由删除失败: ${e.message}`);
         }
     };
 
@@ -448,9 +443,9 @@
         if (result.status === 'success') {
             // 将结果转换为表格数据
             const routes = result.data;
-            if (addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+            if (addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
                 sentIpv4Routes.value = Array.isArray(routes) ? [...routes] : [];
-            } else if (addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+            } else if (addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 sentIpv6Routes.value = Array.isArray(routes) ? [...routes] : [];
             }
         } else {
@@ -480,13 +475,12 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv4路由生成失败');
+            message.error(`IPv4路由生成失败: ${e.message}`);
         }
     };
 
@@ -513,13 +507,12 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv4路由删除失败');
+            message.error(`IPv4路由删除失败: ${e.message}`);
         }
     };
 
@@ -546,13 +539,12 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv6路由生成失败');
+            message.error(`IPv6路由生成失败: ${e.message}`);
         }
     };
 
@@ -578,13 +570,12 @@
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
                 // 更新路由列表
-                await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+                await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
             } else {
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv6路由删除失败');
+            message.error(`IPv6路由删除失败: ${e.message}`);
         }
     };
 
@@ -607,7 +598,6 @@
                 const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('ipv4UNC route config validation failed, configuration not saved');
                     return;
                 }
 
@@ -639,7 +629,6 @@
                 const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('ipv6UNC route config validation failed, configuration not saved');
                     return;
                 }
 
@@ -653,8 +642,8 @@
     );
 
     onActivated(async () => {
-        await getRoutes(ADDRESS_FAMILY.IPV4_UNC);
-        await getRoutes(ADDRESS_FAMILY.IPV6_UNC);
+        await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
+        await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
     });
 </script>
 

@@ -1,5 +1,6 @@
 const BgpConst = require('../const/bgpConst');
-const { writeUInt16, writeUInt32, ipToBytes, getAddrFamilyType, getAfiAndSafi } = require('../utils/ipUtils');
+const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
+const { getAddrFamilyType, getAfiAndSafi } = require('../utils/bgpUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
 const Logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
@@ -36,7 +37,7 @@ class BgpSession {
     // 更新session状态
     changeSessionFsmState(sessionState) {
         // 更新peer状态
-        this.instanceMap.forEach((instance, key) => {
+        this.instanceMap.forEach((instance, _) => {
             this.changePeerState(instance, sessionState);
         });
 
@@ -115,7 +116,7 @@ class BgpSession {
     }
 
     resetPeer() {
-        this.instanceMap.forEach((instance, key) => {
+        this.instanceMap.forEach((instance, _) => {
             instance.resetPeer(this.peerIp);
         });
     }
@@ -150,15 +151,15 @@ class BgpSession {
                             BgpConst.BGP_CAP_FLAGS.MULTIPROTOCOL_EXTENSIONS
                         );
                         // 根据地址族类型设置对应的能力标志
-                        if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                        if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV4_UNC) {
                             this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
                                 this.peerAddrFamilyFlags,
-                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC
                             );
-                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV6_UNC) {
                             this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
                                 this.peerAddrFamilyFlags,
-                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
                             );
                         }
                     } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
@@ -186,10 +187,10 @@ class BgpSession {
                 if (
                     !CommonUtils.BIT_TEST(
                         this.peerAddrFamilyFlags,
-                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC
                     )
                 ) {
-                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST);
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV4_UNC);
                     const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
                     if (instance) {
                         this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
@@ -200,10 +201,10 @@ class BgpSession {
                 if (
                     !CommonUtils.BIT_TEST(
                         this.peerAddrFamilyFlags,
-                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
                     )
                 ) {
-                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST);
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV6_UNC);
                     const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
                     if (instance) {
                         this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
@@ -220,8 +221,8 @@ class BgpSession {
                     this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.ESTABLISHED);
 
                     const sessionKey = BgpSession.makeKey(0, this.peerIp);
-                    this.instanceMap.forEach((instance, key) => {
-                        instance.peerMap.forEach((peer, peerKey) => {
+                    this.instanceMap.forEach((instance, _) => {
+                        instance.peerMap.forEach((peer, _) => {
                             const peerSessionKey = BgpSession.makeKey(0, peer.session.peerIp);
                             if (peerSessionKey === sessionKey) {
                                 peer.sendRoute();
@@ -275,12 +276,7 @@ class BgpSession {
         const optParams = [];
 
         if (CommonUtils.BIT_TEST(this.localCapFlags, BgpConst.BGP_CAP_FLAGS.MULTIPROTOCOL_EXTENSIONS)) {
-            if (
-                CommonUtils.BIT_TEST(
-                    this.localAddrFamilyFlags,
-                    BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
-                )
-            ) {
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC)) {
                 optParams.push(
                     ...this.buildBgpCapability(
                         BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
@@ -294,12 +290,7 @@ class BgpSession {
                     )
                 );
             }
-            if (
-                CommonUtils.BIT_TEST(
-                    this.localAddrFamilyFlags,
-                    BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
-                )
-            ) {
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC)) {
                 optParams.push(
                     ...this.buildBgpCapability(
                         BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,

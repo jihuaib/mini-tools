@@ -1,7 +1,8 @@
 const net = require('net');
 const util = require('util');
 const BgpConst = require('../const/bgpConst');
-const { getAfiAndSafi, genRouteIps } = require('../utils/ipUtils');
+const { genRouteIps } = require('../utils/ipUtils');
+const { getAfiAndSafi } = require('../utils/bgpUtils');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const Logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
@@ -183,7 +184,7 @@ class BgpWorker {
             bgpSession.clearSession();
             bgpSession.resetSession();
             // 清空peer
-            bgpSession.instanceMap.forEach((instance, key) => {
+            bgpSession.instanceMap.forEach((instance, _) => {
                 instance.peerMap.delete(bgpSession.peerIp);
             });
         } else {
@@ -196,42 +197,42 @@ class BgpWorker {
         this.bgpSessionMap.set(sessKey, bgpSession);
         // 设置本地能力标志
         ipv4PeerConfigData.openCap.forEach(cap => {
-            if (cap === BgpConst.BGP_CAPABILITY_UI.ADDR_FAMILY) {
+            if (cap === BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.MULTIPROTOCOL_EXTENSIONS
                 );
                 // 设置本地地址族标志
                 ipv4PeerConfigData.addressFamily.forEach(family => {
-                    if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                    if (family === BgpConst.BGP_ADDR_FAMILY.IPV4_UNC) {
                         bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
                             bgpSession.localAddrFamilyFlags,
-                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC
                         );
-                    } else if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV6_UNC) {
                         bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
                             bgpSession.localAddrFamilyFlags,
-                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
                         );
                     }
                 });
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.ROUTE_REFRESH) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.ROUTE_REFRESH
                 );
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.AS4) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.FOUR_OCTET_AS) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.FOUR_OCTET_AS
                 );
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.ROLE) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.BGP_ROLE) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.BGP_ROLE
                 );
-                bgpSession.localRole = BgpConst.BGP_ROLE_VALUE_MAP.get(ipv4PeerConfigData.role);
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.EXTENDED_NEXT_HOP_ENCODING) {
+                bgpSession.localRole = ipv4PeerConfigData.role;
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING
@@ -283,7 +284,7 @@ class BgpWorker {
             bgpSession.clearSession();
             bgpSession.resetSession();
             // 清空peer
-            bgpSession.instanceMap.forEach((instance, key) => {
+            bgpSession.instanceMap.forEach((instance, _) => {
                 instance.peerMap.delete(bgpSession.peerIp);
             });
         } else {
@@ -296,42 +297,42 @@ class BgpWorker {
         this.bgpSessionMap.set(sessKey, bgpSession);
         // 设置本地能力标志
         ipv6PeerConfigData.openCapIpv6.forEach(cap => {
-            if (cap === BgpConst.BGP_CAPABILITY_UI.ADDR_FAMILY) {
+            if (cap === BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.MULTIPROTOCOL_EXTENSIONS
                 );
                 // 设置本地地址族标志
                 ipv6PeerConfigData.addressFamilyIpv6.forEach(family => {
-                    if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                    if (family === BgpConst.BGP_ADDR_FAMILY.IPV4_UNC) {
                         bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
                             bgpSession.localAddrFamilyFlags,
-                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC
                         );
-                    } else if (family === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV6_UNC) {
                         bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
                             bgpSession.localAddrFamilyFlags,
-                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
                         );
                     }
                 });
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.ROUTE_REFRESH) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.ROUTE_REFRESH
                 );
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.AS4) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.FOUR_OCTET_AS) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.FOUR_OCTET_AS
                 );
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.ROLE) {
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.BGP_ROLE) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.BGP_ROLE
                 );
-                bgpSession.localRole = BgpConst.BGP_ROLE_VALUE_MAP.get(ipv6PeerConfigData.roleIpv6);
-            } else if (cap === BgpConst.BGP_CAPABILITY_UI.EXTENDED_NEXT_HOP_ENCODING) {
+                bgpSession.localRole = ipv6PeerConfigData.roleIpv6;
+            } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING) {
                 bgpSession.localCapFlags = CommonUtils.BIT_SET(
                     bgpSession.localCapFlags,
                     BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING
@@ -358,11 +359,11 @@ class BgpWorker {
         const ipv6PeerInfoList = [];
         this.bgpInstanceMap.forEach((instance, instanceKey) => {
             if (instance.peerMap && instance.peerMap.size > 0) {
-                instance.peerMap.forEach((peer, peerkey) => {
+                instance.peerMap.forEach((peer, _) => {
                     const peerInfo = peer.getPeerInfo();
-                    if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+                    if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_UNC) {
                         ipv4PeerInfoList.push(peerInfo);
-                    } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+                    } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV6_UNC) {
                         ipv6PeerInfoList.push(peerInfo);
                     }
                 });
@@ -372,8 +373,8 @@ class BgpWorker {
         });
 
         const peerInfoList = {
-            [BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST]: [...ipv4PeerInfoList],
-            [BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST]: [...ipv6PeerInfoList]
+            [BgpConst.BGP_ADDR_FAMILY.IPV4_UNC]: [...ipv4PeerInfoList],
+            [BgpConst.BGP_ADDR_FAMILY.IPV6_UNC]: [...ipv6PeerInfoList]
         };
         this.messageHandler.sendSuccessResponse(messageId, peerInfoList, '邻居信息查询成功');
     }
@@ -390,17 +391,17 @@ class BgpWorker {
         }
 
         // 清空peerMap
-        this.bgpInstanceMap.forEach((instance, instanceKey) => {
+        this.bgpInstanceMap.forEach((instance, _) => {
             instance.peerMap.clear();
         });
 
         // 清空routeMap
-        this.bgpInstanceMap.forEach((instance, instanceKey) => {
+        this.bgpInstanceMap.forEach((instance, _) => {
             instance.routeMap.clear();
         });
 
         // 关闭session socket
-        this.bgpSessionMap.forEach((session, sessionKey) => {
+        this.bgpSessionMap.forEach((session, _) => {
             session.clearSession();
             session.resetSession();
         });
@@ -528,23 +529,23 @@ class BgpWorker {
 
         // 删除peer
         instance.peerMap.delete(peerRecord.peerIp);
-        if (peerRecord.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST) {
+        if (peerRecord.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_UNC) {
             session.localAddrFamilyFlags = CommonUtils.BIT_RESET(
                 session.localAddrFamilyFlags,
-                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV4_UNICAST
+                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC
             );
-        } else if (peerRecord.addressFamily === BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST) {
+        } else if (peerRecord.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV6_UNC) {
             session.localAddrFamilyFlags = CommonUtils.BIT_RESET(
                 session.localAddrFamilyFlags,
-                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.ADDR_FAMILY_IPV6_UNICAST
+                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
             );
         }
 
         // 查询是否还有其他实例使用该Session
         let hasOtherInstance = false;
-        this.bgpInstanceMap.forEach((tempInstance, instanceKey) => {
+        this.bgpInstanceMap.forEach((tempInstance, _) => {
             if (tempInstance.peerMap.size > 0) {
-                tempInstance.peerMap.forEach((tempPeer, peerKey) => {
+                tempInstance.peerMap.forEach((tempPeer, _) => {
                     const peerSessionKey = BgpSession.makeKey(0, tempPeer.session.peerIp);
                     if (peerSessionKey === sessionKey) {
                         hasOtherInstance = true;
@@ -575,7 +576,7 @@ class BgpWorker {
             return;
         }
         const routes = [];
-        instance.routeMap.forEach((route, routeKey) => {
+        instance.routeMap.forEach((route, _) => {
             const routeInfo = route.getRouteInfo();
             routes.push(routeInfo);
         });

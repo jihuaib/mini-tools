@@ -5,7 +5,7 @@
                 <a-card title="邻居信息">
                     <div>
                         <a-tabs v-model:activeKey="activePeerInfoTabKey">
-                            <a-tab-pane :key="ADDRESS_FAMILY.IPV4_UNC" tab="IPv4-UNC邻居">
+                            <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC邻居">
                                 <div class="bgp-peer-info-header">
                                     <UnorderedListOutlined />
                                     <span class="bgp-peer-info-header-text">IPv4-UNC邻居列表</span>
@@ -16,7 +16,7 @@
                                 <a-table
                                     :columns="PeerInfoColumns"
                                     :data-source="ipv4UncPeerList"
-                                    :rowKey="
+                                    :row-key="
                                         record =>
                                             `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
                                     "
@@ -34,7 +34,7 @@
                                     </template>
                                 </a-table>
                             </a-tab-pane>
-                            <a-tab-pane :key="ADDRESS_FAMILY.IPV6_UNC" tab="IPv6-UNC邻居">
+                            <a-tab-pane :key="BGP_ADDR_FAMILY.IPV6_UNC" tab="IPv6-UNC邻居">
                                 <div class="bgp-peer-info-header">
                                     <UnorderedListOutlined />
                                     <span class="bgp-peer-info-header-text">IPv6-UNC邻居列表</span>
@@ -45,7 +45,7 @@
                                 <a-table
                                     :columns="PeerInfoColumns"
                                     :data-source="ipv6UncPeerList"
-                                    :rowKey="
+                                    :row-key="
                                         record =>
                                             `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
                                     "
@@ -74,7 +74,7 @@
 <script setup>
     import { onMounted, onActivated, ref, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
-    import { ADDRESS_FAMILY } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY } from '../../const/bgpConst';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
     defineOptions({
@@ -83,7 +83,7 @@
 
     const ipv4UncPeerList = ref([]);
     const ipv6UncPeerList = ref([]);
-    const activePeerInfoTabKey = ref(ADDRESS_FAMILY.IPV4_UNC);
+    const activePeerInfoTabKey = ref(BGP_ADDR_FAMILY.IPV4_UNC);
     const PeerInfoColumns = [
         {
             title: 'Local IP',
@@ -126,7 +126,7 @@
         const data = result.data;
         if (result.status === 'success') {
             // 根据地址族类型更新对应的表格数据
-            if (data.addressFamily === ADDRESS_FAMILY.IPV4_UNC) {
+            if (data.addressFamily === BGP_ADDR_FAMILY.IPV4_UNC) {
                 const index = ipv4UncPeerList.value.findIndex(
                     peer =>
                         `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
@@ -135,7 +135,7 @@
                 if (index !== -1) {
                     ipv4UncPeerList.value[index] = { ...ipv4UncPeerList.value[index], ...data };
                 }
-            } else if (data.addressFamily === ADDRESS_FAMILY.IPV6_UNC) {
+            } else if (data.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 const index = ipv6UncPeerList.value.findIndex(
                     peer =>
                         `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
@@ -158,13 +158,13 @@
         const peerInfo = await window.bgpApi.getPeerInfo();
         if (peerInfo.status === 'success') {
             // 处理 IPv4-UNC 邻居信息
-            ipv4UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV4_UNC])
-                ? [...peerInfo.data[ADDRESS_FAMILY.IPV4_UNC]]
+            ipv4UncPeerList.value = Array.isArray(peerInfo.data[BGP_ADDR_FAMILY.IPV4_UNC])
+                ? [...peerInfo.data[BGP_ADDR_FAMILY.IPV4_UNC]]
                 : [];
 
             // 处理 IPv6-UNC 邻居信息
-            ipv6UncPeerList.value = Array.isArray(peerInfo.data[ADDRESS_FAMILY.IPV6_UNC])
-                ? [...peerInfo.data[ADDRESS_FAMILY.IPV6_UNC]]
+            ipv6UncPeerList.value = Array.isArray(peerInfo.data[BGP_ADDR_FAMILY.IPV6_UNC])
+                ? [...peerInfo.data[BGP_ADDR_FAMILY.IPV6_UNC]]
                 : [];
         } else {
             console.error(peerInfo.msg || 'Peer信息查询失败');

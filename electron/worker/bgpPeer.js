@@ -1,6 +1,7 @@
 const BgpConst = require('../const/bgpConst');
 const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
-const { getAddrFamilyType, writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
+const { writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
+const { getAddrFamilyType } = require('../utils/bgpUtils');
 const Logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
 class BgpPeer {
@@ -19,7 +20,7 @@ class BgpPeer {
         }
 
         this.logger.info(
-            `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_STATE_MAP.get(this.peerState)} -> ${BgpConst.BGP_STATE_MAP.get(state)}`
+            `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_PEER_STATE_NAME[this.peerState]} -> ${BgpConst.BGP_PEER_STATE_NAME[state]}`
         );
 
         this.peerState = state;
@@ -32,7 +33,7 @@ class BgpPeer {
 
     resetPeer() {
         this.logger.info(
-            `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_STATE_MAP.get(this.peerState)} -> ${BgpConst.BGP_STATE_MAP.get(BgpConst.BGP_PEER_STATE.IDLE)}`
+            `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_PEER_STATE_NAME[this.peerState]} -> ${BgpConst.BGP_PEER_STATE_NAME[BgpConst.BGP_PEER_STATE.IDLE]}`
         );
 
         this.peerState = BgpConst.BGP_PEER_STATE.IDLE;
@@ -52,7 +53,7 @@ class BgpPeer {
             peerIp: this.session.peerIp,
             peerAs: this.session.peerAs,
             routerId: this.session.routerId,
-            peerState: BgpConst.BGP_STATE_MAP.get(this.peerState),
+            peerState: BgpConst.BGP_PEER_STATE_NAME[this.peerState],
             addressFamily: addressFamily
         };
     }
@@ -448,7 +449,7 @@ class BgpPeer {
             return;
         }
 
-        this.instance.routeMap.forEach((route, key) => {
+        this.instance.routeMap.forEach((route, _) => {
             routes.push(route);
         });
 

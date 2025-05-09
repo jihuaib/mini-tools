@@ -116,7 +116,7 @@ class RpkiSession {
     }
 
     // RPKI Message Handling Methods
-    handleResetQuery(header, message) {
+    handleResetQuery(header, _message) {
         this.protocolVersion = header.version;
         if (this.protocolVersion === RpkiConst.RPKI_PROTOCOL_VERSION.V0) {
             this.sendCacheResponse();
@@ -215,7 +215,7 @@ class RpkiSession {
         this.notifyRoaComplete();
     }
 
-    handleCacheReset(message) {
+    handleCacheReset(_message) {
         this.logger.info(`Handling Cache Reset message`);
         // Clear all current ROA data
         this.roaData.clear();
@@ -224,7 +224,7 @@ class RpkiSession {
         this.sendResetQuery();
     }
 
-    handleRouterKey(message) {
+    handleRouterKey(_message) {
         this.logger.info(`Handling Router Key message`);
         // Process router key information
     }
@@ -242,7 +242,9 @@ class RpkiSession {
             RpkiConst.RPKI_HEADER_LENGTH + 6 + pduLength
         );
 
-        this.logger.error(`RPKI Error Report: Code ${errorCode}, PDU Length: ${pduLength}`);
+        this.logger.error(
+            `RPKI Error Report: Code ${errorCode}, PDU Length: ${pduLength}, Erroneous PDU: ${Buffer.from(erroneousPdu).toString('hex')}`
+        );
     }
 
     handleError(message) {

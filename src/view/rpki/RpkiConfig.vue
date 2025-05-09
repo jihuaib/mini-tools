@@ -3,15 +3,15 @@
         <a-row>
             <a-col :span="24">
                 <a-card title="RPKI服务器配置">
-                    <a-form :model="rpkiConfig" @finish="startRpki" :label-col="labelCol" :wrapper-col="wrapperCol">
+                    <a-form :model="rpkiConfig" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="startRpki">
                         <a-row>
                             <a-col :span="24">
                                 <a-form-item label="服务端端口" name="port">
                                     <a-tooltip :title="validationErrors.port" :open="!!validationErrors.port">
                                         <a-input
                                             v-model:value="rpkiConfig.port"
-                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                             :status="validationErrors.port ? 'error' : ''"
+                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -27,7 +27,7 @@
                                 >
                                     启动服务器
                                 </a-button>
-                                <a-button type="primary" danger @click="stopRpki" :disabled="!serverRunning">
+                                <a-button type="primary" danger :disabled="!serverRunning" @click="stopRpki">
                                     停止服务器
                                 </a-button>
                             </a-space>
@@ -45,7 +45,7 @@
                         <a-table
                             :columns="clientColumns"
                             :data-source="clientList"
-                            :rowKey="
+                            :row-key="
                                 record =>
                                     `${record.localIp}|${record.localPort}|${record.remoteIp}|${record.remotePort}`
                             "
@@ -133,9 +133,7 @@
 
     const saveDebounced = debounce(async data => {
         const result = await window.rpkiApi.saveRpkiConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg || '配置文件保存失败');
         }
     }, 300);
@@ -169,7 +167,6 @@
                 const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('Validation failed, configuration not saved');
                     return;
                 }
 
@@ -244,7 +241,6 @@
     };
 
     const onClientConnection = result => {
-        console.log('onClientConnection', result);
         if (result.status === 'success') {
             const data = result.data;
             if (data.opType === 'add') {

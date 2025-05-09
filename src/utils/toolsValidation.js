@@ -1,5 +1,5 @@
-// Template and placeholder validation functions
-import { isNumber } from './validationCommon';
+// 模板和占位符验证函数
+import { isNumber, validatePacketData, isValidPort } from './validationCommon';
 
 export const validateTemplate = (value, validationErrors) => {
     if (!value) {
@@ -42,19 +42,24 @@ export const validateEnd = (value, startValue, validationErrors) => {
 };
 
 // 报文数据验证
-export const validatePacketData = (value, validationErrors) => {
-    if (!value || value.trim() === '') {
-        validationErrors.value.packetData = '请输入报文数据';
-        return false;
+export const validateInputPacketData = (value, validationErrors) => {
+    const { status, message } = validatePacketData(value);
+    if (status === 'error') {
+        validationErrors.value.packetData = message;
+    } else {
+        validationErrors.value.packetData = '';
     }
+};
 
-    // 简单验证是否是16进制格式
-    const hexPattern = /^[0-9A-Fa-f\s]+$/;
-    if (!hexPattern.test(value)) {
-        validationErrors.value.packetData = '报文数据必须是16进制格式，例如: FF FF FF FF';
-        return false;
+// 协议端口验证
+export const validateInputProtocolPort = (value, validationErrors) => {
+    if (value === '') {
+        validationErrors.value.protocolPort = '';
+        return;
     }
-
-    validationErrors.value.packetData = '';
-    return true;
+    if (!isValidPort(value)) {
+        validationErrors.value.protocolPort = '请输入1024-65535之间的数字';
+    } else {
+        validationErrors.value.protocolPort = '';
+    }
 };

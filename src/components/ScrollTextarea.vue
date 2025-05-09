@@ -2,10 +2,10 @@
     <a-textarea
         ref="textareaRef"
         :value="modelValue"
-        @input="updateValue"
         :placeholder="placeholder"
         :style="textareaStyle"
-        :autoSize="false"
+        :auto-size="false"
+        @input="updateValue"
     />
 </template>
 
@@ -33,7 +33,7 @@
     });
 
     // 定义 emit 事件
-    const emit = defineEmits();
+    const emit = defineEmits(['update:modelValue']);
 
     const textareaRef = ref(null);
 

@@ -3,27 +3,71 @@
         <div class="packet-parser-container">
             <!-- 表单区域（放在最上面） -->
             <div class="parser-form-section">
-                <a-form :model="formState" @finish="handleParsePacket" :label-col="labelCol" :wrapper-col="wrapperCol">
-                    <!-- 报文类型选择 -->
-                    <a-form-item label="报文类型" name="packetType">
-                        <a-select v-model:value="formState.packetType">
-                            <a-select-option value="bgp">BGP</a-select-option>
-                            <!-- 预留其他报文类型 -->
-                        </a-select>
-                    </a-form-item>
+                <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleParsePacket">
+                    <!-- 左右布局的表单容器 -->
+                    <div class="form-row-container">
+                        <!-- 左侧表单项 -->
+                        <div class="form-column left-column">
+                            <!-- 解析起始层 -->
+                            <a-form-item label="解析起始层" name="startLayer">
+                                <a-select v-model:value="formState.startLayer">
+                                    <a-select-option :value="START_LAYER.L2">数据链路层</a-select-option>
+                                    <a-select-option :value="START_LAYER.L3">网络层</a-select-option>
+                                    <a-select-option :value="START_LAYER.L5">应用层</a-select-option>
+                                </a-select>
+                            </a-form-item>
 
-                    <!-- 报文输入框 -->
-                    <a-form-item label="报文数据" name="packetData">
-                        <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
-                            <ScrollTextarea
-                                v-model:modelValue="formState.packetData"
-                                :height="100"
-                                placeholder="请输入16进制格式的报文内容，如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
-                                @blur="e => validateField(e.target.value, 'packetData', validatePacketData)"
-                                :status="validationErrors.packetData ? 'error' : ''"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
+                            <!-- 报文类型选择 -->
+                            <a-form-item label="应用协议类型" name="protocolType">
+                                <a-select v-model:value="formState.protocolType">
+                                    <a-select-option :value="PROTOCOL_TYPE.AUTO">自动识别</a-select-option>
+                                    <a-select-option :value="PROTOCOL_TYPE.BGP">BGP</a-select-option>
+                                    <!-- 预留其他报文类型 -->
+                                </a-select>
+                            </a-form-item>
+
+                            <!-- 协议端口输入 -->
+                            <a-form-item label="应用协议端口" name="protocolPort">
+                                <a-tooltip
+                                    :title="validationErrors.protocolPort"
+                                    :open="!!validationErrors.protocolPort"
+                                >
+                                    <div class="port-filter-container">
+                                        <a-input
+                                            v-model:value="formState.protocolPort"
+                                            :status="validationErrors.protocolPort ? 'error' : ''"
+                                            @blur="
+                                                e =>
+                                                    validateField(
+                                                        e.target.value,
+                                                        'protocolPort',
+                                                        validateInputProtocolPort
+                                                    )
+                                            "
+                                        />
+                                    </div>
+                                </a-tooltip>
+                            </a-form-item>
+                        </div>
+
+                        <!-- 右侧表单项 -->
+                        <div class="form-column right-column">
+                            <!-- 报文输入框 -->
+                            <a-form-item label="报文数据" name="packetData">
+                                <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
+                                    <ScrollTextarea
+                                        v-model:modelValue="formState.packetData"
+                                        :height="130"
+                                        placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
+                                        :status="validationErrors.packetData ? 'error' : ''"
+                                        @blur="
+                                            e => validateField(e.target.value, 'packetData', validateInputPacketData)
+                                        "
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </div>
+                    </div>
 
                     <!-- 操作按钮 -->
                     <a-form-item :wrapper-col="{ span: 24 }">
@@ -35,10 +79,10 @@
             </div>
 
             <!-- 结果显示区域（十六进制和树结构左右排列） -->
-            <div class="parser-result-section" v-if="parsedResult">
+            <div v-if="parsedResult" class="parser-result-section">
                 <!-- 十六进制视图 -->
                 <a-card title="报文十六进制视图" class="result-card hex-view-card">
-                    <div class="hex-content" ref="hexViewRef">
+                    <div ref="hexViewRef" class="hex-content">
                         <div v-for="(row, rowIndex) in hexRows" :key="rowIndex" class="hex-data-row">
                             <div class="offset-col">{{ formatOffset(rowIndex * 16) }}</div>
                             <div class="hex-col">
@@ -68,9 +112,9 @@
                     <a-tree
                         v-if="parsedTreeData.length > 0"
                         :tree-data="parsedTreeData"
-                        :defaultExpandAll="true"
+                        :default-expand-all="true"
                         @select="onTreeNodeSelect"
-                    ></a-tree>
+                    />
                     <div v-else class="no-data-message">暂无解析数据</div>
                 </a-card>
             </div>
@@ -83,11 +127,12 @@
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, reactive, toRaw, watch, onMounted, computed } from 'vue';
+    import { ref, toRaw, watch, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { clearValidationErrors } from '../../utils/validationCommon';
-
+    import { validateInputPacketData, validateInputProtocolPort } from '../../utils/toolsValidation';
+    import { PROTOCOL_TYPE, START_LAYER } from '../../const/toolsConst';
     defineOptions({
         name: 'PacketParser'
     });
@@ -97,30 +142,16 @@
     const hexViewRef = ref(null);
 
     const validationErrors = ref({
-        packetData: ''
+        packetData: '',
+        protocolPort: ''
     });
 
     const formState = ref({
-        packetType: 'bgp',
+        startLayer: START_LAYER.L2,
+        protocolType: PROTOCOL_TYPE.AUTO,
+        protocolPort: '',
         packetData: ''
     });
-
-    const validatePacketData = (value, errors) => {
-        if (!value || value.trim() === '') {
-            errors.value.packetData = '请输入报文数据';
-            return false;
-        }
-
-        // 简单验证是否是16进制格式
-        const hexPattern = /^[0-9A-Fa-f\s]+$/;
-        if (!hexPattern.test(value)) {
-            errors.value.packetData = '报文数据必须是16进制格式，例如: FF FF FF FF';
-            return false;
-        }
-
-        errors.value.packetData = '';
-        return true;
-    };
 
     const validateField = (value, field, validator) => {
         return validator(value, validationErrors);
@@ -239,9 +270,7 @@
     // 保存配置
     const saveConfig = debounce(async data => {
         const resp = await window.toolsApi.savePacketParserConfig(data);
-        if (resp.status === 'success') {
-            console.info(resp.msg);
-        } else {
+        if (resp.status !== 'success') {
             console.error(resp.msg);
         }
     }, 300);
@@ -252,8 +281,22 @@
         formState,
         newValue => {
             if (!mounted.value) return;
-            const raw = toRaw(newValue);
-            saveConfig(raw);
+
+            try {
+                clearValidationErrors(validationErrors);
+                validateField(formState.value.packetData, 'packetData', validateInputPacketData);
+                validateField(formState.value.protocolPort, 'protocolPort', validateInputProtocolPort);
+                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
+
+                if (hasErrors) {
+                    return;
+                }
+
+                const raw = toRaw(newValue);
+                saveConfig(raw);
+            } catch (error) {
+                console.error(error);
+            }
         },
         { deep: true }
     );
@@ -263,19 +306,27 @@
         try {
             // 验证字段
             clearValidationErrors(validationErrors);
-            validateField(formState.value.packetData, 'packetData', validatePacketData);
+            validateField(formState.value.packetData, 'packetData', validateInputPacketData);
+            validateField(formState.value.protocolPort, 'protocolPort', validateInputProtocolPort);
 
-            if (validationErrors.value.packetData) {
-                message.error('请检查报文数据是否正确');
+            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
+
+            if (hasErrors) {
+                message.error('请检查配置信息是否正确');
                 return;
             }
 
             const payload = {
-                packetType: formState.value.packetType,
-                packetData: formState.value.packetData
+                protocolType: formState.value.protocolType,
+                protocolPort: formState.value.protocolPort,
+                packetData: formState.value.packetData,
+                startLayer: formState.value.startLayer
             };
 
-            const resp = await window.toolsApi.parsePacket(payload);
+            let resp;
+
+            // 根据报文类型选择不同的解析方法
+            resp = await window.toolsApi.parsePacket(payload);
 
             if (resp.status === 'success') {
                 parsedResult.value = resp.data;
@@ -357,6 +408,38 @@
         min-height: 221px;
         max-height: 221px;
         flex-shrink: 0;
+    }
+
+    /* 左右布局表单 */
+    .form-row-container {
+        display: flex;
+        gap: 20px;
+    }
+
+    .form-column {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .left-column {
+        width: 300px;
+        flex-shrink: 0;
+    }
+
+    .right-column {
+        flex: 1;
+    }
+
+    /* 端口过滤样式 */
+    .port-filter-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .port-separator {
+        color: #666;
+        font-weight: bold;
     }
 
     .parser-result-section {
@@ -517,6 +600,15 @@
 
         .hex-view-card,
         .tree-view-card {
+            width: 100%;
+        }
+
+        .form-row-container {
+            flex-direction: column;
+        }
+
+        .left-column,
+        .right-column {
             width: 100%;
         }
     }

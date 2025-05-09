@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
-// https://vitejs.dev/config/
+// Vite配置文档: https://vitejs.dev/config/
 export default defineConfig({
     plugins: [vue()],
     base: './', // 必须设置为相对路径

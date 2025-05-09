@@ -1,6 +1,6 @@
 <template>
     <div class="bgp-config-container">
-        <a-form :model="bgpConfigData" @finish="startBgp" :label-col="labelCol" :wrapper-col="wrapperCol">
+        <a-form :model="bgpConfigData" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="startBgp">
             <a-card title="BGP配置">
                 <a-row>
                     <a-col :span="12">
@@ -10,10 +10,10 @@
                                 :open="!!bgpConfigvalidationErrors.localAs"
                             >
                                 <a-input
-                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.localAs"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
+                                    :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.localAs ? 'error' : ''"
+                                    @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -25,10 +25,10 @@
                                 :open="!!bgpConfigvalidationErrors.routerId"
                             >
                                 <a-input
-                                    :disabled="bgpRunning"
                                     v-model:value="bgpConfigData.routerId"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
+                                    :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.routerId ? 'error' : ''"
+                                    @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -38,8 +38,8 @@
                     <a-col :span="12">
                         <a-form-item label="地址族" name="addressFamily">
                             <a-select
-                                :disabled="bgpRunning"
                                 v-model:value="bgpConfigData.addressFamily"
+                                :disabled="bgpRunning"
                                 mode="multiple"
                                 style="width: 100%"
                                 :options="bgpAddressFamilyOptions"
@@ -53,7 +53,7 @@
                         <a-button type="primary" html-type="submit" :loading="bgpLoading" :disabled="bgpRunning">
                             启动BGP
                         </a-button>
-                        <a-button type="primary" danger @click="stopBgp" :disabled="!bgpRunning">停止BGP</a-button>
+                        <a-button type="primary" danger :disabled="!bgpRunning" @click="stopBgp">停止BGP</a-button>
                     </a-space>
                 </a-form-item>
             </a-card>
@@ -64,9 +64,9 @@
                 <a-tab-pane :key="IP_TYPE.IPV4" tab="IPv4邻居">
                     <a-form
                         :model="ipv4PeerConfigData"
-                        @finish="configIpv4Peer"
                         :label-col="labelCol"
                         :wrapper-col="wrapperCol"
+                        @finish="configIpv4Peer"
                     >
                         <a-row>
                             <a-col :span="12">
@@ -77,6 +77,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerIp"
+                                            :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -85,7 +86,6 @@
                                                         validatePeerIp
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -98,6 +98,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerAs"
+                                            :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -106,7 +107,6 @@
                                                         validatePeerAs
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -122,6 +122,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.holdTime"
+                                            :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv4PeerConfigField(
@@ -130,7 +131,6 @@
                                                         validateHoldTime
                                                     )
                                             "
-                                            :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -171,7 +171,7 @@
                                         v-model:value="ipv4PeerConfigData.role"
                                         style="width: 100%"
                                         :options="roleOptions"
-                                        :disabled="!ipv4PeerConfigData.openCap.includes(BGP_CAPABILITY.ROLE)"
+                                        :disabled="!ipv4PeerConfigData.openCap.includes(BGP_OPEN_CAP_CODE.BGP_ROLE)"
                                     />
                                 </a-form-item>
                             </a-col>
@@ -193,9 +193,9 @@
                 <a-tab-pane :key="IP_TYPE.IPV6" tab="IPv6邻居">
                     <a-form
                         :model="ipv6PeerConfigData"
-                        @finish="configIpv6Peer"
                         :label-col="labelCol"
                         :wrapper-col="wrapperCol"
+                        @finish="configIpv6Peer"
                     >
                         <a-row>
                             <a-col :span="12">
@@ -206,6 +206,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6"
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -214,7 +215,6 @@
                                                         validatePeerIpv6
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -227,6 +227,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6As"
+                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -235,7 +236,6 @@
                                                         validatePeerAs
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -251,6 +251,7 @@
                                     >
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.holdTimeIpv6"
+                                            :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
                                             @blur="
                                                 e =>
                                                     validateIpv6PeerConfigField(
@@ -259,7 +260,6 @@
                                                         validateHoldTime
                                                     )
                                             "
-                                            :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -300,7 +300,7 @@
                                         v-model:value="ipv6PeerConfigData.roleIpv6"
                                         style="width: 100%"
                                         :options="roleOptions"
-                                        :disabled="!ipv6PeerConfigData.openCapIpv6.includes(BGP_CAPABILITY.ROLE)"
+                                        :disabled="!ipv6PeerConfigData.openCapIpv6.includes(BGP_OPEN_CAP_CODE.BGP_ROLE)"
                                     />
                                 </a-form-item>
                             </a-col>
@@ -341,7 +341,7 @@
     import { message } from 'ant-design-vue';
     import { debounce } from 'lodash-es';
     import { SettingOutlined } from '@ant-design/icons-vue';
-    import { BGP_CAPABILITY, BGP_ROLE, ADDRESS_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
+    import { BGP_OPEN_CAP_CODE, BGP_ROLE_TYPE, BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
         validateLocalAs,
         validatePeerIp,
@@ -360,47 +360,47 @@
     const wrapperCol = { span: 40 };
 
     const ipv4OpenCapOptions = [
-        { label: 'Addr Family', value: BGP_CAPABILITY.ADDR_FAMILY, disabled: true },
-        { label: 'Route-Refresh', value: BGP_CAPABILITY.ROUTE_REFRESH },
-        { label: 'AS4', value: BGP_CAPABILITY.AS4 },
-        { label: 'Role', value: BGP_CAPABILITY.ROLE }
+        { label: 'Addr Family', value: BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS, disabled: true },
+        { label: 'Route-Refresh', value: BGP_OPEN_CAP_CODE.ROUTE_REFRESH },
+        { label: 'FOUR_OCTET_AS', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
+        { label: 'Role', value: BGP_OPEN_CAP_CODE.BGP_ROLE }
     ];
 
     const ipv6OpenCapOptions = [
-        { label: 'Addr Family', value: BGP_CAPABILITY.ADDR_FAMILY, disabled: true },
-        { label: 'Route-Refresh', value: BGP_CAPABILITY.ROUTE_REFRESH },
-        { label: 'AS4', value: BGP_CAPABILITY.AS4 },
-        { label: 'Role', value: BGP_CAPABILITY.ROLE },
-        { label: 'Extended Next Hop Encoding', value: BGP_CAPABILITY.EXTENDED_NEXT_HOP_ENCODING }
+        { label: 'Addr Family', value: BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS, disabled: true },
+        { label: 'Route-Refresh', value: BGP_OPEN_CAP_CODE.ROUTE_REFRESH },
+        { label: 'FOUR_OCTET_AS', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
+        { label: 'Role', value: BGP_OPEN_CAP_CODE.BGP_ROLE },
+        { label: 'Extended Next Hop Encoding', value: BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING }
     ];
 
     const roleOptions = [
-        { label: 'Provider', value: BGP_ROLE.PROVIDER },
-        { label: 'RS', value: BGP_ROLE.RS },
-        { label: 'RS-Client', value: BGP_ROLE.RS_CLIENT },
-        { label: 'Customer', value: BGP_ROLE.CUSTOMER },
-        { label: 'Lateral Peer', value: BGP_ROLE.LATERAL_PEER }
+        { label: 'Provider', value: BGP_ROLE_TYPE.ROLE_PROVIDER },
+        { label: 'ROLE_RS', value: BGP_ROLE_TYPE.ROLE_RS },
+        { label: 'ROLE_RS-Client', value: BGP_ROLE_TYPE.ROLE_RS_CLIENT },
+        { label: 'Customer', value: BGP_ROLE_TYPE.ROLE_RS_CUSTOMER },
+        { label: 'Lateral Peer', value: BGP_ROLE_TYPE.ROLE_PEER }
     ];
 
     const bgpAddressFamilyOptions = [
-        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC, disabled: true },
-        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC }
+        { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC }
     ];
 
     const addressFamilyOptions = [
-        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC, disabled: true },
-        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC }
+        { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC }
     ];
 
     const addressFamilyOptionsIpv6 = [
-        { label: 'Ipv4-UNC', value: ADDRESS_FAMILY.IPV4_UNC },
-        { label: 'Ipv6-UNC', value: ADDRESS_FAMILY.IPV6_UNC, disabled: true }
+        { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC },
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC, disabled: true }
     ];
 
     const bgpConfigData = ref({
         localAs: DEFAULT_VALUES.LOCAL_AS,
         routerId: DEFAULT_VALUES.ROUTER_ID,
-        addressFamily: [ADDRESS_FAMILY.IPV4_UNC]
+        addressFamily: [BGP_ADDR_FAMILY.IPV4_UNC]
     });
 
     const activeTabKey = ref(IP_TYPE.IPV4);
@@ -427,27 +427,21 @@
 
     const saveBgpConfig = debounce(async data => {
         const result = await window.bgpApi.saveBgpConfig(data);
-        if (result.status === 'success') {
-            console.info(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv4PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4PeerConfig(data);
-        if (result.status === 'success') {
-            console.info(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv6PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6PeerConfig(data);
-        if (result.status === 'success') {
-            console.info(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
@@ -506,7 +500,6 @@
 
             const hasErrors = Object.values(bgpConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('Validation failed, configuration not saved');
                 return;
             }
 
@@ -529,7 +522,6 @@
 
             const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('IPv4 Validation failed, configuration not saved');
                 return;
             }
 
@@ -552,7 +544,6 @@
 
             const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('IPv6 Validation failed, configuration not saved');
                 return;
             }
 
@@ -570,7 +561,7 @@
             bgpConfigData.value.routerId = savedBgpConfig.data.routerId;
             bgpConfigData.value.addressFamily = Array.isArray(savedBgpConfig.data.addressFamily)
                 ? [...savedBgpConfig.data.addressFamily]
-                : [ADDRESS_FAMILY.IPV4_UNC];
+                : [BGP_ADDR_FAMILY.IPV4_UNC];
         } else {
             console.error('BGP 配置文件加载失败', savedBgpConfig.msg);
         }
@@ -629,11 +620,11 @@
     watch(
         () => ipv4PeerConfigData.value.openCap,
         newValue => {
-            if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
+            if (!newValue.includes(BGP_OPEN_CAP_CODE.BGP_ROLE)) {
                 ipv4PeerConfigData.value.role = '';
             } else {
                 if (ipv4PeerConfigData.value.role === '') {
-                    ipv4PeerConfigData.value.role = BGP_ROLE.PROVIDER;
+                    ipv4PeerConfigData.value.role = BGP_ROLE_TYPE.ROLE_PROVIDER;
                 }
             }
         },
@@ -652,11 +643,11 @@
     watch(
         () => ipv6PeerConfigData.value.openCapIpv6,
         newValue => {
-            if (!newValue.includes(BGP_CAPABILITY.ROLE)) {
+            if (!newValue.includes(BGP_OPEN_CAP_CODE.BGP_ROLE)) {
                 ipv6PeerConfigData.value.roleIpv6 = '';
             } else {
                 if (ipv6PeerConfigData.value.roleIpv6 === '') {
-                    ipv6PeerConfigData.value.roleIpv6 = BGP_ROLE.PROVIDER;
+                    ipv6PeerConfigData.value.roleIpv6 = BGP_ROLE_TYPE.ROLE_PROVIDER;
                 }
             }
         },
@@ -723,7 +714,6 @@
             }
         } catch (e) {
             message.error(e);
-            console.error(e);
         }
     };
 
@@ -749,7 +739,6 @@
             }
         } catch (e) {
             message.error(e);
-            console.error(e);
         }
     };
 

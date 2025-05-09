@@ -1,7 +1,7 @@
 {
     "name": "mini-tools",
     "private": true,
-    "version": "2.0.0",
+    "version": "2.1.0",
     "main": "electron/main.js",
     "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
     "author": {
@@ -19,7 +19,9 @@
         "predist": "npm run build",
         "format": "prettier --write .",
         "release": "electron-builder",
-        "prerelease": "npm run build"
+        "prerelease": "npm run build",
+        "lint": "eslint --ext .js,.vue src electron",
+        "lint:fix": "eslint --fix --ext .js,.vue src electron"
     },
     "build": {
         "appId": "MiniTools",
@@ -56,12 +58,18 @@
         }
     },
     "devDependencies": {
+        "@babel/eslint-parser": "^7.23.10",
+        "@babel/preset-env": "^7.27.1",
         "@vitejs/plugin-vue": "^4.2.3",
         "ant-design-vue": "^4.2.6",
         "concurrently": "^7.6.0",
         "cross-env": "^7.0.3",
         "electron": "^15.3.0",
         "electron-builder": "^22.14.13",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-import": "^2.29.1",
+        "eslint-plugin-vue": "^9.22.0",
         "lodash-es": "^4.17.21",
         "prettier": "^3.5.3",
         "vite": "^4.4.0",

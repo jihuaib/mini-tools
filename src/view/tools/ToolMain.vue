@@ -2,9 +2,9 @@
     <div class="tool-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange" style="height: 55px">
-                <a-tab-pane key="string-generator" tab="字符串生成"></a-tab-pane>
-                <a-tab-pane key="packet-parser" tab="报文解析"></a-tab-pane>
+            <a-tabs v-model:activeKey="activeTabKey" style="height: 55px" @change="handleTabChange">
+                <a-tab-pane key="string-generator" tab="字符串生成" />
+                <a-tab-pane key="packet-parser" tab="报文解析" />
             </a-tabs>
         </div>
 
@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-    import { ref } from 'vue';
+    import { ref, onActivated } from 'vue';
     import { useRouter } from 'vue-router';
 
     defineOptions({
@@ -35,13 +35,18 @@
         router.push(`/tools/${key}`);
     };
 
-    // Expose clearValidationErrors method to parent component (Main.vue)
+    // 向父组件(Main.vue)暴露清空验证错误的方法
     defineExpose({
         clearValidationErrors: () => {
             if (currentTab.value && typeof currentTab.value.clearValidationErrors === 'function') {
                 currentTab.value.clearValidationErrors();
             }
         }
+    });
+
+    onActivated(() => {
+        activeTabKey.value = 'string-generator';
+        router.push('/tools/string-generator');
     });
 </script>
 

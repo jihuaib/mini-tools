@@ -1,5 +1,5 @@
 <template>
-    <a-drawer :title="title" placement="right" :open="visible" @close="onClose" width="500">
+    <a-drawer :title="title" placement="right" :open="visible" width="500" @close="onClose">
         <a-form layout="vertical">
             <a-form-item :label="inputLabel" :validate-status="validateStatus" :help="validateMessage">
                 <a-textarea v-model:value="localInputValue" :rows="rows" :placeholder="placeholder" />
@@ -16,6 +16,7 @@
 
 <script setup>
     import { ref, watch } from 'vue';
+    import { validatePacketData } from '../utils/validationCommon';
 
     const props = defineProps({
         visible: {
@@ -44,7 +45,7 @@
         },
         placeholder: {
             type: String,
-            default: '请输入16进制数字, 用空格分隔, 需要携带0x前缀, 例如: 0x11 0x22 0x33 0x44 0x55 0x66 0x77'
+            default: '请输入16进制数字, 用空格分隔, 例如: 11 22 33 44 55 66 77'
         }
     });
 
@@ -62,32 +63,6 @@
     const validateStatus = ref('');
     const validateMessage = ref('');
 
-    const validationRule = value => {
-        const lines = value.split('\n');
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const numbers = line.split(/\s+/).filter(num => num !== '');
-
-            // 检查每个数字的格式
-            for (const num of numbers) {
-                if (!/^(0x)[0-9A-Fa-f]{2}$/.test(num)) {
-                    return {
-                        status: 'error',
-                        message: `第 ${i + 1} 行包含无效的16进制数字: "${num}", 请输入2位的16进制数字, 需要携带0x前缀`
-                    };
-                }
-            }
-        }
-
-        return {
-            status: 'success',
-            message: ''
-        };
-    };
-
     const onClose = () => {
         emit('update:visible', false);
         validateStatus.value = '';
@@ -95,7 +70,7 @@
     };
 
     const onSubmit = () => {
-        const result = validationRule(localInputValue.value);
+        const result = validatePacketData(localInputValue.value);
         validateStatus.value = result.status;
         validateMessage.value = result.message;
 

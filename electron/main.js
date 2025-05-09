@@ -16,8 +16,6 @@ const isDev = !app.isPackaged;
 let mainWindow = null;
 
 let bgpApp = null;
-let bmpApp = null;
-let rpkiApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -43,7 +41,7 @@ function createWindow() {
     // 监听窗口关闭事件
     win.on('close', async event => {
         event.preventDefault();
-        // Check both BGP and BMP servers before closing
+        // 关闭窗口前检查BGP和BMP服务器
         const closeBgpOk = await bgpApp.handleWindowClose(win);
         if (!closeBgpOk) return;
 
@@ -53,7 +51,7 @@ function createWindow() {
         win.destroy();
     });
 
-    const tray = new Tray(path.join(__dirname, './assets/icon.ico'));
+    new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
 }
@@ -73,8 +71,8 @@ app.whenReady().then(() => {
     bgpApp = new BgpApp(ipcMain, store);
     new ToolsApp(ipcMain, store);
     new SystemMenuApp(ipcMain, mainWindow);
-    bmpApp = new BmpApp(ipcMain, store);
-    rpkiApp = new RpkiApp(ipcMain, store);
+    new BmpApp(ipcMain, store);
+    new RpkiApp(ipcMain, store);
 });
 
 app.on('window-all-closed', () => {

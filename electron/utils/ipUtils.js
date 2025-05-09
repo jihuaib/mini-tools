@@ -167,47 +167,6 @@ function ipv6BufferToString(buffer, length) {
         .replace(/:{3,}/g, '::');
 }
 
-/**
- * 根据地址族和子地址族转为UI的地址组类型
- * @param {BGP_AFI_TYPE} afi 地址族
- * @param {BGP_SAFI_TYPE} safi 子地址族
- */
-function getAddrFamilyType(afi, safi) {
-    let addrFamily;
-    switch (afi) {
-        case BgpConst.BGP_AFI_TYPE.AFI_IPV4:
-            if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST;
-            }
-            break;
-        case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
-            if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
-                addrFamily = BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST;
-            }
-            break;
-    }
-
-    return addrFamily;
-}
-
-function getAfiAndSafi(addrFamily) {
-    let afi;
-    let safi;
-    addrFamily = parseInt(addrFamily);
-    switch (addrFamily) {
-        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV4_UNICAST:
-            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV4;
-            safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
-            break;
-        case BgpConst.BGP_ADDR_FAMILY_UI.ADDR_FAMILY_IPV6_UNICAST:
-            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
-            safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
-            break;
-    }
-
-    return { afi, safi };
-}
-
 // 判断地址是ipv4还是ipv6
 function getIpType(ip) {
     if (ipaddr.IPv4.isIPv4(ip)) {
@@ -219,15 +178,23 @@ function getIpType(ip) {
     return null;
 }
 
+/**
+ * Get IP type name from code
+ * @param {Number} ipType - IP type code
+ * @returns {String} IP type name
+ */
+function getIpTypeName(ipType) {
+    return ipType === BgpConst.IP_TYPE.IPV4 ? 'IPv4' : 'IPv6';
+}
+
 module.exports = {
     genRouteIps,
     writeUInt16,
     writeUInt32,
     ipToBytes,
     rdBufferToString,
-    getAddrFamilyType,
-    getAfiAndSafi,
     getIpType,
     ipv4BufferToString,
-    ipv6BufferToString
+    ipv6BufferToString,
+    getIpTypeName
 };

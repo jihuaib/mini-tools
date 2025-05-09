@@ -39,7 +39,7 @@ class BmpApp {
             this.store.set(this.bmpConfigFileKey, config);
             return successResponse(null, 'BMP配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving BMP config:', error);
+            this.logger.error('Error saving BMP config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -52,7 +52,7 @@ class BmpApp {
             }
             return successResponse(config, 'BMP配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading BMP config:', error);
+            this.logger.error('Error loading BMP config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -107,7 +107,7 @@ class BmpApp {
             this.logger.info(`bmp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error starting BMP:', error);
+            this.logger.error('Error starting BMP:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -122,7 +122,7 @@ class BmpApp {
             const result = await this.worker.sendRequest(BMP_REQ_TYPES.STOP_BMP, null);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error stopping BMP:', error);
+            this.logger.error('Error stopping BMP:', error.message);
             return errorResponse(error.message);
         } finally {
             // 移除事件监听器
@@ -145,7 +145,7 @@ class BmpApp {
             this.logger.info(`获取客户端列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取客户端列表成功');
         } catch (error) {
-            this.logger.error('Error getting client list:', error);
+            this.logger.error('Error getting client list:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -162,7 +162,7 @@ class BmpApp {
             this.logger.info(`获取对等体列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取对等体列表成功');
         } catch (error) {
-            this.logger.error('Error getting peers:', error);
+            this.logger.error('Error getting peers:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -181,7 +181,7 @@ class BmpApp {
             this.logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由列表成功');
         } catch (error) {
-            this.logger.error('Error getting routes:', error);
+            this.logger.error('Error getting routes:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -198,7 +198,7 @@ class BmpApp {
             this.logger.info(`获取客户端信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取客户端信息成功');
         } catch (error) {
-            this.logger.error('Error getting client:', error);
+            this.logger.error('Error getting client:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -216,7 +216,7 @@ class BmpApp {
             this.logger.info(`获取对等体信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取对等体信息成功');
         } catch (error) {
-            this.logger.error('Error getting peer:', error);
+            this.logger.error('Error getting peer:', error.message);
             return errorResponse(error.message);
         }
     }

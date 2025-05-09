@@ -1,7 +1,7 @@
-// BGP and network validation functions
+// BGP和网络验证函数
 import { isASN, isValidIpv4, isValidIpv6, isNumber } from './validationCommon';
 
-// BGP validation functions
+// BGP验证函数
 export const validateLocalAs = (value, validationErrors) => {
     if (!value) {
         validationErrors.value.localAs = '请输入Local AS';
