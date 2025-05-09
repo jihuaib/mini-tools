@@ -113,9 +113,7 @@
 
     const saveDebounced = debounce(async data => {
         const resp = await window.toolsApi.saveGenerateStringConfig(data);
-        if (resp.status === 'success') {
-            console.log(resp.msg);
-        } else {
+        if (resp.status !== 'success') {
             console.error(resp.msg);
         }
     }, 300);
@@ -135,7 +133,6 @@
             const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
             if (hasErrors) {
-                console.log('Validation failed, configuration not saved');
                 return;
             }
             const raw = toRaw(newValue);

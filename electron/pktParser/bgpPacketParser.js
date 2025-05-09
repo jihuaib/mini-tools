@@ -6,6 +6,10 @@
  * Based on RFC 4271 and other BGP extension RFCs.
  */
 
+const Logger = require('../log/logger');
+
+const logger = new Logger();
+
 const BgpConst = require('../const/bgpConst');
 const { ipv4BufferToString } = require('../utils/ipUtils');
 const {
@@ -15,7 +19,9 @@ const {
     getBgpSafiName,
     getBgpOpenRoleName,
     getBgpPathAttrTypeName,
-    getBgpNotificationErrorName
+    getBgpNotificationErrorName,
+    getBgpOriginType,
+    getBgpAsPathTypeName
 } = require('../utils/bgpUtils');
 
 /**
@@ -27,7 +33,7 @@ const {
  */
 function parseBgpPacket(buffer, tree, offset = 0) {
     try {
-        // Check if buffer is valid
+        // 检查缓冲区是否有效
         if (!Buffer.isBuffer(buffer) || buffer.length < BgpConst.BGP_HEAD_LEN) {
             return {
                 valid: false,
@@ -37,7 +43,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
 
         let curOffset = offset;
 
-        // Parse BGP Header
+        // 解析BGP头部
         const headerNode = {
             name: 'BGP Packet',
             offset: curOffset,
@@ -47,7 +53,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
         };
         tree.children.push(headerNode);
 
-        // Parse Marker
+        // 解析标记
         const markerNode = {
             name: 'Marker',
             offset: curOffset,
@@ -57,7 +63,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
         };
         headerNode.children.push(markerNode);
 
-        // Check if the BGP marker is valid (16 bytes of 0xFF)
+        // 检查BGP标记是否有效（16字节的0xFF）
         const marker = buffer.subarray(curOffset, curOffset + BgpConst.BGP_MARKER_LEN);
         if (!marker.every(byte => byte === 0xff)) {
             return {
@@ -68,7 +74,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
         }
         curOffset += BgpConst.BGP_MARKER_LEN;
 
-        // Parse Length
+        // 解析长度
         const length = buffer.readUInt16BE(curOffset);
         const lengthNode = {
             name: 'Length',
@@ -80,7 +86,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
         headerNode.children.push(lengthNode);
         curOffset += 2;
 
-        // Parse Type
+        // 解析类型
         const type = buffer[curOffset];
         const typeName = getBgpPacketTypeName(type);
         const typeNode = {
@@ -93,7 +99,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
         headerNode.children.push(typeNode);
         curOffset += 1;
 
-        // Check if the buffer contains the complete packet
+        // 检查缓冲区是否包含完整的数据包
         if (buffer.length < length) {
             return {
                 valid: false,
@@ -102,7 +108,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
             };
         }
 
-        // Parse message body based on message type
+        // 根据消息类型解析消息体
         let payload = null;
         let newOffset = curOffset;
 
@@ -117,7 +123,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
                 newOffset = parseNotificationMessageTree(buffer, curOffset, headerNode);
                 break;
             case BgpConst.BGP_PACKET_TYPE.KEEPALIVE:
-                // Keepalive has no additional data
+                // Keepalive没有额外数据
                 // messageBodyNode.value = 'No data (Keepalive message)';
                 newOffset = curOffset;
                 break;
@@ -132,12 +138,12 @@ function parseBgpPacket(buffer, tree, offset = 0) {
                 };
         }
 
-        // Verify that we've parsed everything correctly
+        // 验证我们是否正确解析了所有内容
         if (newOffset - offset !== length) {
-            console.warn(`BGP parsing mismatch: expected length ${length}, actual parsed length ${newOffset - offset}`);
+            logger.warn(`BGP parsing mismatch: expected length ${length}, actual parsed length ${newOffset - offset}`);
         }
 
-        // Update header node length
+        // 更新头节点长度
         headerNode.length = length;
 
         return {
@@ -159,7 +165,7 @@ function parseBgpPacket(buffer, tree, offset = 0) {
  * @returns {number} The new offset after parsing the message
  */
 function parseOpenMessageTree(buffer, curOffset, parentNode) {
-    // Version
+    // 版本
     const version = buffer[curOffset];
     const versionNode = {
         name: 'Version',
@@ -183,7 +189,7 @@ function parseOpenMessageTree(buffer, curOffset, parentNode) {
     parentNode.children.push(asnNode);
     curOffset += 2;
 
-    // Hold Time
+    // 保持时间
     const holdTime = buffer.readUInt16BE(curOffset);
     const holdTimeNode = {
         name: 'Hold Time',
@@ -195,19 +201,19 @@ function parseOpenMessageTree(buffer, curOffset, parentNode) {
     parentNode.children.push(holdTimeNode);
     curOffset += 2;
 
-    // BGP Identifier (Router ID)
-    const routerId = `${buffer[curOffset]}.${buffer[curOffset + 1]}.${buffer[curOffset + 2]}.${buffer[curOffset + 3]}`;
-    const routerIdNode = {
-        name: 'BGP Identifier',
+    // BGP标识符（路由器ID）
+    const ipStr = ipv4BufferToString(buffer.subarray(curOffset, curOffset + 4));
+    const bgpIdNode = {
+        name: 'BGP Identifier (Router ID)',
         offset: curOffset,
         length: 4,
-        value: routerId,
+        value: ipStr,
         children: []
     };
-    parentNode.children.push(routerIdNode);
+    parentNode.children.push(bgpIdNode);
     curOffset += 4;
 
-    // Optional Parameters Length
+    // 可选参数长度
     const optParamLen = buffer[curOffset];
     const optParamLenNode = {
         name: 'Optional Parameters Length',
@@ -590,8 +596,311 @@ function parseUpdateMessageTree(buffer, curOffset, parentNode) {
 
             // Parse attribute value based on type
             switch (attrTypeCode) {
-                // Add specific attribute parsing if needed
-                // For brevity, many specific attribute parsers are omitted in this example
+                case BgpConst.BGP_PATH_ATTR.ORIGIN: {
+                    const origin = buffer[valueOffset];
+                    const originName = getBgpOriginType(origin);
+                    const valueNode = {
+                        name: 'Value',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: `${origin} (${originName})`,
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.AS_PATH: {
+                    const asPathNode = {
+                        name: 'AS_PATH',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: '',
+                        children: []
+                    };
+                    attrNode.children.push(asPathNode);
+
+                    // Parse AS_PATH segments
+                    let segmentOffset = valueOffset;
+                    let segmentIndex = 0;
+
+                    while (segmentOffset < valueOffset + attrLength) {
+                        const segmentType = buffer[segmentOffset];
+                        const segmentTypeName = getBgpAsPathTypeName(segmentType);
+                        const segmentLength = buffer[segmentOffset + 1]; // Number of ASNs
+
+                        const segmentNode = {
+                            name: `Segment ${segmentIndex + 1} (${segmentTypeName})`,
+                            offset: segmentOffset,
+                            length: 2 + (segmentLength * 4), // type + length + AS numbers (4 bytes each)
+                            value: segmentTypeName,
+                            children: []
+                        };
+                        asPathNode.children.push(segmentNode);
+
+                        // Segment Type
+                        const segmentTypeNode = {
+                            name: 'Type',
+                            offset: segmentOffset,
+                            length: 1,
+                            value: `${segmentType} (${segmentTypeName})`,
+                            children: []
+                        };
+                        segmentNode.children.push(segmentTypeNode);
+
+                        // Segment Length
+                        const segmentLengthNode = {
+                            name: 'Length',
+                            offset: segmentOffset + 1,
+                            length: 1,
+                            value: segmentLength,
+                            children: []
+                        };
+                        segmentNode.children.push(segmentLengthNode);
+
+                        segmentOffset += 2;
+
+                        // AS Numbers
+                        const asNumbers = [];
+                        for (let i = 0; i < segmentLength; i++) {
+                            const asn = buffer.readUInt32BE(segmentOffset);
+                            asNumbers.push(asn);
+
+                            const asnNode = {
+                                name: `AS${i + 1}`,
+                                offset: segmentOffset,
+                                length: 4,
+                                value: asn,
+                                children: []
+                            };
+                            segmentNode.children.push(asnNode);
+
+                            segmentOffset += 4;
+                        }
+
+                        // Update segment value with AS numbers
+                        if (segmentType === BgpConst.BGP_AS_PATH_TYPE.AS_SEQUENCE) {
+                            segmentNode.value = `${segmentTypeName}: ${asNumbers.join(' ')}`;
+                        } else {
+                            segmentNode.value = `${segmentTypeName}: {${asNumbers.join(' ')}}`;
+                        }
+
+                        segmentIndex++;
+                    }
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.NEXT_HOP: {
+                    const nextHop = `${buffer[valueOffset]}.${buffer[valueOffset + 1]}.${buffer[valueOffset + 2]}.${buffer[valueOffset + 3]}`;
+                    const valueNode = {
+                        name: 'Next Hop',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: nextHop,
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.MED: {
+                    const med = buffer.readUInt32BE(valueOffset);
+                    const valueNode = {
+                        name: 'MED',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: med,
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.LOCAL_PREF: {
+                    const localPref = buffer.readUInt32BE(valueOffset);
+                    const valueNode = {
+                        name: 'Local Preference',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: localPref,
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.ATOMIC_AGGREGATE: {
+                    const valueNode = {
+                        name: 'Atomic Aggregate',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: 'Present',
+                        children: []
+                    };
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.AGGREGATOR: {
+                    const aggregatorAs = buffer.readUInt16BE(valueOffset);
+                    const aggregatorIp = `${buffer[valueOffset + 2]}.${buffer[valueOffset + 3]}.${buffer[valueOffset + 4]}.${buffer[valueOffset + 5]}`;
+
+                    const valueNode = {
+                        name: 'Aggregator',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: `AS: ${aggregatorAs}, IP: ${aggregatorIp}`,
+                        children: []
+                    };
+
+                    const asNode = {
+                        name: 'AS',
+                        offset: valueOffset,
+                        length: 2,
+                        value: aggregatorAs,
+                        children: []
+                    };
+                    valueNode.children.push(asNode);
+
+                    const ipNode = {
+                        name: 'IP',
+                        offset: valueOffset + 2,
+                        length: 4,
+                        value: aggregatorIp,
+                        children: []
+                    };
+                    valueNode.children.push(ipNode);
+
+                    attrNode.children.push(valueNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.COMMUNITY: {
+                    const communitiesNode = {
+                        name: 'Communities',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: '',
+                        children: []
+                    };
+                    attrNode.children.push(communitiesNode);
+
+                    // Each community is 4 bytes (32 bits)
+                    const communityCount = attrLength / 4;
+                    const communities = [];
+
+                    for (let i = 0; i < communityCount; i++) {
+                        const commOffset = valueOffset + (i * 4);
+                        const highOrder = buffer.readUInt16BE(commOffset);
+                        const lowOrder = buffer.readUInt16BE(commOffset + 2);
+                        const communityValue = `${highOrder}:${lowOrder}`;
+                        communities.push(communityValue);
+
+                        const communityNode = {
+                            name: `Community ${i + 1}`,
+                            offset: commOffset,
+                            length: 4,
+                            value: communityValue,
+                            children: []
+                        };
+                        communitiesNode.children.push(communityNode);
+                    }
+
+                    communitiesNode.value = communities.join(', ');
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: {
+                    const mpReachNode = {
+                        name: 'MP_REACH_NLRI',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: '',
+                        children: []
+                    };
+                    attrNode.children.push(mpReachNode);
+
+                    // Parse AFI
+                    const afi = buffer.readUInt16BE(valueOffset);
+                    const afiNode = {
+                        name: 'AFI',
+                        offset: valueOffset,
+                        length: 2,
+                        value: `${afi} (${getBgpAfiName(afi)})`,
+                        children: []
+                    };
+                    mpReachNode.children.push(afiNode);
+
+                    // Parse SAFI
+                    const safi = buffer[valueOffset + 3]; // +3 because of 1 reserved byte
+                    const safiNode = {
+                        name: 'SAFI',
+                        offset: valueOffset + 3,
+                        length: 1,
+                        value: `${safi} (${getBgpSafiName(safi)})`,
+                        children: []
+                    };
+                    mpReachNode.children.push(safiNode);
+
+                    // Reserved byte
+                    const reservedNode = {
+                        name: 'Reserved',
+                        offset: valueOffset + 2,
+                        length: 1,
+                        value: buffer[valueOffset + 2],
+                        children: []
+                    };
+                    mpReachNode.children.push(reservedNode);
+
+                    // The rest of MP_REACH_NLRI parsing could be implemented here
+                    // but it's complex due to variable formats based on AFI/SAFI
+                    const remainingDataNode = {
+                        name: 'Next Hop & NLRI Data',
+                        offset: valueOffset + 4,
+                        length: attrLength - 4,
+                        value: buffer.subarray(valueOffset + 4, valueOffset + attrLength).toString('hex'),
+                        children: []
+                    };
+                    mpReachNode.children.push(remainingDataNode);
+                    break;
+                }
+                case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: {
+                    const mpUnreachNode = {
+                        name: 'MP_UNREACH_NLRI',
+                        offset: valueOffset,
+                        length: attrLength,
+                        value: '',
+                        children: []
+                    };
+                    attrNode.children.push(mpUnreachNode);
+
+                    // Parse AFI
+                    const afi = buffer.readUInt16BE(valueOffset);
+                    const afiNode = {
+                        name: 'AFI',
+                        offset: valueOffset,
+                        length: 2,
+                        value: `${afi} (${getBgpAfiName(afi)})`,
+                        children: []
+                    };
+                    mpUnreachNode.children.push(afiNode);
+
+                    // Parse SAFI
+                    const safi = buffer[valueOffset + 2];
+                    const safiNode = {
+                        name: 'SAFI',
+                        offset: valueOffset + 2,
+                        length: 1,
+                        value: `${safi} (${getBgpSafiName(safi)})`,
+                        children: []
+                    };
+                    mpUnreachNode.children.push(safiNode);
+
+                    // The rest of MP_UNREACH_NLRI parsing could be implemented here
+                    if (attrLength > 3) {
+                        const withdrawnDataNode = {
+                            name: 'Withdrawn Routes Data',
+                            offset: valueOffset + 3,
+                            length: attrLength - 3,
+                            value: buffer.subarray(valueOffset + 3, valueOffset + attrLength).toString('hex'),
+                            children: []
+                        };
+                        mpUnreachNode.children.push(withdrawnDataNode);
+                    }
+                    break;
+                }
                 default: {
                     const valueNode = {
                         name: 'Value',

@@ -1,11 +1,11 @@
 import { createStore } from 'vuex';
 
-// State for tracking cached views
+// 用于跟踪缓存视图的状态
 const state = {
     cachedViews: []
 };
 
-// Mutations to modify cached views
+// 修改缓存视图的变异
 const mutations = {
     ADD_CACHED_VIEW: (state, view) => {
         if (state.cachedViews.includes(view.name)) return;
@@ -22,7 +22,7 @@ const mutations = {
     }
 };
 
-// Actions for cached views operations
+// 缓存视图操作的行动
 const actions = {
     addCachedView({ commit }, view) {
         commit('ADD_CACHED_VIEW', view);

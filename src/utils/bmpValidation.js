@@ -1,4 +1,4 @@
-// Template and placeholder validation functions
+// 模板和占位符验证函数
 import { isValidPort } from './validationCommon';
 
 export const validatePort = (value, validationErrors) => {

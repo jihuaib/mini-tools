@@ -270,9 +270,7 @@
     // 保存配置
     const saveConfig = debounce(async data => {
         const resp = await window.toolsApi.savePacketParserConfig(data);
-        if (resp.status === 'success') {
-            console.log(resp.msg);
-        } else {
+        if (resp.status !== 'success') {
             console.error(resp.msg);
         }
     }, 300);
@@ -291,7 +289,6 @@
                 const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('Validation failed, configuration not saved');
                     return;
                 }
 

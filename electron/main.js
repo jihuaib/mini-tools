@@ -41,7 +41,7 @@ function createWindow() {
     // 监听窗口关闭事件
     win.on('close', async event => {
         event.preventDefault();
-        // Check both BGP and BMP servers before closing
+        // 关闭窗口前检查BGP和BMP服务器
         const closeBgpOk = await bgpApp.handleWindowClose(win);
         if (!closeBgpOk) return;
 

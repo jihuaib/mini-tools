@@ -133,9 +133,7 @@
 
     const saveDebounced = debounce(async data => {
         const result = await window.rpkiApi.saveRpkiConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg || '配置文件保存失败');
         }
     }, 300);
@@ -169,7 +167,6 @@
                 const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('Validation failed, configuration not saved');
                     return;
                 }
 

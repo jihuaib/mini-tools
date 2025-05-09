@@ -3,7 +3,7 @@
         <a-row>
             <a-col :span="24">
                 <a-card title="BMP Client">
-                    <div>
+                    <div v-if="clientList.length > 0">
                         <a-tabs v-model:activeKey="activeClientKey">
                             <a-tab-pane
                                 v-for="client in clientList"
@@ -42,6 +42,10 @@
                                 </a-table>
                             </a-tab-pane>
                         </a-tabs>
+                    </div>
+
+                    <div v-else class="no-result-message">
+                        <a-empty description="请先启动BMP服务" />
                     </div>
                 </a-card>
             </a-col>
@@ -410,5 +414,15 @@
     /* 表格样式调整 */
     :deep(.ant-table-small) {
         font-size: 12px;
+    }
+
+    .no-result-message {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        color: #999;
+        overflow: auto;
     }
 </style>

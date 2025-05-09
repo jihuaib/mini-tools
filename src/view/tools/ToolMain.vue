@@ -35,7 +35,7 @@
         router.push(`/tools/${key}`);
     };
 
-    // Expose clearValidationErrors method to parent component (Main.vue)
+    // 向父组件(Main.vue)暴露清空验证错误的方法
     defineExpose({
         clearValidationErrors: () => {
             if (currentTab.value && typeof currentTab.value.clearValidationErrors === 'function') {

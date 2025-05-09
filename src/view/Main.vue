@@ -118,7 +118,7 @@
     const handleSelect = ({ key }) => {
         const selectedItem = items.value.find(item => item.key === key);
         if (selectedItem) {
-            // Make sure to add the current route to cached views before navigating
+            // 在导航前确保当前路由已被添加到缓存视图中
             const targetRoute = router.resolve(selectedItem.route);
             if (targetRoute.name) {
                 store.dispatch('addCachedView', targetRoute);

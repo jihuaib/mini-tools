@@ -1,6 +1,6 @@
 import { IP_TYPE } from './bgpConst';
 
-// Default Values
+// 默认值
 export const DEFAULT_VALUES = {
     DEFAULT_RPKI_PORT: '1280',
     DEFAULT_RPKI_ASN: '65535',

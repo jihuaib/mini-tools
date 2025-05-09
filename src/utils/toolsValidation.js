@@ -1,4 +1,4 @@
-// Template and placeholder validation functions
+// 模板和占位符验证函数
 import { isNumber, validatePacketData, isValidPort } from './validationCommon';
 
 export const validateTemplate = (value, validationErrors) => {
@@ -53,7 +53,6 @@ export const validateInputPacketData = (value, validationErrors) => {
 
 // 协议端口验证
 export const validateInputProtocolPort = (value, validationErrors) => {
-    console.log(value);
     if (value === '') {
         validationErrors.value.protocolPort = '';
         return;

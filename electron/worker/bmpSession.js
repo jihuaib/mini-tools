@@ -74,11 +74,11 @@ class BmpSession {
 
             let peerAddress;
             if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
-                // IPv6 peer
+                // IPv6 对等体
                 peerAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
-                // IPv4 peer
+                // IPv4 对等体
                 // 12字节保留字段
                 position += 12;
                 peerAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
@@ -94,7 +94,7 @@ class BmpSession {
             const _peerTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            // BGP update message
+            // BGP 更新消息
             const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
             const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
             const bgpUpdate = message.subarray(position, position + updateLength);

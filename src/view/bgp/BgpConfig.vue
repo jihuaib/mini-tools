@@ -427,27 +427,21 @@
 
     const saveBgpConfig = debounce(async data => {
         const result = await window.bgpApi.saveBgpConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv4PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4PeerConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv6PeerConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6PeerConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
@@ -506,7 +500,6 @@
 
             const hasErrors = Object.values(bgpConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('Validation failed, configuration not saved');
                 return;
             }
 
@@ -529,7 +522,6 @@
 
             const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('IPv4 Validation failed, configuration not saved');
                 return;
             }
 
@@ -552,7 +544,6 @@
 
             const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
             if (hasErrors) {
-                console.log('IPv6 Validation failed, configuration not saved');
                 return;
             }
 
@@ -723,7 +714,6 @@
             }
         } catch (e) {
             message.error(e);
-            console.error(e);
         }
     };
 
@@ -749,7 +739,6 @@
             }
         } catch (e) {
             message.error(e);
-            console.error(e);
         }
     };
 

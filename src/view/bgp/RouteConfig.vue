@@ -273,18 +273,14 @@
 
     const saveIpv4UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv4UNCRouteConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
 
     const saveIpv6UNCRouteConfig = debounce(async data => {
         const result = await window.bgpApi.saveIpv6UNCRouteConfig(data);
-        if (result.status === 'success') {
-            console.log(result.msg);
-        } else {
+        if (result.status !== 'success') {
             console.error(result.msg);
         }
     }, 300);
@@ -438,8 +434,7 @@
                 message.error(`路由删除失败: ${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('路由删除失败');
+            message.error(`路由删除失败: ${e.message}`);
         }
     };
 
@@ -485,8 +480,7 @@
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv4路由生成失败');
+            message.error(`IPv4路由生成失败: ${e.message}`);
         }
     };
 
@@ -518,8 +512,7 @@
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv4路由删除失败');
+            message.error(`IPv4路由删除失败: ${e.message}`);
         }
     };
 
@@ -551,8 +544,7 @@
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv6路由生成失败');
+            message.error(`IPv6路由生成失败: ${e.message}`);
         }
     };
 
@@ -583,8 +575,7 @@
                 message.error(`${result.msg}`);
             }
         } catch (e) {
-            console.error(e);
-            message.error('IPv6路由删除失败');
+            message.error(`IPv6路由删除失败: ${e.message}`);
         }
     };
 
@@ -607,7 +598,6 @@
                 const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('ipv4UNC route config validation failed, configuration not saved');
                     return;
                 }
 
@@ -639,7 +629,6 @@
                 const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
 
                 if (hasErrors) {
-                    console.log('ipv6UNC route config validation failed, configuration not saved');
                     return;
                 }
 
