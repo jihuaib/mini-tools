@@ -1,10 +1,9 @@
 const { parentPort } = require('worker_threads');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 
 class WorkerMessageHandler {
     constructor() {
         this.handlers = new Map();
-        this.logger = new Logger();
     }
 
     /**
@@ -32,7 +31,7 @@ class WorkerMessageHandler {
 
         parentPort.on('message', message => {
             const { messageId, op, data } = message;
-            this.logger.info(`recv msg: ${JSON.stringify(message)}`);
+            logger.info(`recv msg: ${JSON.stringify(message)}`);
 
             if (!op) {
                 this.sendErrorResponse(messageId, 'Invalid message format: missing operation');
@@ -44,11 +43,11 @@ class WorkerMessageHandler {
                     const handler = this.handlers.get(op);
                     handler(messageId, data);
                 } catch (error) {
-                    this.logger.error(`Error handling operation ${op}:`, error);
+                    logger.error(`Error handling operation ${op}:`, error);
                     this.sendErrorResponse(messageId, `Error handling operation ${op}: ${error.message}`);
                 }
             } else {
-                this.logger.error(`No handler registered for operation: ${op}`);
+                logger.error(`No handler registered for operation: ${op}`);
                 this.sendErrorResponse(messageId, `No handler registered for operation: ${op}`);
             }
         });

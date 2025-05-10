@@ -2,7 +2,7 @@ const net = require('net');
 const util = require('util');
 const { BMP_REQ_TYPES } = require('../const/bmpReqConst');
 const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BmpSession = require('./bmpSession');
 const { getAfiAndSafi } = require('../utils/bgpUtils');
@@ -13,7 +13,6 @@ class BmpWorker {
         this.server = null;
         this.ipv6Server = null;
         this.socket = null;
-        this.logger = new Logger();
 
         this.bmpConfigData = null; // bmp配置数据
 
@@ -39,8 +38,8 @@ class BmpWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -48,7 +47,7 @@ class BmpWorker {
                         BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
                     if (null == bmpSession) {
-                        this.logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
+                        logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
                         socket.destroy();
                         return;
                     }
@@ -56,15 +55,15 @@ class BmpWorker {
                 });
 
                 socket.on('end', () => {
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
-                    this.logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 // 创建BMP会话
@@ -90,8 +89,8 @@ class BmpWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -99,7 +98,7 @@ class BmpWorker {
                         BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
                     if (null == bmpSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
                         socket.destroy();
                         return;
                     }
@@ -107,15 +106,15 @@ class BmpWorker {
                 });
 
                 socket.on('end', () => {
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
-                    this.logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 // 创建BMP会话
@@ -140,17 +139,17 @@ class BmpWorker {
             // 启动ipv4服务器并监听端口
             const listenPormise = util.promisify(this.server.listen).bind(this.server);
             await listenPormise(this.bmpConfigData.port, '0.0.0.0');
-            this.logger.info(`TCP Server listening on port ${this.bmpConfigData.port} at 0.0.0.0`);
+            logger.info(`TCP Server listening on port ${this.bmpConfigData.port} at 0.0.0.0`);
 
             // 启动ipv6服务器并监听端口
             const ipv6ListenPormise = util.promisify(this.ipv6Server.listen).bind(this.ipv6Server);
             await ipv6ListenPormise(this.bmpConfigData.port, '::');
-            this.logger.info(`TCP Server listening on port ${this.bmpConfigData.port} at ::`);
+            logger.info(`TCP Server listening on port ${this.bmpConfigData.port} at ::`);
 
-            this.logger.info(`bmp协议启动成功`);
+            logger.info(`bmp协议启动成功`);
             this.messageHandler.sendSuccessResponse(messageId, null, 'bmp协议启动成功');
         } catch (err) {
-            this.logger.error(`Error starting TCP server: ${err.message}`);
+            logger.error(`Error starting TCP server: ${err.message}`);
             this.messageHandler.sendErrorResponse(messageId, 'bmp协议启动失败');
         }
     }
@@ -200,7 +199,7 @@ class BmpWorker {
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const peerList = [];
         if (null == bmpSession) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在`);
+            logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
         }
@@ -216,7 +215,7 @@ class BmpWorker {
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const routeList = [];
         if (null == bmpSession) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在`);
+            logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
         }
@@ -224,7 +223,7 @@ class BmpWorker {
         const peerKey = BmpBgpPeer.makeKey(afi, safi, peer.peerIp, peer.peerRd);
         const bgpPeer = bmpSession.peerMap.get(peerKey);
         if (null == bgpPeer) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
+            logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
             this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
             return;
         }
@@ -253,7 +252,7 @@ class BmpWorker {
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         if (null == bmpSession) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在`);
+            logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
         }
@@ -265,7 +264,7 @@ class BmpWorker {
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         if (null == bmpSession) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在`);
+            logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
         }
@@ -273,7 +272,7 @@ class BmpWorker {
         const peerKey = BmpBgpPeer.makeKey(afi, safi, peer.peerIp, peer.peerRd);
         const bgpPeer = bmpSession.peerMap.get(peerKey);
         if (null == bgpPeer) {
-            this.logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
+            logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
             this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
             return;
         }

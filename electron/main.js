@@ -1,16 +1,12 @@
 const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
-const log = require('electron-log');
 const BgpApp = require('./app/bgpApp');
 const ToolsApp = require('./app/toolsApp');
 const BmpApp = require('./app/bmpApp');
 const RpkiApp = require('./app/rpkiApp');
 const SystemMenuApp = require('./app/systemMenuApp');
 const Store = require('electron-store');
-// 配置 electron-log
-log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
-log.transports.file.maxFiles = 3; // 最多保留3个日志文件
-log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+const logger = require('./log/logger');
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
@@ -34,7 +30,7 @@ function createWindow() {
         }
     });
 
-    log.info(`Dev ${isDev} __dirname ${__dirname}`);
+    logger.info(`Dev ${isDev} __dirname ${__dirname}`);
     const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
     win.loadURL(urlLocation);
 
@@ -68,9 +64,11 @@ app.whenReady().then(() => {
         fileExtension: 'json',
         cwd: app.getPath('userData')
     });
+    const systemMenuApp = new SystemMenuApp(ipcMain, mainWindow, store);
+    // 加载设置
+    systemMenuApp.loadSettings();
     bgpApp = new BgpApp(ipcMain, store);
     new ToolsApp(ipcMain, store);
-    new SystemMenuApp(ipcMain, mainWindow);
     new BmpApp(ipcMain, store);
     new RpkiApp(ipcMain, store);
 });

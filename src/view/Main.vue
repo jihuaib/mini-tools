@@ -29,6 +29,12 @@
                     </a-button>
                     <template #overlay>
                         <a-menu>
+                            <a-menu-item key="settings" @click="handleBottomMenuClick('settings')">
+                                <a-space>
+                                    <SettingOutlined />
+                                    <span>设置</span>
+                                </a-space>
+                            </a-menu-item>
                             <a-menu-item key="developer" @click="handleBottomMenuClick('developer')">
                                 <a-space>
                                     <ToolOutlined />
@@ -57,6 +63,20 @@
             </div>
         </div>
     </div>
+
+    <!-- 设置对话框 -->
+    <a-modal v-model:open="settingsVisible" title="设置" width="500px" @ok="saveSettings">
+        <a-form :model="settingsForm" layout="vertical">
+            <a-form-item label="日志级别" name="logLevel">
+                <a-select v-model:value="settingsForm.logLevel" style="width: 100%">
+                    <a-select-option value="debug">debug</a-select-option>
+                    <a-select-option value="info">info</a-select-option>
+                    <a-select-option value="warn">warn</a-select-option>
+                    <a-select-option value="error">error</a-select-option>
+                </a-select>
+            </a-form-item>
+        </a-form>
+    </a-modal>
 </template>
 
 <script setup>
@@ -81,6 +101,12 @@
     const currentComponent = ref(null);
     const isCollapsed = ref(true);
     const openKeys = ref([]);
+
+    // 设置相关状态
+    const settingsVisible = ref(false);
+    const settingsForm = ref({
+        logLevel: 'info'
+    });
 
     const current = ref(['tools']);
     const items = ref([
@@ -133,7 +159,23 @@
             window.commonApi.openDeveloperOptions();
         } else if (key === 'about') {
             window.commonApi.openSoftwareInfo();
+        } else if (key === 'settings') {
+            settingsVisible.value = true;
+            window.commonApi.getSettings().then(settings => {
+                if (settings.status === 'success') {
+                    if (settings.data) {
+                        settingsForm.value = settings.data;
+                    }
+                }
+            });
         }
+    };
+
+    // 保存设置
+    const saveSettings = () => {
+        const payload = JSON.parse(JSON.stringify(settingsForm.value));
+        window.commonApi.saveSettings(payload);
+        settingsVisible.value = false;
     };
 
     // 切换菜单收缩状态

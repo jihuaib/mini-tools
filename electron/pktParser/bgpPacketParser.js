@@ -6,9 +6,7 @@
  * Based on RFC 4271 and other BGP extension RFCs.
  */
 
-const Logger = require('../log/logger');
-
-const logger = new Logger();
+const logger = require('../log/logger');
 
 const BgpConst = require('../const/bgpConst');
 const { ipv4BufferToString } = require('../utils/ipUtils');
@@ -631,7 +629,7 @@ function parseUpdateMessageTree(buffer, curOffset, parentNode) {
                         const segmentNode = {
                             name: `Segment ${segmentIndex + 1} (${segmentTypeName})`,
                             offset: segmentOffset,
-                            length: 2 + (segmentLength * 4), // type + length + AS numbers (4 bytes each)
+                            length: 2 + segmentLength * 4, // type + length + AS numbers (4 bytes each)
                             value: segmentTypeName,
                             children: []
                         };
@@ -783,7 +781,7 @@ function parseUpdateMessageTree(buffer, curOffset, parentNode) {
                     const communities = [];
 
                     for (let i = 0; i < communityCount; i++) {
-                        const commOffset = valueOffset + (i * 4);
+                        const commOffset = valueOffset + i * 4;
                         const highOrder = buffer.readUInt16BE(commOffset);
                         const lowOrder = buffer.readUInt16BE(commOffset + 2);
                         const communityValue = `${highOrder}:${lowOrder}`;

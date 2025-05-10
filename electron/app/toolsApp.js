@@ -1,13 +1,12 @@
 const { app } = require('electron');
 const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 
 class ToolsApp {
     constructor(ipc, store) {
         this.isDev = !app.isPackaged;
-        this.logger = new Logger();
         this.stringGeneratorConfigFileKey = 'string-generator';
         this.packetParserConfigFileKey = 'packet-parser';
         this.registerHandlers(ipc);
@@ -38,7 +37,7 @@ class ToolsApp {
             this.store.set(this.stringGeneratorConfigFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving config:', error.message);
+            logger.error('Error saving config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -52,7 +51,7 @@ class ToolsApp {
             }
             return successResponse(config, '配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading config:', error.message);
+            logger.error('Error loading config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -63,7 +62,7 @@ class ToolsApp {
             this.store.set(this.packetParserConfigFileKey, config);
             return successResponse(null, '配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving packet parser config:', error.message);
+            logger.error('Error saving packet parser config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -77,13 +76,13 @@ class ToolsApp {
             }
             return successResponse(config, '配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading packet parser config:', error.message);
+            logger.error('Error loading packet parser config:', error.message);
             return errorResponse(error.message);
         }
     }
 
     async handleGenerateString(event, templateData) {
-        this.logger.info(`${JSON.stringify(templateData)}`);
+        logger.info(`${JSON.stringify(templateData)}`);
 
         try {
             const workerPath = this.isDev
@@ -93,16 +92,16 @@ class ToolsApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), templateData);
 
-            this.logger.info('Worker处理结果:', result);
+            logger.info('Worker处理结果:', result);
             return successResponse(result, 'Worker处理成功');
         } catch (err) {
-            this.logger.error('Worker处理错误:', err.message);
+            logger.error('Worker处理错误:', err.message);
             return errorResponse(err.message);
         }
     }
 
     async handleParsePacket(event, packetData) {
-        this.logger.info(`解析报文: ${JSON.stringify(packetData)}`);
+        logger.info(`解析报文: ${JSON.stringify(packetData)}`);
 
         try {
             const workerPath = this.isDev
@@ -112,10 +111,10 @@ class ToolsApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), packetData);
 
-            this.logger.info('报文解析结果:', result);
+            logger.info('报文解析结果:', result);
             return successResponse(result, '报文解析成功');
         } catch (err) {
-            this.logger.error('报文解析错误:', err.message);
+            logger.error('报文解析错误:', err.message);
             return errorResponse(err.message);
         }
     }
