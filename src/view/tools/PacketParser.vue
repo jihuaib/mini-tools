@@ -268,10 +268,11 @@
             const key = parentKey ? `${parentKey}-${i}` : `${i}`;
 
             // 检查当前节点是否包含该字节偏移量
-            if (node.dataRef &&
+            if (
+                node.dataRef &&
                 byteOffset >= node.dataRef.offset &&
-                byteOffset < (node.dataRef.offset + node.dataRef.length)) {
-
+                byteOffset < node.dataRef.offset + node.dataRef.length
+            ) {
                 // 如果有子节点，先递归检查子节点是否包含该偏移量
                 // 这样可以确保我们找到最具体的子节点
                 if (node.children && node.children.length > 0) {
