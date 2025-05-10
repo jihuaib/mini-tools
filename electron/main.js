@@ -1,17 +1,11 @@
 const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
-const BgpApp = require('./app/bgpApp');
-const ToolsApp = require('./app/toolsApp');
-const BmpApp = require('./app/bmpApp');
-const RpkiApp = require('./app/rpkiApp');
-const SystemMenuApp = require('./app/systemMenuApp');
-const Store = require('electron-store');
+const SystemApp = require('./app/systemApp');
 const logger = require('./log/logger');
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
-
-let bgpApp = null;
+let systemApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -37,12 +31,11 @@ function createWindow() {
     // 监听窗口关闭事件
     win.on('close', async event => {
         event.preventDefault();
-        // 关闭窗口前检查BGP和BMP服务器
-        const closeBgpOk = await bgpApp.handleWindowClose(win);
-        if (!closeBgpOk) return;
 
-        // const closeBmpOk = await bmpEmulatorApp.handleWindowClose(win);
-        // if (!closeBmpOk) return;
+        const closeOk = await systemApp.handleWindowClose();
+        if (!closeOk) {
+            return;
+        }
 
         win.destroy();
     });
@@ -59,20 +52,16 @@ app.whenReady().then(() => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
 
-    const store = new Store({
-        name: 'Program Data',
-        fileExtension: 'json',
-        cwd: app.getPath('userData')
-    });
-
-    bgpApp = new BgpApp(ipcMain, store);
-    const toolsApp = new ToolsApp(ipcMain, store);
-    new BmpApp(ipcMain, store);
-    new RpkiApp(ipcMain, store);
-
+    // 启动应用
+    systemApp = new SystemApp(ipcMain, mainWindow);
+    // 兼容性检查
+    const checkVersionOk = systemApp.checkVersionCompatibility();
+    if (!checkVersionOk) {
+        app.quit();
+        return;
+    }
     // 加载设置
-    const systemMenuApp = new SystemMenuApp(ipcMain, mainWindow, toolsApp);
-    systemMenuApp.loadSettings(toolsApp);
+    systemApp.loadSettings();
 });
 
 app.on('window-all-closed', () => {

@@ -4,17 +4,24 @@ const Store = require('electron-store');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const { DEFAULT_LOG_SETTINGS, DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
+const fs = require('fs');
+const path = require('path');
+const BgpApp = require('./bgpApp');
+const ToolsApp = require('./toolsApp');
+const BmpApp = require('./bmpApp');
+const RpkiApp = require('./rpkiApp');
 /**
  * 用于系统菜单处理
  */
-class SystemMenuApp {
-    constructor(ipc, win, toolsApp) {
+class SystemApp {
+    constructor(ipc, win) {
         this.win = win;
         this.isDev = !app.isPackaged;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
         this.generalSettingsFileKey = 'GeneralSettings';
         this.toolsSettingsFileKey = 'ToolsSettings';
+        this.appVersionFileKey = 'appVersion';
 
         this.store = new Store({
             name: 'Settings Data',
@@ -22,7 +29,125 @@ class SystemMenuApp {
             cwd: app.getPath('userData')
         });
 
-        this.toolsApp = toolsApp;
+        this.programStore = new Store({
+            name: 'Program Data',
+            fileExtension: 'json',
+            cwd: app.getPath('userData')
+        });
+
+        this.bgpApp = new BgpApp(ipc, this.programStore);
+        this.toolsApp = new ToolsApp(ipc, this.programStore);
+        this.bmpApp = new BmpApp(ipc, this.programStore);
+        this.rpkiApp = new RpkiApp(ipc, this.programStore);
+    }
+
+    // 添加版本兼容性检查方法
+    checkVersionCompatibility() {
+        try {
+            // 获取当前版本
+            const currentVersion = packageJson.version;
+            logger.warn('当前版本: ' + currentVersion);
+
+            // 获取存储的上一个版本
+            const storedVersion = this.store.get(this.appVersionFileKey);
+            logger.warn('存储版本: ' + storedVersion);
+
+            // 如果是首次运行或版本信息丢失，保存当前版本并退出
+            if (!storedVersion) {
+                this.clearIncompatibleData();
+                this.store.set(this.appVersionFileKey, currentVersion);
+                return;
+            }
+
+            // 检查版本是否不兼容 (对主版本号的变化进行检查)
+            const currentMajorVersion = parseInt(currentVersion.split('.')[0]);
+            const storedMajorVersion = parseInt(storedVersion.split('.')[0]);
+
+            if (currentMajorVersion > storedMajorVersion) {
+                logger.warn(`检测到不兼容升级: ${storedVersion} -> ${currentVersion}`);
+
+                // 显示确认对话框
+                const result = dialog.showMessageBoxSync({
+                    type: 'warning',
+                    title: '版本不兼容',
+                    message: `检测到主版本升级（${storedVersion} -> ${currentVersion}），需要清除旧数据。`,
+                    detail: '将删除程序数据和设置数据，点击确定继续。',
+                    buttons: ['确定', '取消'],
+                    defaultId: 0,
+                    cancelId: 1
+                });
+
+                if (result === 0) {
+                    // 用户选择确定，清除数据
+                    this.clearIncompatibleData();
+                    // 更新存储的版本
+                    this.store.set(this.appVersionFileKey, currentVersion);
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                // 兼容版本升级，只更新版本号
+                if (currentVersion !== storedVersion) {
+                    this.store.set(this.appVersionFileKey, currentVersion);
+                }
+                return true;
+            }
+        } catch (error) {
+            logger.error('检查版本兼容性时出错:', error.message);
+            return false;
+        }
+    }
+
+    // 添加清除不兼容数据的方法
+    clearIncompatibleData() {
+        try {
+            logger.warn('清除不兼容数据');
+            const userData = app.getPath('userData');
+
+            // 删除 Program Data
+            const programDataPath = path.join(userData, 'Program Data.json');
+            if (fs.existsSync(programDataPath)) {
+                fs.unlinkSync(programDataPath);
+                logger.warn('已删除 Program Data.json');
+            }
+
+            // 删除 Settings Data
+            const settingsDataPath = path.join(userData, 'Settings Data.json');
+            if (fs.existsSync(settingsDataPath)) {
+                fs.unlinkSync(settingsDataPath);
+                logger.warn('已删除 Settings Data.json');
+            }
+
+            // 重新初始化 Store
+            this.store = new Store({
+                name: 'Settings Data',
+                fileExtension: 'json',
+                cwd: app.getPath('userData')
+            });
+
+            this.programStore = new Store({
+                name: 'Program Data',
+                fileExtension: 'json',
+                cwd: app.getPath('userData')
+            });
+
+            dialog.showMessageBoxSync({
+                type: 'info',
+                title: '数据清除完成',
+                message: '不兼容的数据已清除，程序将使用新版本默认设置。',
+                buttons: ['确定']
+            });
+        } catch (error) {
+            logger.error('清除不兼容数据时出错:', error.message);
+            dialog.showMessageBoxSync({
+                type: 'error',
+                title: '错误',
+                message: '清除数据时出错',
+                detail: error.message,
+                buttons: ['确定']
+            });
+        }
     }
 
     registerHandlers(ipc) {
@@ -151,6 +276,15 @@ class SystemMenuApp {
         this.toolsApp.setMaxMessageHistory(maxMessageHistory);
         this.toolsApp.setMaxStringHistory(maxStringHistory);
     }
+
+    async handleWindowClose() {
+        const closeBgpOk = await this.bgpApp.handleWindowClose(this.win);
+        if (!closeBgpOk) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
-module.exports = SystemMenuApp;
+module.exports = SystemApp;
