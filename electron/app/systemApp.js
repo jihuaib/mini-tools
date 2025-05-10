@@ -131,13 +131,6 @@ class SystemApp {
                 fileExtension: 'json',
                 cwd: app.getPath('userData')
             });
-
-            dialog.showMessageBoxSync({
-                type: 'info',
-                title: '数据清除完成',
-                message: '不兼容的数据已清除，程序将使用新版本默认设置。',
-                buttons: ['确定']
-            });
         } catch (error) {
             logger.error('清除不兼容数据时出错:', error.message);
             dialog.showMessageBoxSync({
