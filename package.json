@@ -1,7 +1,7 @@
 {
     "name": "mini-tools",
     "private": true,
-    "version": "2.1.0",
+    "version": "2.2.0",
     "main": "electron/main.js",
     "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
     "author": {
