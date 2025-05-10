@@ -90,6 +90,7 @@
                                     v-for="(byte, byteIndex) in row"
                                     :key="byteIndex"
                                     :class="getByteCellClass(rowIndex * 16 + byteIndex)"
+                                    @click="onByteClick(rowIndex * 16 + byteIndex)"
                                 >
                                     {{ byte }}
                                 </div>
@@ -99,6 +100,7 @@
                                     v-for="(byte, byteIndex) in row"
                                     :key="byteIndex"
                                     :class="getAsciiCellClass(rowIndex * 16 + byteIndex)"
+                                    @click="onByteClick(rowIndex * 16 + byteIndex)"
                                 >
                                     {{ formatAscii(byte) }}
                                 </div>
@@ -111,8 +113,11 @@
                 <a-card title="报文结构树" class="result-card tree-view-card">
                     <a-tree
                         v-if="parsedTreeData.length > 0"
+                        ref="treeRef"
+                        v-model:selectedKeys="treeSelectedKeys"
                         :tree-data="parsedTreeData"
                         :default-expand-all="true"
+                        :height="310"
                         @select="onTreeNodeSelect"
                     />
                     <div v-else class="no-data-message">暂无解析数据</div>
@@ -140,6 +145,7 @@
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
     const hexViewRef = ref(null);
+    const treeRef = ref(null);
 
     const validationErrors = ref({
         packetData: '',
@@ -161,6 +167,7 @@
     const parsedResult = ref(null);
     const selectedNode = ref(null);
     const parsedTreeData = ref([]);
+    const treeSelectedKeys = ref([]);
     const hexBuffer = ref([]);
     const hexRows = computed(() => {
         const rows = [];
@@ -193,14 +200,16 @@
     const getByteCellClass = byteIndex => {
         return {
             'hex-byte': true,
-            highlighted: isHighlighted(byteIndex)
+            highlighted: isHighlighted(byteIndex),
+            clickable: true
         };
     };
 
     const getAsciiCellClass = byteIndex => {
         return {
             'ascii-byte': true,
-            highlighted: isHighlighted(byteIndex)
+            highlighted: isHighlighted(byteIndex),
+            clickable: true
         };
     };
 
@@ -234,6 +243,97 @@
             }
         } else {
             selectedNode.value = null;
+        }
+    };
+
+    // 点击字节时查找并选择对应的树节点
+    const onByteClick = byteIndex => {
+        if (!parsedTreeData.value || parsedTreeData.value.length === 0) return;
+
+        // 查找包含该字节偏移量的节点
+        const nodeKey = findNodeKeyByByteOffset(parsedTreeData.value, byteIndex);
+
+        if (nodeKey) {
+            // 程序化选择树节点
+            selectTreeNode(nodeKey);
+        }
+    };
+
+    // 递归查找包含指定字节偏移量的节点的key
+    const findNodeKeyByByteOffset = (nodes, byteOffset, parentKey = '') => {
+        if (!nodes || nodes.length === 0) return null;
+
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            const key = parentKey ? `${parentKey}-${i}` : `${i}`;
+
+            // 检查当前节点是否包含该字节偏移量
+            if (node.dataRef &&
+                byteOffset >= node.dataRef.offset &&
+                byteOffset < (node.dataRef.offset + node.dataRef.length)) {
+
+                // 如果有子节点，先递归检查子节点是否包含该偏移量
+                // 这样可以确保我们找到最具体的子节点
+                if (node.children && node.children.length > 0) {
+                    const childKey = findNodeKeyByByteOffset(node.children, byteOffset, key);
+                    if (childKey) return childKey;
+                }
+
+                // 如果没有更具体的子节点包含该偏移量，返回当前节点
+                return key;
+            }
+
+            // 检查子节点
+            if (node.children && node.children.length > 0) {
+                const childKey = findNodeKeyByByteOffset(node.children, byteOffset, key);
+                if (childKey) return childKey;
+            }
+        }
+
+        return null;
+    };
+
+    // 程序化选择树节点
+    const selectTreeNode = key => {
+        if (!treeRef.value) return;
+
+        // 更新选中节点
+        const findNodeByKey = (nodes, targetKey, currentPath = []) => {
+            if (!nodes) return null;
+
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                const path = [...currentPath, i];
+                const key = path.join('-');
+
+                if (key === targetKey) {
+                    return { node, key };
+                }
+
+                if (node.children) {
+                    const result = findNodeByKey(node.children, targetKey, path);
+                    if (result) return result;
+                }
+            }
+
+            return null;
+        };
+
+        const nodeInfo = findNodeByKey(parsedTreeData.value, key);
+        if (nodeInfo && nodeInfo.node.dataRef) {
+            // 更新选中节点的信息
+            selectedNode.value = nodeInfo.node.dataRef;
+
+            // 设置当前选中的树节点key
+            treeSelectedKeys.value = [key];
+
+            // 延迟执行滚动操作，等待DOM更新和可能的动画完成
+            setTimeout(() => {
+                // 滚动到节点位置
+                if (treeRef.value) {
+                    treeRef.value.scrollTo({ key });
+                }
+            }, 100);
         }
     };
 
@@ -568,10 +668,17 @@
     }
 
     .highlighted {
-        background-color: #fff3cd;
-        color: #856404;
+        color: #ff0000;
         font-weight: bold;
         border-radius: 2px;
+    }
+
+    .clickable {
+        cursor: pointer;
+    }
+
+    .clickable:hover {
+        background-color: #e6f7ff;
     }
 
     .no-data-message,
@@ -591,6 +698,20 @@
         height: 100%;
         overflow: auto;
         max-height: 100%;
+    }
+
+    /* 设置树节点选中的颜色 */
+    :deep(.ant-tree-node-selected) {
+        background-color: rgba(255, 0, 0, 0.1) !important;
+    }
+
+    :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+        background-color: rgba(255, 0, 0, 0.1) !important;
+    }
+
+    :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected .ant-tree-title) {
+        color: #ff0000;
+        font-weight: bold;
     }
 
     @media (max-width: 768px) {
