@@ -56,7 +56,7 @@ class SystemApp {
             if (!storedVersion) {
                 this.clearIncompatibleData();
                 this.store.set(this.appVersionFileKey, currentVersion);
-                return;
+                return true;
             }
 
             // 检查版本是否不兼容 (对主版本号的变化进行检查)
