@@ -1,11 +1,10 @@
 const { Worker } = require('worker_threads');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 
 class WorkerWithPromise {
     constructor(workerPath, workerData) {
         this.workerPath = workerPath;
         this.workerData = workerData;
-        this.logger = new Logger();
     }
 
     /**
@@ -36,7 +35,7 @@ class WorkerWithPromise {
         const callbacks = new Map();
         const eventListeners = new Map();
 
-        this.logger.info(`长期运行worker启动: ${this.workerPath}`);
+        logger.info(`长期运行worker启动: ${this.workerPath}`);
 
         // 处理worker响应
         worker.on('message', result => {
@@ -58,12 +57,12 @@ class WorkerWithPromise {
                     reject(new Error(result.msg || 'Worker execution failed'));
                 }
             } else {
-                this.logger.warn(`收到未跟踪的消息:`, result);
+                logger.warn(`收到未跟踪的消息:`, result);
             }
         });
 
         worker.on('error', err => {
-            this.logger.error(`发生错误:`, err);
+            logger.error(`发生错误:`, err);
             // 拒绝所有待处理的请求
             for (const { reject } of callbacks.values()) {
                 reject(new Error(err));
@@ -73,9 +72,9 @@ class WorkerWithPromise {
 
         worker.on('exit', code => {
             if (code !== 0) {
-                this.logger.error(`退出异常，退出码:`, code);
+                logger.error(`退出异常，退出码:`, code);
             } else {
-                this.logger.info(`this worker has completed successfully.`);
+                logger.info(`this worker has completed successfully.`);
             }
 
             // 拒绝所有待处理的请求
@@ -116,12 +115,12 @@ class WorkerWithPromise {
             terminate() {
                 // 检查是否还有未完成的请求
                 if (callbacks.size > 0) {
-                    this.logger.info(`等待 ${callbacks.size} 个未完成的请求...`);
+                    logger.info(`等待 ${callbacks.size} 个未完成的请求...`);
                     return new Promise(resolve => {
                         // 创建一个检查函数，定期检查是否所有回调都已完成
                         const checkCallbacks = () => {
                             if (callbacks.size === 0) {
-                                this.logger.info('所有请求已完成，安全终止worker');
+                                logger.info('所有请求已完成，安全终止worker');
                                 resolve(worker.terminate());
                             } else {
                                 setTimeout(checkCallbacks, 100);
@@ -141,14 +140,14 @@ class WorkerWithPromise {
         return new Promise((resolve, reject) => {
             const worker = new Worker(workerPath);
 
-            this.logger.info(`启动worker: ${workerPath}`);
+            logger.info(`启动worker: ${workerPath}`);
 
             // 向 worker 发送数据
             worker.postMessage(workerData);
 
             // 成功结果
             worker.on('message', result => {
-                this.logger.info(`处理成功: ${JSON.stringify(result)}`);
+                logger.info(`处理成功: ${JSON.stringify(result)}`);
                 if (result.status === 'success') {
                     resolve(result.data);
                 } else {
@@ -159,17 +158,17 @@ class WorkerWithPromise {
             // 错误处理
             worker.on('error', err => {
                 // reject会向上抛异常
-                this.logger.error(`发生错误: ${err}`);
+                logger.error(`发生错误: ${err}`);
                 reject(new Error(err.message || 'Worker execution failed'));
             });
 
             // 提前退出也算失败
             worker.on('exit', code => {
                 if (code !== 0) {
-                    this.logger.error(`退出异常，退出码: ${code}`);
+                    logger.error(`退出异常，退出码: ${code}`);
                     reject(new Error(`Worker stopped with exit code ${code}`));
                 } else {
-                    this.logger.info(`has completed successfully.`);
+                    logger.info(`has completed successfully.`);
                 }
             });
         });

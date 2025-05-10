@@ -3,7 +3,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 // 通用模块
 contextBridge.exposeInMainWorld('commonApi', {
     openDeveloperOptions: () => ipcRenderer.send('common:openDeveloperOptions'),
-    openSoftwareInfo: () => ipcRenderer.send('common:openSoftwareInfo')
+    openSoftwareInfo: () => ipcRenderer.send('common:openSoftwareInfo'),
+    saveSettings: settings => ipcRenderer.invoke('common:saveSettings', settings),
+    getSettings: () => ipcRenderer.invoke('common:getSettings')
 });
 
 // 工具模块

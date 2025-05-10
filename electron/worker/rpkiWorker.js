@@ -1,7 +1,7 @@
 const net = require('net');
 const util = require('util');
 const { RPKI_REQ_TYPES } = require('../const/rpkiReqConst');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const RpkiSession = require('./rpkiSession');
 const RpkiRoa = require('./rpkiRoa');
@@ -12,7 +12,6 @@ class RpkiWorker {
         this.server = null;
         this.ipv6Server = null;
         this.socket = null;
-        this.logger = new Logger();
 
         this.rpkiConfigData = null; // rpki配置数据
 
@@ -36,8 +35,8 @@ class RpkiWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -45,7 +44,7 @@ class RpkiWorker {
                         RpkiSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     }
@@ -61,14 +60,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
@@ -80,14 +79,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
@@ -99,14 +98,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 // 创建RPKI会话
@@ -142,8 +141,8 @@ class RpkiWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -151,7 +150,7 @@ class RpkiWorker {
                         RpkiSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     }
@@ -167,14 +166,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
@@ -186,14 +185,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
@@ -205,14 +204,14 @@ class RpkiWorker {
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
                     if (null == rpkiSession) {
-                        this.logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
+                        logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
                     } else {
                         rpkiSession.closeSession();
                         this.rpkiSessionMap.delete(sessionKey);
                     }
-                    this.logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 // 创建RPKI会话
@@ -247,17 +246,17 @@ class RpkiWorker {
             // 启动ipv4服务器并监听端口
             const listenPormise = util.promisify(this.server.listen).bind(this.server);
             await listenPormise(this.rpkiConfigData.port, '0.0.0.0');
-            this.logger.info(`TCP Server listening on port ${this.rpkiConfigData.port} at 0.0.0.0`);
+            logger.info(`TCP Server listening on port ${this.rpkiConfigData.port} at 0.0.0.0`);
 
             // 启动ipv6服务器并监听端口
             const ipv6ListenPormise = util.promisify(this.ipv6Server.listen).bind(this.ipv6Server);
             await ipv6ListenPormise(this.rpkiConfigData.port, '::');
-            this.logger.info(`TCP Server listening on port ${this.rpkiConfigData.port} at ::`);
+            logger.info(`TCP Server listening on port ${this.rpkiConfigData.port} at ::`);
 
-            this.logger.info(`rpki协议启动成功`);
+            logger.info(`rpki协议启动成功`);
             this.messageHandler.sendSuccessResponse(messageId, null, 'rpki协议启动成功');
         } catch (err) {
-            this.logger.error(`Error starting TCP server: ${err.message}`);
+            logger.error(`Error starting TCP server: ${err.message}`);
             this.messageHandler.sendErrorResponse(messageId, 'rpki协议启动失败');
         }
     }
@@ -308,7 +307,7 @@ class RpkiWorker {
     addRoa(messageId, roa) {
         const key = RpkiRoa.makeKey(roa.ip, roa.mask, roa.asn, roa.maxLength);
         if (this.rpkiRoaMap.has(key)) {
-            this.logger.error(`RPKI ROA配置已存在: ${key}`);
+            logger.error(`RPKI ROA配置已存在: ${key}`);
             this.messageHandler.sendErrorResponse(messageId, 'RPKI ROA配置已存在');
             return;
         }
@@ -324,7 +323,7 @@ class RpkiWorker {
     deleteRoa(messageId, roa) {
         const key = RpkiRoa.makeKey(roa.ip, roa.mask, roa.asn, roa.maxLength);
         if (!this.rpkiRoaMap.has(key)) {
-            this.logger.error(`RPKI ROA配置不存在: ${key}`);
+            logger.error(`RPKI ROA配置不存在: ${key}`);
             this.messageHandler.sendErrorResponse(messageId, 'RPKI ROA配置不存在');
             return;
         }

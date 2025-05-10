@@ -1,4 +1,4 @@
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const RpkiConst = require('../const/rpkiConst');
 const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
 const BgpConst = require('../const/bgpConst');
@@ -7,7 +7,6 @@ const { ipToBytes } = require('../utils/ipUtils');
 class RpkiSession {
     constructor(messageHandler, rpkiWorker) {
         this.socket = null;
-        this.logger = new Logger();
         this.messageHandler = messageHandler;
         this.rpkiWorker = rpkiWorker;
         this.localIp = null;
@@ -33,7 +32,7 @@ class RpkiSession {
             const clientAddress = `${this.remoteIp}:${this.remotePort}`;
             const header = this.parseRpkiHeader(message);
 
-            this.logger.info(
+            logger.info(
                 `Received message from ${clientAddress}, type: ${RpkiConst.RPKI_MSG_TYPE_NAME[header.type]}, length ${message.length}`
             );
 
@@ -66,11 +65,11 @@ class RpkiSession {
                     this.handleError(message);
                     break;
                 default:
-                    this.logger.error(`Unknown message type: ${header.type}`);
+                    logger.error(`Unknown message type: ${header.type}`);
                     this.sendError(RpkiConst.RPKI_ERROR_CODE.UNSUPPORTED_PDU_TYPE);
             }
         } catch (err) {
-            this.logger.error(`Error processing message:`, err);
+            logger.error(`Error processing message:`, err);
             this.sendError(RpkiConst.RPKI_ERROR_CODE.INTERNAL_ERROR);
         }
     }
@@ -92,7 +91,7 @@ class RpkiSession {
         while (this.messageBuffer.length >= RpkiConst.RPKI_HEADER_LENGTH) {
             const header = this.parseRpkiHeader(this.messageBuffer);
             if (this.messageBuffer.length < header.length) {
-                this.logger.info(
+                logger.info(
                     `Waiting for more data. Have ${this.messageBuffer.length} bytes, need ${header.length} bytes`
                 );
                 break;
@@ -123,15 +122,15 @@ class RpkiSession {
             this.sendRoaData();
             this.sendEndOfData();
         } else {
-            this.logger.error(`Unsupported protocol version: ${this.protocolVersion}`);
+            logger.error(`Unsupported protocol version: ${this.protocolVersion}`);
             this.sendError(RpkiConst.RPKI_ERROR_CODE.UNSUPPORTED_PROTOCOL_VERSION);
         }
     }
 
     handleCacheResponse(message) {
-        this.logger.info(`Handling Cache Response message`);
+        logger.info(`Handling Cache Response message`);
         this.sessionId = message.readUInt16BE(RpkiConst.RPKI_HEADER_LENGTH);
-        this.logger.info(`Session ID: ${this.sessionId}`);
+        logger.info(`Session ID: ${this.sessionId}`);
     }
 
     handleIPv4Prefix(message) {
@@ -144,7 +143,7 @@ class RpkiSession {
         const prefix = message.subarray(RpkiConst.RPKI_HEADER_LENGTH + 8, RpkiConst.RPKI_HEADER_LENGTH + 12);
         const ipv4 = `${prefix[0]}.${prefix[1]}.${prefix[2]}.${prefix[3]}`;
 
-        this.logger.info(`IPv4 Prefix: ${ipv4}/${prefixLength}, MaxLength: ${maxLength}, ASN: ${asn}, Flags: ${flags}`);
+        logger.info(`IPv4 Prefix: ${ipv4}/${prefixLength}, MaxLength: ${maxLength}, ASN: ${asn}, Flags: ${flags}`);
 
         // Store ROA data
         const roaKey = `${ipv4}/${prefixLength}-${asn}`;
@@ -178,7 +177,7 @@ class RpkiSession {
         }
         const ipv6 = ipv6Parts.join(':');
 
-        this.logger.info(`IPv6 Prefix: ${ipv6}/${prefixLength}, MaxLength: ${maxLength}, ASN: ${asn}, Flags: ${flags}`);
+        logger.info(`IPv6 Prefix: ${ipv6}/${prefixLength}, MaxLength: ${maxLength}, ASN: ${asn}, Flags: ${flags}`);
 
         // Store ROA data
         const roaKey = `${ipv6}/${prefixLength}-${asn}`;
@@ -197,7 +196,7 @@ class RpkiSession {
     }
 
     handleEndOfData(message) {
-        this.logger.info(`Handling End of Data message`);
+        logger.info(`Handling End of Data message`);
         // Process end of data notification
         // The version 1 End of Data PDU has the following format:
         if (this.protocolVersion >= RpkiConst.RPKI_PROTOCOL_VERSION.V0) {
@@ -207,8 +206,8 @@ class RpkiSession {
             const retryInterval = message.readUInt32BE(RpkiConst.RPKI_HEADER_LENGTH + 10);
             const expireInterval = message.readUInt32BE(RpkiConst.RPKI_HEADER_LENGTH + 14);
 
-            this.logger.info(`Session ID: ${sessionId}, Serial: ${serial}`);
-            this.logger.info(`Refresh: ${refreshInterval}, Retry: ${retryInterval}, Expire: ${expireInterval}`);
+            logger.info(`Session ID: ${sessionId}, Serial: ${serial}`);
+            logger.info(`Refresh: ${refreshInterval}, Retry: ${retryInterval}, Expire: ${expireInterval}`);
         }
 
         // Notify frontend that we've received all data
@@ -216,7 +215,7 @@ class RpkiSession {
     }
 
     handleCacheReset(_message) {
-        this.logger.info(`Handling Cache Reset message`);
+        logger.info(`Handling Cache Reset message`);
         // Clear all current ROA data
         this.roaData.clear();
 
@@ -225,7 +224,7 @@ class RpkiSession {
     }
 
     handleRouterKey(_message) {
-        this.logger.info(`Handling Router Key message`);
+        logger.info(`Handling Router Key message`);
         // Process router key information
     }
 
@@ -242,27 +241,27 @@ class RpkiSession {
             RpkiConst.RPKI_HEADER_LENGTH + 6 + pduLength
         );
 
-        this.logger.error(
+        logger.error(
             `RPKI Error Report: Code ${errorCode}, PDU Length: ${pduLength}, Erroneous PDU: ${Buffer.from(erroneousPdu).toString('hex')}`
         );
     }
 
     handleError(message) {
         const errorCode = message.readUInt16BE(RpkiConst.RPKI_HEADER_LENGTH);
-        this.logger.error(`RPKI Error: Code ${errorCode}`);
+        logger.error(`RPKI Error: Code ${errorCode}`);
     }
 
     sendMessage(buffer) {
         if (!this.socket || this.socket.destroyed) {
-            this.logger.error(`Cannot send message: socket is closed or destroyed`);
+            logger.error(`Cannot send message: socket is closed or destroyed`);
             return;
         }
 
         try {
             this.socket.write(buffer);
-            this.logger.info(`Sent message to ${this.remoteIp}:${this.remotePort}, length ${buffer.length}`);
+            logger.info(`Sent message to ${this.remoteIp}:${this.remotePort}, length ${buffer.length}`);
         } catch (err) {
-            this.logger.error(`Error sending message: ${err.message}`);
+            logger.error(`Error sending message: ${err.message}`);
         }
     }
 

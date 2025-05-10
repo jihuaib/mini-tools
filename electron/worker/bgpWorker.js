@@ -4,7 +4,7 @@ const BgpConst = require('../const/bgpConst');
 const { genRouteIps } = require('../utils/ipUtils');
 const { getAfiAndSafi } = require('../utils/bgpUtils');
 const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BgpSession = require('./bgpSession');
 const BgpInstance = require('./bgpInstance');
@@ -15,8 +15,6 @@ class BgpWorker {
     constructor() {
         this.ipv6Server = null;
         this.server = null;
-
-        this.logger = new Logger();
 
         this.bgpConfigData = null; // bgp配置数据
         this.ipv4PeerConfigData = null; // ipv4邻居配置数据
@@ -52,8 +50,8 @@ class BgpWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -66,15 +64,15 @@ class BgpWorker {
                 });
 
                 socket.on('end', () => {
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
-                    this.logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv4 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
-                    this.logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
@@ -90,8 +88,8 @@ class BgpWorker {
                 const clientAddress = socket.remoteAddress;
                 const clientPort = socket.remotePort;
 
-                this.logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
-                this.logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
+                logger.info(`ipv6 Client connected from ${clientAddress}:${clientPort}`);
+                logger.info(`ipv6 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -104,15 +102,15 @@ class BgpWorker {
                 });
 
                 socket.on('end', () => {
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} end`);
                 });
 
                 socket.on('close', () => {
-                    this.logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
+                    logger.info(`ipv6 Client ${clientAddress}:${clientPort} close`);
                 });
 
                 socket.on('error', err => {
-                    this.logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
+                    logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
                 const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
@@ -127,16 +125,16 @@ class BgpWorker {
             // 启动ipv4服务器并监听端口
             const listenPormise = util.promisify(this.server.listen).bind(this.server);
             await listenPormise(BgpConst.BGP_DEFAULT_PORT, '0.0.0.0');
-            this.logger.info(`TCP Server listening on port ${BgpConst.BGP_DEFAULT_PORT} at 0.0.0.0`);
+            logger.info(`TCP Server listening on port ${BgpConst.BGP_DEFAULT_PORT} at 0.0.0.0`);
             // 启动ipv6服务器并监听端口
             const listenIpv6Pormise = util.promisify(this.ipv6Server.listen).bind(this.ipv6Server);
             await listenIpv6Pormise(BgpConst.BGP_DEFAULT_PORT, '::');
-            this.logger.info(`TCP Server listening on port ${BgpConst.BGP_DEFAULT_PORT} at ::`);
+            logger.info(`TCP Server listening on port ${BgpConst.BGP_DEFAULT_PORT} at ::`);
 
-            this.logger.info(`bgp协议启动成功`);
+            logger.info(`bgp协议启动成功`);
             this.messageHandler.sendSuccessResponse(messageId, null, 'bgp协议启动成功');
         } catch (err) {
-            this.logger.error(`Error starting TCP server: ${err.message}`);
+            logger.error(`Error starting TCP server: ${err.message}`);
             this.messageHandler.sendErrorResponse(messageId, 'bgp协议启动失败');
         }
     }
@@ -171,7 +169,7 @@ class BgpWorker {
         }
 
         if (!isExist) {
-            this.logger.error(`bgp实例不存在: ${errorFamily}`);
+            logger.error(`bgp实例不存在: ${errorFamily}`);
             this.messageHandler.sendErrorResponse(messageId, `bgp实例不存在: ${errorFamily}`);
             return;
         }
@@ -250,7 +248,7 @@ class BgpWorker {
 
         this.ipv4PeerConfigData = ipv4PeerConfigData;
 
-        this.logger.info(`ipv4 邻居配置成功`);
+        logger.info(`ipv4 邻居配置成功`);
         this.messageHandler.sendSuccessResponse(messageId, null, `ipv4 邻居配置成功`);
     }
 
@@ -271,7 +269,7 @@ class BgpWorker {
         }
 
         if (!isExist) {
-            this.logger.error(`bgp实例不存在: ${errorFamily}`);
+            logger.error(`bgp实例不存在: ${errorFamily}`);
             this.messageHandler.sendErrorResponse(messageId, `bgp实例不存在: ${errorFamily}`);
             return;
         }
@@ -350,7 +348,7 @@ class BgpWorker {
 
         this.ipv6PeerConfigData = ipv6PeerConfigData;
 
-        this.logger.info(`ipv6 邻居配置成功`);
+        logger.info(`ipv6 邻居配置成功`);
         this.messageHandler.sendSuccessResponse(messageId, null, `ipv6 邻居配置成功`);
     }
 
@@ -368,7 +366,7 @@ class BgpWorker {
                     }
                 });
             } else {
-                this.logger.warn(`peerMap is empty or undefined for instance: ${instanceKey}`);
+                logger.warn(`peerMap is empty or undefined for instance: ${instanceKey}`);
             }
         });
 
@@ -419,7 +417,7 @@ class BgpWorker {
         this.ipv4RouteConfigData = null;
         this.ipv6RouteConfigData = null;
 
-        this.logger.info(`BGP stopped successfully`);
+        logger.info(`BGP stopped successfully`);
 
         // Send response using messageHandler
         this.messageHandler.sendSuccessResponse(messageId, null, 'bgp协议停止成功');
@@ -430,7 +428,7 @@ class BgpWorker {
         const { afi, safi } = getAfiAndSafi(config.addressFamily);
         const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
         if (!instance) {
-            this.logger.error('实例不存在');
+            logger.error('实例不存在');
             this.messageHandler.sendErrorResponse(messageId, '实例不存在');
             return;
         }
@@ -472,7 +470,7 @@ class BgpWorker {
         const { afi, safi } = getAfiAndSafi(config.addressFamily);
         const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
         if (!instance) {
-            this.logger.error('实例不存在');
+            logger.error('实例不存在');
             this.messageHandler.sendErrorResponse(messageId, '实例不存在');
             return;
         }
@@ -505,7 +503,7 @@ class BgpWorker {
         const { afi, safi } = getAfiAndSafi(peerRecord.addressFamily);
         const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
         if (!instance) {
-            this.logger.error('实例不存在');
+            logger.error('实例不存在');
             this.messageHandler.sendErrorResponse(messageId, '实例不存在');
             return;
         }
@@ -514,7 +512,7 @@ class BgpWorker {
         const sessionKey = BgpSession.makeKey(0, peerRecord.peerIp);
         const session = this.bgpSessionMap.get(sessionKey);
         if (!session) {
-            this.logger.error('session不存在');
+            logger.error('session不存在');
             this.messageHandler.sendErrorResponse(messageId, 'session不存在');
             return;
         }
@@ -522,7 +520,7 @@ class BgpWorker {
         // 查询peer是否存在
         const peer = instance.peerMap.get(peerRecord.peerIp);
         if (!peer) {
-            this.logger.error('peer不存在');
+            logger.error('peer不存在');
             this.messageHandler.sendErrorResponse(messageId, 'peer不存在');
             return;
         }
@@ -571,7 +569,7 @@ class BgpWorker {
         const { afi, safi } = getAfiAndSafi(addressFamily);
         const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
         if (!instance) {
-            this.logger.error('实例不存在');
+            logger.error('实例不存在');
             this.messageHandler.sendErrorResponse(messageId, '实例不存在');
             return;
         }

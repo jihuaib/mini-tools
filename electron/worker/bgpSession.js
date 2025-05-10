@@ -2,7 +2,7 @@ const BgpConst = require('../const/bgpConst');
 const { writeUInt16, writeUInt32, ipToBytes } = require('../utils/ipUtils');
 const { getAddrFamilyType, getAfiAndSafi } = require('../utils/bgpUtils');
 const { parseBgpPacket, getBgpPacketSummary } = require('../utils/bgpPacketParser');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
 const BgpInstance = require('./bgpInstance');
 
@@ -30,7 +30,6 @@ class BgpSession {
         // 远端open报文可选参数
         this.openCapCustom = '';
 
-        this.logger = new Logger();
         this.sessState = BgpConst.BGP_PEER_STATE.IDLE;
     }
 
@@ -112,7 +111,7 @@ class BgpSession {
         const buf = this.buildOpenMsg();
         this.socket.write(buf);
         const parsedPacket = parseBgpPacket(buf);
-        this.logger.info(`${this.peerIp} send open msg ${getBgpPacketSummary(parsedPacket)}`);
+        logger.info(`${this.peerIp} send open msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 
     resetPeer() {
@@ -139,8 +138,8 @@ class BgpSession {
             const parsedPacket = parseBgpPacket(packet);
 
             if (header.type === BgpConst.BGP_PACKET_TYPE.OPEN) {
-                this.logger.info(`${this.peerIp} recv open message ${JSON.stringify(parsedPacket)}`);
-                this.logger.info(`${this.peerIp} recv open message ${getBgpPacketSummary(parsedPacket)}`);
+                logger.info(`${this.peerIp} recv open message ${JSON.stringify(parsedPacket)}`);
+                logger.info(`${this.peerIp} recv open message ${getBgpPacketSummary(parsedPacket)}`);
 
                 // 解析远端能力并设置位标志
                 parsedPacket.capabilities.forEach(cap => {
@@ -214,7 +213,7 @@ class BgpSession {
                 this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_CONFIRM);
             } else if (header.type === BgpConst.BGP_PACKET_TYPE.KEEPALIVE) {
                 if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
-                    this.logger.info(`${this.peerIp} recv keepalive message ${getBgpPacketSummary(parsedPacket)}`);
+                    logger.info(`${this.peerIp} recv keepalive message ${getBgpPacketSummary(parsedPacket)}`);
                 }
                 this.sendKeepAliveMsg();
                 if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
@@ -231,20 +230,20 @@ class BgpSession {
                     });
                 }
             } else if (header.type === BgpConst.BGP_PACKET_TYPE.NOTIFICATION) {
-                this.logger.info(`${this.peerIp} recv notification message ${getBgpPacketSummary(parsedPacket)}`);
+                logger.info(`${this.peerIp} recv notification message ${getBgpPacketSummary(parsedPacket)}`);
                 this.resetPeer();
                 if (this.socket) {
                     this.socket.destroy();
                     this.socket = null;
                 }
             } else if (header.type === BgpConst.BGP_PACKET_TYPE.ROUTE_REFRESH) {
-                this.logger.info(`${this.peerIp} recv route-refresh message ${getBgpPacketSummary(parsedPacket)}`);
+                logger.info(`${this.peerIp} recv route-refresh message ${getBgpPacketSummary(parsedPacket)}`);
                 const instance = this.instanceMap.get(BgpInstance.makeKey(0, parsedPacket.afi, parsedPacket.safi));
                 if (instance) {
                     instance.sendRoute();
                 }
             } else if (header.type === BgpConst.BGP_PACKET_TYPE.UPDATE) {
-                this.logger.info(`${this.peerIp} recv update message ${getBgpPacketSummary(parsedPacket)}`);
+                logger.info(`${this.peerIp} recv update message ${getBgpPacketSummary(parsedPacket)}`);
             }
 
             // 从缓冲区中移除已处理的报文
@@ -362,7 +361,7 @@ class BgpSession {
                 const customCapBuffer = this.processCustomPkt(this.openCapCustom);
                 optParams.push(...customCapBuffer);
             } catch (error) {
-                this.logger.error(`Error processing custom capability: ${error.message}`);
+                logger.error(`Error processing custom capability: ${error.message}`);
             }
         }
 
@@ -441,7 +440,7 @@ class BgpSession {
         this.socket.write(buf);
         if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
             const parsedPacket = parseBgpPacket(buf);
-            this.logger.info(`${this.peerIp} send keepalive msg ${getBgpPacketSummary(parsedPacket)}`);
+            logger.info(`${this.peerIp} send keepalive msg ${getBgpPacketSummary(parsedPacket)}`);
         }
     }
 
@@ -449,19 +448,19 @@ class BgpSession {
         const buffer = this.buildNotificationMsg(errorCode, errorSubcode);
         this.socket.write(buffer);
         const parsedPacket = parseBgpPacket(buffer);
-        this.logger.info(`${this.peerIp} send notification msg ${getBgpPacketSummary(parsedPacket)}`);
+        logger.info(`${this.peerIp} send notification msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 
     sendRoute(buffer) {
         this.socket.write(buffer);
         const parsedPacket = parseBgpPacket(buffer);
-        this.logger.info(`${this.peerIp} send route msg ${getBgpPacketSummary(parsedPacket)}`);
+        logger.info(`${this.peerIp} send route msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 
     withdrawRoute(buffer) {
         this.socket.write(buffer);
         const parsedPacket = parseBgpPacket(buffer);
-        this.logger.info(`${this.peerIp} withdraw route msg ${getBgpPacketSummary(parsedPacket)}`);
+        logger.info(`${this.peerIp} withdraw route msg ${getBgpPacketSummary(parsedPacket)}`);
     }
 }
 

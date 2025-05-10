@@ -1,4 +1,4 @@
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const BmpConst = require('../const/bmpConst');
 const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const { getInitiationTlvName } = require('../utils/bmpUtils');
@@ -11,7 +11,6 @@ const { parseBgpPacket } = require('../utils/bgpPacketParser');
 class BmpSession {
     constructor(messageHandler, bmpWorker) {
         this.socket = null;
-        this.logger = new Logger();
         this.messageHandler = messageHandler;
         this.bmpWorker = bmpWorker;
         this.localIp = null;
@@ -100,7 +99,7 @@ class BmpSession {
             const bgpUpdate = message.subarray(position, position + updateLength);
             const parsedBgpUpdate = parseBgpPacket(bgpUpdate);
             if (!parsedBgpUpdate.valid) {
-                this.logger.error(`Received BGP Update message is invalid: ${parsedBgpUpdate.error}`);
+                logger.error(`Received BGP Update message is invalid: ${parsedBgpUpdate.error}`);
             }
             position += updateLength;
 
@@ -276,7 +275,7 @@ class BmpSession {
                 }
             }
         } catch (err) {
-            this.logger.error(`Error processing route monitoring:`, err);
+            logger.error(`Error processing route monitoring:`, err);
         }
     }
 
@@ -400,9 +399,9 @@ class BmpSession {
             const clientInfo = this.getClientInfo();
 
             this.messageHandler.sendEvent(BMP_EVT_TYPES.INITIATION, { data: clientInfo });
-            this.logger.info(`Processed initiation message: sysName=${this.sysName}, sysDesc=${this.sysDesc}`);
+            logger.info(`Processed initiation message: sysName=${this.sysName}, sysDesc=${this.sysDesc}`);
         } catch (err) {
-            this.logger.error(`Error processing initiation:`, err);
+            logger.error(`Error processing initiation:`, err);
         }
     }
 
@@ -464,7 +463,7 @@ class BmpSession {
                 const bgpNotification = message.subarray(position, position + notificationLength);
                 parsedBgpNotification = parseBgpPacket(bgpNotification);
                 if (!parsedBgpNotification.valid) {
-                    this.logger.error(`Received BGP Notification message is invalid: ${parsedBgpNotification.error}`);
+                    logger.error(`Received BGP Notification message is invalid: ${parsedBgpNotification.error}`);
                 }
             }
 
@@ -489,7 +488,7 @@ class BmpSession {
                 });
             }
         } catch (err) {
-            this.logger.error(`Error processing peer down:`, err);
+            logger.error(`Error processing peer down:`, err);
         }
     }
 
@@ -555,7 +554,7 @@ class BmpSession {
                 const bgpRecvOpen = message.subarray(position, position + recvOpenLength);
                 parsedRecvBgpOpen = parseBgpPacket(bgpRecvOpen);
                 if (!parsedRecvBgpOpen.valid) {
-                    this.logger.error(`Received BGP Open message is invalid: ${parsedRecvBgpOpen.error}`);
+                    logger.error(`Received BGP Open message is invalid: ${parsedRecvBgpOpen.error}`);
                 }
                 position += recvOpenLength;
             }
@@ -567,7 +566,7 @@ class BmpSession {
                 const bgpSendOpen = message.subarray(position, position + sendOpenLength);
                 parsedSendBgpOpen = parseBgpPacket(bgpSendOpen);
                 if (!parsedSendBgpOpen.valid) {
-                    this.logger.error(`Sent BGP Open message is invalid: ${parsedSendBgpOpen.error}`);
+                    logger.error(`Sent BGP Open message is invalid: ${parsedSendBgpOpen.error}`);
                 }
                 position += sendOpenLength;
             }
@@ -680,7 +679,7 @@ class BmpSession {
                 this.messageHandler.sendEvent(BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
             }
         } catch (err) {
-            this.logger.error(`Error processing peer up:`, err);
+            logger.error(`Error processing peer up:`, err);
         }
     }
 
@@ -701,7 +700,7 @@ class BmpSession {
             const length = message.readUInt32BE(1);
             const type = message[5];
 
-            this.logger.info(
+            logger.info(
                 `Received message type ${BmpConst.BMP_MSG_TYPE_NAME[type]} from ${clientAddress}, length ${length}`
             );
 
@@ -724,10 +723,10 @@ class BmpSession {
                     this.processTermination(msg);
                     break;
                 default:
-                    this.logger.warn(`Unknown message type: ${type}`);
+                    logger.warn(`Unknown message type: ${type}`);
             }
         } catch (err) {
-            this.logger.error(`Error processing message:`, err);
+            logger.error(`Error processing message:`, err);
         }
     }
 
@@ -740,7 +739,7 @@ class BmpSession {
         while (this.messageBuffer.length >= BmpConst.BMP_HEADER_LENGTH) {
             const messageLength = this.messageBuffer.readUInt32BE(1);
             if (this.messageBuffer.length < messageLength) {
-                this.logger.info(
+                logger.info(
                     `Waiting for more data. Have ${this.messageBuffer.length} bytes, need ${messageLength} bytes`
                 );
                 break;

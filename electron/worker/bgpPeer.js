@@ -2,14 +2,13 @@ const BgpConst = require('../const/bgpConst');
 const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
 const { writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
 const { getAddrFamilyType } = require('../utils/bgpUtils');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
 class BgpPeer {
     constructor(session, instance) {
         this.peerState = BgpConst.BGP_PEER_STATE.IDLE;
         this.session = session;
         this.instance = instance;
-        this.logger = new Logger();
     }
 
     changePeerState(state) {
@@ -19,7 +18,7 @@ class BgpPeer {
             }
         }
 
-        this.logger.info(
+        logger.info(
             `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_PEER_STATE_NAME[this.peerState]} -> ${BgpConst.BGP_PEER_STATE_NAME[state]}`
         );
 
@@ -32,7 +31,7 @@ class BgpPeer {
     }
 
     resetPeer() {
-        this.logger.info(
+        logger.info(
             `peer ${this.session.peerIp} fsm state ${BgpConst.BGP_PEER_STATE_NAME[this.peerState]} -> ${BgpConst.BGP_PEER_STATE_NAME[BgpConst.BGP_PEER_STATE.IDLE]}`
         );
 
@@ -211,7 +210,7 @@ class BgpPeer {
                     const customPathAttr = this.session.processCustomPkt(this.instance.customAttr);
                     pathAttr.push(...customPathAttr);
                 } catch (error) {
-                    this.logger.error(`Error processing custom path attribute: ${error.message}`);
+                    logger.error(`Error processing custom path attribute: ${error.message}`);
                     return {
                         status: false,
                         index: routeIndex,
@@ -243,7 +242,7 @@ class BgpPeer {
                 buffer: buffer
             };
         } catch (error) {
-            this.logger.error(`Error building IPv6 UPDATE message: ${error.message}`);
+            logger.error(`Error building IPv6 UPDATE message: ${error.message}`);
             return {
                 status: false,
                 index: routeIndex,
@@ -288,7 +287,7 @@ class BgpPeer {
                     const customPathAttr = this.session.processCustomPkt(this.instance.customAttr);
                     pathAttr.push(...customPathAttr);
                 } catch (error) {
-                    this.logger.error(`Error processing custom path attribute: ${error.message}`);
+                    logger.error(`Error processing custom path attribute: ${error.message}`);
                     return {
                         status: false,
                         index: routeIndex,
@@ -341,7 +340,7 @@ class BgpPeer {
                 buffer: buffer
             };
         } catch (error) {
-            this.logger.error(`Error building IPv4 UPDATE message: ${error.message}`);
+            logger.error(`Error building IPv4 UPDATE message: ${error.message}`);
             return {
                 status: false,
                 index: routeIndex,
@@ -393,7 +392,7 @@ class BgpPeer {
                 buffer: buffer
             };
         } catch (error) {
-            this.logger.error(`Error building IPv4 WITHDRAW message: ${error.message}`);
+            logger.error(`Error building IPv4 WITHDRAW message: ${error.message}`);
             return {
                 status: false,
                 index: routeIndex,
@@ -432,7 +431,7 @@ class BgpPeer {
                 buffer: buffer
             };
         } catch (error) {
-            this.logger.error(`Error building IPv6 WITHDRAW message: ${error.message}`);
+            logger.error(`Error building IPv6 WITHDRAW message: ${error.message}`);
             return {
                 status: false,
                 index: routeIndex,

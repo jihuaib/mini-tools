@@ -13,6 +13,11 @@ try {
     // 忽略错误，说明不在 worker 环境中
 }
 
+// 配置 electron-log
+log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
+log.transports.file.maxFiles = 3; // 最多保留3个日志文件
+log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+
 class Logger {
     constructor() {
         this.logger = log;
@@ -66,4 +71,7 @@ class Logger {
     }
 }
 
-module.exports = Logger;
+// Create logger instance
+const loggerInstance = new Logger();
+
+module.exports = loggerInstance;

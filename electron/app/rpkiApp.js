@@ -3,7 +3,7 @@ const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const { RPKI_REQ_TYPES } = require('../const/rpkiReqConst');
 const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
-const Logger = require('../log/logger');
+const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 
 class RpkiApp {
@@ -13,7 +13,6 @@ class RpkiApp {
         this.rpkiConfigFileKey = 'rpki-config';
         this.rpkiRoaFileKey = 'rpki-roa';
         this.isDev = !app.isPackaged;
-        this.logger = new Logger();
         this.worker = null;
 
         this.rpkiClientConnectionHandler = null;
@@ -38,7 +37,7 @@ class RpkiApp {
             this.store.set(this.rpkiConfigFileKey, config);
             return successResponse(null, 'RPKI配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error saving RPKI config:', error.message);
+            logger.error('Error saving RPKI config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -51,7 +50,7 @@ class RpkiApp {
             }
             return successResponse(config, 'RPKI配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error loading RPKI config:', error.message);
+            logger.error('Error loading RPKI config:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -60,11 +59,11 @@ class RpkiApp {
         const webContents = event.sender;
         try {
             if (null != this.worker) {
-                this.logger.error(`rpki协议已经启动`);
+                logger.error(`rpki协议已经启动`);
                 return errorResponse('rpki协议已经启动');
             }
 
-            this.logger.info(`${JSON.stringify(rpkiConfigData)}`);
+            logger.info(`${JSON.stringify(rpkiConfigData)}`);
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/rpkiWorker.js')
@@ -75,7 +74,7 @@ class RpkiApp {
 
             // 注册事件监听
             this.rpkiClientConnectionHandler = data => {
-                this.logger.info(`rpkiClientConnectionHandler data: ${JSON.stringify(data)}`);
+                logger.info(`rpkiClientConnectionHandler data: ${JSON.stringify(data)}`);
                 webContents.send('rpki:clientConnection', successResponse(data));
             };
 
@@ -88,29 +87,29 @@ class RpkiApp {
                 for (const roa of roaListData) {
                     const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
                     if (result.status === 'success') {
-                        this.logger.info(`worker RPKI ROA恢复成功: ${JSON.stringify(roa)}`);
+                        logger.info(`worker RPKI ROA恢复成功: ${JSON.stringify(roa)}`);
                     } else {
-                        this.logger.error(`worker RPKI ROA恢复失败: ${JSON.stringify(roa)} ${result.msg}`);
+                        logger.error(`worker RPKI ROA恢复失败: ${JSON.stringify(roa)} ${result.msg}`);
                     }
                 }
             } else {
-                this.logger.error(`RPKI ROA配置加载失败: ${roaList.msg}`);
+                logger.error(`RPKI ROA配置加载失败: ${roaList.msg}`);
             }
 
             const result = await this.worker.sendRequest(RPKI_REQ_TYPES.START_RPKI, rpkiConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
-            this.logger.info(`rpki启动成功 result: ${JSON.stringify(result)}`);
+            logger.info(`rpki启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error starting RPKI:', error.message);
+            logger.error('Error starting RPKI:', error.message);
             return errorResponse(error.message);
         }
     }
 
     async handleStopRpki() {
         if (null == this.worker) {
-            this.logger.error('RPKI未启动');
+            logger.error('RPKI未启动');
             return errorResponse('RPKI未启动');
         }
 
@@ -118,7 +117,7 @@ class RpkiApp {
             const result = await this.worker.sendRequest(RPKI_REQ_TYPES.STOP_RPKI, null);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.logger.error('Error stopping RPKI:', error.message);
+            logger.error('Error stopping RPKI:', error.message);
             return errorResponse(error.message);
         } finally {
             this.worker.removeEventListener(RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
@@ -135,14 +134,14 @@ class RpkiApp {
                 currentRoaList = config;
             }
 
-            this.logger.info(`handleAddRoa: ${JSON.stringify(roa)}`);
+            logger.info(`handleAddRoa: ${JSON.stringify(roa)}`);
 
             if (this.worker) {
                 const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
                 if (result.status === 'success') {
-                    this.logger.info(`worker RPKI ROA配置添加成功`);
+                    logger.info(`worker RPKI ROA配置添加成功`);
                 } else {
-                    this.logger.error(`worker RPKI ROA配置添加失败: ${result.msg}`);
+                    logger.error(`worker RPKI ROA配置添加失败: ${result.msg}`);
                 }
             }
             // 检查是否已经存在
@@ -160,7 +159,7 @@ class RpkiApp {
             this.store.set(this.rpkiRoaFileKey, currentRoaList);
             return successResponse(null, 'RPKI ROA配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error adding ROA:', error.message);
+            logger.error('Error adding ROA:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -173,14 +172,14 @@ class RpkiApp {
                 currentRoaList = config;
             }
 
-            this.logger.info(`handleDeleteRoa: ${JSON.stringify(roa)}`);
+            logger.info(`handleDeleteRoa: ${JSON.stringify(roa)}`);
 
             if (this.worker) {
                 const result = await this.worker.sendRequest(RPKI_REQ_TYPES.DELETE_ROA, roa);
                 if (result.status === 'success') {
-                    this.logger.info(`worker RPKI ROA删除成功`);
+                    logger.info(`worker RPKI ROA删除成功`);
                 } else {
-                    this.logger.error(`worker RPKI ROA删除失败: ${result.msg}`);
+                    logger.error(`worker RPKI ROA删除失败: ${result.msg}`);
                 }
             }
             // 找到roa，删除
@@ -197,7 +196,7 @@ class RpkiApp {
             this.store.set(this.rpkiRoaFileKey, currentRoaList);
             return successResponse(null, 'RPKI ROA配置文件保存成功');
         } catch (error) {
-            this.logger.error('Error deleting ROA:', error.message);
+            logger.error('Error deleting ROA:', error.message);
             return errorResponse(error.message);
         }
     }
@@ -211,7 +210,7 @@ class RpkiApp {
             }
             return successResponse(currentRoaList, 'RPKI ROA配置文件加载成功');
         } catch (error) {
-            this.logger.error('Error getting ROA list:', error.message);
+            logger.error('Error getting ROA list:', error.message);
             return errorResponse(error.message);
         }
     }

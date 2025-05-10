@@ -1,10 +1,8 @@
-const Logger = require('../log/logger');
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 
 class BmpBgpRoute {
     constructor(bmpBgpPeer) {
         this.bmpBgpPeer = bmpBgpPeer;
-        this.logger = new Logger();
 
         // key
         this.ip = null;
