@@ -64,13 +64,15 @@ app.whenReady().then(() => {
         fileExtension: 'json',
         cwd: app.getPath('userData')
     });
-    const systemMenuApp = new SystemMenuApp(ipcMain, mainWindow, store);
-    // 加载设置
-    systemMenuApp.loadSettings();
+
     bgpApp = new BgpApp(ipcMain, store);
-    new ToolsApp(ipcMain, store);
+    const toolsApp = new ToolsApp(ipcMain, store);
     new BmpApp(ipcMain, store);
     new RpkiApp(ipcMain, store);
+
+    // 加载设置
+    const systemMenuApp = new SystemMenuApp(ipcMain, mainWindow, toolsApp);
+    systemMenuApp.loadSettings(toolsApp);
 });
 
 app.on('window-all-closed', () => {

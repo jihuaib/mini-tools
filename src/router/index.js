@@ -14,6 +14,9 @@ import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
 import RpkiMain from '../view/rpki/RpkiMain.vue';
 import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
+import SettingMain from '../view/settings/SettingMain.vue';
+import GeneralSettings from '../view/settings/GeneralSettings.vue';
+import ToolsSettings from '../view/settings/ToolsSettings.vue';
 import store from '../store';
 
 const routes = [
@@ -129,6 +132,30 @@ const routes = [
                         path: 'rpki-roa-config',
                         name: 'RpkiRoaConfig',
                         component: RpkiRoaConfig,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/settings',
+                name: 'SettingMain',
+                component: SettingMain,
+                meta: { keepAlive: true },
+                children: [
+                    {
+                        path: '/',
+                        redirect: '/settings/general'
+                    },
+                    {
+                        path: 'general',
+                        name: 'GeneralSettings',
+                        component: GeneralSettings,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'tools',
+                        name: 'ToolsSettings',
+                        component: ToolsSettings,
                         meta: { keepAlive: true }
                     }
                 ]

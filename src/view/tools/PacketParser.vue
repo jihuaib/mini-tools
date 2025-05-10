@@ -73,6 +73,7 @@
                     <a-form-item :wrapper-col="{ span: 24 }">
                         <div class="form-buttons">
                             <a-button type="primary" html-type="submit">解析报文</a-button>
+                            <a-button type="default" @click="showParseHistory">识别历史</a-button>
                         </div>
                     </a-form-item>
                 </a-form>
@@ -128,16 +129,47 @@
             </div>
         </div>
     </a-card>
+
+    <!-- 解析历史弹窗 -->
+    <a-modal
+        v-model:open="historyModalVisible"
+        title="报文解析历史"
+        width="700px"
+        :mask-closable="false"
+        @cancel="closeHistoryModal"
+    >
+        <div class="history-modal-content">
+            <a-table
+                :columns="historyColumns"
+                :data-source="parseHistory"
+                :pagination="{ pageSize: 5, showSizeChanger: false, position: ['bottomCenter'] }"
+                :scroll="{ y: 200 }"
+                size="small"
+            >
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'action'">
+                        <a-button type="link" @click="loadHistoryItem(record)">使用</a-button>
+                    </template>
+                    <template v-else-if="column.key === 'packetData'">
+                        <div class="history-packet-data">{{ truncateString(record.packetData, 40) }}</div>
+                    </template>
+                </template>
+            </a-table>
+        </div>
+        <template #footer>
+            <a-button type="primary" @click="closeHistoryModal">关闭</a-button>
+            <a-button v-if="parseHistory.length > 0" type="danger" @click="clearHistory">清空历史</a-button>
+        </template>
+    </a-modal>
 </template>
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, toRaw, watch, onMounted, computed } from 'vue';
+    import { ref, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { debounce } from 'lodash-es';
     import { clearValidationErrors } from '../../utils/validationCommon';
     import { validateInputPacketData, validateInputProtocolPort } from '../../utils/toolsValidation';
-    import { PROTOCOL_TYPE, START_LAYER } from '../../const/toolsConst';
+    import { PROTOCOL_TYPE, START_LAYER, START_LAYER_NAME, PROTOCOL_TYPE_NAME } from '../../const/toolsConst';
     defineOptions({
         name: 'PacketParser'
     });
@@ -328,13 +360,10 @@
             // 设置当前选中的树节点key
             treeSelectedKeys.value = [key];
 
-            // 延迟执行滚动操作，等待DOM更新和可能的动画完成
-            setTimeout(() => {
-                // 滚动到节点位置
-                if (treeRef.value) {
-                    treeRef.value.scrollTo({ key });
-                }
-            }, 100);
+            // 滚动到节点位置
+            if (treeRef.value) {
+                treeRef.value.scrollTo({ key });
+            }
         }
     };
 
@@ -368,41 +397,106 @@
         return result;
     };
 
-    // 保存配置
-    const saveConfig = debounce(async data => {
-        const resp = await window.toolsApi.savePacketParserConfig(data);
-        if (resp.status !== 'success') {
-            console.error(resp.msg);
-        }
-    }, 300);
-
-    const mounted = ref(false);
-
-    watch(
-        formState,
-        newValue => {
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(validationErrors);
-                validateField(formState.value.packetData, 'packetData', validateInputPacketData);
-                validateField(formState.value.protocolPort, 'protocolPort', validateInputProtocolPort);
-                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newValue);
-                saveConfig(raw);
-            } catch (error) {
-                console.error(error);
+    // 历史记录相关状态
+    const historyModalVisible = ref(false);
+    const parseHistory = ref([]);
+    const historyColumns = [
+        {
+            title: '开始层级',
+            dataIndex: 'startLayer',
+            key: 'startLayer',
+            customRender: ({ text }) => {
+                return START_LAYER_NAME[text];
             }
         },
-        { deep: true }
-    );
+        {
+            title: '协议类型',
+            dataIndex: 'protocolType',
+            key: 'protocolType',
+            customRender: ({ text }) => {
+                return PROTOCOL_TYPE_NAME[text];
+            }
+        },
+        {
+            title: '协议端口',
+            dataIndex: 'protocolPort',
+            key: 'protocolPort'
+        },
+        {
+            title: '报文数据',
+            dataIndex: 'packetData',
+            key: 'packetData',
+            ellipsis: true
+        },
+        {
+            title: '操作',
+            key: 'action'
+        }
+    ];
 
-    // 处理解析报文
+    // 截断显示内容
+    const truncateString = (str, maxLength) => {
+        if (!str) return '';
+        return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    };
+
+    // 显示历史记录弹窗
+    const showParseHistory = async () => {
+        try {
+            const resp = await window.toolsApi.getPacketParserHistory();
+            if (resp.status === 'success') {
+                parseHistory.value = resp.data || [];
+                historyModalVisible.value = true;
+            } else {
+                message.error(resp.msg || '获取历史记录失败');
+            }
+        } catch (e) {
+            message.error(e.message || String(e));
+            console.error('获取历史记录错误:', e);
+        }
+    };
+
+    // 关闭历史记录弹窗
+    const closeHistoryModal = () => {
+        historyModalVisible.value = false;
+    };
+
+    // 加载历史记录项
+    const loadHistoryItem = record => {
+        if (!record) return;
+
+        // 更新表单数据
+        formState.value = {
+            startLayer: record.startLayer || START_LAYER.L2,
+            protocolType: record.protocolType || PROTOCOL_TYPE.AUTO,
+            protocolPort: record.protocolPort || '',
+            packetData: record.packetData || ''
+        };
+
+        // 关闭弹窗
+        closeHistoryModal();
+
+        // 自动执行解析
+        handleParsePacket();
+    };
+
+    // 清空历史记录
+    const clearHistory = async () => {
+        try {
+            const resp = await window.toolsApi.clearPacketParserHistory();
+            if (resp.status === 'success') {
+                parseHistory.value = [];
+                message.success('历史记录已清空');
+            } else {
+                message.error(resp.msg || '清空历史记录失败');
+            }
+        } catch (e) {
+            message.error(e.message || String(e));
+            console.error('清空历史记录错误:', e);
+        }
+    };
+
+    // 处理解析报文，添加历史记录保存
     const handleParsePacket = async () => {
         try {
             // 验证字段
@@ -476,15 +570,7 @@
         }
     });
 
-    onMounted(async () => {
-        // 加载保存的配置
-        const savedConfig = await window.toolsApi.loadPacketParserConfig();
-        if (savedConfig.status === 'success' && savedConfig.data) {
-            formState.value = savedConfig.data;
-        }
-
-        mounted.value = true;
-    });
+    onMounted(async () => {});
 </script>
 
 <style scoped>
@@ -601,6 +687,7 @@
     .form-buttons {
         display: flex;
         justify-content: center;
+        gap: 10px;
         margin-top: 8px;
     }
 
@@ -733,5 +820,49 @@
         .right-column {
             width: 100%;
         }
+    }
+
+    /* 历史记录样式 */
+    .history-modal-content {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .history-packet-data {
+        font-family: monospace;
+        word-break: break-all;
+    }
+
+    :deep(.ant-table-row) {
+        cursor: pointer;
+    }
+
+    :deep(.ant-table-row:hover) {
+        background-color: #f5f5f5;
+    }
+
+    :deep(.ant-table-tbody > tr > td) {
+        height: 30px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    :deep(.ant-table-body) {
+        height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    :deep(.ant-table-cell) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 表格样式调整 */
+    :deep(.ant-table-small) {
+        font-size: 12px;
     }
 </style>

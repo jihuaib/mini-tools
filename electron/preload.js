@@ -4,21 +4,23 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('commonApi', {
     openDeveloperOptions: () => ipcRenderer.send('common:openDeveloperOptions'),
     openSoftwareInfo: () => ipcRenderer.send('common:openSoftwareInfo'),
-    saveSettings: settings => ipcRenderer.invoke('common:saveSettings', settings),
-    getSettings: () => ipcRenderer.invoke('common:getSettings')
+    saveGeneralSettings: settings => ipcRenderer.invoke('common:saveGeneralSettings', settings),
+    getGeneralSettings: () => ipcRenderer.invoke('common:getGeneralSettings'),
+    saveToolsSettings: settings => ipcRenderer.invoke('common:saveToolsSettings', settings),
+    getToolsSettings: () => ipcRenderer.invoke('common:getToolsSettings')
 });
 
 // 工具模块
 contextBridge.exposeInMainWorld('toolsApi', {
     // 字符串生成模块
     generateString: templateData => ipcRenderer.invoke('tools:generateString', templateData),
-    saveGenerateStringConfig: config => ipcRenderer.invoke('tools:saveGenerateStringConfig', config),
-    loadGenerateStringConfig: () => ipcRenderer.invoke('tools:loadGenerateStringConfig'),
+    getGenerateStringHistory: () => ipcRenderer.invoke('tools:getGenerateStringHistory'),
+    clearGenerateStringHistory: () => ipcRenderer.invoke('tools:clearGenerateStringHistory'),
 
     // 报文解析模块
     parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
-    savePacketParserConfig: config => ipcRenderer.invoke('tools:savePacketParserConfig', config),
-    loadPacketParserConfig: () => ipcRenderer.invoke('tools:loadPacketParserConfig')
+    getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
+    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory')
 });
 
 // bgp模块

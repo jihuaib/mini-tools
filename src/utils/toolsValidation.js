@@ -43,6 +43,10 @@ export const validateEnd = (value, startValue, validationErrors) => {
 
 // 报文数据验证
 export const validateInputPacketData = (value, validationErrors) => {
+    if (!value) {
+        validationErrors.value.packetData = '请输入报文数据';
+        return;
+    }
     const { status, message } = validatePacketData(value);
     if (status === 'error') {
         validationErrors.value.packetData = message;

@@ -52,7 +52,10 @@
 
             <!-- 操作按钮 -->
             <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-button type="primary" html-type="submit">立即生成</a-button>
+                <a-space>
+                    <a-button type="primary" html-type="submit">立即生成</a-button>
+                    <a-button type="default" @click="showGenerateHistory">生成历史</a-button>
+                </a-space>
             </a-form-item>
 
             <!-- 结果显示 -->
@@ -61,13 +64,44 @@
             </a-form-item>
         </a-form>
     </a-card>
+
+    <!-- 生成历史弹窗 -->
+    <a-modal
+        v-model:open="generateHistoryModalVisible"
+        title="生成历史"
+        width="700px"
+        :mask-closable="false"
+        @cancel="closeHistoryModal"
+    >
+        <div class="history-modal-content">
+            <a-table
+                :columns="historyColumns"
+                :data-source="generateHistory"
+                :pagination="{ pageSize: 5, showSizeChanger: false, position: ['bottomCenter'] }"
+                :scroll="{ y: 200 }"
+                size="small"
+            >
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'action'">
+                        <a-button type="link" @click="loadHistoryItem(record)">使用</a-button>
+                    </template>
+                    <template v-else-if="column.key === 'template'">
+                        <div class="history-packet-data">{{ truncateString(record.template, 40) }}</div>
+                    </template>
+                </template>
+            </a-table>
+        </div>
+        <template #footer>
+            <a-button type="primary" @click="closeHistoryModal">关闭</a-button>
+            <a-button v-if="generateHistory.length > 0" type="danger" @click="clearHistory">清空历史</a-button>
+        </template>
+    </a-modal>
 </template>
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, toRaw, watch, onMounted } from 'vue';
+    import { ref, toRaw, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
-    import { debounce } from 'lodash-es';
     import { validateTemplate, validatePlaceholder, validateStart, validateEnd } from '../../utils/toolsValidation';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
@@ -92,8 +126,6 @@
         }
     });
 
-    const mounted = ref(false);
-
     const formState = ref({
         template: 'ip address 1.1.1.{A} 24',
         placeholder: '{A}',
@@ -110,36 +142,6 @@
             return validator(value, validationErrors);
         }
     };
-
-    const saveDebounced = debounce(async data => {
-        const resp = await window.toolsApi.saveGenerateStringConfig(data);
-        if (resp.status !== 'success') {
-            console.error(resp.msg);
-        }
-    }, 300);
-
-    watch(
-        formState,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            clearValidationErrors(validationErrors);
-            validateField(newValue.template, 'template', validateTemplate);
-            validateField(newValue.placeholder, 'placeholder', validatePlaceholder);
-            validateField(newValue.start, 'start', validateStart);
-            validateField(newValue.end, 'end', validateEnd);
-
-            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-            if (hasErrors) {
-                return;
-            }
-            const raw = toRaw(newValue);
-            saveDebounced(raw);
-        },
-        { deep: true }
-    );
 
     const result = ref('');
 
@@ -173,18 +175,90 @@
         }
     };
 
-    onMounted(async () => {
-        // 加载保存的配置
-        const savedConfig = await window.toolsApi.loadGenerateStringConfig();
-        if (savedConfig.status === 'success' && savedConfig.data) {
-            formState.value = savedConfig.data;
-        } else {
-            console.error('配置文件加载失败', savedConfig.msg);
-        }
+    onMounted(async () => {});
 
-        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
-        mounted.value = true;
-    });
+    // 历史记录相关状态
+    const generateHistory = ref(false);
+    const generateHistoryModalVisible = ref(false);
+    const historyColumns = [
+        {
+            title: '字符串模板',
+            dataIndex: 'template',
+            key: 'template'
+        },
+        {
+            title: '占位符',
+            dataIndex: 'placeholder',
+            key: 'placeholder'
+        },
+        {
+            title: '开始',
+            dataIndex: 'start',
+            key: 'start'
+        },
+        {
+            title: '结束',
+            dataIndex: 'end',
+            key: 'end'
+        },
+        {
+            title: '操作',
+            key: 'action'
+        }
+    ];
+
+    const showGenerateHistory = async () => {
+        try {
+            const resp = await window.toolsApi.getGenerateStringHistory();
+            if (resp.status === 'success') {
+                generateHistory.value = resp.data || [];
+                generateHistoryModalVisible.value = true;
+            } else {
+                message.error(resp.msg || '获取历史记录失败');
+            }
+        } catch (e) {
+            message.error(e.message || String(e));
+            console.error('获取历史记录错误:', e);
+        }
+    };
+
+    // 关闭历史记录弹窗
+    const closeHistoryModal = () => {
+        generateHistoryModalVisible.value = false;
+    };
+
+    // 清空历史记录
+    const clearHistory = async () => {
+        const resp = await window.toolsApi.clearGenerateStringHistory();
+        if (resp.status === 'success') {
+            generateHistory.value = [];
+        }
+    };
+
+    // 加载历史记录项
+    const loadHistoryItem = record => {
+        if (!record) return;
+
+        // 更新表单数据
+        formState.value = {
+            template: record.template || '',
+            placeholder: record.placeholder || '',
+            start: record.start || '',
+            end: record.end || ''
+        };
+
+        // 关闭弹窗
+        closeHistoryModal();
+
+        // 自动执行生成
+        handleFinish();
+    };
+
+    // 截断显示内容
+    const truncateString = (str, maxLength) => {
+        if (!str) return '';
+        return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    };
 </script>
 
 <style scoped>
@@ -208,5 +282,49 @@
 
     :deep(.ant-card-head-title) {
         padding: 10px 0;
+    }
+
+    /* 历史记录样式 */
+    .history-modal-content {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .history-packet-data {
+        font-family: monospace;
+        word-break: break-all;
+    }
+
+    :deep(.ant-table-row) {
+        cursor: pointer;
+    }
+
+    :deep(.ant-table-row:hover) {
+        background-color: #f5f5f5;
+    }
+
+    :deep(.ant-table-tbody > tr > td) {
+        height: 30px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    :deep(.ant-table-body) {
+        height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    :deep(.ant-table-cell) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 表格样式调整 */
+    :deep(.ant-table-small) {
+        font-size: 12px;
     }
 </style>
