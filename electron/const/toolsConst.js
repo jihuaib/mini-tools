@@ -17,6 +17,9 @@ const DEFAULT_TOOLS_SETTINGS = {
     },
     stringGenerator: {
         maxStringHistory: 100
+    },
+    ftpServer: {
+        maxFtpUser: 100
     }
 };
 

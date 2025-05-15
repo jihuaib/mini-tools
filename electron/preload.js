@@ -7,7 +7,8 @@ contextBridge.exposeInMainWorld('commonApi', {
     saveGeneralSettings: settings => ipcRenderer.invoke('common:saveGeneralSettings', settings),
     getGeneralSettings: () => ipcRenderer.invoke('common:getGeneralSettings'),
     saveToolsSettings: settings => ipcRenderer.invoke('common:saveToolsSettings', settings),
-    getToolsSettings: () => ipcRenderer.invoke('common:getToolsSettings')
+    getToolsSettings: () => ipcRenderer.invoke('common:getToolsSettings'),
+    selectDirectory: () => ipcRenderer.invoke('common:selectDirectory')
 });
 
 // 工具模块
@@ -111,4 +112,25 @@ contextBridge.exposeInMainWorld('rpkiApi', {
 
     // 移除事件监听
     offClientConnection: callback => ipcRenderer.removeListener('rpki:clientConnection', callback)
+});
+
+// ftp模块
+contextBridge.exposeInMainWorld('ftpApi', {
+    // 配置相关
+    addFtpUser: user => ipcRenderer.invoke('ftp:addFtpUser', user),
+    getFtpUserList: () => ipcRenderer.invoke('ftp:getFtpUserList'),
+    deleteFtpUser: user => ipcRenderer.invoke('ftp:deleteFtpUser', user),
+    saveFtpConfig: config => ipcRenderer.invoke('ftp:saveFtpConfig', config),
+    getFtpConfig: () => ipcRenderer.invoke('ftp:getFtpConfig'),
+
+    // ftp
+    startFtp: (config, user) => ipcRenderer.invoke('ftp:startFtp', config, user),
+    stopFtp: () => ipcRenderer.invoke('ftp:stopFtp'),
+    getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus'),
+
+    // 事件监听
+    onClientConnection: callback => ipcRenderer.on('ftp:clientConnection', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offClientConnection: callback => ipcRenderer.removeListener('ftp:clientConnection', callback)
 });
