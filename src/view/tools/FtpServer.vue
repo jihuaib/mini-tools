@@ -7,7 +7,10 @@
                         <a-row>
                             <a-col :span="24">
                                 <a-form-item label="服务器端口" name="port">
-                                    <a-tooltip :title="validationFtpConfigErrors.port" :open="!!validationFtpConfigErrors.port">
+                                    <a-tooltip
+                                        :title="validationFtpConfigErrors.port"
+                                        :open="!!validationFtpConfigErrors.port"
+                                    >
                                         <a-input
                                             v-model:value="ftpConfig.port"
                                             :status="validationFtpConfigErrors.port ? 'error' : ''"
@@ -45,14 +48,20 @@
                         <a-row>
                             <a-col :span="8">
                                 <a-form-item label="根目录" name="rootDir">
-                                    <a-tooltip :title="validationFtpUserErrors.rootDir" :open="!!validationFtpUserErrors.rootDir">
+                                    <a-tooltip
+                                        :title="validationFtpUserErrors.rootDir"
+                                        :open="!!validationFtpUserErrors.rootDir"
+                                    >
                                         <a-input-group compact>
                                             <a-input
                                                 v-model:value="ftpUserConfig.rootDir"
                                                 :status="validationFtpUserErrors.rootDir ? 'error' : ''"
                                                 style="width: calc(100% - 40px)"
-                                                @blur="e => validateFtpUserField(e.target.value, 'rootDir', validateRootDir)"
                                                 readonly
+                                                @blur="
+                                                    e =>
+                                                        validateFtpUserField(e.target.value, 'rootDir', validateRootDir)
+                                                "
                                             />
                                             <a-button type="primary" @click="selectDirectory">
                                                 <folder-outlined />
@@ -63,30 +72,35 @@
                             </a-col>
                             <a-col :span="8">
                                 <a-form-item label="用户名" name="username">
-                                    <a-tooltip :title="validationFtpUserErrors.username" :open="!!validationFtpUserErrors.username">
-                                        <a-input v-model:value="ftpUserConfig.username" :status="validationFtpUserErrors.username ? 'error' : ''" />
+                                    <a-tooltip
+                                        :title="validationFtpUserErrors.username"
+                                        :open="!!validationFtpUserErrors.username"
+                                    >
+                                        <a-input
+                                            v-model:value="ftpUserConfig.username"
+                                            :status="validationFtpUserErrors.username ? 'error' : ''"
+                                        />
                                     </a-tooltip>
                                 </a-form-item>
                             </a-col>
                             <a-col :span="8">
                                 <a-form-item label="密码" name="password">
-                                    <a-tooltip :title="validationFtpUserErrors.password" :open="!!validationFtpUserErrors.password">
-                                        <a-input-password v-model:value="ftpUserConfig.password" :status="validationFtpUserErrors.password ? 'error' : ''" />
+                                    <a-tooltip
+                                        :title="validationFtpUserErrors.password"
+                                        :open="!!validationFtpUserErrors.password"
+                                    >
+                                        <a-input-password
+                                            v-model:value="ftpUserConfig.password"
+                                            :status="validationFtpUserErrors.password ? 'error' : ''"
+                                        />
                                     </a-tooltip>
                                 </a-form-item>
                             </a-col>
                         </a-row>
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
-                                <a-button
-                                    type="primary"
-                                    @click="addUser"
-                                >
-                                    添加用户
-                                </a-button>
-                                <a-button type="default" @click="showUserList">
-                                    用户列表
-                                </a-button>
+                                <a-button type="primary" @click="addUser">添加用户</a-button>
+                                <a-button type="default" @click="showUserList">用户列表</a-button>
                             </a-space>
                         </a-form-item>
                     </a-form>
@@ -342,16 +356,12 @@
         } else if (data.event === 'disconnect') {
             // 断开连接
             clientList.value = clientList.value.filter(
-                client =>
-                    !(client.remoteIp === data.client.remoteIp &&
-                      client.remotePort === data.client.remotePort)
+                client => !(client.remoteIp === data.client.remoteIp && client.remotePort === data.client.remotePort)
             );
         } else if (data.event === 'update') {
             // 更新客户端状态
             const index = clientList.value.findIndex(
-                client =>
-                    client.remoteIp === data.client.remoteIp &&
-                    client.remotePort === data.client.remotePort
+                client => client.remoteIp === data.client.remoteIp && client.remotePort === data.client.remotePort
             );
 
             if (index !== -1) {
@@ -404,7 +414,6 @@
     });
 
     const addUser = async () => {
-
         clearValidationErrors(validationFtpConfigErrors);
         clearValidationErrors(validationFtpUserErrors);
 

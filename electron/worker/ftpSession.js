@@ -56,25 +56,25 @@ class FtpSession {
 
     handleCommand(cmd, args) {
         const handlers = {
-            'USER': this.handleUser.bind(this),
-            'PASS': this.handlePass.bind(this),
-            'SYST': this.handleSyst.bind(this),
-            'PWD': this.handlePwd.bind(this),
-            'TYPE': this.handleType.bind(this),
-            'PASV': this.handlePasv.bind(this),
-            'PORT': this.handlePort.bind(this),
-            'LIST': this.handleList.bind(this),
-            'CWD': this.handleCwd.bind(this),
-            'CDUP': this.handleCdup.bind(this),
-            'RETR': this.handleRetr.bind(this),
-            'STOR': this.handleStor.bind(this),
-            'QUIT': this.handleQuit.bind(this),
-            'FEAT': this.handleFeat.bind(this),
-            'OPTS': this.handleOpts.bind(this),
-            'NOOP': this.handleNoop.bind(this),
-            'DELE': this.handleDele.bind(this),
-            'RMD': this.handleRmd.bind(this),
-            'MKD': this.handleMkd.bind(this)
+            USER: this.handleUser.bind(this),
+            PASS: this.handlePass.bind(this),
+            SYST: this.handleSyst.bind(this),
+            PWD: this.handlePwd.bind(this),
+            TYPE: this.handleType.bind(this),
+            PASV: this.handlePasv.bind(this),
+            PORT: this.handlePort.bind(this),
+            LIST: this.handleList.bind(this),
+            CWD: this.handleCwd.bind(this),
+            CDUP: this.handleCdup.bind(this),
+            RETR: this.handleRetr.bind(this),
+            STOR: this.handleStor.bind(this),
+            QUIT: this.handleQuit.bind(this),
+            FEAT: this.handleFeat.bind(this),
+            OPTS: this.handleOpts.bind(this),
+            NOOP: this.handleNoop.bind(this),
+            DELE: this.handleDele.bind(this),
+            RMD: this.handleRmd.bind(this),
+            MKD: this.handleMkd.bind(this)
         };
 
         if (handlers[cmd]) {
@@ -153,10 +153,10 @@ class FtpSession {
         }
 
         // Create a passive server
-        this.passiveServer = net.createServer((socket) => {
+        this.passiveServer = net.createServer(socket => {
             this.dataSocket = socket;
 
-            socket.on('error', (err) => {
+            socket.on('error', err => {
                 logger.error(`Data socket error: ${err.message}`);
             });
         });
@@ -185,7 +185,7 @@ class FtpSession {
             this.passive = true;
         });
 
-        this.passiveServer.on('error', (err) => {
+        this.passiveServer.on('error', err => {
             logger.error(`Passive server error: ${err.message}`);
             this.sendMsg(Buffer.from('425 Cannot open passive connection'));
         });
@@ -200,7 +200,7 @@ class FtpSession {
 
         // Parse IP and port
         this.dataHost = parts.slice(0, 4).join('.');
-        this.dataPort = (parseInt(parts[4], 10) * 256) + parseInt(parts[5], 10);
+        this.dataPort = parseInt(parts[4], 10) * 256 + parseInt(parts[5], 10);
 
         this.passive = false;
         this.sendMsg(Buffer.from('200 PORT command successful'));
@@ -216,7 +216,7 @@ class FtpSession {
                         reject(new Error('Timeout waiting for data connection'));
                     }, 10000);
 
-                    this.passiveServer.once('connection', (socket) => {
+                    this.passiveServer.once('connection', socket => {
                         clearTimeout(timeout);
                         this.dataSocket = socket;
                         resolve(socket);
@@ -236,7 +236,7 @@ class FtpSession {
                     resolve(socket);
                 });
 
-                socket.on('error', (err) => {
+                socket.on('error', err => {
                     reject(err);
                 });
             }
@@ -261,7 +261,7 @@ class FtpSession {
 
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, targetDir);
 
-        fs.access(fullPath, fs.constants.R_OK, (err) => {
+        fs.access(fullPath, fs.constants.R_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 Directory not accessible'));
                 return;
@@ -275,52 +275,54 @@ class FtpSession {
                 clientInfo: this.getClientInfo()
             });
 
-            this.createDataConnection().then((socket) => {
-                fs.readdir(fullPath, (err, files) => {
-                    if (err) {
-                        socket.end();
-                        this.sendMsg(Buffer.from('550 Failed to list directory'));
-                        return;
-                    }
-
-                    const fileList = [];
-
-                    const getFileInfo = (index) => {
-                        if (index >= files.length) {
-                            // All files processed
-                            socket.end(fileList.join('\r\n') + '\r\n');
-                            this.sendMsg(Buffer.from('226 Transfer complete'));
-                            this.closeDataConnection();
+            this.createDataConnection()
+                .then(socket => {
+                    fs.readdir(fullPath, (err, files) => {
+                        if (err) {
+                            socket.end();
+                            this.sendMsg(Buffer.from('550 Failed to list directory'));
                             return;
                         }
 
-                        const file = files[index];
-                        const filePath = path.join(fullPath, file);
+                        const fileList = [];
 
-                        fs.stat(filePath, (err, stats) => {
-                            if (err) {
-                                // Skip files with errors
-                                getFileInfo(index + 1);
+                        const getFileInfo = index => {
+                            if (index >= files.length) {
+                                // All files processed
+                                socket.end(fileList.join('\r\n') + '\r\n');
+                                this.sendMsg(Buffer.from('226 Transfer complete'));
+                                this.closeDataConnection();
                                 return;
                             }
 
-                            // Format directory listing similar to 'ls -l' format
-                            const isDir = stats.isDirectory();
-                            const permissions = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
-                            const size = stats.size;
-                            const date = stats.mtime.toDateString();
+                            const file = files[index];
+                            const filePath = path.join(fullPath, file);
 
-                            fileList.push(`${permissions} 1 owner group ${size} ${date} ${file}`);
-                            getFileInfo(index + 1);
-                        });
-                    };
+                            fs.stat(filePath, (err, stats) => {
+                                if (err) {
+                                    // Skip files with errors
+                                    getFileInfo(index + 1);
+                                    return;
+                                }
 
-                    getFileInfo(0);
+                                // Format directory listing similar to 'ls -l' format
+                                const isDir = stats.isDirectory();
+                                const permissions = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+                                const size = stats.size;
+                                const date = stats.mtime.toDateString();
+
+                                fileList.push(`${permissions} 1 owner group ${size} ${date} ${file}`);
+                                getFileInfo(index + 1);
+                            });
+                        };
+
+                        getFileInfo(0);
+                    });
+                })
+                .catch(err => {
+                    logger.error(`Data connection error: ${err.message}`);
+                    this.sendMsg(Buffer.from('425 Cannot open data connection'));
                 });
-            }).catch((err) => {
-                logger.error(`Data connection error: ${err.message}`);
-                this.sendMsg(Buffer.from('425 Cannot open data connection'));
-            });
         });
     }
 
@@ -332,9 +334,7 @@ class FtpSession {
         } else {
             // FTP always uses forward slashes regardless of platform
             // Don't use path.resolve as it uses platform-specific behavior
-            newDir = this.currentDir === '/'
-                ? '/' + dir
-                : this.currentDir + '/' + dir;
+            newDir = this.currentDir === '/' ? '/' + dir : this.currentDir + '/' + dir;
 
             // Normalize the path to handle cases like "/a/../b" -> "/b"
             // Split by '/', filter out empty segments and '.', handle '..'
@@ -358,7 +358,7 @@ class FtpSession {
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, newDir);
         logger.info(`Changing directory to ${fullPath}`);
 
-        fs.access(fullPath, fs.constants.R_OK, (err) => {
+        fs.access(fullPath, fs.constants.R_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 Directory not accessible'));
                 return;
@@ -384,7 +384,7 @@ class FtpSession {
         // Download a file
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, this.currentDir, filePath);
 
-        fs.access(fullPath, fs.constants.R_OK, (err) => {
+        fs.access(fullPath, fs.constants.R_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 File not accessible'));
                 return;
@@ -396,7 +396,11 @@ class FtpSession {
                     return;
                 }
 
-                this.sendMsg(Buffer.from(`150 Opening ${this.transferType} mode data connection for ${filePath} (${stats.size} bytes)`));
+                this.sendMsg(
+                    Buffer.from(
+                        `150 Opening ${this.transferType} mode data connection for ${filePath} (${stats.size} bytes)`
+                    )
+                );
 
                 // Send file transfer start event
                 this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_START, {
@@ -406,13 +410,42 @@ class FtpSession {
                     clientInfo: this.getClientInfo()
                 });
 
-                this.createDataConnection().then((socket) => {
-                    const stream = fs.createReadStream(fullPath);
+                this.createDataConnection()
+                    .then(socket => {
+                        const stream = fs.createReadStream(fullPath);
 
-                    stream.on('error', (err) => {
-                        logger.error(`File read error: ${err.message}`);
-                        socket.end();
-                        this.sendMsg(Buffer.from('550 Failed to read file'));
+                        stream.on('error', err => {
+                            logger.error(`File read error: ${err.message}`);
+                            socket.end();
+                            this.sendMsg(Buffer.from('550 Failed to read file'));
+
+                            // Send file transfer error event
+                            this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
+                                type: 'download',
+                                filename: filePath,
+                                error: err.message,
+                                clientInfo: this.getClientInfo()
+                            });
+                        });
+
+                        stream.pipe(socket);
+
+                        socket.on('close', () => {
+                            this.sendMsg(Buffer.from('226 Transfer complete'));
+                            this.closeDataConnection();
+
+                            // Send file transfer complete event
+                            this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_COMPLETE, {
+                                type: 'download',
+                                filename: filePath,
+                                size: stats.size,
+                                clientInfo: this.getClientInfo()
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        logger.error(`Data connection error: ${err.message}`);
+                        this.sendMsg(Buffer.from('425 Cannot open data connection'));
 
                         // Send file transfer error event
                         this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
@@ -422,33 +455,6 @@ class FtpSession {
                             clientInfo: this.getClientInfo()
                         });
                     });
-
-                    stream.pipe(socket);
-
-                    socket.on('close', () => {
-                        this.sendMsg(Buffer.from('226 Transfer complete'));
-                        this.closeDataConnection();
-
-                        // Send file transfer complete event
-                        this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_COMPLETE, {
-                            type: 'download',
-                            filename: filePath,
-                            size: stats.size,
-                            clientInfo: this.getClientInfo()
-                        });
-                    });
-                }).catch((err) => {
-                    logger.error(`Data connection error: ${err.message}`);
-                    this.sendMsg(Buffer.from('425 Cannot open data connection'));
-
-                    // Send file transfer error event
-                    this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
-                        type: 'download',
-                        filename: filePath,
-                        error: err.message,
-                        clientInfo: this.getClientInfo()
-                    });
-                });
             });
         });
     }
@@ -459,7 +465,7 @@ class FtpSession {
         const dirPath = path.dirname(fullPath);
 
         // Ensure directory exists
-        fs.access(dirPath, fs.constants.W_OK, (err) => {
+        fs.access(dirPath, fs.constants.W_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 Directory not writable'));
                 return;
@@ -467,25 +473,27 @@ class FtpSession {
 
             this.sendMsg(Buffer.from(`150 Opening ${this.transferType} mode data connection for ${filePath}`));
 
-            this.createDataConnection().then((socket) => {
-                const stream = fs.createWriteStream(fullPath);
+            this.createDataConnection()
+                .then(socket => {
+                    const stream = fs.createWriteStream(fullPath);
 
-                stream.on('error', (err) => {
-                    logger.error(`File write error: ${err.message}`);
-                    socket.end();
-                    this.sendMsg(Buffer.from('550 Failed to write file'));
+                    stream.on('error', err => {
+                        logger.error(`File write error: ${err.message}`);
+                        socket.end();
+                        this.sendMsg(Buffer.from('550 Failed to write file'));
+                    });
+
+                    socket.pipe(stream);
+
+                    socket.on('close', () => {
+                        this.sendMsg(Buffer.from('226 Transfer complete'));
+                        this.closeDataConnection();
+                    });
+                })
+                .catch(err => {
+                    logger.error(`Data connection error: ${err.message}`);
+                    this.sendMsg(Buffer.from('425 Cannot open data connection'));
                 });
-
-                socket.pipe(stream);
-
-                socket.on('close', () => {
-                    this.sendMsg(Buffer.from('226 Transfer complete'));
-                    this.closeDataConnection();
-                });
-            }).catch((err) => {
-                logger.error(`Data connection error: ${err.message}`);
-                this.sendMsg(Buffer.from('425 Cannot open data connection'));
-            });
         });
     }
 
@@ -493,13 +501,13 @@ class FtpSession {
         // Delete a file
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, this.currentDir, filePath);
 
-        fs.access(fullPath, fs.constants.W_OK, (err) => {
+        fs.access(fullPath, fs.constants.W_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 File not accessible'));
                 return;
             }
 
-            fs.unlink(fullPath, (err) => {
+            fs.unlink(fullPath, err => {
                 if (err) {
                     this.sendMsg(Buffer.from('550 Failed to delete file'));
                     return;
@@ -514,13 +522,13 @@ class FtpSession {
         // Remove a directory
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, this.currentDir, dirPath);
 
-        fs.access(fullPath, fs.constants.W_OK, (err) => {
+        fs.access(fullPath, fs.constants.W_OK, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 Directory not accessible'));
                 return;
             }
 
-            fs.rmdir(fullPath, (err) => {
+            fs.rmdir(fullPath, err => {
                 if (err) {
                     this.sendMsg(Buffer.from('550 Failed to remove directory'));
                     return;
@@ -535,7 +543,7 @@ class FtpSession {
         // Create a directory
         const fullPath = path.join(this.ftpWorker.userConfig.rootDir, this.currentDir, dirPath);
 
-        fs.mkdir(fullPath, (err) => {
+        fs.mkdir(fullPath, err => {
             if (err) {
                 this.sendMsg(Buffer.from('550 Failed to create directory'));
                 return;

@@ -41,9 +41,7 @@ class FtpApp {
         let isExist = false;
         let index = -1;
         config.forEach(element => {
-            if (
-                element.username === user.username
-            ) {
+            if (element.username === user.username) {
                 isExist = true;
                 index = config.indexOf(element);
             }
@@ -108,7 +106,6 @@ class FtpApp {
      * @returns {Promise<object>} 操作结果
      */
     async handleStartFtp(event, config, user) {
-        const webContents = event.sender;
         try {
             if (null != this.worker) {
                 logger.error(`ftp协议已经启动`);
@@ -125,7 +122,10 @@ class FtpApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
-            const result = await this.worker.sendRequest(FTP_REQ_TYPES.START_FTP, { ftpConfig: config, userConfig: user });
+            const result = await this.worker.sendRequest(FTP_REQ_TYPES.START_FTP, {
+                ftpConfig: config,
+                userConfig: user
+            });
             if (result.status === 'success') {
                 logger.info(`worker FTP启动成功: ${JSON.stringify(result)}`);
             } else {

@@ -21,7 +21,12 @@ contextBridge.exposeInMainWorld('toolsApi', {
     // 报文解析模块
     parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
     getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
-    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory')
+    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory'),
+
+    // 格式化工具模块
+    formatData: formatterData => ipcRenderer.invoke('tools:formatData', formatterData),
+    getFormatterHistory: () => ipcRenderer.invoke('tools:getFormatterHistory'),
+    clearFormatterHistory: () => ipcRenderer.invoke('tools:clearFormatterHistory')
 });
 
 // bgp模块

@@ -34,12 +34,7 @@ class FtpWorker {
                 logger.info(`ipv4 Client connected from ${clientAddress}:${clientPort}`);
                 logger.info(`ipv4 localAddress: ${socket.localAddress}:${socket.localPort}`);
 
-                const sessionKey = FtpSession.makeKey(
-                    socket.localAddress,
-                    socket.localPort,
-                    clientAddress,
-                    clientPort
-                );
+                const sessionKey = FtpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
 
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
@@ -195,12 +190,7 @@ class FtpWorker {
 
                 // 创建RPKI会话
                 let ftpSession = null;
-                const sessionKey = FtpSession.makeKey(
-                    socket.localAddress,
-                    socket.localPort,
-                    clientAddress,
-                    clientPort
-                );
+                const sessionKey = FtpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 ftpSession = this.ftpSessionMap.get(sessionKey);
                 if (null != ftpSession) {
                     ftpSession.closeSession();

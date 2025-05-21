@@ -20,6 +20,9 @@ const DEFAULT_TOOLS_SETTINGS = {
     },
     ftpServer: {
         maxFtpUser: 100
+    },
+    formatter: {
+        maxFormatterHistory: 100
     }
 };
 

@@ -4,6 +4,7 @@ import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
 import PacketParser from '../view/tools/PacketParser.vue';
 import FtpServer from '../view/tools/FtpServer.vue';
+import Formatter from '../view/tools/Formatter.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
@@ -54,6 +55,12 @@ const routes = [
                         path: 'ftp-server',
                         name: 'FtpServer',
                         component: FtpServer,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'formatter',
+                        name: 'Formatter',
+                        component: Formatter,
                         meta: { keepAlive: true }
                     }
                 ]
