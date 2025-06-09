@@ -1,5 +1,5 @@
 const packageJson = require('../../package.json');
-const { app, dialog } = require('electron');
+const { app, dialog, BrowserWindow } = require('electron');
 const Store = require('electron-store');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
@@ -296,7 +296,8 @@ class SystemApp {
 
     async handleSelectDirectory() {
         try {
-            const result = await dialog.showOpenDialog({
+            const win = BrowserWindow.getFocusedWindow(); // 获取当前窗口
+            const result = await dialog.showOpenDialog(win, {
                 properties: ['openDirectory']
             });
             return successResponse(result);

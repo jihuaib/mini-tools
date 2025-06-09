@@ -3,7 +3,7 @@
         <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
             <!-- 格式选择 -->
             <a-form-item label="格式类型" name="type">
-                <a-radio-group v-model:value="formState.type">
+                <a-radio-group v-model:value="formState.type" @change="clearErrors">
                     <a-radio value="json">JSON</a-radio>
                     <a-radio value="xml">XML</a-radio>
                 </a-radio-group>
@@ -16,29 +16,46 @@
 
             <!-- 内容输入 -->
             <a-form-item label="源内容" name="content">
-                <ScrollTextarea
+                <CodeEditor
                     v-model:modelValue="formState.content"
                     :height="200"
-                    :status="validationErrors.content ? 'error' : ''"
+                    :status="lineErrors.length > 0 ? 'error' : ''"
+                    :errors="lineErrors"
                     placeholder="请输入需要格式化的JSON或XML内容"
-                    @blur="validateContent"
+                    @change="clearErrors"
                 />
             </a-form-item>
 
             <!-- 操作按钮 -->
             <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                 <a-space>
-                    <a-button type="primary" html-type="submit">格式化</a-button>
+                    <a-button type="primary" html-type="submit" :loading="isFormatting">格式化</a-button>
                     <a-button type="default" @click="showFormatterHistory">历史记录</a-button>
+                    <a-button type="default" @click="clearAll">清空</a-button>
                 </a-space>
             </a-form-item>
 
             <!-- 结果显示 -->
             <a-form-item label="格式化结果">
-                <div v-if="result" class="markdown-result">
-                    <pre><code>{{ result }}</code></pre>
+                <div class="result-container">
+                    <!-- 格式化结果显示 -->
+                    <div v-if="result" class="format-result">
+                        <div class="result-content">
+                            <div class="line-numbers">
+                                <div v-for="(line, index) in resultLines" :key="index" class="line-number">
+                                    {{ index + 1 }}
+                                </div>
+                            </div>
+                            <div class="code-content">
+                                <pre><code>{{ result }}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 默认空状态 -->
+                    <div v-else class="empty-result">
+                        <div class="empty-placeholder">格式化结果将显示在这里...</div>
+                    </div>
                 </div>
-                <ScrollTextarea v-else v-model:modelValue="result" :height="300" />
             </a-form-item>
         </a-form>
     </a-card>
@@ -80,8 +97,8 @@
 </template>
 
 <script setup>
-    import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, onMounted } from 'vue';
+    import CodeEditor from '../../components/CodeEditor.vue';
+    import { ref, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
     import { clearValidationErrors } from '../../utils/validationCommon';
 
@@ -100,6 +117,7 @@
     defineExpose({
         clearValidationErrors: () => {
             clearValidationErrors(validationErrors);
+            clearErrors();
         }
     });
 
@@ -109,38 +127,42 @@
         content: ''
     });
 
-    const validateContent = () => {
-        const content = formState.value.content.trim();
-        if (!content) {
-            validationErrors.value.content = '请输入需要格式化的内容';
-            return false;
-        }
+    const result = ref('');
+    const errorMessage = ref('');
+    const lineErrors = ref([]);  // 存储行错误信息
+    const isFormatting = ref(false);
 
-        if (formState.value.type === 'json') {
-            try {
-                JSON.parse(content);
-            } catch (e) {
-                validationErrors.value.content = '无效的JSON格式: ' + e.message;
-                return false;
-            }
-        }
+    // 计算结果的行数，用于显示行号
+    const resultLines = computed(() => {
+        if (!result.value) return [];
+        return result.value.split('\n');
+    });
 
-        validationErrors.value.content = '';
-        return true;
+    // 清空错误信息
+    const clearErrors = () => {
+        errorMessage.value = '';
+        lineErrors.value = [];
+        clearValidationErrors(validationErrors);
     };
 
-    const result = ref('');
+    // 清空所有内容
+    const clearAll = () => {
+        formState.value.content = '';
+        result.value = '';
+        clearErrors();
+    };
 
     const handleFinish = async () => {
         try {
-            // 验证内容
-            clearValidationErrors(validationErrors);
-            const isValid = validateContent();
+            clearErrors();
 
-            if (!isValid) {
-                message.error('请检查输入内容是否正确');
+            const content = formState.value.content.trim();
+            if (!content) {
+                errorMessage.value = '请输入需要格式化的内容';
                 return;
             }
+
+            isFormatting.value = true;
 
             const payload = {
                 type: formState.value.type,
@@ -151,13 +173,34 @@
             const resp = await window.toolsApi.formatData(payload);
 
             if (resp.status === 'success') {
-                result.value = resp.data;
+                if (resp.errors && resp.errors.length > 0) {
+                    // 处理错误信息，包括行错误
+                    errorMessage.value = resp.error || resp.msg || '格式化失败';
+                    result.value = '';
+
+                    // 设置行错误信息
+                    if (resp.errors && resp.errors.length > 0) {
+                        lineErrors.value = resp.errors;
+                        console.log('接收到行错误信息:', resp.errors);
+                    } else {
+                        lineErrors.value = [];
+                    }
+                }
+                else {
+                    result.value = resp.data;
+                    lineErrors.value = [];
+                    message.success('格式化成功');
+                }
             } else {
                 message.error(resp.msg || '格式化失败');
             }
         } catch (e) {
-            message.error(e.message || String(e));
+            errorMessage.value = e.message || String(e);
+            result.value = '';
+            lineErrors.value = [];
             console.error('格式化错误:', e);
+        } finally {
+            isFormatting.value = false;
         }
     };
 
@@ -226,6 +269,8 @@
         formState.value.indent = historyItem.indent;
         formState.value.content = historyItem.content;
         formatterHistoryModalVisible.value = false;
+        clearErrors();
+        result.value = '';
     };
 
     const truncateString = (str, maxLength) => {
@@ -257,6 +302,76 @@
         overflow-y: auto;
     }
 
+    .result-container {
+        background: #f5f5f5;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+        height: 300px;
+        overflow: auto;
+    }
+
+    .format-result {
+        height: 100%;
+        overflow: auto;
+    }
+
+    .result-content {
+        display: flex;
+        height: 100%;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .line-numbers {
+        background: #fafafa;
+        border-right: 1px solid #e8e8e8;
+        padding: 8px 8px 8px 12px;
+        color: #999;
+        user-select: none;
+        min-width: 40px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .line-number {
+        height: 1.4em;
+        line-height: 1.4;
+    }
+
+    .code-content {
+        flex: 1;
+        overflow: auto;
+        padding: 8px;
+    }
+
+    .code-content pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .code-content code {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        background: transparent;
+        padding: 0;
+        border: none;
+    }
+
+    .empty-result {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-placeholder {
+        color: #999;
+        font-style: italic;
+    }
+
     .markdown-result {
         background: #f5f5f5;
         border: 1px solid #e8e8e8;
@@ -266,14 +381,7 @@
         overflow: auto;
     }
 
-    .markdown-result pre {
-        margin: 0;
-        white-space: pre-wrap;
-    }
 
-    .markdown-result code {
-        font-family: 'Courier New', Courier, monospace;
-    }
 
     :deep(.ant-form-item) {
         margin-bottom: 8px;
@@ -311,6 +419,8 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+
 
     /* 表格样式调整 */
     :deep(.ant-table-small) {

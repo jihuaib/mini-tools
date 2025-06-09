@@ -203,9 +203,10 @@ class ToolsApp {
             this.saveFormatterToHistory(formatterData);
 
             logger.info('格式化结果:', result);
+
             return successResponse(result, '格式化成功');
         } catch (err) {
-            logger.error('格式化错误:', err.message);
+            logger.error('Worker处理错误:', err.message);
             return errorResponse(err.message);
         }
     }

@@ -395,7 +395,7 @@
             }
 
             const userListResult = await window.ftpApi.getFtpUserList();
-            if (userListResult.status === 'success' && userListResult.data) {
+            if (userListResult.status === 'success' && userListResult.data && userListResult.data.length > 0) {
                 ftpUserConfig.value = userListResult.data[0];
             }
 
