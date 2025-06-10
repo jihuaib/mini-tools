@@ -171,28 +171,21 @@
             };
 
             const resp = await window.toolsApi.formatData(payload);
-
             if (resp.status === 'success') {
-                if (resp.errors && resp.errors.length > 0) {
-                    // 处理错误信息，包括行错误
-                    errorMessage.value = resp.error || resp.msg || '格式化失败';
-                    result.value = '';
-
-                    // 设置行错误信息
-                    if (resp.errors && resp.errors.length > 0) {
-                        lineErrors.value = resp.errors;
-                        console.log('接收到行错误信息:', resp.errors);
-                    } else {
-                        lineErrors.value = [];
-                    }
-                }
-                else {
-                    result.value = resp.data;
-                    lineErrors.value = [];
-                    message.success('格式化成功');
-                }
+                result.value = resp.data;
+                lineErrors.value = [];
+                message.success('格式化成功');
             } else {
-                message.error(resp.msg || '格式化失败');
+                // 处理错误信息，包括行错误
+                errorMessage.value = resp.msg || '格式化失败';
+                result.value = '';
+
+                // 设置行错误信息
+                if (resp.data && resp.data.length > 0) {
+                    lineErrors.value = resp.data;
+                } else {
+                    lineErrors.value = [];
+                }
             }
         } catch (e) {
             errorMessage.value = e.message || String(e);

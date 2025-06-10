@@ -822,25 +822,25 @@ function parseUpdateMessageTree(buffer, curOffset, parentNode) {
                     mpReachNode.children.push(afiNode);
 
                     // Parse SAFI
-                    const safi = buffer[valueOffset + 3]; // +3 because of 1 reserved byte
+                    const safi = buffer[valueOffset + 2]; // +3 because of 1 reserved byte
                     const safiNode = {
                         name: 'SAFI',
-                        offset: valueOffset + 3,
+                        offset: valueOffset + 2,
                         length: 1,
                         value: `${safi} (${getBgpSafiName(safi)})`,
                         children: []
                     };
                     mpReachNode.children.push(safiNode);
 
-                    // Reserved byte
-                    const reservedNode = {
-                        name: 'Reserved',
-                        offset: valueOffset + 2,
+                    // length
+                    const lengthNode = {
+                        name: 'Length',
+                        offset: valueOffset + 3,
                         length: 1,
-                        value: buffer[valueOffset + 2],
+                        value: buffer[valueOffset + 3],
                         children: []
                     };
-                    mpReachNode.children.push(reservedNode);
+                    mpReachNode.children.push(lengthNode);
 
                     // The rest of MP_REACH_NLRI parsing could be implemented here
                     // but it's complex due to variable formats based on AFI/SAFI
