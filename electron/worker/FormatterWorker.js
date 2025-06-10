@@ -29,7 +29,7 @@ parentPort.on('message', data => {
             data: {
                 verify: false,
                 msg: result.msg,
-                errors: result.errors || []  // 添加具体的错误信息数组
+                errors: result.errors || [] // 添加具体的错误信息数组
             }
         });
     }
@@ -50,7 +50,7 @@ function formatJSON(jsonString, indent) {
         return {
             status: 'error',
             msg: errorInfo.message,
-            errors: errorInfo.errors  // 返回具体的错误位置信息
+            errors: errorInfo.errors // 返回具体的错误位置信息
         };
     }
 }
@@ -95,12 +95,13 @@ function getDetailedJSONError(jsonString, originalError) {
             });
 
             return {
-                message: `JSON 语法错误: 遇到意外的字符 "${token}" (第 ${line} 行，第 ${column} 列)\n` +
-                        `可能的原因:\n` +
-                        `- 字符串未用双引号包裹\n` +
-                        `- 对象属性名未用双引号包裹\n` +
-                        `- 多余的逗号\n` +
-                        `- 缺少逗号分隔`,
+                message:
+                    `JSON 语法错误: 遇到意外的字符 "${token}" (第 ${line} 行，第 ${column} 列)\n` +
+                    `可能的原因:\n` +
+                    `- 字符串未用双引号包裹\n` +
+                    `- 对象属性名未用双引号包裹\n` +
+                    `- 多余的逗号\n` +
+                    `- 缺少逗号分隔`,
                 errors: errors
             };
         } else {
@@ -120,12 +121,13 @@ function getDetailedJSONError(jsonString, originalError) {
                 }
 
                 return {
-                    message: `JSON 语法错误: 遇到意外的字符 "${token}"\n` +
-                            `可能的原因:\n` +
-                            `- 字符串未用双引号包裹\n` +
-                            `- 对象属性名未用双引号包裹\n` +
-                            `- 多余的逗号\n` +
-                            `- 缺少逗号分隔`,
+                    message:
+                        `JSON 语法错误: 遇到意外的字符 "${token}"\n` +
+                        `可能的原因:\n` +
+                        `- 字符串未用双引号包裹\n` +
+                        `- 对象属性名未用双引号包裹\n` +
+                        `- 多余的逗号\n` +
+                        `- 缺少逗号分隔`,
                     errors: errors
                 };
             }
@@ -147,10 +149,11 @@ function getDetailedJSONError(jsonString, originalError) {
         }
 
         return {
-            message: `JSON 语法错误: JSON 内容不完整\n` +
-                    `可能的原因:\n` +
-                    `- 缺少闭合的花括号 "}" 或方括号 "]"\n` +
-                    `- JSON 内容被意外截断`,
+            message:
+                `JSON 语法错误: JSON 内容不完整\n` +
+                `可能的原因:\n` +
+                `- 缺少闭合的花括号 "}" 或方括号 "]"\n` +
+                `- JSON 内容被意外截断`,
             errors: errors
         };
     }
@@ -173,10 +176,11 @@ function getDetailedJSONError(jsonString, originalError) {
         }
 
         return {
-            message: `JSON 语法错误: 字符串格式错误\n` +
-                    `可能的原因:\n` +
-                    `- 缺少逗号分隔多个属性或数组元素\n` +
-                    `- 对象属性名或值的引号使用错误`,
+            message:
+                `JSON 语法错误: 字符串格式错误\n` +
+                `可能的原因:\n` +
+                `- 缺少逗号分隔多个属性或数组元素\n` +
+                `- 对象属性名或值的引号使用错误`,
             errors: errors
         };
     }
@@ -288,12 +292,14 @@ function formatXML(xmlString, indent = 2) {
             return {
                 status: 'error',
                 msg: 'XML 解析失败: 无法识别有效的XML标签',
-                errors: [{
-                    line: 1,
-                    column: 1,
-                    message: '无法识别有效的XML标签',
-                    type: 'syntax'
-                }]
+                errors: [
+                    {
+                        line: 1,
+                        column: 1,
+                        message: '无法识别有效的XML标签',
+                        type: 'syntax'
+                    }
+                ]
             };
         }
 
@@ -319,12 +325,14 @@ function formatXML(xmlString, indent = 2) {
                     return {
                         status: 'error',
                         msg: `XML 标签不匹配错误: 期望闭合标签 "</${expectedTag}>"，但找到 "</${tagName}>"\n请检查标签是否正确配对`,
-                        errors: [{
-                            line: errorLine || 1,
-                            column: 1,
-                            message: `标签不匹配: 期望 "</${expectedTag}>" 但找到 "</${tagName}>"`,
-                            type: 'mismatch'
-                        }]
+                        errors: [
+                            {
+                                line: errorLine || 1,
+                                column: 1,
+                                message: `标签不匹配: 期望 "</${expectedTag}>" 但找到 "</${tagName}>"`,
+                                type: 'mismatch'
+                            }
+                        ]
                     };
                 }
 
@@ -345,12 +353,14 @@ function formatXML(xmlString, indent = 2) {
                     return {
                         status: 'error',
                         msg: `XML 语法错误: 无效的标签名 "${tagName}"\n标签名只能包含字母、数字、连字符、下划线和句点，且不能以数字开头`,
-                        errors: [{
-                            line: errorLine || 1,
-                            column: 1,
-                            message: `无效的标签名 "${tagName}"`,
-                            type: 'syntax'
-                        }]
+                        errors: [
+                            {
+                                line: errorLine || 1,
+                                column: 1,
+                                message: `无效的标签名 "${tagName}"`,
+                                type: 'syntax'
+                            }
+                        ]
                     };
                 }
 
@@ -365,12 +375,14 @@ function formatXML(xmlString, indent = 2) {
                         return {
                             status: 'error',
                             msg: `XML 标签不匹配错误: 开始标签 "<${tagName}>" 与结束标签 "</${endTagName}>" 不匹配\n请检查标签名是否一致`,
-                            errors: [{
-                                line: errorLine || 1,
-                                column: 1,
-                                message: `标签不匹配: "<${tagName}>" 与 "</${endTagName}>"`,
-                                type: 'mismatch'
-                            }]
+                            errors: [
+                                {
+                                    line: errorLine || 1,
+                                    column: 1,
+                                    message: `标签不匹配: "<${tagName}>" 与 "</${endTagName}>"`,
+                                    type: 'mismatch'
+                                }
+                            ]
                         };
                     }
 
@@ -421,12 +433,14 @@ function formatXML(xmlString, indent = 2) {
         return {
             status: 'error',
             msg: 'XML 格式化失败: ' + e.message,
-            errors: [{
-                line: 1,
-                column: 1,
-                message: e.message,
-                type: 'syntax'
-            }]
+            errors: [
+                {
+                    line: 1,
+                    column: 1,
+                    message: e.message,
+                    type: 'syntax'
+                }
+            ]
         };
     }
 }
@@ -452,12 +466,14 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: 'XML 内容为空',
-            errors: [{
-                line: 1,
-                column: 1,
-                message: 'XML 内容为空',
-                type: 'empty'
-            }]
+            errors: [
+                {
+                    line: 1,
+                    column: 1,
+                    message: 'XML 内容为空',
+                    type: 'empty'
+                }
+            ]
         };
     }
 
@@ -466,12 +482,14 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: 'XML 语法错误: 缺少有效的XML标签\nXML文档必须包含至少一个标签',
-            errors: [{
-                line: 1,
-                column: 1,
-                message: '缺少有效的XML标签',
-                type: 'syntax'
-            }]
+            errors: [
+                {
+                    line: 1,
+                    column: 1,
+                    message: '缺少有效的XML标签',
+                    type: 'syntax'
+                }
+            ]
         };
     }
 
@@ -483,12 +501,14 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: `XML 语法错误: 尖括号不匹配\n找到 ${openBrackets} 个 "<" 和 ${closeBrackets} 个 ">"\n请检查所有标签是否正确闭合`,
-            errors: [{
-                line: 1,
-                column: 1,
-                message: `尖括号不匹配: ${openBrackets} 个 "<" 和 ${closeBrackets} 个 ">"`,
-                type: 'syntax'
-            }]
+            errors: [
+                {
+                    line: 1,
+                    column: 1,
+                    message: `尖括号不匹配: ${openBrackets} 个 "<" 和 ${closeBrackets} 个 ">"`,
+                    type: 'syntax'
+                }
+            ]
         };
     }
 
@@ -498,12 +518,14 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: 'XML 语法错误: 发现连续的尖括号 "<<" 或 ">>"\n这通常表示标签语法错误',
-            errors: [{
-                line: errorLine || 1,
-                column: 1,
-                message: '发现连续的尖括号，标签语法错误',
-                type: 'syntax'
-            }]
+            errors: [
+                {
+                    line: errorLine || 1,
+                    column: 1,
+                    message: '发现连续的尖括号，标签语法错误',
+                    type: 'syntax'
+                }
+            ]
         };
     }
 
@@ -515,12 +537,14 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: 'XML 语法错误: 发现未闭合的标签\n问题位置: "' + unclosedTags[0] + '..."',
-            errors: [{
-                line: errorLine,
-                column: 1,
-                message: '发现未闭合的标签',
-                type: 'unclosed'
-            }]
+            errors: [
+                {
+                    line: errorLine,
+                    column: 1,
+                    message: '发现未闭合的标签',
+                    type: 'unclosed'
+                }
+            ]
         };
     }
 
@@ -531,19 +555,21 @@ function validateXMLSyntax(xmlString) {
         return {
             status: 'error',
             msg: 'XML 语法错误: 发现空标签名\n问题标签: ' + emptyTags.join(', ') + '\nXML标签必须包含有效的标签名',
-            errors: [{
-                line: errorLine || 1,
-                column: 1,
-                message: '发现空标签名',
-                type: 'syntax'
-            }]
+            errors: [
+                {
+                    line: errorLine || 1,
+                    column: 1,
+                    message: '发现空标签名',
+                    type: 'syntax'
+                }
+            ]
         };
     }
 
     // 检查标签格式的基本有效性
     const allTags = trimmed.match(/<[^>]+>/g);
     if (allTags) {
-        const lines = trimmed.split('\n');
+        const _lines = trimmed.split('\n');
         for (const tag of allTags) {
             // 跳过XML声明和注释
             if (tag.startsWith('<?') || tag.startsWith('<!')) {
@@ -557,12 +583,14 @@ function validateXMLSyntax(xmlString) {
                 return {
                     status: 'error',
                     msg: `XML 语法错误: 无法识别标签名\n问题标签: "${tag}"\nXML标签必须包含有效的标签名`,
-                    errors: [{
-                        line: errorLine || 1,
-                        column: 1,
-                        message: `无法识别标签名: "${tag}"`,
-                        type: 'syntax'
-                    }]
+                    errors: [
+                        {
+                            line: errorLine || 1,
+                            column: 1,
+                            message: `无法识别标签名: "${tag}"`,
+                            type: 'syntax'
+                        }
+                    ]
                 };
             }
 
@@ -572,12 +600,14 @@ function validateXMLSyntax(xmlString) {
                 return {
                     status: 'error',
                     msg: `XML 语法错误: 无效的标签名 "${tagName}"\n问题标签: "${tag}"\n标签名只能包含字母、数字、连字符、下划线和句点，且不能以数字开头`,
-                    errors: [{
-                        line: errorLine || 1,
-                        column: 1,
-                        message: `无效的标签名 "${tagName}"`,
-                        type: 'syntax'
-                    }]
+                    errors: [
+                        {
+                            line: errorLine || 1,
+                            column: 1,
+                            message: `无效的标签名 "${tagName}"`,
+                            type: 'syntax'
+                        }
+                    ]
                 };
             }
         }

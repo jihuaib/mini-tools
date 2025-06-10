@@ -2,7 +2,7 @@
     <div class="code-editor">
         <div class="editor-container" :style="{ height: height + 'px' }">
             <!-- 行号区域 -->
-            <div class="line-numbers" ref="lineNumbersRef">
+            <div ref="lineNumbersRef" class="line-numbers">
                 <div
                     v-for="(line, index) in lines"
                     :key="index"
@@ -10,11 +10,7 @@
                     :class="{ 'error-line': hasErrorInLine(index + 1) }"
                 >
                     <span class="line-num">{{ index + 1 }}</span>
-                    <a-tooltip
-                        v-if="hasErrorInLine(index + 1)"
-                        :title="getErrorMessage(index + 1)"
-                        placement="right"
-                    >
+                    <a-tooltip v-if="hasErrorInLine(index + 1)" :title="getErrorMessage(index + 1)" placement="right">
                         <span class="error-icon">!</span>
                     </a-tooltip>
                 </div>
@@ -77,24 +73,24 @@
     });
 
     // 检查指定行是否有错误
-    const hasErrorInLine = (lineNumber) => {
+    const hasErrorInLine = lineNumber => {
         return props.errors.some(error => error.line === lineNumber);
     };
 
     // 获取指定行的错误信息
-    const getErrorMessage = (lineNumber) => {
+    const getErrorMessage = lineNumber => {
         const error = props.errors.find(error => error.line === lineNumber);
         return error ? error.message : '';
     };
 
     // 触发父组件更新值
-    const updateValue = (e) => {
+    const updateValue = e => {
         emit('update:modelValue', e.target.value);
         emit('change', e.target.value);
     };
 
     // 同步滚动
-    const onScroll = (event) => {
+    const onScroll = event => {
         nextTick(() => {
             const textarea = event.target;
             const lineNumbers = lineNumbersRef.value;

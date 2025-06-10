@@ -129,7 +129,7 @@
 
     const result = ref('');
     const errorMessage = ref('');
-    const lineErrors = ref([]);  // 存储行错误信息
+    const lineErrors = ref([]); // 存储行错误信息
     const isFormatting = ref(false);
 
     // 计算结果的行数，用于显示行号
@@ -374,8 +374,6 @@
         overflow: auto;
     }
 
-
-
     :deep(.ant-form-item) {
         margin-bottom: 8px;
     }
@@ -412,8 +410,6 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-
-
 
     /* 表格样式调整 */
     :deep(.ant-table-small) {
