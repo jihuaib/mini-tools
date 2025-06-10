@@ -62,7 +62,20 @@
     }
 
     h2 {
-        margin-bottom: 24px;
+        margin-bottom: 10px;
+        font-size: 16px;
         font-weight: 500;
+    }
+    :deep(.ant-form-item) {
+        margin-bottom: 8px;
+    }
+
+    :deep(.ant-form-item-label > label) {
+        font-size: 12px;
+    }
+
+    :deep(.ant-divider) {
+        font-size: 12px;
+        color: #125798;
     }
 </style>

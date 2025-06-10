@@ -1,5 +1,5 @@
 const packageJson = require('../../package.json');
-const { app, dialog } = require('electron');
+const { app, dialog, BrowserWindow } = require('electron');
 const Store = require('electron-store');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
@@ -10,6 +10,7 @@ const BgpApp = require('./bgpApp');
 const ToolsApp = require('./toolsApp');
 const BmpApp = require('./bmpApp');
 const RpkiApp = require('./rpkiApp');
+const FtpApp = require('./ftpApp');
 /**
  * 用于系统菜单处理
  */
@@ -39,6 +40,7 @@ class SystemApp {
         this.toolsApp = new ToolsApp(ipc, this.programStore);
         this.bmpApp = new BmpApp(ipc, this.programStore);
         this.rpkiApp = new RpkiApp(ipc, this.programStore);
+        this.ftpApp = new FtpApp(ipc, this.programStore);
     }
 
     // 添加版本兼容性检查方法
@@ -150,6 +152,7 @@ class SystemApp {
         ipc.handle('common:getGeneralSettings', () => this.handleGetGeneralSettings());
         ipc.handle('common:saveToolsSettings', (event, settings) => this.handleSaveToolsSettings(settings));
         ipc.handle('common:getToolsSettings', () => this.handleGetToolsSettings());
+        ipc.handle('common:selectDirectory', () => this.handleSelectDirectory());
     }
 
     handleSaveGeneralSettings(settings) {
@@ -185,14 +188,19 @@ class SystemApp {
 
             let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
             let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
+            let maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
             if (settings.packetParser && settings.packetParser.maxMessageHistory) {
                 maxMessageHistory = settings.packetParser.maxMessageHistory;
             }
             if (settings.stringGenerator && settings.stringGenerator.maxStringHistory) {
                 maxStringHistory = settings.stringGenerator.maxStringHistory;
             }
+            if (settings.ftpServer && settings.ftpServer.maxFtpUser) {
+                maxFtpUser = settings.ftpServer.maxFtpUser;
+            }
             this.toolsApp.setMaxMessageHistory(maxMessageHistory);
             this.toolsApp.setMaxStringHistory(maxStringHistory);
+            this.ftpApp.setMaxFtpUser(maxFtpUser);
 
             return successResponse(null, 'Settings saved successfully');
         } catch (error) {
@@ -255,6 +263,7 @@ class SystemApp {
         // 加载工具设置
         let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
         let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
+        let maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
         const toolsSettings = this.store.get(this.toolsSettingsFileKey);
         if (toolsSettings && toolsSettings.packetParser) {
             if (toolsSettings.packetParser.maxMessageHistory) {
@@ -266,8 +275,14 @@ class SystemApp {
                 maxStringHistory = toolsSettings.stringGenerator.maxStringHistory;
             }
         }
+        if (toolsSettings && toolsSettings.ftpServer) {
+            if (toolsSettings.ftpServer.maxFtpUser) {
+                maxFtpUser = toolsSettings.ftpServer.maxFtpUser;
+            }
+        }
         this.toolsApp.setMaxMessageHistory(maxMessageHistory);
         this.toolsApp.setMaxStringHistory(maxStringHistory);
+        this.ftpApp.setMaxFtpUser(maxFtpUser);
     }
 
     async handleWindowClose() {
@@ -277,6 +292,19 @@ class SystemApp {
         }
 
         return true;
+    }
+
+    async handleSelectDirectory() {
+        try {
+            const win = BrowserWindow.getFocusedWindow(); // 获取当前窗口
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openDirectory']
+            });
+            return successResponse(result);
+        } catch (error) {
+            logger.error('Error selecting directory:', error.message);
+            return errorResponse(error.message);
+        }
     }
 }
 

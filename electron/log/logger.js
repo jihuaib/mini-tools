@@ -17,6 +17,7 @@ try {
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
 log.transports.file.maxFiles = 3; // 最多保留3个日志文件
 log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+log.transports.file.level = 'warn';
 
 class Logger {
     constructor() {

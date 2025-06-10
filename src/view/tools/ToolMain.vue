@@ -5,6 +5,8 @@
             <a-tabs v-model:activeKey="activeTabKey" style="height: 55px" @change="handleTabChange">
                 <a-tab-pane key="string-generator" tab="字符串生成" />
                 <a-tab-pane key="packet-parser" tab="报文解析" />
+                <a-tab-pane key="ftp-server" tab="FTP服务器" />
+                <a-tab-pane key="formatter" tab="格式化工具" />
             </a-tabs>
         </div>
 
