@@ -187,6 +187,58 @@ function getIpTypeName(ipType) {
     return ipType === BgpConst.IP_TYPE.IPV4 ? 'IPv4' : 'IPv6';
 }
 
+function getNetworkAddress(ip, prefixLen) {
+    const parsedIp = ipaddr.parse(ip);
+
+    if (parsedIp.kind() === 'ipv4') {
+        const ipInt = parsedIp.toByteArray().reduce((acc, byte) => (acc << 8) + byte, 0);
+        const mask = ~(2 ** (32 - prefixLen) - 1) >>> 0;
+        const networkInt = ipInt & mask;
+        const bytes = [
+            (networkInt >>> 24) & 0xff,
+            (networkInt >>> 16) & 0xff,
+            (networkInt >>> 8) & 0xff,
+            networkInt & 0xff
+        ];
+        return `${bytes.join('.')}/${prefixLen}`;
+    } else if (parsedIp.kind() === 'ipv6') {
+        const parts = parsedIp
+            .toNormalizedString()
+            .split(':')
+            .map(p => parseInt(p || '0', 16));
+        const fullBits = parts.flatMap(part => [(part >> 8) & 0xff, part & 0xff]);
+
+        const bitLen = 128;
+        const maskBits = new Array(bitLen).fill(0).map((_, i) => (i < prefixLen ? 1 : 0));
+        const networkBits = fullBits
+            .flatMap(byte => [
+                (byte >> 7) & 1,
+                (byte >> 6) & 1,
+                (byte >> 5) & 1,
+                (byte >> 4) & 1,
+                (byte >> 3) & 1,
+                (byte >> 2) & 1,
+                (byte >> 1) & 1,
+                byte & 1
+            ])
+            .map((b, i) => b & maskBits[i]);
+
+        const newBytes = [];
+        for (let i = 0; i < bitLen; i += 8) {
+            let byte = 0;
+            for (let j = 0; j < 8; j++) {
+                byte = (byte << 1) | networkBits[i + j];
+            }
+            newBytes.push(byte);
+        }
+
+        const addr = ipaddr.fromByteArray(newBytes);
+        return `${addr.toNormalizedString()}/${prefixLen}`;
+    }
+
+    return null;
+}
+
 module.exports = {
     genRouteIps,
     writeUInt16,
@@ -196,5 +248,6 @@ module.exports = {
     getIpType,
     ipv4BufferToString,
     ipv6BufferToString,
-    getIpTypeName
+    getIpTypeName,
+    getNetworkAddress
 };

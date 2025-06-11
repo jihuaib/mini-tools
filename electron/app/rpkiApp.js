@@ -5,6 +5,7 @@ const { RPKI_REQ_TYPES } = require('../const/rpkiReqConst');
 const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
+const { getNetworkAddress } = require('../utils/ipUtils');
 
 class RpkiApp {
     constructor(ipcMain, store) {
@@ -126,6 +127,25 @@ class RpkiApp {
         }
     }
 
+    isRoaSame(roa1, roa2) {
+        if (roa1.asn !== roa2.asn) {
+            return false;
+        }
+
+        if (roa1.maxLength !== roa2.maxLength) {
+            return false;
+        }
+
+        if (roa1.ipType !== roa2.ipType) {
+            return false;
+        }
+
+        const net1 = getNetworkAddress(roa1.ip, roa1.mask);
+        const net2 = getNetworkAddress(roa2.ip, roa2.mask);
+
+        return net1 === net2;
+    }
+
     async handleAddRoa(event, roa) {
         try {
             let currentRoaList = [];
@@ -136,14 +156,6 @@ class RpkiApp {
 
             logger.info(`handleAddRoa: ${JSON.stringify(roa)}`);
 
-            if (this.worker) {
-                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
-                if (result.status === 'success') {
-                    logger.info(`worker RPKI ROA配置添加成功`);
-                } else {
-                    logger.error(`worker RPKI ROA配置添加失败: ${result.msg}`);
-                }
-            }
             // 检查是否已经存在
             const index = currentRoaList.findIndex(
                 item =>
@@ -155,6 +167,21 @@ class RpkiApp {
             if (index !== -1) {
                 return errorResponse('RPKI ROA配置已经存在');
             }
+
+            const isCovered = currentRoaList.some(item => this.isRoaSame(item, roa));
+            if (isCovered) {
+                return errorResponse('RPKI ROA配置已经存在');
+            }
+
+            if (this.worker) {
+                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
+                if (result.status === 'success') {
+                    logger.info(`worker RPKI ROA配置添加成功`);
+                } else {
+                    logger.error(`worker RPKI ROA配置添加失败: ${result.msg}`);
+                }
+            }
+
             currentRoaList.push(roa);
             this.store.set(this.rpkiRoaFileKey, currentRoaList);
             return successResponse(null, 'RPKI ROA配置文件保存成功');
@@ -174,14 +201,6 @@ class RpkiApp {
 
             logger.info(`handleDeleteRoa: ${JSON.stringify(roa)}`);
 
-            if (this.worker) {
-                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.DELETE_ROA, roa);
-                if (result.status === 'success') {
-                    logger.info(`worker RPKI ROA删除成功`);
-                } else {
-                    logger.error(`worker RPKI ROA删除失败: ${result.msg}`);
-                }
-            }
             // 找到roa，删除
             const index = currentRoaList.findIndex(
                 item =>
@@ -193,6 +212,16 @@ class RpkiApp {
             if (index !== -1) {
                 currentRoaList.splice(index, 1);
             }
+
+            if (this.worker) {
+                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.DELETE_ROA, roa);
+                if (result.status === 'success') {
+                    logger.info(`worker RPKI ROA删除成功`);
+                } else {
+                    logger.error(`worker RPKI ROA删除失败: ${result.msg}`);
+                }
+            }
+
             this.store.set(this.rpkiRoaFileKey, currentRoaList);
             return successResponse(null, 'RPKI ROA配置文件保存成功');
         } catch (error) {
