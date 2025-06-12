@@ -33,6 +33,14 @@ export const IP_TYPE = {
     IPV6: 2
 };
 
+// Peer Type Values, 需要和后台定义保持一致, 后台会
+// 直接使用这个值处理
+export const BGP_PEER_TYPE = {
+    PEER_TYPE_INVALID: 0,
+    PEER_TYPE_IBGP: 1,
+    PEER_TYPE_EBGP: 2
+};
+
 export const ADDRESS_FAMILY_NAME = {
     [BGP_ADDR_FAMILY.IPV4_UNC]: 'IPv4 UNC',
     [BGP_ADDR_FAMILY.IPV6_UNC]: 'IPv6 UNC'

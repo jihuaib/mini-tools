@@ -227,7 +227,6 @@
             validateIpv4Mask(value, errors);
         } else {
             if (roaConfig.value.maxLength < value) {
-                console.log('validateMask', roaConfig.value.maxLength, value);
                 errors.value.mask = '最大前缀长度不能小于mask';
                 return;
             }

@@ -29,6 +29,8 @@ class BgpSession {
         this.peerRole = BgpConst.BGP_ROLE_TYPE.ROLE_INVALID;
         // 远端open报文可选参数
         this.openCapCustom = '';
+        // Peer Type
+        this.peerType = BgpConst.BGP_PEER_TYPE.PEER_TYPE_INVALID;
 
         this.sessState = BgpConst.BGP_PEER_STATE.IDLE;
     }
@@ -211,6 +213,12 @@ class BgpSession {
                 }
                 this.sendKeepAliveMsg();
                 this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_CONFIRM);
+
+                if (parseInt(this.localAs) === parseInt(parsedPacket.asn)) {
+                    this.peerType = BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP;
+                } else if (parseInt(this.localAs) !== parseInt(parsedPacket.asn)) {
+                    this.peerType = BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP;
+                }
             } else if (header.type === BgpConst.BGP_PACKET_TYPE.KEEPALIVE) {
                 if (this.sessState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
                     logger.info(`${this.peerIp} recv keepalive message ${getBgpPacketSummary(parsedPacket)}`);
