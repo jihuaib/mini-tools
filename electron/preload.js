@@ -8,7 +8,29 @@ contextBridge.exposeInMainWorld('commonApi', {
     getGeneralSettings: () => ipcRenderer.invoke('common:getGeneralSettings'),
     saveToolsSettings: settings => ipcRenderer.invoke('common:saveToolsSettings', settings),
     getToolsSettings: () => ipcRenderer.invoke('common:getToolsSettings'),
-    selectDirectory: () => ipcRenderer.invoke('common:selectDirectory')
+    selectDirectory: () => ipcRenderer.invoke('common:selectDirectory'),
+
+    // 保存更新设置
+    saveUpdateSettings: settings => ipcRenderer.invoke('common:saveUpdateSettings', settings),
+    // 获取更新设置
+    getUpdateSettings: () => ipcRenderer.invoke('common:getUpdateSettings')
+});
+
+// 更新模块
+contextBridge.exposeInMainWorld('updaterApi', {
+    // 检查更新
+    checkForUpdates: () => ipcRenderer.invoke('updater:checkForUpdates'),
+    // 下载更新
+    downloadUpdate: () => ipcRenderer.invoke('updater:downloadUpdate'),
+    // 退出并安装
+    quitAndInstall: () => ipcRenderer.invoke('updater:quitAndInstall'),
+    // 获取当前版本
+    getCurrentVersion: () => ipcRenderer.invoke('updater:getCurrentVersion'),
+
+    // 监听更新状态
+    onUpdateStatus: callback => ipcRenderer.on('update-status', (_event, data) => callback(data)),
+    // 移除更新状态监听
+    offUpdateStatus: callback => ipcRenderer.removeListener('update-status', callback)
 });
 
 // 工具模块

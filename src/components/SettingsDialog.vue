@@ -20,6 +20,10 @@
                         <template #icon><ToolOutlined /></template>
                         <span>工具设置</span>
                     </a-menu-item>
+                    <a-menu-item key="update">
+                        <template #icon><CloudDownloadOutlined /></template>
+                        <span>应用更新</span>
+                    </a-menu-item>
                 </a-menu>
             </div>
 
@@ -33,9 +37,10 @@
 
 <script setup>
     import { ref, computed, watch } from 'vue';
-    import { SettingOutlined, ToolOutlined } from '@ant-design/icons-vue';
+    import { SettingOutlined, ToolOutlined, CloudDownloadOutlined } from '@ant-design/icons-vue';
     import GeneralSettings from '../view/settings/GeneralSettings.vue';
     import ToolsSettings from '../view/settings/ToolsSettings.vue';
+    import UpdateSettings from '../view/settings/UpdateSettings.vue';
 
     const props = defineProps({
         visible: {
@@ -74,6 +79,8 @@
                 return GeneralSettings;
             case 'tools':
                 return ToolsSettings;
+            case 'update':
+                return UpdateSettings;
             default:
                 return GeneralSettings;
         }

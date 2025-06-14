@@ -3,7 +3,7 @@ const { app, dialog, BrowserWindow } = require('electron');
 const Store = require('electron-store');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
-const { DEFAULT_LOG_SETTINGS, DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
+const { DEFAULT_LOG_SETTINGS, DEFAULT_TOOLS_SETTINGS, DEFAULT_UPDATE_SETTINGS } = require('../const/toolsConst');
 const fs = require('fs');
 const path = require('path');
 const BgpApp = require('./bgpApp');
@@ -11,6 +11,7 @@ const ToolsApp = require('./toolsApp');
 const BmpApp = require('./bmpApp');
 const RpkiApp = require('./rpkiApp');
 const FtpApp = require('./ftpApp');
+const AppUpdater = require('./updater');
 /**
  * 用于系统菜单处理
  */
@@ -22,6 +23,7 @@ class SystemApp {
         this.registerHandlers(ipc);
         this.generalSettingsFileKey = 'GeneralSettings';
         this.toolsSettingsFileKey = 'ToolsSettings';
+        this.updateSettingsFileKey = 'UpdateSettings';
         this.appVersionFileKey = 'appVersion';
 
         this.store = new Store({
@@ -41,6 +43,7 @@ class SystemApp {
         this.bmpApp = new BmpApp(ipc, this.programStore);
         this.rpkiApp = new RpkiApp(ipc, this.programStore);
         this.ftpApp = new FtpApp(ipc, this.programStore);
+        this.updaterApp = new AppUpdater(ipc, win);
     }
 
     // 添加版本兼容性检查方法
@@ -152,6 +155,8 @@ class SystemApp {
         ipc.handle('common:getGeneralSettings', () => this.handleGetGeneralSettings());
         ipc.handle('common:saveToolsSettings', (event, settings) => this.handleSaveToolsSettings(settings));
         ipc.handle('common:getToolsSettings', () => this.handleGetToolsSettings());
+        ipc.handle('common:saveUpdateSettings', (event, settings) => this.handleSaveUpdateSettings(settings));
+        ipc.handle('common:getUpdateSettings', () => this.handleGetUpdateSettings());
         ipc.handle('common:selectDirectory', () => this.handleSelectDirectory());
     }
 
@@ -283,6 +288,14 @@ class SystemApp {
         this.toolsApp.setMaxMessageHistory(maxMessageHistory);
         this.toolsApp.setMaxStringHistory(maxStringHistory);
         this.ftpApp.setMaxFtpUser(maxFtpUser);
+
+        // 加载更新设置并应用
+        let updateSetting = DEFAULT_UPDATE_SETTINGS;
+        const updateSettingsFromStore = this.store.get(this.updateSettingsFileKey);
+        if (updateSettingsFromStore) {
+            updateSetting = updateSettingsFromStore;
+        }
+        this.updaterApp.updateSettings(updateSetting);
     }
 
     async handleWindowClose() {
@@ -303,6 +316,31 @@ class SystemApp {
             return successResponse(result);
         } catch (error) {
             logger.error('Error selecting directory:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    handleSaveUpdateSettings(settings) {
+        try {
+            this.store.set(this.updateSettingsFileKey, settings);
+            // 更新AppUpdater的设置
+            this.updaterApp.updateSettings(settings);
+            return successResponse(null, 'Update settings saved successfully');
+        } catch (error) {
+            logger.error('Error saving update settings:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    handleGetUpdateSettings() {
+        try {
+            const settings = this.store.get(this.updateSettingsFileKey);
+            if (!settings) {
+                return successResponse(DEFAULT_UPDATE_SETTINGS, 'Default update settings loaded');
+            }
+            return successResponse(settings, 'Update settings loaded successfully');
+        } catch (error) {
+            logger.error('Error getting update settings:', error.message);
             return errorResponse(error.message);
         }
     }

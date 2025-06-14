@@ -65,6 +65,9 @@
 
         <!-- 设置弹窗 -->
         <SettingsDialog ref="settingsDialog" />
+
+        <!-- 更新通知 -->
+        <UpdateNotification />
     </div>
 </template>
 
@@ -84,6 +87,7 @@
         SafetyCertificateOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
+    import UpdateNotification from '../components/UpdateNotification.vue';
 
     const router = useRouter();
     const route = useRoute();
