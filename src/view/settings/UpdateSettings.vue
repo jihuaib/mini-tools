@@ -14,12 +14,7 @@
         <!-- 更新检查按钮 -->
         <div class="update-actions">
             <a-space>
-                <a-button
-                    type="primary"
-                    :loading="isChecking"
-                    :disabled="isDownloading"
-                    @click="checkForUpdates"
-                >
+                <a-button type="primary" :loading="isChecking" :disabled="isDownloading" @click="checkForUpdates">
                     检查更新
                 </a-button>
                 <a-button
@@ -29,13 +24,7 @@
                 >
                     下载更新
                 </a-button>
-                <a-button
-                    v-if="updateDownloaded"
-                    type="danger"
-                    @click="installUpdate"
-                >
-                    重启并安装
-                </a-button>
+                <a-button v-if="updateDownloaded" type="danger" @click="installUpdate">重启并安装</a-button>
             </a-space>
         </div>
 
@@ -45,22 +34,12 @@
             <h4>自动更新设置</h4>
             <a-form layout="vertical">
                 <a-form-item label="启动时检查更新">
-                    <a-switch
-                        v-model:checked="updateSettings.autoCheckOnStartup"
-                        @change="saveAutoUpdateSettings"
-                    />
-                    <div class="setting-description">
-                        启用后，应用启动时会自动检查更新
-                    </div>
+                    <a-switch v-model:checked="updateSettings.autoCheckOnStartup" @change="saveAutoUpdateSettings" />
+                    <div class="setting-description">启用后，应用启动时会自动检查更新</div>
                 </a-form-item>
                 <a-form-item label="自动下载更新">
-                    <a-switch
-                        v-model:checked="updateSettings.autoDownload"
-                        @change="saveAutoUpdateSettings"
-                    />
-                    <div class="setting-description">
-                        启用后，发现更新时会自动下载（仍需手动安装）
-                    </div>
+                    <a-switch v-model:checked="updateSettings.autoDownload" @change="saveAutoUpdateSettings" />
+                    <div class="setting-description">启用后，发现更新时会自动下载（仍需手动安装）</div>
                 </a-form-item>
             </a-form>
         </div>
@@ -162,7 +141,7 @@
     };
 
     // 处理更新状态
-    const handleUpdateStatus = (status) => {
+    const handleUpdateStatus = status => {
         const { type, data } = status;
 
         switch (type) {

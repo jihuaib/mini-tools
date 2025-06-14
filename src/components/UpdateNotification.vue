@@ -2,11 +2,7 @@
     <!-- 更新通知浮层 -->
     <teleport to="body">
         <transition name="slide-up">
-            <div
-                v-if="showNotification"
-                class="update-notification"
-                @click="handleNotificationClick"
-            >
+            <div v-if="showNotification" class="update-notification" @click="handleNotificationClick">
                 <div class="notification-content">
                     <div class="notification-icon">
                         <loading-outlined v-if="isChecking" spin />
@@ -19,10 +15,7 @@
                         <div class="notification-title">{{ notificationTitle }}</div>
                         <div class="notification-description">{{ notificationDescription }}</div>
                         <div v-if="isDownloading && downloadProgress.percent" class="progress-bar">
-                            <div
-                                class="progress-fill"
-                                :style="{ width: `${downloadProgress.percent}%` }"
-                            />
+                            <div class="progress-fill" :style="{ width: `${downloadProgress.percent}%` }" />
                         </div>
                     </div>
                     <div class="notification-actions">
@@ -34,20 +27,10 @@
                         >
                             下载
                         </a-button>
-                        <a-button
-                            v-if="updateDownloaded"
-                            type="primary"
-                            size="small"
-                            @click.stop="installUpdate"
-                        >
+                        <a-button v-if="updateDownloaded" type="primary" size="small" @click.stop="installUpdate">
                             安装
                         </a-button>
-                        <a-button
-                            size="small"
-                            @click.stop="closeNotification"
-                        >
-                            关闭
-                        </a-button>
+                        <a-button size="small" @click.stop="closeNotification">关闭</a-button>
                     </div>
                 </div>
             </div>
@@ -104,7 +87,7 @@
     });
 
     // 处理更新状态
-    const handleUpdateStatus = (status) => {
+    const handleUpdateStatus = status => {
         console.log('handleUpdateStatus', status);
         const { type, data } = status;
 

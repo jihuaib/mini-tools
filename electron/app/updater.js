@@ -36,7 +36,7 @@ class AppUpdater {
             // 设置开发环境的更新配置
             Object.assign(autoUpdater, {
                 // 允许降级
-                allowDowngrade: true,
+                allowDowngrade: true
             });
 
             // 设置本地更新配置文件用于测试
@@ -91,7 +91,7 @@ class AppUpdater {
         });
 
         // 有可用更新时
-        autoUpdater.on('update-available', (info) => {
+        autoUpdater.on('update-available', info => {
             logger.info('发现新版本:', info.version);
             this.sendUpdateStatus('update-available', info);
             if (this.updateSettingsConfig.autoDownload) {
@@ -100,26 +100,26 @@ class AppUpdater {
         });
 
         // 没有可用更新时
-        autoUpdater.on('update-not-available', (info) => {
+        autoUpdater.on('update-not-available', info => {
             logger.info('当前已是最新版本');
             this.sendUpdateStatus('update-not-available', info);
         });
 
         // 更新错误时
-        autoUpdater.on('error', (err) => {
+        autoUpdater.on('error', err => {
             logger.error('更新过程中出现错误:', err);
             this.sendUpdateStatus('update-error', { error: err.message });
         });
 
         // 下载进度
-        autoUpdater.on('download-progress', (progressObj) => {
+        autoUpdater.on('download-progress', progressObj => {
             const logMessage = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
             logger.info(logMessage);
             this.sendUpdateStatus('download-progress', progressObj);
         });
 
         // 更新下载完成
-        autoUpdater.on('update-downloaded', (info) => {
+        autoUpdater.on('update-downloaded', info => {
             logger.info('更新下载完成');
             this.updateDownloaded = true;
             this.sendUpdateStatus('update-downloaded', info);
@@ -141,10 +141,12 @@ class AppUpdater {
             // 返回简化的结果，避免 IPC 序列化问题
             return {
                 success: true,
-                updateInfo: result?.updateInfo ? {
-                    version: result.updateInfo.version,
-                    releaseDate: result.updateInfo.releaseDate
-                } : null
+                updateInfo: result?.updateInfo
+                    ? {
+                          version: result.updateInfo.version,
+                          releaseDate: result.updateInfo.releaseDate
+                      }
+                    : null
             };
         } catch (error) {
             logger.error('检查更新失败:', error);
