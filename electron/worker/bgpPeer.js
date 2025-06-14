@@ -53,7 +53,8 @@ class BgpPeer {
             peerAs: this.session.peerAs,
             routerId: this.session.routerId,
             peerState: BgpConst.BGP_PEER_STATE_NAME[this.peerState],
-            addressFamily: addressFamily
+            addressFamily: addressFamily,
+            peerType: this.session.peerType
         };
     }
 
@@ -186,22 +187,40 @@ class BgpPeer {
             withdrawnRoutesBuf.writeUInt16BE(0, 0);
 
             // 构建路径属性
+            let asPath = [];
+            let localPref = [];
+            if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                asPath = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.AS_PATH,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
+                );
+            } else {
+                asPath = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.AS_PATH,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    [] // AS_SEQUENCE
+                );
+                localPref = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.LOCAL_PREF,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    writeUInt32(100)
+                );
+            }
+
             const pathAttr = [
                 ...this.buildPathAttribute(
                     BgpConst.BGP_PATH_ATTR.ORIGIN,
                     BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                     [0x00] // IGP
                 ),
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
-                ),
+                ...asPath,
                 ...this.buildPathAttribute(
                     BgpConst.BGP_PATH_ATTR.MED,
                     BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL,
                     writeUInt32(0)
-                )
+                ),
+                ...localPref
             ];
 
             // 添加自定义属性
@@ -258,17 +277,34 @@ class BgpPeer {
             withdrawnRoutesBuf.writeUInt16BE(0, 0);
 
             // 构建路径属性
+            let asPath = [];
+            let localPref = [];
+            if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                asPath = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.AS_PATH,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
+                );
+            } else {
+                asPath = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.AS_PATH,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    [] // AS_SEQUENCE
+                );
+                localPref = this.buildPathAttribute(
+                    BgpConst.BGP_PATH_ATTR.LOCAL_PREF,
+                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                    writeUInt32(100)
+                );
+            }
+
             const pathAttr = [
                 ...this.buildPathAttribute(
                     BgpConst.BGP_PATH_ATTR.ORIGIN,
                     BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                     [0x00] // IGP
                 ),
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
-                ),
+                ...asPath,
                 ...this.buildPathAttribute(
                     BgpConst.BGP_PATH_ATTR.NEXT_HOP,
                     BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
@@ -278,7 +314,8 @@ class BgpPeer {
                     BgpConst.BGP_PATH_ATTR.MED,
                     BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL,
                     writeUInt32(0)
-                )
+                ),
+                ...localPref
             ];
 
             // 添加自定义属性

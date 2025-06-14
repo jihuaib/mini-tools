@@ -74,7 +74,7 @@
 <script setup>
     import { onMounted, onActivated, ref, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
-    import { BGP_ADDR_FAMILY } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY, BGP_PEER_TYPE } from '../../const/bgpConst';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
     defineOptions({
@@ -105,6 +105,20 @@
             title: 'Peer AS',
             dataIndex: 'peerAs',
             ellipsis: true
+        },
+        {
+            title: 'Peer Type',
+            dataIndex: 'peerType',
+            ellipsis: true,
+            customRender: ({ text }) => {
+                if (text === BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                    return 'IBGP';
+                } else if (text === BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                    return 'EBGP';
+                } else {
+                    return 'UNKNOWN';
+                }
+            }
         },
         {
             title: 'Router ID',

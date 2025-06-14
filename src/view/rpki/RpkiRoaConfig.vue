@@ -218,6 +218,7 @@
 
     const validateMask = (value, errors) => {
         clearValidationErrors(validationErrors);
+        value = parseInt(value);
         if (roaConfig.value.ipType === IP_TYPE.IPV4) {
             if (roaConfig.value.maxLength < value) {
                 errors.value.mask = '最大前缀长度不能小于mask';
@@ -236,6 +237,7 @@
     // 验证最大前缀长度
     const validateMaxLength = (value, errors) => {
         clearValidationErrors(validationErrors);
+        value = parseInt(value);
         if (roaConfig.value.ipType === IP_TYPE.IPV4) {
             if (roaConfig.value.mask > value) {
                 errors.value.maxLength = 'mask不能小于最大前缀长度';

@@ -247,7 +247,13 @@ class RpkiSession {
     }
 
     handleError(message) {
-        const errorCode = message.readUInt16BE(RpkiConst.RPKI_HEADER_LENGTH);
+        const _version = message[0];
+        const _type = message[1];
+        const errorCode = message.readUInt16BE(2);
+        const _length = message.readUInt32BE(4);
+        const sessionKey = RpkiSession.makeKey(this.localIp, this.localPort, this.remoteIp, this.remotePort);
+        this.rpkiWorker.rpkiSessionMap.delete(sessionKey);
+        this.closeSession();
         logger.error(`RPKI Error: Code ${errorCode}`);
     }
 

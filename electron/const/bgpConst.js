@@ -194,6 +194,12 @@ const BGP_ERROR_CONNECTION_REJECTED_SUBCODE = {
     OUT_OF_RESOURCES: 8
 };
 
+const BGP_PEER_TYPE = {
+    PEER_TYPE_INVALID: 0,
+    PEER_TYPE_IBGP: 1,
+    PEER_TYPE_EBGP: 2
+};
+
 module.exports = {
     BGP_DEFAULT_PORT,
     BGP_HEAD_LEN,
@@ -221,5 +227,6 @@ module.exports = {
     IP_TYPE,
     BGP_CAP_FLAGS,
     BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS,
-    BGP_RD_LEN
+    BGP_RD_LEN,
+    BGP_PEER_TYPE
 };
