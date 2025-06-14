@@ -26,7 +26,21 @@ contextBridge.exposeInMainWorld('toolsApi', {
     // 格式化工具模块
     formatData: formatterData => ipcRenderer.invoke('tools:formatData', formatterData),
     getFormatterHistory: () => ipcRenderer.invoke('tools:getFormatterHistory'),
-    clearFormatterHistory: () => ipcRenderer.invoke('tools:clearFormatterHistory')
+    clearFormatterHistory: () => ipcRenderer.invoke('tools:clearFormatterHistory'),
+
+    // 抓包模块
+    capturePackets: captureOptions => ipcRenderer.invoke('tools:capturePackets', captureOptions),
+    stopCapture: () => ipcRenderer.invoke('tools:stopCapture'),
+
+    // 事件监听
+    onPacketCaptured: callback => ipcRenderer.on('tools:packetCaptured', (_event, data) => callback(data)),
+    onCaptureError: callback => ipcRenderer.on('tools:captureError', (_event, data) => callback(data)),
+    onCaptureComplete: callback => ipcRenderer.on('tools:captureComplete', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offPacketCaptured: callback => ipcRenderer.removeListener('tools:packetCaptured', callback),
+    offCaptureError: callback => ipcRenderer.removeListener('tools:captureError', callback),
+    offCaptureComplete: callback => ipcRenderer.removeListener('tools:captureComplete', callback)
 });
 
 // bgp模块

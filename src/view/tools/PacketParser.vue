@@ -74,6 +74,7 @@
                         <div class="form-buttons">
                             <a-button type="primary" html-type="submit">解析报文</a-button>
                             <a-button type="default" @click="showParseHistory">识别历史</a-button>
+                            <a-button type="default" @click="showCaptureModal">抓包分析</a-button>
                         </div>
                     </a-form-item>
                 </a-form>
@@ -161,11 +162,118 @@
             <a-button v-if="parseHistory.length > 0" type="danger" @click="clearHistory">清空历史</a-button>
         </template>
     </a-modal>
+
+    <!-- 抓包配置弹窗 -->
+    <a-modal
+        v-model:open="captureModalVisible"
+        title="抓包配置"
+        width="600px"
+        :mask-closable="false"
+        @cancel="closeCaptureModal"
+    >
+        <div class="capture-modal-content">
+            <a-form :model="captureOptions" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                <a-form-item label="网络接口">
+                    <a-select v-model:value="captureOptions.interface">
+                        <a-select-option value="any">所有接口</a-select-option>
+                        <a-select-option value="eth0">eth0</a-select-option>
+                        <a-select-option value="wlan0">wlan0</a-select-option>
+                        <a-select-option value="lo">本地回路</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="抓包数量">
+                    <a-input-number
+                        v-model:value="captureOptions.count"
+                        :min="1"
+                        :max="1000"
+                        style="width: 100%"
+                    />
+                </a-form-item>
+                <a-form-item label="超时时间(秒)">
+                    <a-input-number
+                        v-model:value="captureOptions.timeout"
+                        :min="5"
+                        :max="300"
+                        style="width: 100%"
+                    />
+                </a-form-item>
+                <a-form-item label="过滤条件">
+                    <a-input
+                        v-model:value="captureOptions.filter"
+                        placeholder="例如: tcp port 80, host 192.168.1.1"
+                    />
+                </a-form-item>
+            </a-form>
+        </div>
+        <template #footer>
+            <a-button @click="closeCaptureModal">取消</a-button>
+            <a-button
+                type="primary"
+                :loading="capturing"
+                @click="startCapture"
+            >
+                {{ capturing ? '抓包中...' : '开始抓包' }}
+            </a-button>
+            <a-button v-if="capturing" type="danger" @click="stopCapture">停止抓包</a-button>
+        </template>
+    </a-modal>
+
+    <!-- 抓包结果弹窗 -->
+    <a-modal
+        v-model:open="captureResultModalVisible"
+        title="抓包结果"
+        width="1000px"
+        :mask-closable="false"
+        @cancel="closeCaptureResultModal"
+    >
+        <div class="capture-result-content">
+            <a-table
+                :columns="captureResultColumns"
+                :data-source="capturedPackets"
+                :pagination="{ pageSize: 10, showSizeChanger: true, position: ['bottomCenter'] }"
+                :scroll="{ y: 400 }"
+                size="small"
+                :row-selection="{
+                    type: 'radio',
+                    selectedRowKeys: selectedPacketKeys,
+                    onChange: onPacketSelect
+                }"
+            >
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'timestamp'">
+                        <div class="timestamp-cell">{{ formatTimestamp(record.timestamp) }}</div>
+                    </template>
+                    <template v-else-if="column.key === 'srcAddr'">
+                        <div class="address-cell">{{ formatAddress(record.srcIp, record.srcPort) }}</div>
+                    </template>
+                    <template v-else-if="column.key === 'dstAddr'">
+                        <div class="address-cell">{{ formatAddress(record.dstIp, record.dstPort) }}</div>
+                    </template>
+                    <template v-else-if="column.key === 'protocol'">
+                        <div class="protocol-cell">{{ formatProtocol(record.protocol) }}</div>
+                    </template>
+                    <template v-else-if="column.key === 'hexData'">
+                        <div class="hex-preview">{{ truncateHexData(record.hexData) }}</div>
+                    </template>
+                </template>
+            </a-table>
+        </div>
+        <template #footer>
+            <a-button @click="closeCaptureResultModal">取消</a-button>
+            <a-button
+                type="primary"
+                :disabled="selectedPacketKeys.length === 0"
+                @click="parseSelectedPacket"
+            >
+                解析选中报文
+            </a-button>
+        </template>
+    </a-modal>
 </template>
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, onMounted, computed } from 'vue';
+    import { ref, onMounted, computed, toRaw, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { clearValidationErrors } from '../../utils/validationCommon';
     import { validateInputPacketData, validateInputProtocolPort } from '../../utils/toolsValidation';
@@ -400,6 +508,22 @@
     // 历史记录相关状态
     const historyModalVisible = ref(false);
     const parseHistory = ref([]);
+
+    // 抓包相关状态
+    const captureModalVisible = ref(false);
+    const captureResultModalVisible = ref(false);
+    const capturing = ref(false);
+    const capturedPackets = ref([]);
+    const selectedPacketKeys = ref([]);
+    const selectedPacket = ref(null);
+
+    // 抓包配置
+    const captureOptions = ref({
+        interface: 'any',
+        count: 50,
+        timeout: 30,
+        filter: ''
+    });
     const historyColumns = [
         {
             title: '开始层级',
@@ -431,6 +555,35 @@
         {
             title: '操作',
             key: 'action'
+        }
+    ];
+
+    // 抓包结果表格列定义
+    const captureResultColumns = [
+        {
+            title: '序号',
+            dataIndex: 'id',
+            key: 'id',
+            width: 80,
+            align: 'center'
+        },
+        {
+            title: '时间',
+            dataIndex: 'timestamp',
+            key: 'timestamp',
+            width: 180
+        },
+        {
+            title: '长度',
+            dataIndex: 'length',
+            key: 'length',
+            width: 80,
+            align: 'center'
+        },
+        {
+            title: '十六进制数据',
+            key: 'hexData',
+            ellipsis: true
         }
     ];
 
@@ -494,6 +647,130 @@
             message.error(e.message || String(e));
             console.error('清空历史记录错误:', e);
         }
+    };
+
+    // 抓包相关函数
+    // 显示抓包配置弹窗
+    const showCaptureModal = () => {
+        captureModalVisible.value = true;
+    };
+
+    // 关闭抓包配置弹窗
+    const closeCaptureModal = () => {
+        captureModalVisible.value = false;
+        if (capturing.value) {
+            stopCapture();
+        }
+    };
+
+    // 开始抓包
+    const startCapture = async () => {
+        try {
+            capturing.value = true;
+            const payload = JSON.parse(JSON.stringify(toRaw(captureOptions.value)));
+            const resp = await window.toolsApi.capturePackets(payload);
+
+            if (resp.status === 'success') {
+                capturedPackets.value = resp.data || [];
+                message.success(`抓包完成，共捕获 ${capturedPackets.value.length} 个报文`);
+
+                // 关闭配置弹窗，显示结果弹窗
+                captureModalVisible.value = false;
+                captureResultModalVisible.value = true;
+                selectedPacketKeys.value = [];
+                selectedPacket.value = null;
+            } else {
+                message.error(resp.msg || '抓包失败');
+            }
+        } catch (e) {
+            message.error(e.message || String(e));
+            console.error('抓包错误:', e);
+        } finally {
+            capturing.value = false;
+        }
+    };
+
+    // 停止抓包
+    const stopCapture = async () => {
+        try {
+            const resp = await window.toolsApi.stopCapture();
+            if (resp.status === 'success') {
+                message.info('抓包已停止');
+            }
+        } catch (e) {
+            console.error('停止抓包错误:', e);
+        } finally {
+            capturing.value = false;
+        }
+    };
+
+    // 关闭抓包结果弹窗
+    const closeCaptureResultModal = () => {
+        captureResultModalVisible.value = false;
+        selectedPacketKeys.value = [];
+        selectedPacket.value = null;
+    };
+
+    // 选择报文
+    const onPacketSelect = (selectedRowKeys, selectedRows) => {
+        selectedPacketKeys.value = selectedRowKeys;
+        selectedPacket.value = selectedRows.length > 0 ? selectedRows[0] : null;
+    };
+
+    // 解析选中的报文
+    const parseSelectedPacket = () => {
+        if (!selectedPacket.value) {
+            message.warning('请先选择一个报文');
+            return;
+        }
+
+        // 将选中报文的十六进制数据填入表单
+        formState.value.packetData = selectedPacket.value.hexData;
+
+        // 根据协议自动设置解析参数
+        if (selectedPacket.value.protocol) {
+            const protocolLower = selectedPacket.value.protocol.toLowerCase();
+            if (protocolLower.includes('bgp')) {
+                formState.value.protocolType = PROTOCOL_TYPE.BGP;
+                formState.value.startLayer = START_LAYER.L5;
+                formState.value.protocolPort = '179';
+            }
+        }
+
+        // 关闭弹窗
+        closeCaptureResultModal();
+
+        // 自动开始解析
+        handleParsePacket();
+    };
+
+    // 格式化时间戳
+    const formatTimestamp = timestamp => {
+        if (!timestamp) return '';
+        try {
+            return new Date(timestamp).toLocaleString();
+        } catch {
+            return timestamp;
+        }
+    };
+
+    // 格式化地址
+    const formatAddress = (ip, port) => {
+        if (!ip) return '';
+        return port ? `${ip}:${port}` : ip;
+    };
+
+    // 格式化协议
+    const formatProtocol = protocol => {
+        if (!protocol) return '';
+        return protocol.split(':').pop() || protocol;
+    };
+
+    // 截断十六进制数据显示
+    const truncateHexData = hexData => {
+        if (!hexData) return '';
+        const cleanHex = hexData.replace(/\s+/g, ' ').trim();
+        return cleanHex.length > 50 ? cleanHex.substring(0, 50) + '...' : cleanHex;
     };
 
     // 处理解析报文，添加历史记录保存
@@ -570,7 +847,17 @@
         }
     });
 
-    onMounted(async () => {});
+    const onPacketCaptured = packet => {
+        capturedPackets.value.push(packet);
+    };
+
+    onMounted(async () => {
+        window.toolsApi.onPacketCaptured(onPacketCaptured);
+    });
+
+    onBeforeUnmount(() => {
+        window.toolsApi.offPacketCaptured(onPacketCaptured);
+    });
 </script>
 
 <style scoped>
@@ -864,5 +1151,49 @@
     /* 表格样式调整 */
     :deep(.ant-table-small) {
         font-size: 12px;
+    }
+
+    /* 抓包相关样式 */
+    .capture-modal-content {
+        padding: 20px 0;
+    }
+
+    .capture-result-content {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .timestamp-cell {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .address-cell {
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .protocol-cell {
+        font-weight: 500;
+        color: #1890ff;
+    }
+
+    .hex-preview {
+        font-family: monospace;
+        font-size: 11px;
+        color: #666;
+        word-break: break-all;
+    }
+
+    :deep(.ant-table-row) {
+        cursor: pointer;
+    }
+
+    :deep(.ant-table-row-selected) {
+        background-color: #e6f7ff;
+    }
+
+    :deep(.ant-table-row:hover) {
+        background-color: #f5f5f5;
     }
 </style>
