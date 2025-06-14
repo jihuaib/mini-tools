@@ -31,4 +31,10 @@ const DEFAULT_LOG_SETTINGS = {
     logLevel: 'warn'
 };
 
-module.exports = { PROTOCOL_TYPE, START_LAYER, DEFAULT_TOOLS_SETTINGS, DEFAULT_LOG_SETTINGS };
+// 默认更新设置
+const DEFAULT_UPDATE_SETTINGS = {
+    autoCheckOnStartup: true,
+    autoDownload: false
+};
+
+module.exports = { PROTOCOL_TYPE, START_LAYER, DEFAULT_TOOLS_SETTINGS, DEFAULT_LOG_SETTINGS, DEFAULT_UPDATE_SETTINGS };
