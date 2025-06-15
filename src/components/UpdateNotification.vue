@@ -88,7 +88,6 @@
 
     // 处理更新状态
     const handleUpdateStatus = status => {
-        console.log('handleUpdateStatus', status);
         const { type, data } = status;
 
         switch (type) {

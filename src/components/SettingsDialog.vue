@@ -29,7 +29,9 @@
 
             <!-- 右侧设置内容区域 -->
             <div class="settings-content">
-                <component :is="currentSettingComponent" />
+                <keep-alive>
+                    <component :is="currentSettingComponent" />
+                </keep-alive>
             </div>
         </div>
     </a-modal>
