@@ -129,7 +129,7 @@ class AppUpdater {
     // 发送更新状态到渲染进程
     sendUpdateStatus(type, data = {}) {
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-            this.mainWindow.webContents.send('update-status', { type, data });
+            this.mainWindow.webContents.send('updater:update-status', { type, data });
         }
     }
 

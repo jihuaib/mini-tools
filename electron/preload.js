@@ -28,9 +28,9 @@ contextBridge.exposeInMainWorld('updaterApi', {
     getCurrentVersion: () => ipcRenderer.invoke('updater:getCurrentVersion'),
 
     // 监听更新状态
-    onUpdateStatus: callback => ipcRenderer.on('update-status', (_event, data) => callback(data)),
+    onUpdateStatus: callback => ipcRenderer.on('updater:update-status', (_event, data) => callback(data)),
     // 移除更新状态监听
-    offUpdateStatus: callback => ipcRenderer.removeListener('update-status', callback)
+    offUpdateStatus: callback => ipcRenderer.removeListener('updater:update-status', callback)
 });
 
 // 工具模块
