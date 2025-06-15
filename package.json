@@ -3,13 +3,46 @@
     "private": true,
     "version": "3.0.4",
     "main": "electron/main.js",
-    "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
+    "description": "一个基于 Vue3 + Ant Design Vue + Electron 开发的网络和开发辅助工具集，包含BGP模拟器、BMP监控器、RPKI验证器、报文解析器、字符串生成器等多种网络工具",
+    "keywords": [
+        "vue3",
+        "electron",
+        "ant-design-vue",
+        "bgp-simulator",
+        "bmp-monitor",
+        "rpki-validator",
+        "packet-parser",
+        "network-tools",
+        "development-tools",
+        "bgp",
+        "bmp",
+        "rpki",
+        "network-protocol",
+        "router",
+        "networking",
+        "工具集",
+        "网络工具",
+        "开发工具",
+        "BGP模拟器",
+        "网络协议",
+        "路由器",
+        "字符串生成器",
+        "报文解析"
+    ],
+    "homepage": "https://github.com/jihuaib/mini-tools#readme",
+    "bugs": {
+        "url": "https://github.com/jihuaib/mini-tools/issues"
+    },
     "license": "MIT",
     "author": {
         "name": "jihuaibin",
-        "email": "jihuaib@163.com"
+        "email": "jihuaib@163.com",
+        "url": "https://github.com/jihuaib"
     },
-    "repository": "https://github.com/jihuaib/mini-tools",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jihuaib/mini-tools.git"
+    },
     "scripts": {
         "build": "vite build",
         "start": "vite",
