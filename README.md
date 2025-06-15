@@ -200,6 +200,7 @@ mini-tools/
 - **Q: 打包后应用无法启动怎么办?**
   A: 检查日志文件，确保所有依赖正确安装，并尝试重新运行 `npm install` 后再次打包。
 
-## 许可证
 
-MIT License
+## License
+
+MIT © 2025 huaibin ji

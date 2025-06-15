@@ -4,6 +4,7 @@
     "version": "3.0.4",
     "main": "electron/main.js",
     "description": "MiniTools using Vue3 + Ant Design Vue + Electron",
+    "license": "MIT",
     "author": {
         "name": "jihuaibin",
         "email": "jihuaib@163.com"
