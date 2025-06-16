@@ -1,134 +1,145 @@
 <template>
-    <a-card title="报文解析器" class="packet-parser-card">
-        <div class="packet-parser-container">
-            <!-- 表单区域（放在最上面） -->
-            <div class="parser-form-section">
-                <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleParsePacket">
-                    <!-- 左右布局的表单容器 -->
-                    <div class="form-row-container">
-                        <!-- 左侧表单项 -->
-                        <div class="form-column left-column">
-                            <!-- 解析起始层 -->
-                            <a-form-item label="解析起始层" name="startLayer">
-                                <a-select v-model:value="formState.startLayer">
-                                    <a-select-option :value="START_LAYER.L2">数据链路层</a-select-option>
-                                    <a-select-option :value="START_LAYER.L3">网络层</a-select-option>
-                                    <a-select-option :value="START_LAYER.L5">应用层</a-select-option>
-                                </a-select>
-                            </a-form-item>
+    <div class="mt-container">
+        <a-card title="报文解析器">
+            <div class="packet-parser-container">
+                <!-- 表单区域（放在最上面） -->
+                <div class="parser-form-section">
+                    <a-form
+                        :model="formState"
+                        :label-col="labelCol"
+                        :wrapper-col="wrapperCol"
+                        @finish="handleParsePacket"
+                    >
+                        <!-- 左右布局的表单容器 -->
+                        <div class="form-row-container">
+                            <!-- 左侧表单项 -->
+                            <div class="form-column left-column">
+                                <!-- 解析起始层 -->
+                                <a-form-item label="解析起始层" name="startLayer">
+                                    <a-select v-model:value="formState.startLayer">
+                                        <a-select-option :value="START_LAYER.L2">数据链路层</a-select-option>
+                                        <a-select-option :value="START_LAYER.L3">网络层</a-select-option>
+                                        <a-select-option :value="START_LAYER.L5">应用层</a-select-option>
+                                    </a-select>
+                                </a-form-item>
 
-                            <!-- 报文类型选择 -->
-                            <a-form-item label="应用协议类型" name="protocolType">
-                                <a-select v-model:value="formState.protocolType">
-                                    <a-select-option :value="PROTOCOL_TYPE.AUTO">自动识别</a-select-option>
-                                    <a-select-option :value="PROTOCOL_TYPE.BGP">BGP</a-select-option>
-                                    <!-- 预留其他报文类型 -->
-                                </a-select>
-                            </a-form-item>
+                                <!-- 报文类型选择 -->
+                                <a-form-item label="应用协议类型" name="protocolType">
+                                    <a-select v-model:value="formState.protocolType">
+                                        <a-select-option :value="PROTOCOL_TYPE.AUTO">自动识别</a-select-option>
+                                        <a-select-option :value="PROTOCOL_TYPE.BGP">BGP</a-select-option>
+                                        <!-- 预留其他报文类型 -->
+                                    </a-select>
+                                </a-form-item>
 
-                            <!-- 协议端口输入 -->
-                            <a-form-item label="应用协议端口" name="protocolPort">
-                                <a-tooltip
-                                    :title="validationErrors.protocolPort"
-                                    :open="!!validationErrors.protocolPort"
-                                >
-                                    <div class="port-filter-container">
-                                        <a-input
-                                            v-model:value="formState.protocolPort"
-                                            :status="validationErrors.protocolPort ? 'error' : ''"
+                                <!-- 协议端口输入 -->
+                                <a-form-item label="应用协议端口" name="protocolPort">
+                                    <a-tooltip
+                                        :title="validationErrors.protocolPort"
+                                        :open="!!validationErrors.protocolPort"
+                                    >
+                                        <div class="port-filter-container">
+                                            <a-input
+                                                v-model:value="formState.protocolPort"
+                                                :status="validationErrors.protocolPort ? 'error' : ''"
+                                                @blur="
+                                                    e =>
+                                                        validateField(
+                                                            e.target.value,
+                                                            'protocolPort',
+                                                            validateInputProtocolPort
+                                                        )
+                                                "
+                                            />
+                                        </div>
+                                    </a-tooltip>
+                                </a-form-item>
+                            </div>
+
+                            <!-- 右侧表单项 -->
+                            <div class="form-column right-column">
+                                <!-- 报文输入框 -->
+                                <a-form-item label="报文数据" name="packetData">
+                                    <a-tooltip
+                                        :title="validationErrors.packetData"
+                                        :open="!!validationErrors.packetData"
+                                    >
+                                        <ScrollTextarea
+                                            v-model:modelValue="formState.packetData"
+                                            :height="130"
+                                            placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
+                                            :status="validationErrors.packetData ? 'error' : ''"
                                             @blur="
                                                 e =>
-                                                    validateField(
-                                                        e.target.value,
-                                                        'protocolPort',
-                                                        validateInputProtocolPort
-                                                    )
+                                                    validateField(e.target.value, 'packetData', validateInputPacketData)
                                             "
                                         />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </div>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <a-form-item :wrapper-col="{ span: 24 }">
+                            <div class="form-buttons">
+                                <a-button type="primary" html-type="submit">解析报文</a-button>
+                                <a-button type="default" @click="showParseHistory">识别历史</a-button>
+                            </div>
+                        </a-form-item>
+                    </a-form>
+                </div>
+
+                <!-- 结果显示区域（十六进制和树结构左右排列） -->
+                <div v-if="parsedResult" class="parser-result-section">
+                    <!-- 十六进制视图 -->
+                    <a-card title="报文十六进制视图" class="result-card hex-view-card">
+                        <div ref="hexViewRef" class="hex-content">
+                            <div v-for="(row, rowIndex) in hexRows" :key="rowIndex" class="hex-data-row">
+                                <div class="offset-col">{{ formatOffset(rowIndex * 16) }}</div>
+                                <div class="hex-col">
+                                    <div
+                                        v-for="(byte, byteIndex) in row"
+                                        :key="byteIndex"
+                                        :class="getByteCellClass(rowIndex * 16 + byteIndex)"
+                                        @click="onByteClick(rowIndex * 16 + byteIndex)"
+                                    >
+                                        {{ byte }}
                                     </div>
-                                </a-tooltip>
-                            </a-form-item>
-                        </div>
-
-                        <!-- 右侧表单项 -->
-                        <div class="form-column right-column">
-                            <!-- 报文输入框 -->
-                            <a-form-item label="报文数据" name="packetData">
-                                <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
-                                    <ScrollTextarea
-                                        v-model:modelValue="formState.packetData"
-                                        :height="130"
-                                        placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
-                                        :status="validationErrors.packetData ? 'error' : ''"
-                                        @blur="
-                                            e => validateField(e.target.value, 'packetData', validateInputPacketData)
-                                        "
-                                    />
-                                </a-tooltip>
-                            </a-form-item>
-                        </div>
-                    </div>
-
-                    <!-- 操作按钮 -->
-                    <a-form-item :wrapper-col="{ span: 24 }">
-                        <div class="form-buttons">
-                            <a-button type="primary" html-type="submit">解析报文</a-button>
-                            <a-button type="default" @click="showParseHistory">识别历史</a-button>
-                        </div>
-                    </a-form-item>
-                </a-form>
-            </div>
-
-            <!-- 结果显示区域（十六进制和树结构左右排列） -->
-            <div v-if="parsedResult" class="parser-result-section">
-                <!-- 十六进制视图 -->
-                <a-card title="报文十六进制视图" class="result-card hex-view-card">
-                    <div ref="hexViewRef" class="hex-content">
-                        <div v-for="(row, rowIndex) in hexRows" :key="rowIndex" class="hex-data-row">
-                            <div class="offset-col">{{ formatOffset(rowIndex * 16) }}</div>
-                            <div class="hex-col">
-                                <div
-                                    v-for="(byte, byteIndex) in row"
-                                    :key="byteIndex"
-                                    :class="getByteCellClass(rowIndex * 16 + byteIndex)"
-                                    @click="onByteClick(rowIndex * 16 + byteIndex)"
-                                >
-                                    {{ byte }}
                                 </div>
-                            </div>
-                            <div class="ascii-col">
-                                <div
-                                    v-for="(byte, byteIndex) in row"
-                                    :key="byteIndex"
-                                    :class="getAsciiCellClass(rowIndex * 16 + byteIndex)"
-                                    @click="onByteClick(rowIndex * 16 + byteIndex)"
-                                >
-                                    {{ formatAscii(byte) }}
+                                <div class="ascii-col">
+                                    <div
+                                        v-for="(byte, byteIndex) in row"
+                                        :key="byteIndex"
+                                        :class="getAsciiCellClass(rowIndex * 16 + byteIndex)"
+                                        @click="onByteClick(rowIndex * 16 + byteIndex)"
+                                    >
+                                        {{ formatAscii(byte) }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </a-card>
+                    </a-card>
 
-                <!-- 结构树视图 -->
-                <a-card title="报文结构树" class="result-card tree-view-card">
-                    <a-tree
-                        v-if="parsedTreeData.length > 0"
-                        ref="treeRef"
-                        v-model:selectedKeys="treeSelectedKeys"
-                        :tree-data="parsedTreeData"
-                        :default-expand-all="true"
-                        :height="310"
-                        @select="onTreeNodeSelect"
-                    />
-                    <div v-else class="no-data-message">暂无解析数据</div>
-                </a-card>
+                    <!-- 结构树视图 -->
+                    <a-card title="报文结构树" class="result-card tree-view-card">
+                        <a-tree
+                            v-if="parsedTreeData.length > 0"
+                            ref="treeRef"
+                            v-model:selectedKeys="treeSelectedKeys"
+                            :tree-data="parsedTreeData"
+                            :default-expand-all="true"
+                            :height="310"
+                            @select="onTreeNodeSelect"
+                        />
+                        <div v-else class="no-data-message">暂无解析数据</div>
+                    </a-card>
+                </div>
+                <div v-else class="no-result-message">
+                    <a-empty description="请输入报文数据并点击解析报文按钮开始解析" />
+                </div>
             </div>
-            <div v-else class="no-result-message">
-                <a-empty description="请输入报文数据并点击解析报文按钮开始解析" />
-            </div>
-        </div>
-    </a-card>
+        </a-card>
+    </div>
 
     <!-- 解析历史弹窗 -->
     <a-modal
@@ -662,28 +673,6 @@
         width: 50%;
     }
 
-    :deep(.ant-card-body) {
-        padding: 12px;
-        flex: 1;
-        overflow: auto;
-        height: calc(100% - 56px);
-        display: flex;
-        flex-direction: column;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 12px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 16px;
-    }
-
     .form-buttons {
         display: flex;
         justify-content: center;
@@ -841,28 +830,8 @@
         background-color: #f5f5f5;
     }
 
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 200px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

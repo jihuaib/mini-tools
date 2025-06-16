@@ -1,6 +1,6 @@
 <template>
-    <div class="route-config-container">
-        <a-card title="BGP路由配置" class="route-config-card">
+    <div class="mt-container">
+        <a-card title="BGP路由配置">
             <a-tabs>
                 <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
                     <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
@@ -648,61 +648,6 @@
 </script>
 
 <style scoped>
-    .route-config-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    .route-config-card {
-        margin-top: 10px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    .error-message {
-        display: none;
-    }
-
-    :deep(.ant-input-status-error) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:hover) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:focus) {
-        border-color: #ff4d4f;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
-
-    :deep(.ant-tooltip) {
-        z-index: 1000;
-    }
-
-    :deep(.ant-tooltip-inner) {
-        background-color: #ff4d4f;
-        color: white;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
     /* 路由列表样式 */
     .route-list-section {
         margin-top: 16px;
@@ -721,10 +666,5 @@
     .header-text {
         margin-right: 8px;
         font-weight: 500;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

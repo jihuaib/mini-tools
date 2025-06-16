@@ -1,5 +1,5 @@
 <template>
-    <div class="rpki-roa-config-container">
+    <div class="mt-container">
         <a-row>
             <a-col :span="24">
                 <a-card title="RPKI ROA配置">
@@ -349,79 +349,8 @@
 </script>
 
 <style scoped>
-    .rpki-roa-config-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    .error-message {
-        display: none;
-    }
-
-    :deep(.ant-input-status-error) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:hover) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:focus) {
-        border-color: #ff4d4f;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
-
-    :deep(.ant-tooltip) {
-        z-index: 1000;
-    }
-
-    :deep(.ant-tooltip-inner) {
-        background-color: #ff4d4f;
-        color: white;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

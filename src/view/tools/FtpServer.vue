@@ -1,5 +1,5 @@
 <template>
-    <div class="ftp-server-container">
+    <div class="mt-container">
         <a-row>
             <a-col :span="24">
                 <a-card title="FTP服务器配置">
@@ -505,51 +505,13 @@
 </script>
 
 <style scoped>
-    .ftp-server-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
     :deep(.ant-form-item) {
         margin-bottom: 8px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 
     /* 用户列表样式 */

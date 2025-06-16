@@ -4,7 +4,6 @@ about: 为这个项目建议一个想法
 title: '[FEATURE] '
 labels: enhancement
 assignees: jihuaib
-
 ---
 
 **你的功能请求是否与问题相关？请描述。**
@@ -18,6 +17,7 @@ assignees: jihuaib
 
 **相关工具模块**
 请勾选相关的工具模块：
+
 - [ ] BGP 模拟器
 - [ ] BMP 监控器
 - [ ] RPKI 验证器

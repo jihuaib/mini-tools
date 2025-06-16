@@ -1,5 +1,5 @@
 <template>
-    <div class="bgp-main-container">
+    <div class="mt-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
             <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
@@ -48,24 +48,4 @@
     });
 </script>
 
-<style scoped>
-    .bgp-main-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh; /* 确保撑满屏幕 */
-        overflow: hidden;
-    }
-
-    .fixed-tabs {
-        height: 48px; /* 你实际 Tab 高度 */
-        flex-shrink: 0;
-        background-color: #fff;
-        z-index: 10;
-        margin-left: 8px;
-    }
-
-    .content-container {
-        flex: 1;
-        overflow-y: auto;
-    }
-</style>
+<style scoped></style>

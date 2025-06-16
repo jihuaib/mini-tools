@@ -1,69 +1,71 @@
 <template>
-    <a-card title="字符串生成配置" class="string-generator-card">
-        <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
-            <!-- 字符串模板输入 -->
-            <a-form-item label="字符串模板" name="template">
-                <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
-                    <ScrollTextarea
-                        v-model:modelValue="formState.template"
-                        :height="120"
-                        :status="validationErrors.template ? 'error' : ''"
-                        @blur="e => validateField(e.target.value, 'template', validateTemplate)"
-                    />
-                </a-tooltip>
-            </a-form-item>
+    <div class="mt-container">
+        <a-card title="字符串生成配置" class="string-generator-card">
+            <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
+                <!-- 字符串模板输入 -->
+                <a-form-item label="字符串模板" name="template">
+                    <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
+                        <ScrollTextarea
+                            v-model:modelValue="formState.template"
+                            :height="120"
+                            :status="validationErrors.template ? 'error' : ''"
+                            @blur="e => validateField(e.target.value, 'template', validateTemplate)"
+                        />
+                    </a-tooltip>
+                </a-form-item>
 
-            <!-- 参数配置行 -->
-            <a-row>
-                <a-col :span="8">
-                    <a-form-item label="占位符" name="placeholder">
-                        <a-tooltip :title="validationErrors.placeholder" :open="!!validationErrors.placeholder">
-                            <a-input
-                                v-model:value="formState.placeholder"
-                                :status="validationErrors.placeholder ? 'error' : ''"
-                                @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                    <a-form-item label="开始" name="start">
-                        <a-tooltip :title="validationErrors.start" :open="!!validationErrors.start">
-                            <a-input
-                                v-model:value="formState.start"
-                                :status="validationErrors.start ? 'error' : ''"
-                                @blur="e => validateField(e.target.value, 'start', validateStart)"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                    <a-form-item label="结束" name="end">
-                        <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
-                            <a-input
-                                v-model:value="formState.end"
-                                :status="validationErrors.end ? 'error' : ''"
-                                @blur="e => validateField(e.target.value, 'end', validateEnd)"
-                            />
-                        </a-tooltip>
-                    </a-form-item>
-                </a-col>
-            </a-row>
+                <!-- 参数配置行 -->
+                <a-row>
+                    <a-col :span="8">
+                        <a-form-item label="占位符" name="placeholder">
+                            <a-tooltip :title="validationErrors.placeholder" :open="!!validationErrors.placeholder">
+                                <a-input
+                                    v-model:value="formState.placeholder"
+                                    :status="validationErrors.placeholder ? 'error' : ''"
+                                    @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="开始" name="start">
+                            <a-tooltip :title="validationErrors.start" :open="!!validationErrors.start">
+                                <a-input
+                                    v-model:value="formState.start"
+                                    :status="validationErrors.start ? 'error' : ''"
+                                    @blur="e => validateField(e.target.value, 'start', validateStart)"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="结束" name="end">
+                            <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
+                                <a-input
+                                    v-model:value="formState.end"
+                                    :status="validationErrors.end ? 'error' : ''"
+                                    @blur="e => validateField(e.target.value, 'end', validateEnd)"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
 
-            <!-- 操作按钮 -->
-            <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-space>
-                    <a-button type="primary" html-type="submit">立即生成</a-button>
-                    <a-button type="default" @click="showGenerateHistory">生成历史</a-button>
-                </a-space>
-            </a-form-item>
+                <!-- 操作按钮 -->
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-space>
+                        <a-button type="primary" html-type="submit">立即生成</a-button>
+                        <a-button type="default" @click="showGenerateHistory">生成历史</a-button>
+                    </a-space>
+                </a-form-item>
 
-            <!-- 结果显示 -->
-            <a-form-item label="生成结果">
-                <ScrollTextarea v-model:modelValue="result" :height="400" />
-            </a-form-item>
-        </a-form>
-    </a-card>
+                <!-- 结果显示 -->
+                <a-form-item label="生成结果">
+                    <ScrollTextarea v-model:modelValue="result" :height="400" />
+                </a-form-item>
+            </a-form>
+        </a-card>
+    </div>
 
     <!-- 生成历史弹窗 -->
     <a-modal
@@ -262,28 +264,6 @@
 </script>
 
 <style scoped>
-    .string-generator-card {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 10px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
     /* 历史记录样式 */
     .history-modal-content {
         max-height: 400px;
@@ -303,28 +283,8 @@
         background-color: #f5f5f5;
     }
 
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 200px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

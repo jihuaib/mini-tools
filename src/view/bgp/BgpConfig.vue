@@ -1,5 +1,5 @@
 <template>
-    <div class="bgp-config-container">
+    <div class="mt-container">
         <a-form :model="bgpConfigData" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="startBgp">
             <a-card title="BGP配置">
                 <a-row>
@@ -59,7 +59,7 @@
             </a-card>
         </a-form>
 
-        <a-card title="邻居配置" class="route-config-card">
+        <a-card title="邻居配置" class="mt-margin-top-10">
             <a-tabs v-model:activeKey="activeTabKey">
                 <a-tab-pane :key="IP_TYPE.IPV4" tab="IPv4邻居">
                     <a-form
@@ -753,99 +753,4 @@
     };
 </script>
 
-<style scoped>
-    .bgp-config-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-input[disabled]) {
-        background-color: #f5f5f5;
-        color: rgba(0, 0, 0, 0.85);
-    }
-
-    :deep(.ant-select-disabled .ant-select-selector) {
-        background-color: #f5f5f5;
-        color: rgba(0, 0, 0, 0.85);
-    }
-
-    /* 增强禁用复选框的可见度 */
-    :deep(.ant-checkbox-disabled + span) {
-        color: rgba(0, 0, 0, 0.85) !important;
-    }
-
-    :deep(.ant-checkbox-disabled .ant-checkbox-inner) {
-        background-color: #e6e6e6 !important;
-        border-color: #d9d9d9 !important;
-    }
-
-    .route-config-card {
-        margin-top: 10px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    .error-message {
-        display: none;
-    }
-
-    :deep(.ant-input-status-error) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:hover) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:focus) {
-        border-color: #ff4d4f;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
-
-    :deep(.ant-tooltip) {
-        z-index: 1000;
-    }
-
-    :deep(.ant-tooltip-inner) {
-        background-color: #ff4d4f;
-        color: white;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    :deep(.ant-table-body) {
-        height: 200px !important;
-        overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-</style>
+<style scoped></style>
