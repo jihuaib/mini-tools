@@ -11,7 +11,6 @@
                                         <a-input
                                             v-model:value="rpkiConfig.port"
                                             :status="validationErrors.port ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -77,11 +76,9 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
+    import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validatePort } from '../../utils/rpkiValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
-    import { debounce } from 'lodash-es';
+    import { FormValidator, createRpkiConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES } from '../../const/rpkiConst';
 
     defineOptions({
@@ -131,53 +128,21 @@
         }
     ];
 
-    const saveDebounced = debounce(async data => {
-        const result = await window.rpkiApi.saveRpkiConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg || '配置文件保存失败');
-        }
-    }, 300);
-
     const validationErrors = ref({
         port: ''
     });
 
+    let validator = new FormValidator(validationErrors);
+    validator.addRules(createRpkiConfigValidationRules());
+
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            if (validator) {
+                validator.clearErrors();
+            }
         }
     });
-
-    const validateField = (value, fieldName, validationFn) => {
-        validationFn(value, validationErrors);
-    };
-
-    const mounted = ref(false);
-
-    watch(
-        rpkiConfig,
-        newRpkiConfig => {
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(validationErrors);
-                validatePort(newRpkiConfig.port, validationErrors);
-
-                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newRpkiConfig);
-                saveDebounced(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true }
-    );
 
     // Details drawer
     const detailsDrawerVisible = ref(false);
@@ -185,18 +150,22 @@
     const currentDetails = ref(null);
 
     const startRpki = async () => {
-        clearValidationErrors(validationErrors);
-        validatePort(rpkiConfig.value.port, validationErrors);
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
+        const hasErrors = validator.validate(rpkiConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
             return;
         }
 
-        serverLoading.value = true;
         try {
             const payload = JSON.parse(JSON.stringify(rpkiConfig.value));
+            const saveResult = await window.rpkiApi.saveRpkiConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            serverLoading.value = true;
+
             const result = await window.rpkiApi.startRpki(payload);
             if (result.status === 'success') {
                 serverRunning.value = true;
@@ -263,8 +232,6 @@
     };
 
     onMounted(async () => {
-        mounted.value = true;
-
         try {
             // 加载配置
             const result = await window.rpkiApi.loadRpkiConfig();

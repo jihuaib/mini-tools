@@ -102,7 +102,6 @@
     import CodeEditor from '../../components/CodeEditor.vue';
     import { ref, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'Formatter'
@@ -110,18 +109,6 @@
 
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
-
-    const validationErrors = ref({
-        content: ''
-    });
-
-    // 暴露清空验证错误的方法给父组件
-    defineExpose({
-        clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
-            clearErrors();
-        }
-    });
 
     const formState = ref({
         type: 'json',
@@ -144,7 +131,6 @@
     const clearErrors = () => {
         errorMessage.value = '';
         lineErrors.value = [];
-        clearValidationErrors(validationErrors);
     };
 
     // 清空所有内容

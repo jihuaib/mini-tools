@@ -13,7 +13,6 @@
                                     v-model:value="bgpConfigData.localAs"
                                     :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.localAs ? 'error' : ''"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'localAs', validateLocalAs)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -28,7 +27,6 @@
                                     v-model:value="bgpConfigData.routerId"
                                     :disabled="bgpRunning"
                                     :status="bgpConfigvalidationErrors.routerId ? 'error' : ''"
-                                    @blur="e => validateBgpConfigField(e.target.value, 'routerId', validateRouterId)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -78,14 +76,6 @@
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerIp"
                                             :status="ipv4PeerConfigvalidationErrors.peerIp ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv4PeerConfigField(
-                                                        e.target.value,
-                                                        'peerIp',
-                                                        validatePeerIp
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -99,14 +89,6 @@
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.peerAs"
                                             :status="ipv4PeerConfigvalidationErrors.peerAs ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv4PeerConfigField(
-                                                        e.target.value,
-                                                        'peerAs',
-                                                        validatePeerAs
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -123,14 +105,6 @@
                                         <a-input
                                             v-model:value="ipv4PeerConfigData.holdTime"
                                             :status="ipv4PeerConfigvalidationErrors.holdTime ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv4PeerConfigField(
-                                                        e.target.value,
-                                                        'holdTime',
-                                                        validateHoldTime
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -207,14 +181,6 @@
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6"
                                             :status="ipv6PeerConfigvalidationErrors.peerIpv6 ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv6PeerConfigField(
-                                                        e.target.value,
-                                                        'peerIpv6',
-                                                        validatePeerIpv6
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -228,14 +194,6 @@
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.peerIpv6As"
                                             :status="ipv6PeerConfigvalidationErrors.peerIpv6As ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv6PeerConfigField(
-                                                        e.target.value,
-                                                        'peerIpv6As',
-                                                        validatePeerAs
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -252,14 +210,6 @@
                                         <a-input
                                             v-model:value="ipv6PeerConfigData.holdTimeIpv6"
                                             :status="ipv6PeerConfigvalidationErrors.holdTimeIpv6 ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv6PeerConfigField(
-                                                        e.target.value,
-                                                        'holdTimeIpv6',
-                                                        validateHoldTime
-                                                    )
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -336,21 +286,17 @@
 </template>
 
 <script setup>
-    import { onMounted, ref, toRaw, watch } from 'vue';
+    import { onMounted, ref, watch } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import { message } from 'ant-design-vue';
-    import { debounce } from 'lodash-es';
     import { SettingOutlined } from '@ant-design/icons-vue';
     import { BGP_OPEN_CAP_CODE, BGP_ROLE_TYPE, BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
-        validateLocalAs,
-        validatePeerIp,
-        validatePeerIpv6,
-        validatePeerAs,
-        validateRouterId,
-        validateHoldTime
-    } from '../../utils/bgpValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
+        FormValidator,
+        createBgpConfigValidationRules,
+        createBgpPeerIpv4ConfigValidationRules,
+        createBgpPeerIpv6ConfigValidationRules
+    } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'BgpConfig'
@@ -425,27 +371,6 @@
         openCapCustomIpv6: ''
     });
 
-    const saveBgpConfig = debounce(async data => {
-        const result = await window.bgpApi.saveBgpConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg);
-        }
-    }, 300);
-
-    const saveIpv4PeerConfig = debounce(async data => {
-        const result = await window.bgpApi.saveIpv4PeerConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg);
-        }
-    }, 300);
-
-    const saveIpv6PeerConfig = debounce(async data => {
-        const result = await window.bgpApi.saveIpv6PeerConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg);
-        }
-    }, 300);
-
     const bgpConfigvalidationErrors = ref({
         localAs: '',
         routerId: ''
@@ -463,95 +388,44 @@
         holdTimeIpv6: ''
     });
 
-    // 暴露清空验证错误的方法给父组件
-    defineExpose({
-        clearValidationErrors: () => {
-            clearValidationErrors(bgpConfigvalidationErrors);
-            clearValidationErrors(ipv4PeerConfigvalidationErrors);
-            clearValidationErrors(ipv6PeerConfigvalidationErrors);
+    let bgpValidator = new FormValidator(bgpConfigvalidationErrors);
+    bgpValidator.addRules(createBgpConfigValidationRules());
+
+    let ipv4PeerValidator = new FormValidator(ipv4PeerConfigvalidationErrors);
+    ipv4PeerValidator.addRules(createBgpPeerIpv4ConfigValidationRules());
+
+    let ipv6PeerValidator = new FormValidator(ipv6PeerConfigvalidationErrors);
+    ipv6PeerValidator.addRules(createBgpPeerIpv6ConfigValidationRules());
+
+    watch(activeTabKey, () => {
+        if (bgpValidator) {
+            bgpValidator.clearErrors();
+        }
+        if (ipv4PeerValidator) {
+            ipv4PeerValidator.clearErrors();
+        }
+        if (ipv6PeerValidator) {
+            ipv6PeerValidator.clearErrors();
         }
     });
 
-    const validateBgpConfigField = (value, fieldName, validationFn) => {
-        validationFn(value, bgpConfigvalidationErrors);
-    };
+    // 暴露清空验证错误的方法给父组件
+    defineExpose({
+        clearValidationErrors: () => {
+            if (bgpValidator) {
+                bgpValidator.clearErrors();
+            }
+            if (ipv4PeerValidator) {
+                ipv4PeerValidator.clearErrors();
+            }
+            if (ipv6PeerValidator) {
+                ipv6PeerValidator.clearErrors();
+            }
+        }
+    });
 
-    const validateIpv4PeerConfigField = (value, fieldName, validationFn) => {
-        validationFn(value, ipv4PeerConfigvalidationErrors);
-    };
-
-    const validateIpv6PeerConfigField = (value, fieldName, validationFn) => {
-        validationFn(value, ipv6PeerConfigvalidationErrors);
-    };
-
-    const mounted = ref(false);
     const bgpLoading = ref(false);
     const bgpRunning = ref(false);
-
-    watch(
-        bgpConfigData,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            clearValidationErrors(bgpConfigvalidationErrors);
-            validateLocalAs(newValue.localAs, bgpConfigvalidationErrors);
-            validateRouterId(newValue.routerId, bgpConfigvalidationErrors);
-
-            const hasErrors = Object.values(bgpConfigvalidationErrors.value).some(error => error !== '');
-            if (hasErrors) {
-                return;
-            }
-
-            const raw = toRaw(newValue);
-            saveBgpConfig(raw);
-        },
-        { deep: true }
-    );
-
-    watch(
-        ipv4PeerConfigData,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            clearValidationErrors(ipv4PeerConfigvalidationErrors);
-            validatePeerIp(newValue.peerIp, ipv4PeerConfigvalidationErrors);
-            validatePeerAs(newValue.peerAs, ipv4PeerConfigvalidationErrors);
-            validateHoldTime(newValue.holdTime, ipv4PeerConfigvalidationErrors);
-
-            const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
-            if (hasErrors) {
-                return;
-            }
-
-            const raw = toRaw(newValue);
-            saveIpv4PeerConfig(raw);
-        },
-        { deep: true }
-    );
-
-    watch(
-        ipv6PeerConfigData,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            clearValidationErrors(ipv6PeerConfigvalidationErrors);
-            validatePeerIpv6(newValue.peerIpv6, ipv6PeerConfigvalidationErrors);
-            validatePeerAs(newValue.peerIpv6As, ipv6PeerConfigvalidationErrors);
-            validateHoldTime(newValue.holdTimeIpv6, ipv6PeerConfigvalidationErrors);
-
-            const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
-            if (hasErrors) {
-                return;
-            }
-
-            const raw = toRaw(newValue);
-            saveIpv6PeerConfig(raw);
-        },
-        { deep: true }
-    );
 
     onMounted(async () => {
         // 加载Bgp保存的配置
@@ -603,9 +477,6 @@
         } else {
             console.error('IPv6 Peer 配置文件加载失败', savedIpv6PeerConfig.msg);
         }
-
-        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
-        mounted.value = true;
     });
 
     const customOpenCapVisible = ref(false);
@@ -655,26 +526,23 @@
     );
 
     const startBgp = async () => {
-        clearValidationErrors(bgpConfigvalidationErrors);
-        validateLocalAs(bgpConfigData.value.localAs, bgpConfigvalidationErrors);
-        validatePeerIp(bgpConfigData.value.routerId, bgpConfigvalidationErrors);
-
-        const hasErrors = Object.values(bgpConfigvalidationErrors.value).some(error => error !== '');
+        const hasErrors = bgpValidator.validate(bgpConfigData.value);
         if (hasErrors) {
             message.error('请检查BGP配置信息是否正确');
             return;
         }
 
-        if (!bgpConfigData.value.addressFamily || bgpConfigData.value.addressFamily.length === 0) {
-            message.error('请至少选择一个地址族');
-            return;
-        }
-
-        bgpLoading.value = true;
-        bgpRunning.value = false;
-
         try {
             const payload = JSON.parse(JSON.stringify(bgpConfigData.value));
+            const saveResult = await window.bgpApi.saveBgpConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            bgpLoading.value = true;
+            bgpRunning.value = false;
+
             const result = await window.bgpApi.startBgp(payload);
             if (result.status === 'success') {
                 if (result.msg !== '') {
@@ -693,12 +561,7 @@
     };
 
     const configIpv4Peer = async () => {
-        clearValidationErrors(ipv4PeerConfigvalidationErrors);
-        validatePeerIp(ipv4PeerConfigData.value.peerIp, ipv4PeerConfigvalidationErrors);
-        validatePeerAs(ipv4PeerConfigData.value.peerAs, ipv4PeerConfigvalidationErrors);
-        validateHoldTime(ipv4PeerConfigData.value.holdTime, ipv4PeerConfigvalidationErrors);
-
-        const hasErrors = Object.values(ipv4PeerConfigvalidationErrors.value).some(error => error !== '');
+        const hasErrors = ipv4PeerValidator.validate(ipv4PeerConfigData.value);
         if (hasErrors) {
             message.error('请检查IPv4 Peer配置信息是否正确');
             return;
@@ -706,6 +569,12 @@
 
         try {
             const payload = JSON.parse(JSON.stringify(ipv4PeerConfigData.value));
+            const saveResult = await window.bgpApi.saveIpv4PeerConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             const result = await window.bgpApi.configIpv4Peer(payload);
             if (result.status === 'success') {
                 message.success(result.msg);
@@ -718,12 +587,7 @@
     };
 
     const configIpv6Peer = async () => {
-        clearValidationErrors(ipv6PeerConfigvalidationErrors);
-        validatePeerIpv6(ipv6PeerConfigData.value.peerIpv6, ipv6PeerConfigvalidationErrors);
-        validatePeerAs(ipv6PeerConfigData.value.peerIpv6As, ipv6PeerConfigvalidationErrors);
-        validateHoldTime(ipv6PeerConfigData.value.holdTimeIpv6, ipv6PeerConfigvalidationErrors);
-
-        const hasErrors = Object.values(ipv6PeerConfigvalidationErrors.value).some(error => error !== '');
+        const hasErrors = ipv6PeerValidator.validate(ipv6PeerConfigData.value);
         if (hasErrors) {
             message.error('请检查IPv6 Peer配置信息是否正确');
             return;
@@ -731,6 +595,12 @@
 
         try {
             const payload = JSON.parse(JSON.stringify(ipv6PeerConfigData.value));
+            const saveResult = await window.bgpApi.saveIpv6PeerConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             const result = await window.bgpApi.configIpv6Peer(payload);
             if (result.status === 'success') {
                 message.success(result.msg);

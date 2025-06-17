@@ -106,6 +106,12 @@ class BmpApp {
             logger.info(`bmp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
+            this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            await this.worker.terminate();
+            this.worker = null;
             logger.error('Error starting BMP:', error.message);
             return errorResponse(error.message);
         }

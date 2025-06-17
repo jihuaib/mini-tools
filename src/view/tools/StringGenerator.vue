@@ -9,7 +9,6 @@
                             v-model:modelValue="formState.template"
                             :height="120"
                             :status="validationErrors.template ? 'error' : ''"
-                            @blur="e => validateField(e.target.value, 'template', validateTemplate)"
                         />
                     </a-tooltip>
                 </a-form-item>
@@ -22,7 +21,6 @@
                                 <a-input
                                     v-model:value="formState.placeholder"
                                     :status="validationErrors.placeholder ? 'error' : ''"
-                                    @blur="e => validateField(e.target.value, 'placeholder', validatePlaceholder)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -33,7 +31,6 @@
                                 <a-input
                                     v-model:value="formState.start"
                                     :status="validationErrors.start ? 'error' : ''"
-                                    @blur="e => validateField(e.target.value, 'start', validateStart)"
                                 />
                             </a-tooltip>
                         </a-form-item>
@@ -41,11 +38,7 @@
                     <a-col :span="8">
                         <a-form-item label="结束" name="end">
                             <a-tooltip :title="validationErrors.end" :open="!!validationErrors.end">
-                                <a-input
-                                    v-model:value="formState.end"
-                                    :status="validationErrors.end ? 'error' : ''"
-                                    @blur="e => validateField(e.target.value, 'end', validateEnd)"
-                                />
+                                <a-input v-model:value="formState.end" :status="validationErrors.end ? 'error' : ''" />
                             </a-tooltip>
                         </a-form-item>
                     </a-col>
@@ -102,10 +95,9 @@
 
 <script setup>
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
-    import { ref, toRaw, onMounted } from 'vue';
+    import { ref, toRaw } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validateTemplate, validatePlaceholder, validateStart, validateEnd } from '../../utils/toolsValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
+    import { FormValidator, createStringGeneratorValidationRules } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'StringGenerator'
@@ -121,10 +113,16 @@
         end: ''
     });
 
+    let validator = new FormValidator(validationErrors);
+    // 创建验证器实例
+    validator.addRules(createStringGeneratorValidationRules());
+
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            if (validator) {
+                validator.clearErrors();
+            }
         }
     });
 
@@ -135,30 +133,12 @@
         end: '2'
     });
 
-    const validateField = (value, field, validator) => {
-        if (field === 'end') {
-            return validator(value, formState.value.start, validationErrors);
-        } else if (field === 'start') {
-            return validator(value, formState.value.end, validationErrors);
-        } else {
-            return validator(value, validationErrors);
-        }
-    };
-
     const result = ref('');
 
     const handleFinish = async () => {
         try {
-            // Validate all fields
-            clearValidationErrors(validationErrors);
-            validateField(formState.value.template, 'template', validateTemplate);
-            validateField(formState.value.placeholder, 'placeholder', validatePlaceholder);
-            validateField(formState.value.start, 'start', validateStart);
-            validateField(formState.value.end, 'end', validateEnd);
-
-            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-            if (hasErrors) {
+            const hasError = validator.validate(formState.value);
+            if (hasError) {
                 message.error('请检查配置信息是否正确');
                 return;
             }
@@ -176,8 +156,6 @@
             console.error('生成错误:', e);
         }
     };
-
-    onMounted(async () => {});
 
     // 历史记录相关状态
     const generateHistory = ref(false);

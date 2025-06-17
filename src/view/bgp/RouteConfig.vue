@@ -1,27 +1,19 @@
 <template>
     <div class="mt-container">
         <a-card title="BGP路由配置">
-            <a-tabs>
+            <a-tabs v-model:activeKey="activeTabKey">
                 <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
                     <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
                             <a-col :span="8">
                                 <a-form-item label="Prefix" name="prefix">
                                     <a-tooltip
-                                        :title="ipv4UNCValidationErrors.ipv4Prefix"
-                                        :open="!!ipv4UNCValidationErrors.ipv4Prefix"
+                                        :title="ipv4UNCValidationErrors.prefix"
+                                        :open="!!ipv4UNCValidationErrors.prefix"
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.prefix"
-                                            :status="ipv4UNCValidationErrors.ipv4Prefix ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv4UNCField(
-                                                        e.target.value,
-                                                        'ipv4Prefix',
-                                                        validateIpv4Prefix
-                                                    )
-                                            "
+                                            :status="ipv4UNCValidationErrors.prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -29,15 +21,12 @@
                             <a-col :span="8">
                                 <a-form-item label="Mask" name="mask">
                                     <a-tooltip
-                                        :title="ipv4UNCValidationErrors.ipv4Mask"
-                                        :open="!!ipv4UNCValidationErrors.ipv4Mask"
+                                        :title="ipv4UNCValidationErrors.mask"
+                                        :open="!!ipv4UNCValidationErrors.mask"
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.mask"
-                                            :status="ipv4UNCValidationErrors.ipv4Mask ? 'error' : ''"
-                                            @blur="
-                                                e => validateIpv4UNCField(e.target.value, 'ipv4Mask', validateIpv4Mask)
-                                            "
+                                            :status="ipv4UNCValidationErrors.mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -45,16 +34,12 @@
                             <a-col :span="8">
                                 <a-form-item label="Count" name="count">
                                     <a-tooltip
-                                        :title="ipv4UNCValidationErrors.ipv4Count"
-                                        :open="!!ipv4UNCValidationErrors.ipv4Count"
+                                        :title="ipv4UNCValidationErrors.count"
+                                        :open="!!ipv4UNCValidationErrors.count"
                                     >
                                         <a-input
                                             v-model:value="ipv4Data.count"
-                                            :status="ipv4UNCValidationErrors.ipv4Count ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv4UNCField(e.target.value, 'ipv4Count', validateIpv4Count)
-                                            "
+                                            :status="ipv4UNCValidationErrors.count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -117,20 +102,12 @@
                             <a-col :span="8">
                                 <a-form-item label="Prefix" name="prefix">
                                     <a-tooltip
-                                        :title="ipv6UNCValidationErrors.ipv6Prefix"
-                                        :open="!!ipv6UNCValidationErrors.ipv6Prefix"
+                                        :title="ipv6UNCValidationErrors.prefix"
+                                        :open="!!ipv6UNCValidationErrors.prefix"
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.prefix"
-                                            :status="ipv6UNCValidationErrors.ipv6Prefix ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv6UNCField(
-                                                        e.target.value,
-                                                        'ipv6Prefix',
-                                                        validateIpv6Prefix
-                                                    )
-                                            "
+                                            :status="ipv6UNCValidationErrors.prefix ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -138,15 +115,12 @@
                             <a-col :span="8">
                                 <a-form-item label="Mask" name="mask">
                                     <a-tooltip
-                                        :title="ipv6UNCValidationErrors.ipv6Mask"
-                                        :open="!!ipv6UNCValidationErrors.ipv6Mask"
+                                        :title="ipv6UNCValidationErrors.mask"
+                                        :open="!!ipv6UNCValidationErrors.mask"
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.mask"
-                                            :status="ipv6UNCValidationErrors.ipv6Mask ? 'error' : ''"
-                                            @blur="
-                                                e => validateIpv6UNCField(e.target.value, 'ipv6Mask', validateIpv6Mask)
-                                            "
+                                            :status="ipv6UNCValidationErrors.mask ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -154,16 +128,12 @@
                             <a-col :span="8">
                                 <a-form-item label="Count" name="count">
                                     <a-tooltip
-                                        :title="ipv6UNCValidationErrors.ipv6Count"
-                                        :open="!!ipv6UNCValidationErrors.ipv6Count"
+                                        :title="ipv6UNCValidationErrors.count"
+                                        :open="!!ipv6UNCValidationErrors.count"
                                     >
                                         <a-input
                                             v-model:value="ipv6Data.count"
-                                            :status="ipv6UNCValidationErrors.ipv6Count ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateIpv6UNCField(e.target.value, 'ipv6Count', validateIpv6Count)
-                                            "
+                                            :status="ipv6UNCValidationErrors.count ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -231,21 +201,16 @@
 </template>
 
 <script setup>
-    import { onMounted, ref, toRaw, watch, computed, onActivated } from 'vue';
+    import { onMounted, ref, computed, onActivated, watch } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import { message } from 'ant-design-vue';
-    import { debounce } from 'lodash-es';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
     import {
-        validateIpv4Prefix,
-        validateIpv4Mask,
-        validateIpv4Count,
-        validateIpv6Prefix,
-        validateIpv6Mask,
-        validateIpv6Count
-    } from '../../utils/bgpValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
+        FormValidator,
+        createBgpIpv4RouteConfigValidationRules,
+        createBgpIpv6RouteConfigValidationRules
+    } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'RouteConfig'
@@ -271,53 +236,49 @@
         addressFamily: BGP_ADDR_FAMILY.IPV6_UNC
     });
 
-    const saveIpv4UNCRouteConfig = debounce(async data => {
-        const result = await window.bgpApi.saveIpv4UNCRouteConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg);
-        }
-    }, 300);
-
-    const saveIpv6UNCRouteConfig = debounce(async data => {
-        const result = await window.bgpApi.saveIpv6UNCRouteConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg);
-        }
-    }, 300);
-
     const ipv4UNCValidationErrors = ref({
-        ipv4Prefix: '',
-        ipv4Mask: '',
-        ipv4Count: ''
+        prefix: '',
+        mask: '',
+        count: ''
     });
 
     const ipv6UNCValidationErrors = ref({
-        ipv6Prefix: '',
-        ipv6Mask: '',
-        ipv6Count: ''
+        prefix: '',
+        mask: '',
+        count: ''
     });
+
+    const ipv4UNCValidator = new FormValidator(ipv4UNCValidationErrors);
+    ipv4UNCValidator.addRules(createBgpIpv4RouteConfigValidationRules());
+
+    const ipv6UNCValidator = new FormValidator(ipv6UNCValidationErrors);
+    ipv6UNCValidator.addRules(createBgpIpv6RouteConfigValidationRules());
 
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(ipv4UNCValidationErrors);
-            clearValidationErrors(ipv6UNCValidationErrors);
+            if (ipv4UNCValidator) {
+                ipv4UNCValidator.clearErrors();
+            }
+            if (ipv6UNCValidator) {
+                ipv6UNCValidator.clearErrors();
+            }
         }
     });
 
-    const validateIpv4UNCField = (value, fieldName, validationFn) => {
-        validationFn(value, ipv4UNCValidationErrors);
-    };
-
-    const validateIpv6UNCField = (value, fieldName, validationFn) => {
-        validationFn(value, ipv6UNCValidationErrors);
-    };
+    const activeTabKey = ref(BGP_ADDR_FAMILY.IPV4_UNC);
 
     const hasIpv4Routes = computed(() => sentIpv4Routes.value.length > 0);
     const hasIpv6Routes = computed(() => sentIpv6Routes.value.length > 0);
 
-    // 添加加载标记，避免在mounted前触发watch保存
-    const mounted = ref(false);
+    watch(activeTabKey, () => {
+        if (ipv4UNCValidator) {
+            ipv4UNCValidator.clearErrors();
+        }
+        if (ipv6UNCValidator) {
+            ipv6UNCValidator.clearErrors();
+        }
+    });
 
     onMounted(async () => {
         // 加载保存的IPv4-UNC路由配置
@@ -349,9 +310,6 @@
         } else {
             console.error('IPv6-UNC路由配置文件加载失败', savedIpv6UNCRouteConfig.msg);
         }
-
-        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
-        mounted.value = true;
     });
 
     const customIpv4RouteAttrVisible = ref(false);
@@ -456,21 +414,19 @@
     // IPv4路由处理
     const generateIpv4Routes = async () => {
         try {
-            const currentConfig = ipv4Data.value;
-
-            clearValidationErrors(ipv4UNCValidationErrors);
-            validateIpv4Prefix(currentConfig.prefix, ipv4UNCValidationErrors);
-            validateIpv4Mask(currentConfig.mask, ipv4UNCValidationErrors);
-            validateIpv4Count(currentConfig.count, ipv4UNCValidationErrors);
-
-            const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
-
+            const hasErrors = ipv4UNCValidator.validate(ipv4Data.value);
             if (hasErrors) {
                 message.error('请检查IPv4路由配置信息是否正确');
                 return;
             }
 
-            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const payload = JSON.parse(JSON.stringify(ipv4Data.value));
+            const saveResult = await window.bgpApi.saveIpv4UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             const result = await window.bgpApi.generateIpv4Routes(payload);
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
@@ -486,22 +442,20 @@
 
     const deleteIpv4Routes = async () => {
         try {
-            const currentConfig = ipv4Data.value;
-
-            clearValidationErrors(ipv4UNCValidationErrors);
-            validateIpv4Prefix(currentConfig.prefix, ipv4UNCValidationErrors);
-            validateIpv4Mask(currentConfig.mask, ipv4UNCValidationErrors);
-            validateIpv4Count(currentConfig.count, ipv4UNCValidationErrors);
-
-            const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
-
+            const hasErrors = ipv4UNCValidator.validate(ipv4Data.value);
             if (hasErrors) {
                 message.error('请检查IPv4路由配置信息是否正确');
                 return;
             }
 
+            const payload = JSON.parse(JSON.stringify(ipv4Data.value));
+            const saveResult = await window.bgpApi.saveIpv4UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             // 从选中的地址族移除路由
-            const payload = JSON.parse(JSON.stringify(currentConfig));
             const result = await window.bgpApi.deleteIpv4Routes(payload);
 
             if (result.status === 'success') {
@@ -519,21 +473,19 @@
     // IPv6路由处理
     const generateIpv6Routes = async () => {
         try {
-            const currentConfig = ipv6Data.value;
-
-            clearValidationErrors(ipv6UNCValidationErrors);
-            validateIpv6Prefix(currentConfig.prefix, ipv6UNCValidationErrors);
-            validateIpv6Mask(currentConfig.mask, ipv6UNCValidationErrors);
-            validateIpv6Count(currentConfig.count, ipv6UNCValidationErrors);
-
-            const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
-
+            const hasErrors = ipv6UNCValidator.validate(ipv6Data.value);
             if (hasErrors) {
                 message.error('请检查IPv6路由配置信息是否正确');
                 return;
             }
 
-            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const payload = JSON.parse(JSON.stringify(ipv6Data.value));
+            const saveResult = await window.bgpApi.saveIpv6UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             const result = await window.bgpApi.generateIpv6Routes(payload);
 
             if (result.status === 'success') {
@@ -550,21 +502,19 @@
 
     const deleteIpv6Routes = async () => {
         try {
-            const currentConfig = ipv6Data.value;
-
-            clearValidationErrors(ipv6UNCValidationErrors);
-            validateIpv6Prefix(currentConfig.prefix, ipv6UNCValidationErrors);
-            validateIpv6Mask(currentConfig.mask, ipv6UNCValidationErrors);
-            validateIpv6Count(currentConfig.count, ipv6UNCValidationErrors);
-
-            const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
-
+            const hasErrors = ipv6UNCValidator.validate(ipv6Data.value);
             if (hasErrors) {
                 message.error('请检查IPv6路由配置信息是否正确');
                 return;
             }
 
-            const payload = JSON.parse(JSON.stringify(currentConfig));
+            const payload = JSON.parse(JSON.stringify(ipv6Data.value));
+            const saveResult = await window.bgpApi.saveIpv6UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
             const result = await window.bgpApi.deleteIpv6Routes(payload);
 
             if (result.status === 'success') {
@@ -578,68 +528,6 @@
             message.error(`IPv6路由删除失败: ${e.message}`);
         }
     };
-
-    // 监听数据变化并保存配置
-    watch(
-        ipv4Data,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(ipv4UNCValidationErrors);
-
-                // 验证IPv4数据
-                validateIpv4Prefix(newValue.prefix, ipv4UNCValidationErrors);
-                validateIpv4Mask(newValue.mask, ipv4UNCValidationErrors);
-                validateIpv4Count(newValue.count, ipv4UNCValidationErrors);
-
-                // Check if there are any validation errors
-                const hasErrors = Object.values(ipv4UNCValidationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newValue);
-                saveIpv4UNCRouteConfig(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true }
-    );
-
-    // 监听数据变化并保存配置
-    watch(
-        ipv6Data,
-        newValue => {
-            // 只有在组件挂载后才保存数据
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(ipv6UNCValidationErrors);
-
-                // 验证IPv6数据
-                validateIpv6Prefix(newValue.prefix, ipv6UNCValidationErrors);
-                validateIpv6Mask(newValue.mask, ipv6UNCValidationErrors);
-                validateIpv6Count(newValue.count, ipv6UNCValidationErrors);
-
-                // Check if there are any validation errors
-                const hasErrors = Object.values(ipv6UNCValidationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newValue);
-                saveIpv6UNCRouteConfig(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true }
-    );
 
     onActivated(async () => {
         await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);

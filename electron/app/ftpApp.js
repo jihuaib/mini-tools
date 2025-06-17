@@ -136,6 +136,8 @@ class FtpApp {
             logger.info(`ftp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
+            await this.worker.terminate();
+            this.worker = null;
             logger.error('Error starting FTP:', error.message);
             return errorResponse(error.message);
         }

@@ -11,7 +11,6 @@
                                         <a-input
                                             v-model:value="bmpConfig.port"
                                             :status="validationErrors.port ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'port', validatePort)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -77,11 +76,9 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
+    import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
-    import { validatePort } from '../../utils/bmpValidation';
-    import { clearValidationErrors } from '../../utils/validationCommon';
-    import { debounce } from 'lodash-es';
+    import { FormValidator, createBmpConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES } from '../../const/bmpConst';
     defineOptions({
         name: 'BmpConfig'
@@ -141,53 +138,21 @@
         }
     ];
 
-    const saveDebounced = debounce(async data => {
-        const result = await window.bmpApi.saveBmpConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg || '配置文件保存失败');
-        }
-    }, 300);
-
     const validationErrors = ref({
         port: ''
     });
 
+    let validator = new FormValidator(validationErrors);
+    validator.addRules(createBmpConfigValidationRules());
+
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            if (validator) {
+                validator.clearErrors();
+            }
         }
     });
-
-    const validateField = (value, fieldName, validationFn) => {
-        validationFn(value, validationErrors);
-    };
-
-    const mounted = ref(false);
-
-    watch(
-        bmpConfig,
-        newBmpConfig => {
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(validationErrors);
-                validatePort(newBmpConfig.port, validationErrors);
-
-                const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newBmpConfig);
-                saveDebounced(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true }
-    );
 
     // Details drawer
     const detailsDrawerVisible = ref(false);
@@ -195,18 +160,22 @@
     const currentDetails = ref(null);
 
     const startBmp = async () => {
-        clearValidationErrors(validationErrors);
-        validatePort(bmpConfig.value.port, validationErrors);
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
+        const hasErrors = validator.validate(bmpConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
             return;
         }
 
-        serverLoading.value = true;
         try {
             const payload = JSON.parse(JSON.stringify(bmpConfig.value));
+            const saveResult = await window.bmpApi.saveBmpConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            serverLoading.value = true;
+
             const result = await window.bmpApi.startBmp(payload);
             if (result.status === 'success') {
                 serverRunning.value = true;
@@ -296,9 +265,6 @@
         } else {
             console.error('配置文件加载失败', savedConfig.msg);
         }
-
-        // 所有数据加载完成后，标记mounted为true，允许watch保存数据
-        mounted.value = true;
 
         // 注册事件监听
         window.bmpApi.onInitiation(onInitiationHandler);

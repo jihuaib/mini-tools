@@ -42,14 +42,6 @@
                                             <a-input
                                                 v-model:value="formState.protocolPort"
                                                 :status="validationErrors.protocolPort ? 'error' : ''"
-                                                @blur="
-                                                    e =>
-                                                        validateField(
-                                                            e.target.value,
-                                                            'protocolPort',
-                                                            validateInputProtocolPort
-                                                        )
-                                                "
                                             />
                                         </div>
                                     </a-tooltip>
@@ -69,10 +61,6 @@
                                             :height="130"
                                             placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
                                             :status="validationErrors.packetData ? 'error' : ''"
-                                            @blur="
-                                                e =>
-                                                    validateField(e.target.value, 'packetData', validateInputPacketData)
-                                            "
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -178,8 +166,7 @@
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
     import { ref, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { clearValidationErrors } from '../../utils/validationCommon';
-    import { validateInputPacketData, validateInputProtocolPort } from '../../utils/toolsValidation';
+    import { FormValidator, createPacketDataValidationRules } from '../../utils/validationCommon';
     import { PROTOCOL_TYPE, START_LAYER, START_LAYER_NAME, PROTOCOL_TYPE_NAME } from '../../const/toolsConst';
     defineOptions({
         name: 'PacketParser'
@@ -201,10 +188,6 @@
         protocolPort: '',
         packetData: ''
     });
-
-    const validateField = (value, field, validator) => {
-        return validator(value, validationErrors);
-    };
 
     // 解析结果
     const parsedResult = ref(null);
@@ -507,17 +490,14 @@
         }
     };
 
+    let validator = new FormValidator(validationErrors);
+    validator.addRules(createPacketDataValidationRules());
+
     // 处理解析报文，添加历史记录保存
     const handleParsePacket = async () => {
         try {
-            // 验证字段
-            clearValidationErrors(validationErrors);
-            validateField(formState.value.packetData, 'packetData', validateInputPacketData);
-            validateField(formState.value.protocolPort, 'protocolPort', validateInputProtocolPort);
-
-            const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
-
-            if (hasErrors) {
+            const hasError = validator.validate(formState.value);
+            if (hasError) {
                 message.error('请检查配置信息是否正确');
                 return;
             }
@@ -577,7 +557,9 @@
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            if (validator) {
+                validator.clearErrors();
+            }
         }
     });
 

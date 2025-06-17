@@ -271,6 +271,9 @@ class BgpApp {
             logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
+            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
+            await this.worker.terminate();
+            this.worker = null;
             logger.error('Error starting BGP:', error.message);
             return errorResponse(error.message);
         }
