@@ -24,9 +24,9 @@
 - 可视化 BGP 路由信息
 - 支持路由策略配置
 
-![BGP 配置界面](doc/images/bgp_config.png)
-![BGP 对等体信息](doc/images/bgp_peer.png)
-![BGP 路由信息](doc/images/bgp_route.png)
+![BGP 配置界面](docs/images/bgp_config.png)
+![BGP 对等体信息](docs/images/bgp_peer.png)
+![BGP 路由信息](docs/images/bgp_route.png)
 
 ### BMP 监控器
 
@@ -35,9 +35,9 @@
 - 实时查看 BMP 对等体路由信息
 - 详细的路由属性展示
 
-![BMP 配置界面](doc/images/bmp_config.png)
-![BMP 对等体信息](doc/images/bmp_peer.png)
-![BMP 路由信息](doc/images/bmp_peer_route.png)
+![BMP 配置界面](docs/images/bmp_config.png)
+![BMP 对等体信息](docs/images/bmp_peer.png)
+![BMP 路由信息](docs/images/bmp_peer_route.png)
 
 ### 报文解析器
 
@@ -46,7 +46,7 @@
 - 详细解析报文内容和属性
 - 支持常见协议格式
 
-![报文解析器界面](doc/images/packet_parser.png)
+![报文解析器界面](docs/images/packet_parser.png)
 
 ### RPKI 验证器
 
@@ -55,8 +55,8 @@
 - 实时验证路由的有效性
 - 与 BGP 路由信息集成
 
-![RPKI 配置界面](doc/images/rpki_config.png)
-![RPKI ROA 配置](doc/images/rpki_roa_config.png)
+![RPKI 配置界面](docs/images/rpki_config.png)
+![RPKI ROA 配置](docs/images/rpki_roa_config.png)
 
 ### 字符串生成器
 
@@ -65,7 +65,7 @@
 - 支持批量生成和自定义设置
 - 快速复制和导出功能
 
-![字符串生成器界面](doc/images/tools_string_generator.png)
+![字符串生成器界面](docs/images/tools_string_generator.png)
 
 ### 未来计划
 
