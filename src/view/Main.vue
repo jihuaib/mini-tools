@@ -102,8 +102,8 @@
         {
             key: 'tools',
             icon: () => h(CodeOutlined),
-            label: '工具',
-            title: '工具',
+            label: 'tools',
+            title: 'tools',
             route: '/tools'
         },
         {
