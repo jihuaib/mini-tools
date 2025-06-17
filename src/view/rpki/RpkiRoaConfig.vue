@@ -1,5 +1,5 @@
 <template>
-    <div class="rpki-roa-config-container">
+    <div class="mt-container">
         <a-row>
             <a-col :span="24">
                 <a-card title="RPKI ROA配置">
@@ -26,7 +26,6 @@
                                         <a-input
                                             v-model:value="roaConfig.ip"
                                             :status="validationErrors.ip ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'ip', validateIp)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -37,7 +36,6 @@
                                         <a-input
                                             v-model:value="roaConfig.mask"
                                             :status="validationErrors.mask ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'mask', validateMask)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -50,7 +48,6 @@
                                         <a-input
                                             v-model:value="roaConfig.asn"
                                             :status="validationErrors.asn ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'asn', validateAsn)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -63,7 +60,6 @@
                                         <a-input
                                             v-model:value="roaConfig.maxLength"
                                             :status="validationErrors.maxLength ? 'error' : ''"
-                                            @blur="e => validateField(e.target.value, 'maxLength', validateMaxLength)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -109,16 +105,7 @@
 <script setup>
     import { ref, onMounted, watch } from 'vue';
     import { message } from 'ant-design-vue';
-    import { clearValidationErrors } from '../../utils/validationCommon';
-    import {
-        validateAsn,
-        validateIpv4Prefix,
-        validateIpv6Prefix,
-        validateIpv4Mask,
-        validateIpv6Mask,
-        validateIpv4MaxLength,
-        validateIpv6MaxLength
-    } from '../../utils/rpkiValidation';
+    import { FormValidator, createRpkiRoaConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES } from '../../const/rpkiConst';
     import { IP_TYPE } from '../../const/bgpConst';
 
@@ -136,22 +123,6 @@
         mask: DEFAULT_VALUES.DEFAULT_RPKI_MASKV4,
         maxLength: DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV4
     });
-
-    watch(
-        () => roaConfig.value.ipType,
-        newType => {
-            if (newType === IP_TYPE.IPV4) {
-                roaConfig.value.ip = DEFAULT_VALUES.DEFAULT_RPKI_IPV4;
-                roaConfig.value.mask = DEFAULT_VALUES.DEFAULT_RPKI_MASKV4;
-                roaConfig.value.maxLength = DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV4;
-            } else {
-                roaConfig.value.ip = DEFAULT_VALUES.DEFAULT_RPKI_IPV6;
-                roaConfig.value.mask = DEFAULT_VALUES.DEFAULT_RPKI_MASKV6;
-                roaConfig.value.maxLength = DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV6;
-            }
-            clearValidationErrors(validationErrors);
-        }
-    );
 
     const submitLoading = ref(false);
 
@@ -195,75 +166,41 @@
         maxLength: ''
     });
 
+    // 创建通用验证器（用于表单整体验证）
+    let validator = new FormValidator(validationErrors);
+    validator.addRules(createRpkiRoaConfigValidationRules());
+
     // 暴露清空验证错误的方法给父组件
     defineExpose({
         clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
+            if (validator) {
+                validator.clearErrors();
+            }
         }
     });
 
-    const validateField = (value, fieldName, validationFn) => {
-        validationFn(value, validationErrors);
-    };
-
-    // 验证IP
-    const validateIp = (value, errors) => {
-        clearValidationErrors(validationErrors);
-        if (roaConfig.value.ipType === IP_TYPE.IPV4) {
-            validateIpv4Prefix(value, errors);
-        } else {
-            validateIpv6Prefix(value, errors);
+    watch(
+        () => roaConfig.value.ipType,
+        newType => {
+            if (newType === IP_TYPE.IPV4) {
+                roaConfig.value.ip = DEFAULT_VALUES.DEFAULT_RPKI_IPV4;
+                roaConfig.value.mask = DEFAULT_VALUES.DEFAULT_RPKI_MASKV4;
+                roaConfig.value.maxLength = DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV4;
+            } else {
+                roaConfig.value.ip = DEFAULT_VALUES.DEFAULT_RPKI_IPV6;
+                roaConfig.value.mask = DEFAULT_VALUES.DEFAULT_RPKI_MASKV6;
+                roaConfig.value.maxLength = DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV6;
+            }
+            if (validator) {
+                validator.clearErrors();
+            }
         }
-    };
-
-    const validateMask = (value, errors) => {
-        clearValidationErrors(validationErrors);
-        value = parseInt(value);
-        if (roaConfig.value.ipType === IP_TYPE.IPV4) {
-            if (roaConfig.value.maxLength < value) {
-                errors.value.mask = '最大前缀长度不能小于mask';
-                return;
-            }
-            validateIpv4Mask(value, errors);
-        } else {
-            if (roaConfig.value.maxLength < value) {
-                errors.value.mask = '最大前缀长度不能小于mask';
-                return;
-            }
-            validateIpv6Mask(value, errors);
-        }
-    };
-
-    // 验证最大前缀长度
-    const validateMaxLength = (value, errors) => {
-        clearValidationErrors(validationErrors);
-        value = parseInt(value);
-        if (roaConfig.value.ipType === IP_TYPE.IPV4) {
-            if (roaConfig.value.mask > value) {
-                errors.value.maxLength = 'mask不能小于最大前缀长度';
-                return;
-            }
-            validateIpv4MaxLength(value, errors);
-        } else {
-            if (roaConfig.value.mask > value) {
-                errors.value.maxLength = 'mask不能小于最大前缀长度';
-                return;
-            }
-            validateIpv6MaxLength(value, errors);
-        }
-    };
+    );
 
     // 提交ROA配置
     const submitRoaConfig = async () => {
-        clearValidationErrors(validationErrors);
-
-        // 验证所有字段
-        validateIp(roaConfig.value.ip, validationErrors);
-        validateAsn(roaConfig.value.asn, validationErrors);
-        validateMask(roaConfig.value.mask, validationErrors);
-        validateMaxLength(roaConfig.value.maxLength, validationErrors);
-
-        const hasErrors = Object.values(validationErrors.value).some(error => error !== '');
+        // 使用新的验证系统
+        const hasErrors = validator.validate(roaConfig.value);
         if (hasErrors) {
             message.error('请检查ROA配置信息是否正确');
             return;
@@ -305,7 +242,6 @@
                     ? DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV4
                     : DEFAULT_VALUES.DEFAULT_RPKI_MAX_LENGTHV6
         };
-        clearValidationErrors(validationErrors);
     };
 
     // 删除ROA
@@ -349,79 +285,8 @@
 </script>
 
 <style scoped>
-    .rpki-roa-config-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    .error-message {
-        display: none;
-    }
-
-    :deep(.ant-input-status-error) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:hover) {
-        border-color: #ff4d4f;
-    }
-
-    :deep(.ant-input-status-error:focus) {
-        border-color: #ff4d4f;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
-
-    :deep(.ant-tooltip) {
-        z-index: 1000;
-    }
-
-    :deep(.ant-tooltip-inner) {
-        background-color: #ff4d4f;
-        color: white;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

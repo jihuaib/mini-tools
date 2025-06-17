@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-    import { ref, watch, h, onMounted } from 'vue';
+    import { ref, watch, h, onMounted, onUnmounted } from 'vue';
     import { useRouter, useRoute } from 'vue-router';
     import { useStore } from 'vuex';
     import {
@@ -174,12 +174,40 @@
         }
     );
 
+    const handleGlobalClick = event => {
+        // 只有在点击非输入框、非tooltip相关元素时才清空验证错误
+        const target = event.target;
+        const isFormElement =
+            target.closest('.ant-form-item') ||
+            target.closest('.ant-input') ||
+            target.closest('.ant-select') ||
+            target.closest('.ant-tooltip') ||
+            target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA';
+
+        if (
+            !isFormElement &&
+            currentComponent.value &&
+            typeof currentComponent.value.clearValidationErrors === 'function'
+        ) {
+            currentComponent.value.clearValidationErrors();
+        }
+    };
+
     // 组件挂载时初始化缓存
     onMounted(() => {
         // 确保初始路由被正确缓存
         if (route.name && route.meta.keepAlive) {
             store.dispatch('addCachedView', route);
         }
+
+        // 添加全局点击事件监听器
+        document.addEventListener('click', handleGlobalClick);
+    });
+
+    // 组件卸载时移除事件监听器
+    onUnmounted(() => {
+        document.removeEventListener('click', handleGlobalClick);
     });
 </script>
 

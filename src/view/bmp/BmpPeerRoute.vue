@@ -1,5 +1,5 @@
 <template>
-    <div class="bmp-peer-route-container">
+    <div class="mt-container">
         <a-card :title="`BGP路由 - ${peerName}`">
             <a-tabs v-model:activeKey="activeRibType" @change="onRibTypeChange">
                 <a-tab-pane key="preRibIn" tab="Pre-RIB-In" />
@@ -352,11 +352,6 @@
 </script>
 
 <style scoped>
-    .bmp-peer-route-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
     .route-filters {
         margin-bottom: 16px;
         margin-top: 16px;
@@ -368,41 +363,8 @@
         justify-content: flex-end;
     }
 
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 </style>

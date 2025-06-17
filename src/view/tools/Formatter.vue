@@ -1,64 +1,66 @@
 <template>
-    <a-card title="格式化工具" class="formatter-card">
-        <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
-            <!-- 格式选择 -->
-            <a-form-item label="格式类型" name="type">
-                <a-radio-group v-model:value="formState.type" @change="clearErrors">
-                    <a-radio value="json">JSON</a-radio>
-                    <a-radio value="xml">XML</a-radio>
-                </a-radio-group>
-            </a-form-item>
+    <div class="mt-container">
+        <a-card title="格式化工具">
+            <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol" @finish="handleFinish">
+                <!-- 格式选择 -->
+                <a-form-item label="格式类型" name="type">
+                    <a-radio-group v-model:value="formState.type" @change="clearErrors">
+                        <a-radio value="json">JSON</a-radio>
+                        <a-radio value="xml">XML</a-radio>
+                    </a-radio-group>
+                </a-form-item>
 
-            <!-- 缩进设置 -->
-            <a-form-item label="缩进空格" name="indent">
-                <a-input-number v-model:value="formState.indent" :min="1" :max="8" />
-            </a-form-item>
+                <!-- 缩进设置 -->
+                <a-form-item label="缩进空格" name="indent">
+                    <a-input-number v-model:value="formState.indent" :min="1" :max="8" />
+                </a-form-item>
 
-            <!-- 内容输入 -->
-            <a-form-item label="源内容" name="content">
-                <CodeEditor
-                    v-model:modelValue="formState.content"
-                    :height="200"
-                    :status="lineErrors.length > 0 ? 'error' : ''"
-                    :errors="lineErrors"
-                    placeholder="请输入需要格式化的JSON或XML内容"
-                    @change="clearErrors"
-                />
-            </a-form-item>
+                <!-- 内容输入 -->
+                <a-form-item label="源内容" name="content">
+                    <CodeEditor
+                        v-model:modelValue="formState.content"
+                        :height="200"
+                        :status="lineErrors.length > 0 ? 'error' : ''"
+                        :errors="lineErrors"
+                        placeholder="请输入需要格式化的JSON或XML内容"
+                        @change="clearErrors"
+                    />
+                </a-form-item>
 
-            <!-- 操作按钮 -->
-            <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                <a-space>
-                    <a-button type="primary" html-type="submit" :loading="isFormatting">格式化</a-button>
-                    <a-button type="default" @click="showFormatterHistory">历史记录</a-button>
-                    <a-button type="default" @click="clearAll">清空</a-button>
-                </a-space>
-            </a-form-item>
+                <!-- 操作按钮 -->
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-space>
+                        <a-button type="primary" html-type="submit" :loading="isFormatting">格式化</a-button>
+                        <a-button type="default" @click="showFormatterHistory">历史记录</a-button>
+                        <a-button type="default" @click="clearAll">清空</a-button>
+                    </a-space>
+                </a-form-item>
 
-            <!-- 结果显示 -->
-            <a-form-item label="格式化结果">
-                <div class="result-container">
-                    <!-- 格式化结果显示 -->
-                    <div v-if="result" class="format-result">
-                        <div class="result-content">
-                            <div class="line-numbers">
-                                <div v-for="(line, index) in resultLines" :key="index" class="line-number">
-                                    {{ index + 1 }}
+                <!-- 结果显示 -->
+                <a-form-item label="格式化结果">
+                    <div class="result-container">
+                        <!-- 格式化结果显示 -->
+                        <div v-if="result" class="format-result">
+                            <div class="result-content">
+                                <div class="line-numbers">
+                                    <div v-for="(line, index) in resultLines" :key="index" class="line-number">
+                                        {{ index + 1 }}
+                                    </div>
+                                </div>
+                                <div class="code-content">
+                                    <pre><code>{{ result }}</code></pre>
                                 </div>
                             </div>
-                            <div class="code-content">
-                                <pre><code>{{ result }}</code></pre>
-                            </div>
+                        </div>
+                        <!-- 默认空状态 -->
+                        <div v-else class="empty-result">
+                            <div class="empty-placeholder">格式化结果将显示在这里...</div>
                         </div>
                     </div>
-                    <!-- 默认空状态 -->
-                    <div v-else class="empty-result">
-                        <div class="empty-placeholder">格式化结果将显示在这里...</div>
-                    </div>
-                </div>
-            </a-form-item>
-        </a-form>
-    </a-card>
+                </a-form-item>
+            </a-form>
+        </a-card>
+    </div>
 
     <!-- 历史记录弹窗 -->
     <a-modal
@@ -100,7 +102,6 @@
     import CodeEditor from '../../components/CodeEditor.vue';
     import { ref, onMounted, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { clearValidationErrors } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'Formatter'
@@ -108,18 +109,6 @@
 
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
-
-    const validationErrors = ref({
-        content: ''
-    });
-
-    // 暴露清空验证错误的方法给父组件
-    defineExpose({
-        clearValidationErrors: () => {
-            clearValidationErrors(validationErrors);
-            clearErrors();
-        }
-    });
 
     const formState = ref({
         type: 'json',
@@ -142,7 +131,6 @@
     const clearErrors = () => {
         errorMessage.value = '';
         lineErrors.value = [];
-        clearValidationErrors(validationErrors);
     };
 
     // 清空所有内容
@@ -278,11 +266,6 @@
 </script>
 
 <style scoped>
-    .formatter-card {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
     .history-content {
         white-space: nowrap;
         overflow: hidden;
@@ -365,55 +348,9 @@
         font-style: italic;
     }
 
-    .markdown-result {
-        background: #f5f5f5;
-        border: 1px solid #e8e8e8;
-        border-radius: 4px;
-        padding: 8px;
-        height: 300px;
-        overflow: auto;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 
     /* 用户列表样式 */

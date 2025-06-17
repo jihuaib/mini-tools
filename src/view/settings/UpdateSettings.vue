@@ -183,6 +183,9 @@
     // 保存自动更新设置
     const saveAutoUpdateSettings = async () => {
         try {
+            if (!updateSettings.value.autoCheckOnStartup) {
+                updateSettings.value.autoDownload = false;
+            }
             const settings = {
                 autoCheckOnStartup: updateSettings.value.autoCheckOnStartup,
                 autoDownload: updateSettings.value.autoDownload
@@ -261,10 +264,6 @@
         color: #666;
     }
 
-    .error-message {
-        margin-bottom: 20px;
-    }
-
     .auto-update-settings h4 {
         margin-bottom: 16px;
         color: #333;
@@ -285,10 +284,6 @@
         color: #333;
         font-size: 18px;
         font-weight: 500;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
     }
 
     :deep(.ant-form-item-label > label) {

@@ -1,8 +1,8 @@
 <template>
-    <div class="tool-main-container">
+    <div class="mt-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" style="height: 55px" @change="handleTabChange">
+            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="string-generator" tab="字符串生成" />
                 <a-tab-pane key="packet-parser" tab="报文解析" />
                 <a-tab-pane key="ftp-server" tab="FTP服务器" />
@@ -52,24 +52,4 @@
     });
 </script>
 
-<style scoped>
-    .tool-main-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh; /* 确保撑满屏幕 */
-        overflow: hidden;
-    }
-
-    .fixed-tabs {
-        height: 48px; /* 你实际 Tab 高度 */
-        flex-shrink: 0;
-        background-color: #fff;
-        z-index: 10;
-        margin-left: 8px;
-    }
-
-    .content-container {
-        flex: 1;
-        overflow-y: auto;
-    }
-</style>
+<style scoped></style>

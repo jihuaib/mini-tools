@@ -1,5 +1,5 @@
 <template>
-    <div class="ftp-server-container">
+    <div class="mt-container">
         <a-row>
             <a-col :span="24">
                 <a-card title="FTP服务器配置">
@@ -14,7 +14,6 @@
                                         <a-input
                                             v-model:value="ftpConfig.port"
                                             :status="validationFtpConfigErrors.port ? 'error' : ''"
-                                            @blur="e => validateFtpConfigField(e.target.value, 'port', validatePort)"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -58,10 +57,6 @@
                                                 :status="validationFtpUserErrors.rootDir ? 'error' : ''"
                                                 style="width: calc(100% - 40px)"
                                                 readonly
-                                                @blur="
-                                                    e =>
-                                                        validateFtpUserField(e.target.value, 'rootDir', validateRootDir)
-                                                "
                                             />
                                             <a-button type="primary" @click="selectDirectory">
                                                 <folder-outlined />
@@ -148,7 +143,16 @@
                     :scroll="{ y: 200 }"
                     size="small"
                 >
-                    <template #bodyCell="{ column, record }">
+                    <template #bodyCell="{ column, record, index }">
+                        <template v-if="column.key === 'password'">
+                            <span
+                                @click="togglePasswordVisibility(index)"
+                                style="cursor: pointer; color: #1890ff"
+                                :title="passwordVisibility[index] ? '点击隐藏密码' : '点击显示密码'"
+                            >
+                                {{ passwordVisibility[index] ? record.password : '****' }}
+                            </span>
+                        </template>
                         <template v-if="column.key === 'action'">
                             <a-button type="link" @click="loadUserItem(record)">使用</a-button>
                             <a-button type="link" danger @click="deleteUser(record)">删除</a-button>
@@ -164,13 +168,15 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount, toRaw, watch } from 'vue';
+    import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { FolderOutlined } from '@ant-design/icons-vue';
-    import { debounce } from 'lodash-es';
-    import { clearValidationErrors } from '../../utils/validationCommon';
+    import {
+        FormValidator,
+        createFtpConfigValidationRules,
+        createFtpUserValidationRules
+    } from '../../utils/validationCommon';
     import { DEFAULT_VALUES } from '../../const/ftpConst';
-    import { validatePort, validateRootDir, validateUsername, validatePassword } from '../../utils/ftpValidation';
 
     defineOptions({
         name: 'FtpServer'
@@ -241,82 +247,35 @@
         port: ''
     });
 
-    // 暴露清空验证错误的方法给父组件
-    defineExpose({
-        clearValidationErrors: () => {
-            clearValidationErrors(validationFtpConfigErrors);
-            clearValidationErrors(validationFtpUserErrors);
-        }
-    });
+    let validatorFtpConfig = new FormValidator(validationFtpConfigErrors);
+    validatorFtpConfig.addRules(createFtpConfigValidationRules());
 
-    const validateFtpUserField = (value, fieldName, validationFn) => {
-        validationFn(value, validationFtpUserErrors);
-    };
-
-    const validateFtpConfigField = (value, fieldName, validationFn) => {
-        validationFn(value, validationFtpConfigErrors);
-    };
-
-    const mounted = ref(false);
-
-    const saveFtpConfig = debounce(async data => {
-        const result = await window.ftpApi.saveFtpConfig(data);
-        if (result.status !== 'success') {
-            console.error(result.msg || '配置文件保存失败');
-        }
-    }, 300);
-
-    watch(
-        ftpConfig,
-        newFtpConfig => {
-            if (!mounted.value) return;
-
-            try {
-                clearValidationErrors(validationFtpConfigErrors);
-                clearValidationErrors(validationFtpUserErrors);
-                validatePort(newFtpConfig.port, validationFtpConfigErrors);
-
-                const hasErrors = Object.values(validationFtpConfigErrors.value).some(error => error !== '');
-
-                if (hasErrors) {
-                    return;
-                }
-
-                const raw = toRaw(newFtpConfig);
-                saveFtpConfig(raw);
-            } catch (error) {
-                console.error(error);
-            }
-        },
-        { deep: true }
-    );
+    let validatorFtpUser = new FormValidator(validationFtpUserErrors);
+    validatorFtpUser.addRules(createFtpUserValidationRules());
 
     const startFtp = async () => {
-        clearValidationErrors(validationFtpConfigErrors);
-        clearValidationErrors(validationFtpUserErrors);
-
-        validatePort(ftpConfig.value.port, validationFtpConfigErrors);
-        let hasErrors = Object.values(validationFtpConfigErrors.value).some(error => error !== '');
-
+        let hasErrors = validatorFtpConfig.validate(ftpConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
             return;
         }
 
-        validateRootDir(ftpUserConfig.value.rootDir, validationFtpUserErrors);
-        validateUsername(ftpUserConfig.value.username, validationFtpUserErrors);
-        validatePassword(ftpUserConfig.value.password, validationFtpUserErrors);
-
-        hasErrors = Object.values(validationFtpUserErrors.value).some(error => error !== '');
-
+        hasErrors = validatorFtpUser.validate(ftpUserConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
             return;
         }
 
-        serverLoading.value = true;
         try {
             const ftpConfigPayload = JSON.parse(JSON.stringify(ftpConfig.value));
+            const saveResult = await window.ftpApi.saveFtpConfig(ftpConfigPayload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            serverLoading.value = true;
+
             const ftpUserConfigPayload = JSON.parse(JSON.stringify(ftpUserConfig.value));
             const result = await window.ftpApi.startFtp(ftpConfigPayload, ftpUserConfigPayload);
 
@@ -332,6 +291,18 @@
             serverLoading.value = false;
         }
     };
+
+    // 暴露清空验证错误的方法给父组件
+    defineExpose({
+        clearValidationErrors: () => {
+            if (validatorFtpConfig) {
+                validatorFtpConfig.clearErrors();
+            }
+            if (validatorFtpUser) {
+                validatorFtpUser.clearErrors();
+            }
+        }
+    });
 
     const stopFtp = async () => {
         try {
@@ -401,8 +372,6 @@
 
             // 注册客户端连接事件监听
             window.ftpApi.onClientConnection(onClientConnection);
-
-            mounted.value = true;
         } catch (error) {
             console.error('初始化FTP配置出错:', error);
         }
@@ -414,15 +383,7 @@
     });
 
     const addUser = async () => {
-        clearValidationErrors(validationFtpConfigErrors);
-        clearValidationErrors(validationFtpUserErrors);
-
-        validateRootDir(ftpUserConfig.value.rootDir, validationFtpUserErrors);
-        validateUsername(ftpUserConfig.value.username, validationFtpUserErrors);
-        validatePassword(ftpUserConfig.value.password, validationFtpUserErrors);
-
-        const hasErrors = Object.values(validationFtpUserErrors.value).some(error => error !== '');
-
+        let hasErrors = validatorFtpUser.validate(ftpUserConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
             return;
@@ -440,6 +401,8 @@
         const result = await window.ftpApi.getFtpUserList();
         if (result.status === 'success') {
             userList.value = result.data || [];
+            // 初始化密码显示状态数组，默认都隐藏
+            passwordVisibility.value = new Array(userList.value.length).fill(false);
             userListModalVisible.value = true;
         } else {
             message.error(result.msg || '用户列表获取失败');
@@ -449,6 +412,7 @@
     // 用户列表相关状态
     const userList = ref([]);
     const userListModalVisible = ref(false);
+    const passwordVisibility = ref([]);
     const userListColumns = [
         {
             title: '根目录',
@@ -476,6 +440,11 @@
         userListModalVisible.value = false;
     };
 
+    // 切换密码显示状态
+    const togglePasswordVisibility = index => {
+        passwordVisibility.value[index] = !passwordVisibility.value[index];
+    };
+
     // 加载用户列表项
     const loadUserItem = record => {
         if (!record) return;
@@ -497,7 +466,12 @@
         if (result.status === 'success') {
             message.success(result.msg || '用户删除成功');
             // 删除用户后，更新用户列表
+            const deletedIndex = userList.value.findIndex(item => item.username === record.username);
             userList.value = userList.value.filter(item => item.username !== record.username);
+            // 同时更新密码显示状态数组
+            if (deletedIndex !== -1) {
+                passwordVisibility.value.splice(deletedIndex, 1);
+            }
         } else {
             message.error(result.msg || '用户删除失败');
         }
@@ -505,51 +479,9 @@
 </script>
 
 <style scoped>
-    .ftp-server-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-form-item) {
-        margin-bottom: 8px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 
     /* 用户列表样式 */

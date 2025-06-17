@@ -1,5 +1,5 @@
 <template>
-    <div class="bmp-peer-container">
+    <div class="mt-container">
         <a-row>
             <a-col :span="24">
                 <a-card title="BMP Client">
@@ -358,42 +358,9 @@
 </script>
 
 <style scoped>
-    .bmp-peer-container {
-        margin-top: 10px;
-        margin-left: 8px;
-    }
-
-    :deep(.ant-card-body) {
-        padding: 10px;
-    }
-
-    :deep(.ant-card-head) {
-        padding: 0 10px;
-        min-height: 40px;
-    }
-
-    :deep(.ant-card-head-title) {
-        padding: 10px 0;
-    }
-
-    :deep(.ant-table-tbody > tr > td) {
-        height: 30px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     :deep(.ant-table-body) {
         height: 400px !important;
         overflow-y: auto !important;
-    }
-
-    :deep(.ant-table-cell) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     .bgp-peer-info-header {
@@ -409,11 +376,6 @@
     .bgp-peer-info-header-text {
         margin-right: 8px;
         font-weight: 500;
-    }
-
-    /* 表格样式调整 */
-    :deep(.ant-table-small) {
-        font-size: 12px;
     }
 
     .no-result-message {

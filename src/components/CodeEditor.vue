@@ -196,14 +196,4 @@
         border: none !important;
         box-shadow: none !important;
     }
-
-    /* 当输入框有错误状态时的样式 */
-    :deep(.ant-input-status-error) {
-        border-color: #ff4d4f !important;
-    }
-
-    :deep(.ant-input-status-error:focus) {
-        border-color: #ff4d4f !important;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
-    }
 </style>

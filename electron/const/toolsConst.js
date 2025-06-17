@@ -13,16 +13,16 @@ const START_LAYER = {
 // 默认工具设置
 const DEFAULT_TOOLS_SETTINGS = {
     packetParser: {
-        maxMessageHistory: 100
+        maxMessageHistory: 10
     },
     stringGenerator: {
-        maxStringHistory: 100
+        maxStringHistory: 10
     },
     ftpServer: {
-        maxFtpUser: 100
+        maxFtpUser: 10
     },
     formatter: {
-        maxFormatterHistory: 100
+        maxFormatterHistory: 10
     }
 };
 

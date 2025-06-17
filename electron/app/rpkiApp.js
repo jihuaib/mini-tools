@@ -103,6 +103,9 @@ class RpkiApp {
             logger.info(`rpki启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
+            this.worker.removeEventListener(RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
+            await this.worker.terminate();
+            this.worker = null;
             logger.error('Error starting RPKI:', error.message);
             return errorResponse(error.message);
         }
