@@ -89,7 +89,8 @@
         "nsis": {
             "allowToChangeInstallationDirectory": true,
             "oneClick": false,
-            "perMachine": false
+            "perMachine": false,
+            "differentialPackage": false
         }
     },
     "devDependencies": {
