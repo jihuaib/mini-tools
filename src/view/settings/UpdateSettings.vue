@@ -29,9 +29,8 @@
         </div>
 
         <!-- 自动更新设置 -->
-        <a-divider />
+        <a-divider>自动更新设置</a-divider>
         <div class="auto-update-settings">
-            <h4>自动更新设置</h4>
             <a-form layout="vertical">
                 <a-form-item label="启动时检查更新">
                     <a-switch v-model:checked="updateSettings.autoCheckOnStartup" @change="saveAutoUpdateSettings" />
@@ -288,10 +287,5 @@
 
     :deep(.ant-form-item-label > label) {
         font-size: 12px;
-    }
-
-    :deep(.ant-divider) {
-        font-size: 13px;
-        color: #125798;
     }
 </style>

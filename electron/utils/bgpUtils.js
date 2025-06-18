@@ -292,6 +292,11 @@ function getAddrFamilyType(afi, safi) {
                 addrFamily = BgpConst.BGP_ADDR_FAMILY.IPV6_UNC;
             }
             break;
+        case BgpConst.BGP_AFI_TYPE.AFI_L2VPN:
+            if (safi == BgpConst.BGP_SAFI_TYPE.SAFI_EVPN) {
+                addrFamily = BgpConst.BGP_ADDR_FAMILY.L2VPN_EVPN;
+            }
+            break;
     }
 
     return addrFamily;
@@ -309,6 +314,10 @@ function getAfiAndSafi(addrFamily) {
         case BgpConst.BGP_ADDR_FAMILY.IPV6_UNC:
             afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
             safi = BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST;
+            break;
+        case BgpConst.BGP_ADDR_FAMILY.L2VPN_EVPN:
+            afi = BgpConst.BGP_AFI_TYPE.AFI_L2VPN;
+            safi = BgpConst.BGP_SAFI_TYPE.SAFI_EVPN;
             break;
     }
 

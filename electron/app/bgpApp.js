@@ -1,10 +1,9 @@
 const { app } = require('electron');
 const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
-const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
 const logger = require('../log/logger');
+const BgpConst = require('../const/bgpConst');
 class BgpApp {
     constructor(ipc, store) {
         this.worker = null;
@@ -189,7 +188,7 @@ class BgpApp {
 
             logger.info(`delete peer: ${JSON.stringify(peer)}`);
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_PEER, peer);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_PEER, peer);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error deleting peer:', error.message);
@@ -206,7 +205,7 @@ class BgpApp {
 
             logger.info(`ipv4 peer config: ${JSON.stringify(ipv4PeerConfigData)}`);
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_IPV4_PEER, ipv4PeerConfigData);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.CONFIG_IPV4_PEER, ipv4PeerConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             logger.info(`ipv4 config peer成功 result: ${JSON.stringify(result)}`);
@@ -227,7 +226,7 @@ class BgpApp {
 
             logger.info(`ipv6 peer config: ${JSON.stringify(ipv6PeerConfigData)}`);
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.CONFIG_IPV6_PEER, ipv6PeerConfigData);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.CONFIG_IPV6_PEER, ipv6PeerConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             logger.info(`ipv6 config peer成功 result: ${JSON.stringify(result)}`);
@@ -263,15 +262,15 @@ class BgpApp {
             };
 
             // 注册事件监听器，处理来自worker的事件通知
-            this.worker.addEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
+            this.worker.addEventListener(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
 
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.START_BGP, bgpConfigData);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.START_BGP, bgpConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             logger.info(`bgp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
+            this.worker.removeEventListener(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
             this.worker = null;
             logger.error('Error starting BGP:', error.message);
@@ -286,14 +285,14 @@ class BgpApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.STOP_BGP, null);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.STOP_BGP, null);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error stopping BGP:', error.message);
             return errorResponse(error.message);
         } finally {
             // 移除事件监听器
-            this.worker.removeEventListener(BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
+            this.worker.removeEventListener(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
             this.worker = null;
         }
@@ -305,7 +304,7 @@ class BgpApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GET_PEER_INFO, null);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GET_PEER_INFO, null);
             logger.info(`获取Peer信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取Peer信息成功');
         } catch (error) {
@@ -323,7 +322,7 @@ class BgpApp {
         logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV4_ROUTES, config);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GENERATE_IPV4_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error generating ipv4 routes:', error.message);
@@ -340,7 +339,7 @@ class BgpApp {
         logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GENERATE_IPV6_ROUTES, config);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GENERATE_IPV6_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error generating ipv6 routes:', error.message);
@@ -357,7 +356,7 @@ class BgpApp {
         logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV4_ROUTES, config);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error deleting ipv4 routes:', error.message);
@@ -374,7 +373,7 @@ class BgpApp {
         logger.info(`${JSON.stringify(config)}`);
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.DELETE_IPV6_ROUTES, config);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_ROUTES, config);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error deleting ipv6 routes:', error.message);
@@ -388,7 +387,7 @@ class BgpApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(BGP_REQ_TYPES.GET_ROUTES, addressFamily);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GET_ROUTES, addressFamily);
             logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {

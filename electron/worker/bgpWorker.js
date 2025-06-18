@@ -3,7 +3,6 @@ const util = require('util');
 const BgpConst = require('../const/bgpConst');
 const { genRouteIps } = require('../utils/ipUtils');
 const { getAfiAndSafi } = require('../utils/bgpUtils');
-const { BGP_REQ_TYPES } = require('../const/bgpReqConst');
 const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BgpSession = require('./bgpSession');
@@ -31,17 +30,23 @@ class BgpWorker {
         // 初始化消息处理器
         this.messageHandler.init();
         // 注册消息处理器
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.START_BGP, this.startBgp.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.STOP_BGP, this.stopBgp.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.CONFIG_IPV4_PEER, this.configIpv4Peer.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.CONFIG_IPV6_PEER, this.configIpv6Peer.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.GET_PEER_INFO, this.getPeerInfo.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.DELETE_PEER, this.deletePeer.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.GENERATE_IPV4_ROUTES, this.generateRoutes.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.DELETE_IPV4_ROUTES, this.deleteRoute.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.GENERATE_IPV6_ROUTES, this.generateRoutes.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.DELETE_IPV6_ROUTES, this.deleteRoute.bind(this));
-        this.messageHandler.registerHandler(BGP_REQ_TYPES.GET_ROUTES, this.getRoutes.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.START_BGP, this.startBgp.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.STOP_BGP, this.stopBgp.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.CONFIG_IPV4_PEER, this.configIpv4Peer.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.CONFIG_IPV6_PEER, this.configIpv6Peer.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.GET_PEER_INFO, this.getPeerInfo.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_PEER, this.deletePeer.bind(this));
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.GENERATE_IPV4_ROUTES,
+            this.generateRoutes.bind(this)
+        );
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_ROUTES, this.deleteRoute.bind(this));
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.GENERATE_IPV6_ROUTES,
+            this.generateRoutes.bind(this)
+        );
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_ROUTES, this.deleteRoute.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.GET_ROUTES, this.getRoutes.bind(this));
     }
 
     async startTcpServer(messageId) {

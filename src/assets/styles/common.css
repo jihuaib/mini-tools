@@ -111,3 +111,9 @@
 .mt-container .ant-form-item {
     margin-bottom: 8px !important;
 }
+
+.ant-divider {
+    font-size: 12px !important;
+    color: #125798 !important;
+    margin: 5px 0 !important;
+}

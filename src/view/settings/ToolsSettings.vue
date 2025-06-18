@@ -1,9 +1,8 @@
 <template>
     <div class="tools-settings">
-        <h2>工具设置</h2>
+        <h2>Tools设置</h2>
         <a-form :model="settingsForm" layout="vertical">
             <a-divider>字符串生成</a-divider>
-
             <a-form-item label="字符串生成历史记录最大存储条数" name="maxStringHistory">
                 <a-input-number
                     v-model:value="settingsForm.stringGenerator.maxStringHistory"
@@ -14,7 +13,6 @@
             </a-form-item>
 
             <a-divider>报文解析</a-divider>
-
             <a-form-item label="报文解析历史记录最大存储条数" name="maxMessageHistory">
                 <a-input-number
                     v-model:value="settingsForm.packetParser.maxMessageHistory"
@@ -23,17 +21,6 @@
                     style="width: 100%"
                 />
             </a-form-item>
-
-            <a-divider>FTP服务器</a-divider>
-            <a-form-item label="FTP用户最大存储条数" name="maxFtpUser">
-                <a-input-number
-                    v-model:value="settingsForm.ftpServer.maxFtpUser"
-                    :min="10"
-                    :max="1000"
-                    style="width: 100%"
-                />
-            </a-form-item>
-
             <a-form-item>
                 <a-button type="primary" @click="saveSettings">保存设置</a-button>
             </a-form-item>
@@ -53,9 +40,6 @@
         },
         stringGenerator: {
             maxStringHistory: DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory
-        },
-        ftpServer: {
-            maxFtpUser: DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser
         }
     });
 
@@ -106,10 +90,5 @@
 
     :deep(.ant-form-item-label > label) {
         font-size: 12px;
-    }
-
-    :deep(.ant-divider) {
-        font-size: 13px;
-        color: #125798;
     }
 </style>

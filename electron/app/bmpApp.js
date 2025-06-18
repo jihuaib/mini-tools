@@ -1,10 +1,10 @@
 const { app } = require('electron');
 const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
-const { BMP_REQ_TYPES } = require('../const/bmpReqConst');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const logger = require('../log/logger');
+const BmpConst = require('../const/bmpConst');
+
 class BmpApp {
     constructor(ipcMain, store) {
         this.ipcMain = ipcMain;
@@ -95,21 +95,21 @@ class BmpApp {
             };
 
             // 注册事件监听器，处理来自worker的事件通知
-            this.worker.addEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.addEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
-            this.worker.addEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
-            this.worker.addEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.START_BMP, bmpConfigData);
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.START_BMP, bmpConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             logger.info(`bmp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
             logger.error('Error starting BMP:', error.message);
@@ -124,17 +124,17 @@ class BmpApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.STOP_BMP, null);
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.STOP_BMP, null);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error stopping BMP:', error.message);
             return errorResponse(error.message);
         } finally {
             // 移除事件监听器
-            this.worker.removeEventListener(BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
-            this.worker.removeEventListener(BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
         }
@@ -146,7 +146,7 @@ class BmpApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_CLIENT_LIST, null);
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_CLIENT_LIST, null);
             logger.info(`获取客户端列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取客户端列表成功');
         } catch (error) {
@@ -163,7 +163,7 @@ class BmpApp {
         logger.info(`获取对等体列表 client: ${JSON.stringify(client)}`);
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_PEERS, client);
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_PEERS, client);
             logger.info(`获取对等体列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取对等体列表成功');
         } catch (error) {
@@ -182,7 +182,7 @@ class BmpApp {
         logger.info(`获取路由列表 ribType: ${JSON.stringify(ribType)}`);
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_ROUTES, { client, peer, ribType });
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_ROUTES, { client, peer, ribType });
             logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由列表成功');
         } catch (error) {
@@ -199,7 +199,7 @@ class BmpApp {
         logger.info(`获取客户端信息 client: ${JSON.stringify(client)}`);
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_CLIENT, client);
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_CLIENT, client);
             logger.info(`获取客户端信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取客户端信息成功');
         } catch (error) {
@@ -217,7 +217,7 @@ class BmpApp {
         logger.info(`获取对等体信息 peer: ${JSON.stringify(peer)}`);
 
         try {
-            const result = await this.worker.sendRequest(BMP_REQ_TYPES.GET_PEER, { client, peer });
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_PEER, { client, peer });
             logger.info(`获取对等体信息成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取对等体信息成功');
         } catch (error) {

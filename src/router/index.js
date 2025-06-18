@@ -3,7 +3,6 @@ import Main from '../view/Main.vue';
 import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
 import PacketParser from '../view/tools/PacketParser.vue';
-import FtpServer from '../view/tools/FtpServer.vue';
 import Formatter from '../view/tools/Formatter.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
@@ -16,6 +15,8 @@ import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
 import RpkiMain from '../view/rpki/RpkiMain.vue';
 import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
+import FtpMain from '../view/ftp/FtpMain.vue';
+import FtpConfig from '../view/ftp/FtpConfig.vue';
 import store from '../store';
 
 const routes = [
@@ -46,12 +47,6 @@ const routes = [
                         path: 'packet-parser',
                         name: 'PacketParser',
                         component: PacketParser,
-                        meta: { keepAlive: true }
-                    },
-                    {
-                        path: 'ftp-server',
-                        name: 'FtpServer',
-                        component: FtpServer,
                         meta: { keepAlive: true }
                     },
                     {
@@ -143,6 +138,24 @@ const routes = [
                         path: 'rpki-roa-config',
                         name: 'RpkiRoaConfig',
                         component: RpkiRoaConfig,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/ftp',
+                name: 'FtpMain',
+                component: FtpMain,
+                meta: { keepAlive: true },
+                children: [
+                    {
+                        path: '/',
+                        redirect: '/ftp/ftp-config'
+                    },
+                    {
+                        path: 'ftp-config',
+                        name: 'FtpConfig',
+                        component: FtpConfig,
                         meta: { keepAlive: true }
                     }
                 ]

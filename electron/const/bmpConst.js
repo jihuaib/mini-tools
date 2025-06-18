@@ -51,6 +51,25 @@ const BMP_MSG_TYPE_NAME = {
     [BMP_MSG_TYPE.ROUTE_MIRRORING]: 'ROUTE_MIRRORING'
 };
 
+// 事件类型
+const BMP_EVT_TYPES = {
+    INITIATION: 1,
+    PEER_UPDATE: 2,
+    ROUTE_UPDATE: 3,
+    TERMINATION: 4
+};
+
+// BMP请求-响应类型
+const BMP_REQ_TYPES = {
+    START_BMP: 1,
+    STOP_BMP: 2,
+    GET_CLIENT_LIST: 3,
+    GET_PEERS: 4,
+    GET_ROUTES: 5,
+    GET_CLIENT: 6,
+    GET_PEER: 7
+};
+
 module.exports = {
     BMP_HEADER_LENGTH,
     BMP_MSG_TYPE,
@@ -59,5 +78,7 @@ module.exports = {
     BMP_MSG_TYPE_NAME,
     BMP_INITIATION_TLV_TYPE,
     BMP_PEER_STATE,
-    BMP_ROUTE_UPDATE_TYPE
+    BMP_ROUTE_UPDATE_TYPE,
+    BMP_EVT_TYPES,
+    BMP_REQ_TYPES
 };

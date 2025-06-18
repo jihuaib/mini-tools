@@ -1,11 +1,10 @@
 const net = require('net');
 const util = require('util');
-const { RPKI_REQ_TYPES } = require('../const/rpkiReqConst');
 const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const RpkiSession = require('./rpkiSession');
 const RpkiRoa = require('./rpkiRoa');
-const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
+const RpkiConst = require('../const/rpkiConst');
 
 class RpkiWorker {
     constructor() {
@@ -23,10 +22,10 @@ class RpkiWorker {
         // 初始化消息处理器
         this.messageHandler.init();
         // 注册消息处理器
-        this.messageHandler.registerHandler(RPKI_REQ_TYPES.START_RPKI, this.startRpki.bind(this));
-        this.messageHandler.registerHandler(RPKI_REQ_TYPES.STOP_RPKI, this.stopRpki.bind(this));
-        this.messageHandler.registerHandler(RPKI_REQ_TYPES.ADD_ROA, this.addRoa.bind(this));
-        this.messageHandler.registerHandler(RPKI_REQ_TYPES.DELETE_ROA, this.deleteRoa.bind(this));
+        this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.START_RPKI, this.startRpki.bind(this));
+        this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.STOP_RPKI, this.stopRpki.bind(this));
+        this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.ADD_ROA, this.addRoa.bind(this));
+        this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.DELETE_ROA, this.deleteRoa.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -131,7 +130,7 @@ class RpkiWorker {
                 rpkiSession.remoteIp = clientAddress;
                 rpkiSession.remotePort = clientPort;
 
-                this.messageHandler.sendEvent(RPKI_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION, {
                     opType: 'add',
                     data: rpkiSession.getClientInfo()
                 });
@@ -237,7 +236,7 @@ class RpkiWorker {
                 rpkiSession.remoteIp = clientAddress;
                 rpkiSession.remotePort = clientPort;
 
-                this.messageHandler.sendEvent(RPKI_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION, {
                     opType: 'add',
                     data: rpkiSession.getClientInfo()
                 });

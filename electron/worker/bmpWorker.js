@@ -1,12 +1,11 @@
 const net = require('net');
 const util = require('util');
-const { BMP_REQ_TYPES } = require('../const/bmpReqConst');
-const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BmpSession = require('./bmpSession');
 const { getAfiAndSafi } = require('../utils/bgpUtils');
 const BmpBgpPeer = require('./bmpBgpPeer');
+const BmpConst = require('../const/bmpConst');
 
 class BmpWorker {
     constructor() {
@@ -23,13 +22,13 @@ class BmpWorker {
         // 初始化消息处理器
         this.messageHandler.init();
         // 注册消息处理器
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.START_BMP, this.startBmp.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.STOP_BMP, this.stopBmp.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.GET_CLIENT_LIST, this.getClientList.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.GET_PEERS, this.getPeers.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.GET_ROUTES, this.getRoutes.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.GET_CLIENT, this.getClient.bind(this));
-        this.messageHandler.registerHandler(BMP_REQ_TYPES.GET_PEER, this.getPeer.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.START_BMP, this.startBmp.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.STOP_BMP, this.stopBmp.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_CLIENT_LIST, this.getClientList.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_PEERS, this.getPeers.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_ROUTES, this.getRoutes.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_CLIENT, this.getClient.bind(this));
+        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_PEER, this.getPeer.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -175,7 +174,7 @@ class BmpWorker {
         this.bmpConfigData = null;
 
         // 发送全局终止事件通知前端
-        this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: null });
+        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.TERMINATION, { data: null });
 
         // 清空会话
         this.bmpSessionMap.forEach((session, _) => {

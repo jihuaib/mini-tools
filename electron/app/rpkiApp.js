@@ -1,11 +1,10 @@
 const { app } = require('electron');
 const path = require('path');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
-const { RPKI_REQ_TYPES } = require('../const/rpkiReqConst');
-const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { getNetworkAddress } = require('../utils/ipUtils');
+const RpkiConst = require('../const/rpkiConst');
 
 class RpkiApp {
     constructor(ipcMain, store) {
@@ -79,14 +78,14 @@ class RpkiApp {
                 webContents.send('rpki:clientConnection', successResponse(data));
             };
 
-            this.worker.addEventListener(RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
+            this.worker.addEventListener(RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
 
             // 加载roa配置
             const roaList = await this.handleGetRoaList();
             if (roaList.status === 'success') {
                 const roaListData = roaList.data;
                 for (const roa of roaListData) {
-                    const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
+                    const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.ADD_ROA, roa);
                     if (result.status === 'success') {
                         logger.info(`worker RPKI ROA恢复成功: ${JSON.stringify(roa)}`);
                     } else {
@@ -97,13 +96,16 @@ class RpkiApp {
                 logger.error(`RPKI ROA配置加载失败: ${roaList.msg}`);
             }
 
-            const result = await this.worker.sendRequest(RPKI_REQ_TYPES.START_RPKI, rpkiConfigData);
+            const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.START_RPKI, rpkiConfigData);
 
             // 这里肯定是启动成功了，如果失败，会抛出异常
             logger.info(`rpki启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
-            this.worker.removeEventListener(RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
+            this.worker.removeEventListener(
+                RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION,
+                this.rpkiClientConnectionHandler
+            );
             await this.worker.terminate();
             this.worker = null;
             logger.error('Error starting RPKI:', error.message);
@@ -118,13 +120,16 @@ class RpkiApp {
         }
 
         try {
-            const result = await this.worker.sendRequest(RPKI_REQ_TYPES.STOP_RPKI, null);
+            const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.STOP_RPKI, null);
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error stopping RPKI:', error.message);
             return errorResponse(error.message);
         } finally {
-            this.worker.removeEventListener(RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
+            this.worker.removeEventListener(
+                RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION,
+                this.rpkiClientConnectionHandler
+            );
             await this.worker.terminate();
             this.worker = null;
         }
@@ -177,7 +182,7 @@ class RpkiApp {
             }
 
             if (this.worker) {
-                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.ADD_ROA, roa);
+                const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.ADD_ROA, roa);
                 if (result.status === 'success') {
                     logger.info(`worker RPKI ROA配置添加成功`);
                 } else {
@@ -217,7 +222,7 @@ class RpkiApp {
             }
 
             if (this.worker) {
-                const result = await this.worker.sendRequest(RPKI_REQ_TYPES.DELETE_ROA, roa);
+                const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.DELETE_ROA, roa);
                 if (result.status === 'success') {
                     logger.info(`worker RPKI ROA删除成功`);
                 } else {

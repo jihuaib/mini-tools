@@ -4,7 +4,8 @@ const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
-const { FTP_REQ_TYPES } = require('../const/ftpReqConst');
+const FtpConst = require('../const/ftpConst');
+
 class FtpApp {
     constructor(ipcMain, store) {
         this.ipcMain = ipcMain;
@@ -122,7 +123,7 @@ class FtpApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
-            const result = await this.worker.sendRequest(FTP_REQ_TYPES.START_FTP, {
+            const result = await this.worker.sendRequest(FtpConst.FTP_REQ_TYPES.START_FTP, {
                 ftpConfig: config,
                 userConfig: user
             });
@@ -154,7 +155,7 @@ class FtpApp {
                 return errorResponse('FTP未启动');
             }
 
-            const result = await this.worker.sendRequest(FTP_REQ_TYPES.STOP_FTP, null);
+            const result = await this.worker.sendRequest(FtpConst.FTP_REQ_TYPES.STOP_FTP, null);
             logger.info(`ftp停止成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {

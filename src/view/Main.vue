@@ -84,7 +84,8 @@
         SettingOutlined,
         ToolOutlined,
         InfoCircleOutlined,
-        SafetyCertificateOutlined
+        SafetyCertificateOutlined,
+        DownloadOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
@@ -109,23 +110,30 @@
         {
             key: 'bgp',
             icon: () => h(CloudOutlined),
-            label: 'BGP',
-            title: 'BGP',
+            label: 'bgp',
+            title: 'bgp',
             route: '/bgp'
         },
         {
             key: 'bmp',
             icon: () => h(RadarChartOutlined),
-            label: 'BMP',
-            title: 'BMP',
+            label: 'bmp',
+            title: 'bmp',
             route: '/bmp'
         },
         {
             key: 'rpki',
             icon: () => h(SafetyCertificateOutlined),
-            label: 'RPKI',
-            title: 'RPKI',
+            label: 'rpki',
+            title: 'rpki',
             route: '/rpki'
+        },
+        {
+            key: 'ftp',
+            icon: () => h(DownloadOutlined),
+            label: 'ftp',
+            title: 'ftp',
+            route: '/ftp'
         }
     ]);
 

@@ -59,6 +59,19 @@ const RPKI_ROA_STATUS = {
 // Default RPKI Port
 const RPKI_DEFAULT_PORT = 8282;
 
+// 事件类型
+const RPKI_EVT_TYPES = {
+    CLIENT_CONNECTION: 1
+};
+
+// RPKI请求-响应类型
+const RPKI_REQ_TYPES = {
+    START_RPKI: 1,
+    STOP_RPKI: 2,
+    ADD_ROA: 3,
+    DELETE_ROA: 4
+};
+
 module.exports = {
     RPKI_HEADER_LENGTH,
     RPKI_MSG_TYPE,
@@ -67,5 +80,7 @@ module.exports = {
     RPKI_ERROR_CODE,
     RPKI_FLAGS,
     RPKI_ROA_STATUS,
-    RPKI_DEFAULT_PORT
+    RPKI_DEFAULT_PORT,
+    RPKI_EVT_TYPES,
+    RPKI_REQ_TYPES
 };

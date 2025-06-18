@@ -1,6 +1,5 @@
 const logger = require('../log/logger');
 const BmpConst = require('../const/bmpConst');
-const { BMP_EVT_TYPES } = require('../const/bmpEvtConst');
 const { getInitiationTlvName } = require('../utils/bmpUtils');
 const BgpConst = require('../const/bgpConst');
 const BmpBgpPeer = require('./bmpBgpPeer');
@@ -103,6 +102,8 @@ class BmpSession {
             }
             position += updateLength;
 
+            console.log(parsedBgpUpdate);
+
             let routeUpdates = [];
 
             // 处理withdrawn routes (IPv4)
@@ -135,7 +136,7 @@ class BmpSession {
                     }
 
                     if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
                     }
                 }
             }
@@ -174,7 +175,7 @@ class BmpSession {
                     }
 
                     if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
                     }
                 }
             }
@@ -221,7 +222,7 @@ class BmpSession {
                     }
 
                     if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
                     }
                 }
             }
@@ -270,7 +271,7 @@ class BmpSession {
                     }
 
                     if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
                     }
                 }
             }
@@ -328,6 +329,8 @@ class BmpSession {
                 case BgpConst.BGP_PATH_ATTR.PATH_OTC:
                     route.otc = attr.otc;
                     break;
+                case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI:
+                    route.nextHop = attr.mpReach.nextHop;
             }
         }
     }
@@ -398,7 +401,7 @@ class BmpSession {
             // 创建一个初始化记录
             const clientInfo = this.getClientInfo();
 
-            this.messageHandler.sendEvent(BMP_EVT_TYPES.INITIATION, { data: clientInfo });
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INITIATION, { data: clientInfo });
             logger.info(`Processed initiation message: sysName=${this.sysName}, sysDesc=${this.sysDesc}`);
         } catch (err) {
             logger.error(`Error processing initiation:`, err);
@@ -476,7 +479,7 @@ class BmpSession {
                     }
 
                     peer.peerState = BmpConst.BMP_PEER_STATE.PEER_DOWN;
-                    this.messageHandler.sendEvent(BMP_EVT_TYPES.PEER_UPDATE, { data: peer.getPeerInfo() });
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: peer.getPeerInfo() });
 
                     keysToDelete.push(key);
                 }
@@ -643,7 +646,7 @@ class BmpSession {
                 bmpBgpPeer.afi = addressFamily.afi;
                 bmpBgpPeer.safi = addressFamily.safi;
 
-                this.messageHandler.sendEvent(BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
+                this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
             }
 
             // If no address families were found in capabilities, create a default peer (for legacy support)
@@ -676,7 +679,7 @@ class BmpSession {
                 }
                 bmpBgpPeer.peerState = BmpConst.BMP_PEER_STATE.PEER_UP;
 
-                this.messageHandler.sendEvent(BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
+                this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
             }
         } catch (err) {
             logger.error(`Error processing peer up:`, err);
@@ -685,7 +688,7 @@ class BmpSession {
 
     processTermination(_message) {
         const clientInfo = this.getClientInfo();
-        this.messageHandler.sendEvent(BMP_EVT_TYPES.TERMINATION, { data: clientInfo });
+        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.TERMINATION, { data: clientInfo });
         this.closeSession();
 
         const key = BmpSession.makeKey(this.localIp, this.localPort, this.remoteIp, this.remotePort);

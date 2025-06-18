@@ -1,10 +1,9 @@
 const net = require('net');
 const util = require('util');
-const { FTP_REQ_TYPES } = require('../const/ftpReqConst');
-const { FTP_EVT_TYPES } = require('../const/ftpEvtConst');
 const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const FtpSession = require('./ftpSession');
+const FtpConst = require('../const/ftpConst');
 class FtpWorker {
     constructor() {
         this.server = null;
@@ -21,8 +20,8 @@ class FtpWorker {
         // 初始化消息处理器
         this.messageHandler.init();
         // 注册消息处理器
-        this.messageHandler.registerHandler(FTP_REQ_TYPES.START_FTP, this.startFtp.bind(this));
-        this.messageHandler.registerHandler(FTP_REQ_TYPES.STOP_FTP, this.stopFtp.bind(this));
+        this.messageHandler.registerHandler(FtpConst.FTP_REQ_TYPES.START_FTP, this.startFtp.bind(this));
+        this.messageHandler.registerHandler(FtpConst.FTP_REQ_TYPES.STOP_FTP, this.stopFtp.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -105,7 +104,7 @@ class FtpWorker {
 
                 ftpSession.sendMsg(Buffer.from('220 Welcome to the FTP server'));
 
-                this.messageHandler.sendEvent(FTP_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
                     opType: 'add',
                     data: ftpSession.getClientInfo()
                 });
@@ -208,7 +207,7 @@ class FtpWorker {
 
                 ftpSession.sendMsg(Buffer.from('220 Welcome to the FTP server'));
 
-                this.messageHandler.sendEvent(FTP_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
                     opType: 'add',
                     data: ftpSession.getClientInfo()
                 });

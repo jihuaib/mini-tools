@@ -1,8 +1,7 @@
 const logger = require('../log/logger');
-const { FTP_EVT_TYPES } = require('../const/ftpEvtConst');
 const path = require('path');
 const fs = require('fs');
-
+const FtpConst = require('../const/ftpConst');
 class FtpSession {
     constructor(messageHandler, ftpWorker) {
         this.socket = null;
@@ -109,7 +108,7 @@ class FtpSession {
             this.currentDir = '/';
             this.sendMsg(Buffer.from('230 User logged in, proceed'));
 
-            this.messageHandler.sendEvent(FTP_EVT_TYPES.AUTHENTICATION, {
+            this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.AUTHENTICATION, {
                 success: true,
                 username: this.username,
                 clientInfo: this.getClientInfo()
@@ -117,7 +116,7 @@ class FtpSession {
         } else {
             this.sendMsg(Buffer.from('530 Authentication failed'));
 
-            this.messageHandler.sendEvent(FTP_EVT_TYPES.AUTHENTICATION, {
+            this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.AUTHENTICATION, {
                 success: false,
                 username: this.username,
                 clientInfo: this.getClientInfo()
@@ -270,7 +269,7 @@ class FtpSession {
             this.sendMsg(Buffer.from('150 Opening ASCII mode data connection for file list'));
 
             // Send directory listing event
-            this.messageHandler.sendEvent(FTP_EVT_TYPES.DIRECTORY_LISTING, {
+            this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.DIRECTORY_LISTING, {
                 directory: targetDir,
                 clientInfo: this.getClientInfo()
             });
@@ -403,7 +402,7 @@ class FtpSession {
                 );
 
                 // Send file transfer start event
-                this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_START, {
+                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FILE_TRANSFER_START, {
                     type: 'download',
                     filename: filePath,
                     size: stats.size,
@@ -420,7 +419,7 @@ class FtpSession {
                             this.sendMsg(Buffer.from('550 Failed to read file'));
 
                             // Send file transfer error event
-                            this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
+                            this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
                                 type: 'download',
                                 filename: filePath,
                                 error: err.message,
@@ -435,7 +434,7 @@ class FtpSession {
                             this.closeDataConnection();
 
                             // Send file transfer complete event
-                            this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_COMPLETE, {
+                            this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FILE_TRANSFER_COMPLETE, {
                                 type: 'download',
                                 filename: filePath,
                                 size: stats.size,
@@ -448,7 +447,7 @@ class FtpSession {
                         this.sendMsg(Buffer.from('425 Cannot open data connection'));
 
                         // Send file transfer error event
-                        this.messageHandler.sendEvent(FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
+                        this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FILE_TRANSFER_ERROR, {
                             type: 'download',
                             filename: filePath,
                             error: err.message,
@@ -613,7 +612,7 @@ class FtpSession {
         }
 
         // Update the client connection event
-        this.messageHandler.sendEvent(FTP_EVT_TYPES.CLIENT_CONNECTION, {
+        this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
             opType: 'remove',
             data: this.getClientInfo()
         });

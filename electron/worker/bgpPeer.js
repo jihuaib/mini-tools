@@ -1,5 +1,4 @@
 const BgpConst = require('../const/bgpConst');
-const { BGP_EVT_TYPES } = require('../const/bgpEvtConst');
 const { writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 const logger = require('../log/logger');
@@ -27,7 +26,7 @@ class BgpPeer {
         const peerInfo = this.getPeerInfo();
 
         // 发送状态变更事件
-        this.session.messageHandler.sendEvent(BGP_EVT_TYPES.BGP_PEER_CHANGE, { data: peerInfo });
+        this.session.messageHandler.sendEvent(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, { data: peerInfo });
     }
 
     resetPeer() {
@@ -40,7 +39,7 @@ class BgpPeer {
         const peerInfo = this.getPeerInfo();
 
         // 发送状态变更事件
-        this.session.messageHandler.sendEvent(BGP_EVT_TYPES.BGP_PEER_CHANGE, { data: peerInfo });
+        this.session.messageHandler.sendEvent(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, { data: peerInfo });
     }
 
     getPeerInfo() {

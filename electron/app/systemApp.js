@@ -12,6 +12,7 @@ const BmpApp = require('./bmpApp');
 const RpkiApp = require('./rpkiApp');
 const FtpApp = require('./ftpApp');
 const AppUpdater = require('./updater');
+const FtpConst = require('../const/ftpConst');
 /**
  * 用于系统菜单处理
  */
@@ -23,6 +24,7 @@ class SystemApp {
         this.registerHandlers(ipc);
         this.generalSettingsFileKey = 'GeneralSettings';
         this.toolsSettingsFileKey = 'ToolsSettings';
+        this.ftpSettingsFileKey = 'FtpSettings';
         this.updateSettingsFileKey = 'UpdateSettings';
         this.appVersionFileKey = 'appVersion';
 
@@ -155,6 +157,8 @@ class SystemApp {
         ipc.handle('common:getGeneralSettings', () => this.handleGetGeneralSettings());
         ipc.handle('common:saveToolsSettings', (event, settings) => this.handleSaveToolsSettings(settings));
         ipc.handle('common:getToolsSettings', () => this.handleGetToolsSettings());
+        ipc.handle('common:saveFtpSettings', (event, settings) => this.handleSaveFtpSettings(settings));
+        ipc.handle('common:getFtpSettings', () => this.handleGetFtpSettings());
         ipc.handle('common:saveUpdateSettings', (event, settings) => this.handleSaveUpdateSettings(settings));
         ipc.handle('common:getUpdateSettings', () => this.handleGetUpdateSettings());
         ipc.handle('common:selectDirectory', () => this.handleSelectDirectory());
@@ -193,19 +197,14 @@ class SystemApp {
 
             let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
             let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
-            let maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
             if (settings.packetParser && settings.packetParser.maxMessageHistory) {
                 maxMessageHistory = settings.packetParser.maxMessageHistory;
             }
             if (settings.stringGenerator && settings.stringGenerator.maxStringHistory) {
                 maxStringHistory = settings.stringGenerator.maxStringHistory;
             }
-            if (settings.ftpServer && settings.ftpServer.maxFtpUser) {
-                maxFtpUser = settings.ftpServer.maxFtpUser;
-            }
             this.toolsApp.setMaxMessageHistory(maxMessageHistory);
             this.toolsApp.setMaxStringHistory(maxStringHistory);
-            this.ftpApp.setMaxFtpUser(maxFtpUser);
 
             return successResponse(null, 'Settings saved successfully');
         } catch (error) {
@@ -217,6 +216,37 @@ class SystemApp {
     handleGetToolsSettings() {
         try {
             const settings = this.store.get(this.toolsSettingsFileKey);
+            if (!settings) {
+                return successResponse(null, 'Settings not found');
+            }
+            return successResponse(settings, 'Settings loaded successfully');
+        } catch (error) {
+            logger.error('Error getting settings:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    handleSaveFtpSettings(settings) {
+        try {
+            this.store.set(this.ftpSettingsFileKey, settings);
+
+            let maxFtpUser = FtpConst.DEFAULT_FTP_SETTINGS.maxFtpUser;
+            if (settings.maxFtpUser) {
+                maxFtpUser = settings.maxFtpUser;
+            }
+
+            this.ftpApp.setMaxFtpUser(maxFtpUser);
+
+            return successResponse(null, 'Settings saved successfully');
+        } catch (error) {
+            logger.error('Error saving settings:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    handleGetFtpSettings() {
+        try {
+            const settings = this.store.get(this.ftpSettingsFileKey);
             if (!settings) {
                 return successResponse(null, 'Settings not found');
             }
