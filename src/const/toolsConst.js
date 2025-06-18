@@ -22,9 +22,6 @@ export const DEFAULT_TOOLS_SETTINGS = {
     stringGenerator: {
         maxStringHistory: 10
     },
-    ftpServer: {
-        maxFtpUser: 10
-    },
     formatter: {
         maxFormatterHistory: 10
     }

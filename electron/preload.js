@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('commonApi', {
     getGeneralSettings: () => ipcRenderer.invoke('common:getGeneralSettings'),
     saveToolsSettings: settings => ipcRenderer.invoke('common:saveToolsSettings', settings),
     getToolsSettings: () => ipcRenderer.invoke('common:getToolsSettings'),
+    saveFtpSettings: settings => ipcRenderer.invoke('common:saveFtpSettings', settings),
+    getFtpSettings: () => ipcRenderer.invoke('common:getFtpSettings'),
     selectDirectory: () => ipcRenderer.invoke('common:selectDirectory'),
 
     // 保存更新设置

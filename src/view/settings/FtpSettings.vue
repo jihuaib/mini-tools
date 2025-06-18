@@ -1,14 +1,9 @@
 <template>
-    <div class="general-settings">
-        <h2>通用设置</h2>
+    <div class="ftp-settings">
+        <h2>FTP设置</h2>
         <a-form :model="settingsForm" layout="vertical">
-            <a-form-item label="日志级别" name="logLevel">
-                <a-select v-model:value="settingsForm.logLevel" style="width: 100%">
-                    <a-select-option value="debug">debug</a-select-option>
-                    <a-select-option value="info">info</a-select-option>
-                    <a-select-option value="warn">warn</a-select-option>
-                    <a-select-option value="error">error</a-select-option>
-                </a-select>
+            <a-form-item label="FTP用户最大存储条数" name="maxFtpUser">
+                <a-input-number v-model:value="settingsForm.maxFtpUser" :min="10" :max="1000" style="width: 100%" />
             </a-form-item>
 
             <a-form-item>
@@ -21,21 +16,24 @@
 <script setup>
     import { ref, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
-    import { DEFAULT_LOG_SETTINGS } from '../../const/toolsConst';
+    import { DEFAULT_FTP_SETTINGS } from '../../const/ftpConst';
 
+    // 工具设置组件
     const settingsForm = ref({
-        logLevel: DEFAULT_LOG_SETTINGS.logLevel
+        maxFtpUser: DEFAULT_FTP_SETTINGS.maxFtpUser
     });
 
     // 获取设置
     const getSettings = async () => {
         try {
-            const settings = await window.commonApi.getGeneralSettings();
+            const settings = await window.commonApi.getFtpSettings();
             if (settings.status === 'success' && settings.data) {
-                settingsForm.value = settings.data;
+                if (settings.data) {
+                    settingsForm.value.maxFtpUser = settings.data.maxFtpUser;
+                }
             }
         } catch (error) {
-            console.error('获取设置失败', error);
+            console.error('获取工具设置失败', error);
         }
     };
 
@@ -43,7 +41,7 @@
     const saveSettings = async () => {
         try {
             const payload = JSON.parse(JSON.stringify(settingsForm.value));
-            await window.commonApi.saveGeneralSettings(payload);
+            await window.commonApi.saveFtpSettings(payload);
             message.success('设置已保存');
         } catch (error) {
             console.error('保存设置失败', error);
@@ -57,7 +55,7 @@
 </script>
 
 <style scoped>
-    .general-settings {
+    .ftp-settings {
         max-width: 600px;
     }
 

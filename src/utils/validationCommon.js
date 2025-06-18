@@ -327,8 +327,8 @@ export const createPacketDataValidationRules = () => {
         ],
         protocolPort: [
             {
-                validator: value => value === '' || validators.port(value),
-                message: '请输入1024-65535之间的数字'
+                validator: value => value === '' || validators.range(1, 65535)(value),
+                message: '请输入1-65535之间的数字'
             }
         ]
     };
@@ -345,8 +345,8 @@ export const createFtpConfigValidationRules = () => {
                 message: '请输入端口号'
             },
             {
-                validator: validators.port,
-                message: '请输入1024-65535之间的数字'
+                validator: value => validators.range(1, 65535)(value),
+                message: '请输入1-65535之间的数字'
             }
         ]
     };

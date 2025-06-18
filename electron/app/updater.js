@@ -40,7 +40,7 @@ class AppUpdater {
             });
 
             // 设置本地更新配置文件用于测试
-            const devConfigPath = path.join(__dirname, 'dev-app-update.yml');
+            const devConfigPath = path.join(__dirname, '../dev-app-update.yml');
             if (fs.existsSync(devConfigPath)) {
                 autoUpdater.updateConfigPath = devConfigPath;
                 logger.info('开发环境：使用本地配置文件', devConfigPath);

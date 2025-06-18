@@ -1,9 +1,7 @@
 const logger = require('../log/logger');
 const RpkiConst = require('../const/rpkiConst');
-const { RPKI_EVT_TYPES } = require('../const/rpkiEvtConst');
 const BgpConst = require('../const/bgpConst');
 const { ipToBytes } = require('../utils/ipUtils');
-
 class RpkiSession {
     constructor(messageHandler, rpkiWorker) {
         this.socket = null;
@@ -104,7 +102,7 @@ class RpkiSession {
     }
 
     closeSession() {
-        this.messageHandler.sendEvent(RPKI_EVT_TYPES.CLIENT_CONNECTION, {
+        this.messageHandler.sendEvent(RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION, {
             opType: 'delete',
             data: this.getClientInfo()
         });
@@ -532,7 +530,7 @@ class RpkiSession {
         const roaArray = Array.from(this.roaData.values());
 
         // Notify front-end of ROA update
-        this.messageHandler.sendEvent(RPKI_EVT_TYPES.ROA_UPDATE, {
+        this.messageHandler.sendEvent(RpkiConst.RPKI_EVT_TYPES.ROA_UPDATE, {
             serverInfo: `${this.remoteIp}:${this.remotePort}`,
             roaData: roaArray
         });
@@ -540,7 +538,7 @@ class RpkiSession {
 
     notifyRoaComplete() {
         // Notify front-end that all ROA data has been received
-        this.messageHandler.sendEvent(RPKI_EVT_TYPES.ROA_COMPLETE, {
+        this.messageHandler.sendEvent(RpkiConst.RPKI_EVT_TYPES.ROA_COMPLETE, {
             serverInfo: `${this.remoteIp}:${this.remotePort}`,
             totalRoaEntries: this.roaData.size
         });

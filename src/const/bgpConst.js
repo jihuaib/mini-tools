@@ -23,7 +23,10 @@ export const BGP_ROLE_TYPE = {
 // 直接使用这个值处理
 export const BGP_ADDR_FAMILY = {
     IPV4_UNC: 1,
-    IPV6_UNC: 2
+    IPV6_UNC: 2,
+    L2VPN_EVPN: 3,
+    VPNV4: 4,
+    VPNV6: 5,
 };
 
 // IP Type Values, 需要和后台定义保持一致, 后台会
@@ -43,7 +46,10 @@ export const BGP_PEER_TYPE = {
 
 export const ADDRESS_FAMILY_NAME = {
     [BGP_ADDR_FAMILY.IPV4_UNC]: 'IPv4 UNC',
-    [BGP_ADDR_FAMILY.IPV6_UNC]: 'IPv6 UNC'
+    [BGP_ADDR_FAMILY.IPV6_UNC]: 'IPv6 UNC',
+    [BGP_ADDR_FAMILY.L2VPN_EVPN]: 'L2VPN EVPN',
+    [BGP_ADDR_FAMILY.VPNV4]: 'VPNV4',
+    [BGP_ADDR_FAMILY.VPNV6]: 'VPNV6'
 };
 
 // Default Values

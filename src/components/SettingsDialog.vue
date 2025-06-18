@@ -17,8 +17,12 @@
                         <span>通用设置</span>
                     </a-menu-item>
                     <a-menu-item key="tools">
-                        <template #icon><ToolOutlined /></template>
-                        <span>工具设置</span>
+                        <template #icon><CodeOutlined /></template>
+                        <span>tools设置</span>
+                    </a-menu-item>
+                    <a-menu-item key="ftp">
+                        <template #icon><DownloadOutlined /></template>
+                        <span>ftp设置</span>
                     </a-menu-item>
                     <a-menu-item key="update">
                         <template #icon><CloudDownloadOutlined /></template>
@@ -39,10 +43,11 @@
 
 <script setup>
     import { ref, computed, watch } from 'vue';
-    import { SettingOutlined, ToolOutlined, CloudDownloadOutlined } from '@ant-design/icons-vue';
+    import { SettingOutlined, CodeOutlined, CloudDownloadOutlined, DownloadOutlined } from '@ant-design/icons-vue';
     import GeneralSettings from '../view/settings/GeneralSettings.vue';
     import ToolsSettings from '../view/settings/ToolsSettings.vue';
     import UpdateSettings from '../view/settings/UpdateSettings.vue';
+    import FtpSettings from '../view/settings/FtpSettings.vue';
 
     const props = defineProps({
         visible: {
@@ -81,6 +86,8 @@
                 return GeneralSettings;
             case 'tools':
                 return ToolsSettings;
+            case 'ftp':
+                return FtpSettings;
             case 'update':
                 return UpdateSettings;
             default:

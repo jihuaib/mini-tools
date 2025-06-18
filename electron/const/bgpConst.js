@@ -13,6 +13,12 @@ const BGP_MARKER_LEN = 16;
 
 const BGP_RD_LEN = 8;
 
+const IP_HOST_BYTE_LEN = 4;
+const IPV6_HOST_BYTE_LEN = 16;
+
+const IP_HOST_LEN = 32;
+const IPV6_HOST_LEN = 128;
+
 const BGP_PEER_STATE = {
     IDLE: 0,
     CONNECT: 1,
@@ -58,18 +64,24 @@ const IP_TYPE = {
 // 渲染进程传入的地址组类型
 const BGP_ADDR_FAMILY = {
     IPV4_UNC: 1,
-    IPV6_UNC: 2
+    IPV6_UNC: 2,
+    L2VPN_EVPN: 3,
+    VPNV4: 4,
+    VPNV6: 5
 };
 
 // 协议规定的afi
 const BGP_AFI_TYPE = {
     AFI_IPV4: 1,
-    AFI_IPV6: 2
+    AFI_IPV6: 2,
+    AFI_L2VPN: 25
 };
 
 // 协议规定的safi
 const BGP_SAFI_TYPE = {
-    SAFI_UNICAST: 1
+    SAFI_UNICAST: 1,
+    SAFI_EVPN: 70,
+    SAFI_VPN: 128
 };
 
 // 协议规定的role
@@ -200,11 +212,35 @@ const BGP_PEER_TYPE = {
     PEER_TYPE_EBGP: 2
 };
 
+// 事件类型
+const BGP_EVT_TYPES = {
+    BGP_PEER_CHANGE: 1
+};
+
+// 请求-响应类型
+const BGP_REQ_TYPES = {
+    START_BGP: 1,
+    STOP_BGP: 2,
+    CONFIG_IPV4_PEER: 3,
+    CONFIG_IPV6_PEER: 4,
+    DELETE_PEER: 5,
+    GENERATE_IPV4_ROUTES: 6,
+    GENERATE_IPV6_ROUTES: 7,
+    DELETE_IPV4_ROUTES: 8,
+    DELETE_IPV6_ROUTES: 9,
+    GET_PEER_INFO: 10,
+    GET_ROUTES: 11
+};
+
 module.exports = {
     BGP_DEFAULT_PORT,
     BGP_HEAD_LEN,
     BGP_MAX_PKT_SIZE,
     BGP_VERSION,
+    IP_HOST_BYTE_LEN,
+    IPV6_HOST_BYTE_LEN,
+    IP_HOST_LEN,
+    IPV6_HOST_LEN,
     BGP_MARKER_LEN,
     BGP_PEER_STATE,
     BGP_PACKET_TYPE,
@@ -228,5 +264,7 @@ module.exports = {
     BGP_CAP_FLAGS,
     BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS,
     BGP_RD_LEN,
-    BGP_PEER_TYPE
+    BGP_PEER_TYPE,
+    BGP_EVT_TYPES,
+    BGP_REQ_TYPES
 };

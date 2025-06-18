@@ -14,3 +14,8 @@ export const FTP_STATUS = {
     UPLOADING: 'uploading',
     IDLE: 'idle'
 };
+
+// 默认FTP设置
+export const DEFAULT_FTP_SETTINGS = {
+    maxFtpUser: 10
+};

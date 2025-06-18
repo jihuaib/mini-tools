@@ -146,9 +146,9 @@
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'password'">
                             <span
-                                @click="togglePasswordVisibility(index)"
                                 style="cursor: pointer; color: #1890ff"
                                 :title="passwordVisibility[index] ? '点击隐藏密码' : '点击显示密码'"
+                                @click="togglePasswordVisibility(index)"
                             >
                                 {{ passwordVisibility[index] ? record.password : '****' }}
                             </span>
@@ -179,7 +179,7 @@
     import { DEFAULT_VALUES } from '../../const/ftpConst';
 
     defineOptions({
-        name: 'FtpServer'
+        name: 'FtpConfig'
     });
 
     const labelCol = { style: { width: '100px' } };

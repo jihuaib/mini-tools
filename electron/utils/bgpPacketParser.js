@@ -7,7 +7,7 @@
 
 // Import constants from existing BGP constants file
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString, ipv6BufferToString, getIpTypeName } = require('../utils/ipUtils');
+const { ipv4BufferToString, ipv6BufferToString, getIpTypeName, rdBufferToString } = require('../utils/ipUtils');
 const {
     getBgpPacketTypeName,
     getBgpOpenCapabilityName,
@@ -443,13 +443,27 @@ function parseMpReachNlri(buffer) {
 
     let nextHop = '';
 
-    // Parse next hop based on AFI
-    if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
-        // IPv4
-        nextHop = ipv4BufferToString(buffer.subarray(position, position + 4), 32);
-    } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
-        // IPv6
-        nextHop = ipv6BufferToString(buffer.subarray(position, position + 16), 128);
+    if ((afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) ||
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) ||
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_L2VPN && safi === BgpConst.BGP_SAFI_TYPE.SAFI_EVPN)) {
+        if (nextHopLength === BgpConst.IP_HOST_BYTE_LEN) {
+            // IPv4
+            nextHop = ipv4BufferToString(buffer.subarray(position, position + 4), BgpConst.IP_HOST_LEN);
+        } else if (nextHopLength === BgpConst.IPV6_HOST_BYTE_LEN) {
+            // IPv6
+            nextHop = ipv6BufferToString(buffer.subarray(position, position + 16), BgpConst.IPV6_HOST_LEN);
+        }
+    } else if ((afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) ||
+               (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN)) {
+        let tmpPosition = position + BgpConst.BGP_RD_LEN; // 跳过8字节RD
+        let tmpNextHopLength = nextHopLength - BgpConst.BGP_RD_LEN;
+        if (tmpNextHopLength === BgpConst.IP_HOST_BYTE_LEN) {
+            // IPv4
+            nextHop = ipv4BufferToString(buffer.subarray(tmpPosition, tmpPosition + 4), BgpConst.IP_HOST_LEN);
+        } else if (tmpNextHopLength === BgpConst.IPV6_HOST_BYTE_LEN) {
+            // IPv6
+            nextHop = ipv6BufferToString(buffer.subarray(tmpPosition, tmpPosition + 16), BgpConst.IPV6_HOST_LEN);
+        }
     }
 
     position += nextHopLength;
@@ -460,28 +474,77 @@ function parseMpReachNlri(buffer) {
     // Parse NLRI
     const nlri = [];
     while (position < buffer.length) {
-        const prefixLength = buffer[position];
-        position += 1;
+        let prefixLength = 0;
+        let prefix = null;
+        let rd = null;
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+            prefixLength = buffer[position];
+            position += 1;
 
-        // Calculate bytes needed for the prefix
-        const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
 
-        // Extract the prefix
-        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
-        position += prefixBytes;
-
-        // Format the prefix based on AFI
-        let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
-            // IPv4
             prefix = ipv4BufferToString(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
-            // IPv6
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_L2VPN && safi === BgpConst.BGP_SAFI_TYPE.SAFI_EVPN) {
+            prefixLength = 0;
+            let _routeType = buffer[position];
+            position += 1;
+
+            let len = buffer[position];
+            position += 1;
+            prefix = buffer.subarray(position, position + len).toString('hex');
+            position += len;
+        }
+        else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            position += 3; // 跳过3字节label
+            const rdBuffer = buffer.subarray(position, position + BgpConst.BGP_RD_LEN);
+            rd = rdBufferToString(rdBuffer);
+            position += BgpConst.BGP_RD_LEN;
+
+            prefixLength -= (3 << 3); // 3字节label
+            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            prefix = ipv4BufferToString(prefixBuffer, prefixLength);
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            position += 3; // 跳过3字节label
+            const rdBuffer = buffer.subarray(position, position + BgpConst.BGP_RD_LEN);
+            rd = rdBufferToString(rdBuffer);
+            position += BgpConst.BGP_RD_LEN;
+
+            prefixLength -= (3 << 3); // 3字节label
+            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else {
+            // 不支持，跳过处理
+            position = buffer.length;
         }
 
         nlri.push({
             prefix,
+            rd,
             length: prefixLength
         });
     }
@@ -510,28 +573,77 @@ function parseMpUnreachNlri(buffer) {
     // Parse withdrawn routes
     const withdrawnRoutes = [];
     while (position < buffer.length) {
-        const prefixLength = buffer[position];
-        position += 1;
+        let prefixLength = 0;
+        let prefix = null;
+        let rd = null;
+        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+            prefixLength = buffer[position];
+            position += 1;
 
-        // Calculate bytes needed for the prefix
-        const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
 
-        // Extract the prefix
-        const prefixBuffer = buffer.subarray(position, position + prefixBytes);
-        position += prefixBytes;
-
-        // Format the prefix based on AFI
-        let prefix;
-        if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
-            // IPv4
             prefix = ipv4BufferToString(prefixBuffer, prefixLength);
-        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6) {
-            // IPv6
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_L2VPN && safi === BgpConst.BGP_SAFI_TYPE.SAFI_EVPN) {
+            prefixLength = 0;
+            let _routeType = buffer[position];
+            position += 1;
+
+            let len = buffer[position];
+            position += 1;
+            prefix = buffer.subarray(position, position + len).toString('hex');
+            position += len;
+        }
+        else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            position += 3; // 跳过3字节label
+            const rdBuffer = buffer.subarray(position, position + BgpConst.BGP_RD_LEN);
+            rd = rdBufferToString(rdBuffer);
+            position += BgpConst.BGP_RD_LEN;
+
+            prefixLength -= (3 << 3); // 3字节label
+            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            prefix = ipv4BufferToString(prefixBuffer, prefixLength);
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+            prefixLength = buffer[position];
+            position += 1;
+
+            position += 3; // 跳过3字节label
+            const rdBuffer = buffer.subarray(position, position + BgpConst.BGP_RD_LEN);
+            rd = rdBufferToString(rdBuffer);
+            position += BgpConst.BGP_RD_LEN;
+
+            prefixLength -= (3 << 3); // 3字节label
+            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else {
+            // 不支持，跳过处理
+            position = buffer.length;
         }
 
         withdrawnRoutes.push({
             prefix,
+            rd,
             length: prefixLength
         });
     }

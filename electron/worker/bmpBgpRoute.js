@@ -5,6 +5,7 @@ class BmpBgpRoute {
         this.bmpBgpPeer = bmpBgpPeer;
 
         // key
+        this.rd = null;
         this.ip = null;
         this.mask = null;
 
@@ -21,13 +22,13 @@ class BmpBgpRoute {
         this.bgpPacket = [];
     }
 
-    static makeKey(ip, mask) {
-        return `${ip}|${mask}`;
+    static makeKey(rd, ip, mask) {
+        return `${rd}|${ip}|${mask}`;
     }
 
     static parseKey(key) {
-        const [ip, mask] = key.split('|');
-        return { ip, mask };
+        const [rd, ip, mask] = key.split('|');
+        return {rd, ip, mask};
     }
 
     getRouteInfo() {
@@ -36,6 +37,7 @@ class BmpBgpRoute {
             addrFamilyType: addrFamilyType,
             ip: this.ip,
             mask: this.mask,
+            rd: this.rd,
             origin: this.origin,
             asPath: this.asPath,
             med: this.med,
