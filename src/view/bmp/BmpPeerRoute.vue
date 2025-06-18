@@ -38,7 +38,7 @@
             <a-table
                 :columns="routeColumns"
                 :data-source="routeList"
-                :row-key="record => `${record.addrFamilyType}|${record.ip}|${record.mask}`"
+                :row-key="record => `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`"
                 :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
                 :scroll="{ y: 400 }"
                 size="small"
@@ -95,6 +95,12 @@
             customRender: ({ text }) => {
                 return ADDRESS_FAMILY_NAME[text] || text;
             }
+        },
+        {
+            title: 'RD',
+            dataIndex: 'rd',
+            key: 'rd',
+            ellipsis: true
         },
         {
             title: 'Prefix',
@@ -296,17 +302,17 @@
                 }
 
                 if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE) {
-                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
+                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.rd}|${updateRoute.ip}|${updateRoute.mask}`;
                     const existingIndex = routeList.value.findIndex(
-                        route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
+                        route => `${route.addrFamilyType}|${updateRoute.rd}|${route.ip}|${route.mask}` === routeKey
                     );
                     if (existingIndex !== -1) {
                         routeList.value.splice(existingIndex, 1);
                     }
                 } else if (opType === BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE) {
-                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.ip}|${updateRoute.mask}`;
+                    const routeKey = `${updateRoute.addrFamilyType}|${updateRoute.rd}|${updateRoute.ip}|${updateRoute.mask}`;
                     const existingIndex = routeList.value.findIndex(
-                        route => `${route.addrFamilyType}|${route.ip}|${route.mask}` === routeKey
+                        route => `${route.addrFamilyType}|${updateRoute.rd}|${route.ip}|${route.mask}` === routeKey
                     );
                     if (existingIndex !== -1) {
                         routeList.value[existingIndex] = updateRoute;

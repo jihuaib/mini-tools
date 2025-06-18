@@ -102,8 +102,6 @@ class BmpSession {
             }
             position += updateLength;
 
-            console.log(parsedBgpUpdate);
-
             let routeUpdates = [];
 
             // 处理withdrawn routes (IPv4)
@@ -120,7 +118,7 @@ class BmpSession {
                     const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
                     for (const routeMap of routeMaps) {
                         for (const withdrawn of parsedBgpUpdate.withdrawnRoutes) {
-                            const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
+                            const key = BmpBgpRoute.makeKey(withdrawn.rd, withdrawn.prefix, withdrawn.length);
                             const route = routeMap.map.get(key);
                             if (route) {
                                 routeUpdates.push({
@@ -159,7 +157,7 @@ class BmpSession {
                     const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
                     for (const routeMap of routeMaps) {
                         for (const withdrawn of mpUnreachNlri.withdrawnRoutes) {
-                            const key = BmpBgpRoute.makeKey(withdrawn.prefix, withdrawn.length);
+                            const key = BmpBgpRoute.makeKey(withdrawn.rd, withdrawn.prefix, withdrawn.length);
                             const route = routeMap.map.get(key);
                             if (route) {
                                 routeUpdates.push({
@@ -195,7 +193,7 @@ class BmpSession {
                     const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
                     for (const routeMap of routeMaps) {
                         for (const nlri of parsedBgpUpdate.nlri) {
-                            const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
+                            const key = BmpBgpRoute.makeKey(nlri.rd, nlri.prefix, nlri.length);
 
                             let bmpBgpRoute = routeMap.map.get(key);
                             if (!bmpBgpRoute) {
@@ -205,6 +203,7 @@ class BmpSession {
                                 bmpBgpRoute.clearAttributes();
                             }
 
+                            bmpBgpRoute.rd = nlri.rd;
                             bmpBgpRoute.ip = nlri.prefix;
                             bmpBgpRoute.mask = nlri.length;
 
@@ -244,7 +243,7 @@ class BmpSession {
                     const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
                     for (const routeMap of routeMaps) {
                         for (const nlri of mpReachNlri.nlri) {
-                            const key = BmpBgpRoute.makeKey(nlri.prefix, nlri.length);
+                            const key = BmpBgpRoute.makeKey(nlri.rd, nlri.prefix, nlri.length);
 
                             let bmpBgpRoute = routeMap.map.get(key);
                             if (!bmpBgpRoute) {
@@ -254,6 +253,7 @@ class BmpSession {
                                 bmpBgpRoute.clearAttributes();
                             }
 
+                            bmpBgpRoute.rd = nlri.rd;
                             bmpBgpRoute.ip = nlri.prefix;
                             bmpBgpRoute.mask = nlri.length;
 

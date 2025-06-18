@@ -65,7 +65,9 @@ const IP_TYPE = {
 const BGP_ADDR_FAMILY = {
     IPV4_UNC: 1,
     IPV6_UNC: 2,
-    L2VPN_EVPN: 3
+    L2VPN_EVPN: 3,
+    VPNV4: 4,
+    VPNV6: 5
 };
 
 // 协议规定的afi
@@ -78,7 +80,8 @@ const BGP_AFI_TYPE = {
 // 协议规定的safi
 const BGP_SAFI_TYPE = {
     SAFI_UNICAST: 1,
-    SAFI_EVPN: 70
+    SAFI_EVPN: 70,
+    SAFI_VPN: 128
 };
 
 // 协议规定的role
