@@ -200,10 +200,9 @@ class ToolsApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), formatterData);
 
-            this.saveFormatterToHistory(formatterData);
-
             logger.info('格式化结果:', result);
             if (result.verify) {
+                this.saveFormatterToHistory(formatterData);
                 return successResponse(result.data, '格式化成功');
             } else {
                 return errorResponse(result.msg, result.errors);

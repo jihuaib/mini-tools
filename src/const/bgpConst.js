@@ -26,7 +26,7 @@ export const BGP_ADDR_FAMILY = {
     IPV6_UNC: 2,
     L2VPN_EVPN: 3,
     VPNV4: 4,
-    VPNV6: 5,
+    VPNV6: 5
 };
 
 // IP Type Values, 需要和后台定义保持一致, 后台会
