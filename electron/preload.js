@@ -46,7 +46,7 @@ contextBridge.exposeInMainWorld('toolsApi', {
     parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
     parsePacketNoSaveHistory: packetData => ipcRenderer.invoke('tools:parsePacketNoSaveHistory', packetData),
     getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
-    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory'),
+    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory')
 });
 
 // bgp模块

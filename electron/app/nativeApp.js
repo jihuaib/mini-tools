@@ -96,7 +96,7 @@ class NativeApp {
 
             if (result.status === 'success') {
                 this.saveFormatterToHistory(formatterData);
-                return successResponse(result.data,'格式化成功');
+                return successResponse(result.data, '格式化成功');
             } else {
                 // 检验失败
                 return errorResponse(result.msg, result.errors || []);
@@ -157,9 +157,8 @@ class NativeApp {
             // 添加系统接口信息
             for (const [interfaceName, addresses] of Object.entries(osInterfaces)) {
                 // 过滤掉内部回环接口和无效接口
-                const validAddresses = addresses.filter(addr =>
-                    !addr.internal &&
-                    (addr.family === 'IPv4' || addr.family === 'IPv6')
+                const validAddresses = addresses.filter(
+                    addr => !addr.internal && (addr.family === 'IPv4' || addr.family === 'IPv6')
                 );
 
                 if (validAddresses.length > 0) {
@@ -169,11 +168,12 @@ class NativeApp {
                     let capDevice = null;
                     for (const device of capDevices) {
                         // 通过接口名称或地址匹配
-                        if (device.name && (
-                            device.name.includes(interfaceName) ||
-                            device.addresses?.some(addr => addr.addr === primaryAddress.address) ||
-                            device.description?.includes(interfaceName)
-                        )) {
+                        if (
+                            device.name &&
+                            (device.name.includes(interfaceName) ||
+                                device.addresses?.some(addr => addr.addr === primaryAddress.address) ||
+                                device.description?.includes(interfaceName))
+                        ) {
                             capDevice = device;
                             break;
                         }
@@ -243,19 +243,21 @@ class NativeApp {
                 // 首先检查是否是友好接口名称
                 if (osInterfaces[deviceName]) {
                     // 查找对应的抓包设备
-                    const interfaceAddresses = osInterfaces[deviceName].filter(addr =>
-                        !addr.internal && (addr.family === 'IPv4' || addr.family === 'IPv6')
+                    const interfaceAddresses = osInterfaces[deviceName].filter(
+                        addr => !addr.internal && (addr.family === 'IPv4' || addr.family === 'IPv6')
                     );
 
                     if (interfaceAddresses.length > 0) {
-                        const primaryAddress = interfaceAddresses.find(addr => addr.family === 'IPv4') || interfaceAddresses[0];
+                        const primaryAddress =
+                            interfaceAddresses.find(addr => addr.family === 'IPv4') || interfaceAddresses[0];
 
                         for (const device of capDevices) {
-                            if (device.name && (
-                                device.name.includes(deviceName) ||
-                                device.addresses?.some(addr => addr.addr === primaryAddress.address) ||
-                                device.description?.includes(deviceName)
-                            )) {
+                            if (
+                                device.name &&
+                                (device.name.includes(deviceName) ||
+                                    device.addresses?.some(addr => addr.addr === primaryAddress.address) ||
+                                    device.description?.includes(deviceName))
+                            ) {
                                 actualDeviceName = device.name;
                                 break;
                             }
@@ -686,12 +688,14 @@ class NativeApp {
             return {
                 status: 'error',
                 msg: 'XML格式化功能不可用，请检查 libxmljs2 模块是否正确安装',
-                errors: [{
-                    line: 1,
-                    column: 1,
-                    message: 'libxmljs2 模块不可用',
-                    type: 'dependency'
-                }]
+                errors: [
+                    {
+                        line: 1,
+                        column: 1,
+                        message: 'libxmljs2 模块不可用',
+                        type: 'dependency'
+                    }
+                ]
             };
         }
 
@@ -848,7 +852,8 @@ class NativeApp {
             });
 
             return {
-                message: `XML 标签不匹配错误 (第 ${line} 行，第 ${column} 列)\n` + `请检查开始标签和结束标签是否正确配对`,
+                message:
+                    `XML 标签不匹配错误 (第 ${line} 行，第 ${column} 列)\n` + `请检查开始标签和结束标签是否正确配对`,
                 errors: errors
             };
         }
