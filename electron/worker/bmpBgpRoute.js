@@ -28,7 +28,7 @@ class BmpBgpRoute {
 
     static parseKey(key) {
         const [rd, ip, mask] = key.split('|');
-        return {rd, ip, mask};
+        return { rd, ip, mask };
     }
 
     getRouteInfo() {

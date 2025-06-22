@@ -49,13 +49,15 @@
         "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
         "pack": "electron-builder --dir",
         "dist": "electron-builder",
-        "prepack": "npm run build",
-        "predist": "npm run build",
+        "rebuild": "electron-rebuild",
+        "prepack": "npm run build && npm run rebuild",
+        "predist": "npm run build && npm run rebuild",
         "format": "prettier --write .",
         "release": "electron-builder",
-        "prerelease": "npm run build",
+        "prerelease": "npm run build && npm run rebuild",
         "lint": "eslint --ext .js,.vue src electron",
-        "lint:fix": "eslint --fix --ext .js,.vue src electron"
+        "lint:fix": "eslint --fix --ext .js,.vue src electron",
+        "postbuild": "electron-builder install-app-deps"
     },
     "build": {
         "appId": "MiniTools",
@@ -102,6 +104,7 @@
         "cross-env": "^7.0.3",
         "electron": "^15.3.0",
         "electron-builder": "^22.14.13",
+        "electron-rebuild": "^3.2.9",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.29.1",
@@ -115,9 +118,11 @@
         "wait-port": "^1.1.0"
     },
     "dependencies": {
+        "cap": "^0.2.1",
         "electron-log": "^5.3.3",
         "electron-store": "^8.2.0",
         "electron-updater": "^6.1.7",
-        "ipaddr.js": "^2.1.0"
+        "ipaddr.js": "^2.1.0",
+        "libxmljs2": "^0.30.1"
     }
 }

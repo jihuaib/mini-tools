@@ -12,6 +12,7 @@ const BmpApp = require('./bmpApp');
 const RpkiApp = require('./rpkiApp');
 const FtpApp = require('./ftpApp');
 const AppUpdater = require('./updater');
+const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
 /**
  * 用于系统菜单处理
@@ -46,6 +47,7 @@ class SystemApp {
         this.rpkiApp = new RpkiApp(ipc, this.programStore);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
+        this.nativeApp = new NativeApp(ipc);
     }
 
     // 添加版本兼容性检查方法

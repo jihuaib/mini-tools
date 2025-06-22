@@ -4,6 +4,7 @@ import ToolMain from '../view/tools/ToolMain.vue';
 import StringGenerator from '../view/tools/StringGenerator.vue';
 import PacketParser from '../view/tools/PacketParser.vue';
 import Formatter from '../view/tools/Formatter.vue';
+import PacketCapture from '../view/tools/PacketCapture.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
@@ -53,6 +54,12 @@ const routes = [
                         path: 'formatter',
                         name: 'Formatter',
                         component: Formatter,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'packet-capture',
+                        name: 'PacketCapture',
+                        component: PacketCapture,
                         meta: { keepAlive: true }
                     }
                 ]

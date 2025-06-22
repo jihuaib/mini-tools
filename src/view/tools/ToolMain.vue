@@ -6,6 +6,7 @@
                 <a-tab-pane key="string-generator" tab="字符串生成" />
                 <a-tab-pane key="packet-parser" tab="报文解析" />
                 <a-tab-pane key="formatter" tab="格式化工具" />
+                <a-tab-pane key="packet-capture" tab="网络抓包" />
             </a-tabs>
         </div>
 
