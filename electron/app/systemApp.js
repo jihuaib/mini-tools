@@ -42,12 +42,12 @@ class SystemApp {
         });
 
         this.bgpApp = new BgpApp(ipc, this.programStore);
-        this.toolsApp = new ToolsApp(ipc, this.programStore);
         this.bmpApp = new BmpApp(ipc, this.programStore);
         this.rpkiApp = new RpkiApp(ipc, this.programStore);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
-        this.nativeApp = new NativeApp(ipc);
+        this.nativeApp = new NativeApp(ipc, this.programStore);
+        this.toolsApp = new ToolsApp(ipc, this.programStore);
     }
 
     // 添加版本兼容性检查方法
@@ -199,14 +199,19 @@ class SystemApp {
 
             let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
             let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
+            let maxFormatterHistory = DEFAULT_TOOLS_SETTINGS.formatter.maxFormatterHistory;
             if (settings.packetParser && settings.packetParser.maxMessageHistory) {
                 maxMessageHistory = settings.packetParser.maxMessageHistory;
             }
             if (settings.stringGenerator && settings.stringGenerator.maxStringHistory) {
                 maxStringHistory = settings.stringGenerator.maxStringHistory;
             }
+            if (settings.formatter && settings.formatter.maxFormatterHistory) {
+                maxFormatterHistory = settings.formatter.maxFormatterHistory;
+            }
             this.toolsApp.setMaxMessageHistory(maxMessageHistory);
             this.toolsApp.setMaxStringHistory(maxStringHistory);
+            this.nativeApp.setMaxFormatterHistory(maxFormatterHistory);
 
             return successResponse(null, 'Settings saved successfully');
         } catch (error) {
@@ -301,6 +306,7 @@ class SystemApp {
         let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
         let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
         let maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
+        let maxFormatterHistory = DEFAULT_TOOLS_SETTINGS.formatter.maxFormatterHistory;
         const toolsSettings = this.store.get(this.toolsSettingsFileKey);
         if (toolsSettings && toolsSettings.packetParser) {
             if (toolsSettings.packetParser.maxMessageHistory) {
@@ -317,9 +323,15 @@ class SystemApp {
                 maxFtpUser = toolsSettings.ftpServer.maxFtpUser;
             }
         }
+        if (toolsSettings && toolsSettings.formatter) {
+            if (toolsSettings.formatter.maxFormatterHistory) {
+                maxFormatterHistory = toolsSettings.formatter.maxFormatterHistory;
+            }
+        }
         this.toolsApp.setMaxMessageHistory(maxMessageHistory);
         this.toolsApp.setMaxStringHistory(maxStringHistory);
         this.ftpApp.setMaxFtpUser(maxFtpUser);
+        this.nativeApp.setMaxFormatterHistory(maxFormatterHistory);
 
         // 加载更新设置并应用
         let updateSetting = DEFAULT_UPDATE_SETTINGS;
@@ -331,9 +343,41 @@ class SystemApp {
     }
 
     async handleWindowClose() {
-        const closeBgpOk = await this.bgpApp.handleWindowClose(this.win);
-        if (!closeBgpOk) {
-            return false;
+        const isBgpRunning = this.bgpApp.getBgpRunning();
+        const isBmpRunning = this.bmpApp.getBmpRunning();
+        const isRpkiRunning = this.rpkiApp.getRpkiRunning();
+        const isFtpRunning = this.ftpApp.getFtpRunning();
+        const isNativeRunning = this.nativeApp.getPacketCaptureRunning();
+
+        if (isBgpRunning || isBmpRunning || isRpkiRunning || isFtpRunning || isNativeRunning) {
+            const { response } = await dialog.showMessageBox(this.win, {
+                type: 'warning',
+                title: '确认关闭',
+                message: 'MiniTools 正在运行，确定要关闭吗？',
+                buttons: ['确定', '取消'],
+                defaultId: 1,
+                cancelId: 1
+            });
+
+            if (response === 0) {
+                // 用户点击确定，先停止 MiniTools 然后关闭窗口
+                if (isBgpRunning) {
+                    await this.bgpApp.handleStopBgp();
+                }
+                if (isBmpRunning) {
+                    await this.bmpApp.handleStopBmp();
+                }
+                if (isRpkiRunning) {
+                    await this.rpkiApp.handleStopRpki();
+                }
+                if (isFtpRunning) {
+                    await this.ftpApp.handleStopFtp();
+                }
+                if (isNativeRunning) {
+                    await this.nativeApp.handleStopPacketCapture();
+                }
+                return true;
+            }
         }
 
         return true;

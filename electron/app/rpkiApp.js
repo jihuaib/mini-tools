@@ -251,6 +251,10 @@ class RpkiApp {
             return errorResponse(error.message);
         }
     }
+
+    getRpkiRunning() {
+        return null != this.worker;
+    }
 }
 
 module.exports = RpkiApp;

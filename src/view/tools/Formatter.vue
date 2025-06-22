@@ -139,7 +139,7 @@
                 content: formState.value.content
             };
 
-            const resp = await window.toolsApi.formatData(payload);
+            const resp = await window.nativeApi.formatData(payload);
             if (resp.status === 'success') {
                 result.value = resp.data;
                 lineErrors.value = [];
@@ -197,7 +197,7 @@
 
     const showFormatterHistory = async () => {
         try {
-            const resp = await window.toolsApi.getFormatterHistory();
+            const resp = await window.nativeApi.getFormatterHistory();
             if (resp.status === 'success') {
                 formatterHistory.value = resp.data;
                 formatterHistoryModalVisible.value = true;
@@ -215,7 +215,7 @@
 
     const clearHistory = async () => {
         try {
-            const resp = await window.toolsApi.clearFormatterHistory();
+            const resp = await window.nativeApi.clearFormatterHistory();
             if (resp.status === 'success') {
                 formatterHistory.value = [];
                 message.success('历史记录已清空');
