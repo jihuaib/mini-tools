@@ -153,6 +153,7 @@ class WorkerWithPromise {
                 } else {
                     reject(new Error(result.msg || 'Worker execution failed'));
                 }
+                worker.terminate();
             });
 
             // 错误处理
@@ -160,6 +161,7 @@ class WorkerWithPromise {
                 // reject会向上抛异常
                 logger.error(`发生错误: ${err}`);
                 reject(new Error(err.message || 'Worker execution failed'));
+                worker.terminate();
             });
 
             // 提前退出也算失败
@@ -170,6 +172,7 @@ class WorkerWithPromise {
                 } else {
                     logger.info(`has completed successfully.`);
                 }
+                worker.terminate();
             });
         });
     }

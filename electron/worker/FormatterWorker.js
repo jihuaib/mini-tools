@@ -1,4 +1,5 @@
 const { parentPort } = require('worker_threads');
+const libxmljs = require('libxmljs2');
 
 // 处理来自主进程的消息
 parentPort.on('message', data => {
@@ -38,12 +39,16 @@ parentPort.on('message', data => {
 // JSON格式化
 function formatJSON(jsonString, indent) {
     try {
+        // 确保indent是有效的正整数
+        const validIndent = Math.max(1, Math.floor(Number(indent)) || 2);
+
         // 解析JSON字符串
         const obj = JSON.parse(jsonString);
-        // 美化输出
+
+        // 美化输出，使用指定的缩进空格数
         return {
             status: 'success',
-            data: JSON.stringify(obj, null, indent || 2)
+            data: JSON.stringify(obj, null, validIndent)
         };
     } catch (error) {
         const errorInfo = getDetailedJSONError(jsonString, error);
@@ -277,356 +282,231 @@ function getLineColumnFromPosition(text, position) {
 
 // XML格式化
 function formatXML(xmlString, indent = 2) {
-    // 先进行XML语法检查
-    const validation = validateXMLSyntax(xmlString);
-    if (validation.status !== 'success') {
-        return validation;
-    }
-
     try {
-        xmlString = xmlString.trim().replace(/>\s+</g, '><'); // 去除标签间空白
-        const space = ' '.repeat(indent);
-        const tokens = xmlString.match(/<[^>]+>|[^<]+/g); // 拆分为标签/文本块
+        // 使用libxmljs2解析和验证XML
+        const xmlDoc = libxmljs.parseXml(xmlString);
 
-        if (!tokens) {
-            return {
-                status: 'error',
-                msg: 'XML 解析失败: 无法识别有效的XML标签',
-                errors: [
-                    {
-                        line: 1,
-                        column: 1,
-                        message: '无法识别有效的XML标签',
-                        type: 'syntax'
-                    }
-                ]
-            };
-        }
+        // 获取原始XML字符串并进行格式化
+        const rawXml = xmlDoc.toString();
+        console.log('rawXml', rawXml);
+        const formattedXml = formatXMLString(rawXml, indent);
+        console.log('formattedXml', formattedXml);
 
-        let formatted = '';
-        let level = 0;
-        let i = 0;
-        const tagStack = []; // 用于跟踪标签匹配
+        return {
+            status: 'success',
+            data: formattedXml
+        };
+    } catch (error) {
+        // 解析XML时的错误处理
+        console.log('error', error);
+        const errorInfo = getDetailedXMLError(xmlString, error);
+        return {
+            status: 'error',
+            msg: errorInfo.message,
+            errors: errorInfo.errors
+        };
+    }
+}
 
-        while (i < tokens.length) {
-            const token = tokens[i];
+// 自定义XML格式化函数
+function formatXMLString(xmlString, indent = 2) {
+    // 确保indent是有效的非负整数
+    const validIndent = Math.max(0, Math.floor(Number(indent)) || 2);
+    const space = ' '.repeat(validIndent);
 
-            if (token.startsWith('<?') || token.startsWith('<!')) {
-                // 声明或注释
-                formatted += space.repeat(level) + token + '\n';
-                i++;
-            } else if (token.startsWith('</')) {
-                // 结束标签
-                const tagName = extractTagName(token);
-                const expectedTag = tagStack.pop();
+    // 移除多余的空白字符并分割成tokens
+    const tokens = xmlString
+        .replace(/>\s+</g, '><')
+        .trim()
+        .split(/(<[^>]*>)/);
+    let formatted = '';
+    let level = 0;
+    let needsIndent = false;
 
-                if (expectedTag && expectedTag !== tagName) {
-                    const errorLine = findTagLineInOriginal(xmlString, token);
-                    return {
-                        status: 'error',
-                        msg: `XML 标签不匹配错误: 期望闭合标签 "</${expectedTag}>"，但找到 "</${tagName}>"\n请检查标签是否正确配对`,
-                        errors: [
-                            {
-                                line: errorLine || 1,
-                                column: 1,
-                                message: `标签不匹配: 期望 "</${expectedTag}>" 但找到 "</${tagName}>"`,
-                                type: 'mismatch'
-                            }
-                        ]
-                    };
+    for (const token of tokens) {
+        if (!token) continue;
+
+        if (token.startsWith('<')) {
+            // 处理XML标签
+            if (token.startsWith('</')) {
+                // 结束标签：减少缩进
+                level = Math.max(0, level - 1);
+                if (needsIndent) {
+                    formatted += '\n' + space.repeat(level);
                 }
-
-                level--;
-                formatted += space.repeat(level) + token + '\n';
-                i++;
-            } else if (token.startsWith('<') && token.endsWith('/>')) {
-                // 自闭合标签
-                formatted += space.repeat(level) + token + '\n';
-                i++;
-            } else if (token.startsWith('<')) {
-                const startTag = token;
-                const tagName = extractTagName(startTag);
-
-                // 验证标签名是否有效
-                if (!isValidXMLTagName(tagName)) {
-                    const errorLine = findTagLineInOriginal(xmlString, token);
-                    return {
-                        status: 'error',
-                        msg: `XML 语法错误: 无效的标签名 "${tagName}"\n标签名只能包含字母、数字、连字符、下划线和句点，且不能以数字开头`,
-                        errors: [
-                            {
-                                line: errorLine || 1,
-                                column: 1,
-                                message: `无效的标签名 "${tagName}"`,
-                                type: 'syntax'
-                            }
-                        ]
-                    };
+                formatted += token;
+                needsIndent = true;
+            } else if (token.endsWith('/>')) {
+                // 自闭合标签：不改变缩进级别
+                if (needsIndent) {
+                    formatted += '\n' + space.repeat(level);
                 }
-
-                const next = tokens[i + 1];
-                const endTag = tokens[i + 2];
-
-                // 检查是否是简单文本内容包裹的结构 <tag>text</tag>
-                if (next && !next.startsWith('<') && endTag && endTag.startsWith('</')) {
-                    const endTagName = extractTagName(endTag);
-                    if (tagName !== endTagName) {
-                        const errorLine = findTagLineInOriginal(xmlString, endTag);
-                        return {
-                            status: 'error',
-                            msg: `XML 标签不匹配错误: 开始标签 "<${tagName}>" 与结束标签 "</${endTagName}>" 不匹配\n请检查标签名是否一致`,
-                            errors: [
-                                {
-                                    line: errorLine || 1,
-                                    column: 1,
-                                    message: `标签不匹配: "<${tagName}>" 与 "</${endTagName}>"`,
-                                    type: 'mismatch'
-                                }
-                            ]
-                        };
-                    }
-
-                    const inlineText = next.trim();
-                    formatted += space.repeat(level) + startTag + inlineText + endTag + '\n';
-                    i += 3; // 跳过这三个块
-                } else {
-                    // 正常标签块
-                    tagStack.push(tagName);
-                    formatted += space.repeat(level) + startTag + '\n';
-                    level++;
-                    i++;
+                formatted += token;
+                needsIndent = true;
+            } else if (token.startsWith('<?') || token.startsWith('<!--')) {
+                // XML声明或注释：不改变缩进级别
+                if (needsIndent && formatted) {
+                    formatted += '\n' + space.repeat(level);
                 }
+                formatted += token;
+                needsIndent = true;
             } else {
-                // 单独出现的文本节点
-                const text = token.trim();
-                if (text) {
-                    formatted += space.repeat(level) + text + '\n';
+                // 开始标签：增加缩进
+                if (needsIndent) {
+                    formatted += '\n' + space.repeat(level);
                 }
-                i++;
+                formatted += token;
+                level++;
+                needsIndent = true;
+            }
+        } else {
+            // 文本内容
+            const trimmedToken = token.trim();
+            if (trimmedToken) {
+                // 如果有实际内容，直接添加（不换行）
+                formatted += trimmedToken;
+                needsIndent = true;
             }
         }
+    }
 
-        // 检查是否有未闭合的标签
-        if (tagStack.length > 0) {
-            const errors = tagStack.map(tag => {
-                const errorLine = findTagLineInOriginal(xmlString, `<${tag}`);
-                return {
-                    line: errorLine || 1,
-                    column: 1,
-                    message: `未闭合的标签: <${tag}>`,
-                    type: 'unclosed'
-                };
+    return formatted.trim();
+}
+
+// 获取详细的XML错误信息
+function getDetailedXMLError(xmlString, error) {
+    const errors = [];
+    const errorMessage = error.toString();
+    console.log('errorMessage', errorMessage);
+    console.log('line', error.line);
+
+    // 尝试从libxmljs2错误信息中提取行号和列号
+
+    let line = 1;
+    let column = 1;
+
+    if (error.line) {
+        line = parseInt(error.line);
+    }
+    if (error.column) {
+        column = parseInt(error.column);
+    }
+
+    // 分析不同类型的XML错误
+    if (errorMessage.includes('StartTag: invalid element name') || errorMessage.includes('xmlParseStartTag')) {
+        errors.push({
+            line: line,
+            column: column,
+            message: '无效的XML标签名',
+            type: 'syntax'
+        });
+
+        return {
+            message:
+                `XML 语法错误 (第 ${line} 行，第 ${column} 列): 无效的标签名\n` +
+                `可能的原因:\n` +
+                `- 标签名包含非法字符\n` +
+                `- 标签名以数字开头\n` +
+                `- 标签名为空`,
+            errors: errors
+        };
+    }
+
+    if (errorMessage.includes('Opening and ending tag mismatch') || errorMessage.includes('expected')) {
+        const tagMatch = errorMessage.match(/Opening and ending tag mismatch: (\w+) line \d+ and (\w+)/);
+        if (tagMatch) {
+            const openTag = tagMatch[1];
+            const closeTag = tagMatch[2];
+
+            errors.push({
+                line: line,
+                column: column,
+                message: `标签不匹配: 开始标签 <${openTag}> 与结束标签 </${closeTag}> 不匹配`,
+                type: 'mismatch'
             });
 
             return {
-                status: 'error',
-                msg: `XML 语法错误: 发现未闭合的标签\n未闭合的标签: ${tagStack.map(tag => `<${tag}>`).join(', ')}\n请为这些标签添加对应的闭合标签`,
+                message:
+                    `XML 标签不匹配错误 (第 ${line} 行): 开始标签 <${openTag}> 与结束标签 </${closeTag}> 不匹配\n` +
+                    `请检查标签名是否一致`,
                 errors: errors
             };
         }
 
+        errors.push({
+            line: line,
+            column: column,
+            message: '标签不匹配',
+            type: 'mismatch'
+        });
+
         return {
-            status: 'success',
-            data: formatted.trim()
-        };
-    } catch (e) {
-        return {
-            status: 'error',
-            msg: 'XML 格式化失败: ' + e.message,
-            errors: [
-                {
-                    line: 1,
-                    column: 1,
-                    message: e.message,
-                    type: 'syntax'
-                }
-            ]
-        };
-    }
-}
-
-// 在原始XML中查找标签所在的行
-function findTagLineInOriginal(xmlString, tag) {
-    const lines = xmlString.split('\n');
-    const tagName = extractTagName(tag);
-
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes(`<${tagName}`) || lines[i].includes(`</${tagName}`)) {
-            return i + 1;
-        }
-    }
-    return null;
-}
-
-// XML语法验证
-function validateXMLSyntax(xmlString) {
-    const trimmed = xmlString.trim();
-
-    if (!trimmed) {
-        return {
-            status: 'error',
-            msg: 'XML 内容为空',
-            errors: [
-                {
-                    line: 1,
-                    column: 1,
-                    message: 'XML 内容为空',
-                    type: 'empty'
-                }
-            ]
+            message: `XML 标签不匹配错误 (第 ${line} 行，第 ${column} 列)\n` + `请检查开始标签和结束标签是否正确配对`,
+            errors: errors
         };
     }
 
-    // 检查是否包含基本的XML结构
-    if (!trimmed.includes('<') || !trimmed.includes('>')) {
+    if (errorMessage.includes('Premature end of data') || errorMessage.includes("EndTag: '<' not found")) {
+        errors.push({
+            line: line,
+            column: column,
+            message: 'XML内容不完整，可能缺少闭合标签',
+            type: 'unclosed'
+        });
+
         return {
-            status: 'error',
-            msg: 'XML 语法错误: 缺少有效的XML标签\nXML文档必须包含至少一个标签',
-            errors: [
-                {
-                    line: 1,
-                    column: 1,
-                    message: '缺少有效的XML标签',
-                    type: 'syntax'
-                }
-            ]
+            message:
+                `XML 语法错误 (第 ${line} 行): XML内容不完整\n` +
+                `可能的原因:\n` +
+                `- 缺少闭合标签\n` +
+                `- XML文档被意外截断`,
+            errors: errors
         };
     }
 
-    // 检查尖括号是否配对
-    const openBrackets = (trimmed.match(/</g) || []).length;
-    const closeBrackets = (trimmed.match(/>/g) || []).length;
+    if (errorMessage.includes('not well-formed') || errorMessage.includes('xmlParseCharData')) {
+        errors.push({
+            line: line,
+            column: column,
+            message: 'XML格式不正确',
+            type: 'syntax'
+        });
 
-    if (openBrackets !== closeBrackets) {
         return {
-            status: 'error',
-            msg: `XML 语法错误: 尖括号不匹配\n找到 ${openBrackets} 个 "<" 和 ${closeBrackets} 个 ">"\n请检查所有标签是否正确闭合`,
-            errors: [
-                {
-                    line: 1,
-                    column: 1,
-                    message: `尖括号不匹配: ${openBrackets} 个 "<" 和 ${closeBrackets} 个 ">"`,
-                    type: 'syntax'
-                }
-            ]
+            message:
+                `XML 语法错误 (第 ${line} 行，第 ${column} 列): XML格式不正确\n` +
+                `可能的原因:\n` +
+                `- 包含非法字符\n` +
+                `- 属性值未用引号包裹\n` +
+                `- 标签语法错误`,
+            errors: errors
         };
     }
 
-    // 检查是否有无效的字符序列
-    if (trimmed.includes('<<') || trimmed.includes('>>')) {
-        const errorLine = findErrorLineByContent(trimmed, '<<') || findErrorLineByContent(trimmed, '>>');
+    if (errorMessage.includes('Empty content') || xmlString.trim() === '') {
+        errors.push({
+            line: 1,
+            column: 1,
+            message: 'XML内容为空',
+            type: 'empty'
+        });
+
         return {
-            status: 'error',
-            msg: 'XML 语法错误: 发现连续的尖括号 "<<" 或 ">>"\n这通常表示标签语法错误',
-            errors: [
-                {
-                    line: errorLine || 1,
-                    column: 1,
-                    message: '发现连续的尖括号，标签语法错误',
-                    type: 'syntax'
-                }
-            ]
+            message: 'XML 内容为空\n请输入有效的XML内容',
+            errors: errors
         };
     }
 
-    // 检查是否有未闭合的标签
-    const unclosedTags = trimmed.match(/<[^>]*$/);
-    if (unclosedTags) {
-        const lines = trimmed.split('\n');
-        const errorLine = findLastNonEmptyLine(lines);
-        return {
-            status: 'error',
-            msg: 'XML 语法错误: 发现未闭合的标签\n问题位置: "' + unclosedTags[0] + '..."',
-            errors: [
-                {
-                    line: errorLine,
-                    column: 1,
-                    message: '发现未闭合的标签',
-                    type: 'unclosed'
-                }
-            ]
-        };
-    }
-
-    // 检查是否有空标签名（如 <> 或 </> ）
-    const emptyTags = trimmed.match(/<\s*>|<\/\s*>/g);
-    if (emptyTags) {
-        const errorLine = findErrorLineByContent(trimmed, emptyTags[0]);
-        return {
-            status: 'error',
-            msg: 'XML 语法错误: 发现空标签名\n问题标签: ' + emptyTags.join(', ') + '\nXML标签必须包含有效的标签名',
-            errors: [
-                {
-                    line: errorLine || 1,
-                    column: 1,
-                    message: '发现空标签名',
-                    type: 'syntax'
-                }
-            ]
-        };
-    }
-
-    // 检查标签格式的基本有效性
-    const allTags = trimmed.match(/<[^>]+>/g);
-    if (allTags) {
-        const _lines = trimmed.split('\n');
-        for (const tag of allTags) {
-            // 跳过XML声明和注释
-            if (tag.startsWith('<?') || tag.startsWith('<!')) {
-                continue;
-            }
-
-            // 提取标签名进行基本验证
-            const tagName = extractTagName(tag);
-            if (!tagName) {
-                const errorLine = findErrorLineByContent(trimmed, tag);
-                return {
-                    status: 'error',
-                    msg: `XML 语法错误: 无法识别标签名\n问题标签: "${tag}"\nXML标签必须包含有效的标签名`,
-                    errors: [
-                        {
-                            line: errorLine || 1,
-                            column: 1,
-                            message: `无法识别标签名: "${tag}"`,
-                            type: 'syntax'
-                        }
-                    ]
-                };
-            }
-
-            // 检查标签名是否有效
-            if (!isValidXMLTagName(tagName)) {
-                const errorLine = findErrorLineByContent(trimmed, tag);
-                return {
-                    status: 'error',
-                    msg: `XML 语法错误: 无效的标签名 "${tagName}"\n问题标签: "${tag}"\n标签名只能包含字母、数字、连字符、下划线和句点，且不能以数字开头`,
-                    errors: [
-                        {
-                            line: errorLine || 1,
-                            column: 1,
-                            message: `无效的标签名 "${tagName}"`,
-                            type: 'syntax'
-                        }
-                    ]
-                };
-            }
-        }
-    }
+    // 处理其他类型的错误
+    errors.push({
+        line: line,
+        column: column,
+        message: errorMessage,
+        type: 'syntax'
+    });
 
     return {
-        status: 'success'
+        message: `XML 解析错误 (第 ${line} 行，第 ${column} 列): ${errorMessage}`,
+        errors: errors
     };
-}
-
-// 提取标签名
-function extractTagName(tag) {
-    const match = tag.match(/<\/?([^>\s/]+)/);
-    return match ? match[1] : '';
-}
-
-// 验证XML标签名是否有效
-function isValidXMLTagName(tagName) {
-    // XML标签名规则: 以字母或下划线开头，后面可以跟字母、数字、连字符、下划线、句点
-    const xmlNameRegex = /^[a-zA-Z_][\w\-.]*$/;
-    return xmlNameRegex.test(tagName);
 }

@@ -443,9 +443,11 @@ function parseMpReachNlri(buffer) {
 
     let nextHop = '';
 
-    if ((afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) ||
+    if (
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) ||
         (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) ||
-        (afi === BgpConst.BGP_AFI_TYPE.AFI_L2VPN && safi === BgpConst.BGP_SAFI_TYPE.SAFI_EVPN)) {
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_L2VPN && safi === BgpConst.BGP_SAFI_TYPE.SAFI_EVPN)
+    ) {
         if (nextHopLength === BgpConst.IP_HOST_BYTE_LEN) {
             // IPv4
             nextHop = ipv4BufferToString(buffer.subarray(position, position + 4), BgpConst.IP_HOST_LEN);
@@ -453,8 +455,10 @@ function parseMpReachNlri(buffer) {
             // IPv6
             nextHop = ipv6BufferToString(buffer.subarray(position, position + 16), BgpConst.IPV6_HOST_LEN);
         }
-    } else if ((afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) ||
-               (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN)) {
+    } else if (
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) ||
+        (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN)
+    ) {
         let tmpPosition = position + BgpConst.BGP_RD_LEN; // 跳过8字节RD
         let tmpNextHopLength = nextHopLength - BgpConst.BGP_RD_LEN;
         if (tmpNextHopLength === BgpConst.IP_HOST_BYTE_LEN) {
@@ -504,8 +508,7 @@ function parseMpReachNlri(buffer) {
             position += 1;
             prefix = buffer.subarray(position, position + len).toString('hex');
             position += len;
-        }
-        else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
             prefixLength = buffer[position];
             position += 1;
 
@@ -514,8 +517,8 @@ function parseMpReachNlri(buffer) {
             rd = rdBufferToString(rdBuffer);
             position += BgpConst.BGP_RD_LEN;
 
-            prefixLength -= (3 << 3); // 3字节label
-            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+            prefixLength -= 3 << 3; // 3字节label
+            prefixLength -= BgpConst.BGP_RD_LEN << 3; // 8字节label
 
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
@@ -530,8 +533,8 @@ function parseMpReachNlri(buffer) {
             rd = rdBufferToString(rdBuffer);
             position += BgpConst.BGP_RD_LEN;
 
-            prefixLength -= (3 << 3); // 3字节label
-            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+            prefixLength -= 3 << 3; // 3字节label
+            prefixLength -= BgpConst.BGP_RD_LEN << 3; // 8字节label
 
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
@@ -603,8 +606,7 @@ function parseMpUnreachNlri(buffer) {
             position += 1;
             prefix = buffer.subarray(position, position + len).toString('hex');
             position += len;
-        }
-        else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
+        } else if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 && safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
             prefixLength = buffer[position];
             position += 1;
 
@@ -613,8 +615,8 @@ function parseMpUnreachNlri(buffer) {
             rd = rdBufferToString(rdBuffer);
             position += BgpConst.BGP_RD_LEN;
 
-            prefixLength -= (3 << 3); // 3字节label
-            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+            prefixLength -= 3 << 3; // 3字节label
+            prefixLength -= BgpConst.BGP_RD_LEN << 3; // 8字节label
 
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
@@ -629,8 +631,8 @@ function parseMpUnreachNlri(buffer) {
             rd = rdBufferToString(rdBuffer);
             position += BgpConst.BGP_RD_LEN;
 
-            prefixLength -= (3 << 3); // 3字节label
-            prefixLength -= (BgpConst.BGP_RD_LEN << 3); // 8字节label
+            prefixLength -= 3 << 3; // 3字节label
+            prefixLength -= BgpConst.BGP_RD_LEN << 3; // 8字节label
 
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);

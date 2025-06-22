@@ -163,3 +163,15 @@ contextBridge.exposeInMainWorld('ftpApi', {
     // 移除事件监听
     offClientConnection: callback => ipcRenderer.removeListener('ftp:clientConnection', callback)
 });
+
+contextBridge.exposeInMainWorld('nativeApi', {
+    // 抓包工具模块
+    getNetworkInterfaces: () => ipcRenderer.invoke('native:getNetworkInterfaces'),
+    startPacketCapture: config => ipcRenderer.invoke('native:startPacketCapture', config),
+    stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
+    exportPacketsToPcap: packets => ipcRenderer.invoke('native:exportPacketsToPcap', packets),
+
+    // 抓包事件监听
+    onPacketEvent: callback => ipcRenderer.on('native:packetEvent', (_event, data) => callback(data)),
+    offPacketEvent: callback => ipcRenderer.removeListener('native:packetEvent', callback)
+});

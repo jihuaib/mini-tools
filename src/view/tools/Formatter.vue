@@ -38,25 +38,12 @@
 
                 <!-- 结果显示 -->
                 <a-form-item label="格式化结果">
-                    <div class="result-container">
-                        <!-- 格式化结果显示 -->
-                        <div v-if="result" class="format-result">
-                            <div class="result-content">
-                                <div class="line-numbers">
-                                    <div v-for="(line, index) in resultLines" :key="index" class="line-number">
-                                        {{ index + 1 }}
-                                    </div>
-                                </div>
-                                <div class="code-content">
-                                    <pre><code>{{ result }}</code></pre>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- 默认空状态 -->
-                        <div v-else class="empty-result">
-                            <div class="empty-placeholder">格式化结果将显示在这里...</div>
-                        </div>
-                    </div>
+                    <CodeEditor
+                        :model-value="result"
+                        :height="300"
+                        :readonly="true"
+                        placeholder="格式化结果将显示在这里..."
+                    />
                 </a-form-item>
             </a-form>
         </a-card>
@@ -100,7 +87,7 @@
 
 <script setup>
     import CodeEditor from '../../components/CodeEditor.vue';
-    import { ref, onMounted, computed } from 'vue';
+    import { ref, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
 
     defineOptions({
@@ -120,12 +107,6 @@
     const errorMessage = ref('');
     const lineErrors = ref([]); // 存储行错误信息
     const isFormatting = ref(false);
-
-    // 计算结果的行数，用于显示行号
-    const resultLines = computed(() => {
-        if (!result.value) return [];
-        return result.value.split('\n');
-    });
 
     // 清空错误信息
     const clearErrors = () => {
@@ -168,8 +149,8 @@
                 errorMessage.value = resp.msg || '格式化失败';
                 result.value = '';
 
-                // 设置行错误信息
-                if (resp.data && resp.data.length > 0) {
+                // 设置行错误信息 - 修复：resp.data就是错误数组
+                if (resp.data && Array.isArray(resp.data) && resp.data.length > 0) {
                     lineErrors.value = resp.data;
                 } else {
                     lineErrors.value = [];
@@ -179,6 +160,7 @@
             errorMessage.value = e.message || String(e);
             result.value = '';
             lineErrors.value = [];
+            message.error(e.message || '格式化失败');
             console.error('格式化错误:', e);
         } finally {
             isFormatting.value = false;
@@ -276,76 +258,6 @@
     .history-modal-content {
         max-height: 400px;
         overflow-y: auto;
-    }
-
-    .result-container {
-        background: #f5f5f5;
-        border: 1px solid #e8e8e8;
-        border-radius: 4px;
-        height: 300px;
-        overflow: auto;
-    }
-
-    .format-result {
-        height: 100%;
-        overflow: auto;
-    }
-
-    .result-content {
-        display: flex;
-        height: 100%;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 13px;
-        line-height: 1.4;
-    }
-
-    .line-numbers {
-        background: #fafafa;
-        border-right: 1px solid #e8e8e8;
-        padding: 8px 8px 8px 12px;
-        color: #999;
-        user-select: none;
-        min-width: 40px;
-        text-align: right;
-        flex-shrink: 0;
-    }
-
-    .line-number {
-        height: 1.4em;
-        line-height: 1.4;
-    }
-
-    .code-content {
-        flex: 1;
-        overflow: auto;
-        padding: 8px;
-    }
-
-    .code-content pre {
-        margin: 0;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-
-    .code-content code {
-        font-family: inherit;
-        font-size: inherit;
-        line-height: inherit;
-        background: transparent;
-        padding: 0;
-        border: none;
-    }
-
-    .empty-result {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .empty-placeholder {
-        color: #999;
-        font-style: italic;
     }
 
     :deep(.ant-table-body) {
