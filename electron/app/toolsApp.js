@@ -10,13 +10,11 @@ class ToolsApp {
         this.isDev = !app.isPackaged;
         this.stringGeneratorConfigFileKey = 'string-generator';
         this.packetParserConfigFileKey = 'packet-parser';
-        this.formatterConfigFileKey = 'formatter';
         this.registerHandlers(ipc);
         this.store = store;
 
         this.maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
         this.maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
-        this.maxFormatterHistory = DEFAULT_TOOLS_SETTINGS.formatter?.maxFormatterHistory || 20;
     }
 
     registerHandlers(ipc) {
@@ -29,13 +27,11 @@ class ToolsApp {
 
         // 报文解析器
         ipc.handle('tools:parsePacket', async (event, packetData) => this.handleParsePacket(event, packetData));
+        ipc.handle('tools:parsePacketNoSaveHistory', async (event, packetData) =>
+            this.handleParsePacketNoSaveHistory(event, packetData)
+        );
         ipc.handle('tools:getPacketParserHistory', async () => this.handleGetPacketParserHistory());
         ipc.handle('tools:clearPacketParserHistory', async () => this.handleClearPacketParserHistory());
-
-        // 格式化工具
-        ipc.handle('tools:formatData', async (event, formatterData) => this.handleFormatData(event, formatterData));
-        ipc.handle('tools:getFormatterHistory', async () => this.handleGetFormatterHistory());
-        ipc.handle('tools:clearFormatterHistory', async () => this.handleClearFormatterHistory());
     }
 
     async handleGetGenerateStringHistory() {
@@ -154,6 +150,25 @@ class ToolsApp {
         }
     }
 
+    async handleParsePacketNoSaveHistory(event, packetData) {
+        logger.info(`解析报文: ${JSON.stringify(packetData)}`);
+
+        try {
+            const workerPath = this.isDev
+                ? path.join(__dirname, '../worker/packetParserWorker.js')
+                : path.join(process.resourcesPath, 'app', 'electron/worker/packetParserWorker.js');
+
+            const workerFactory = new WorkerWithPromise(workerPath);
+            const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), packetData);
+
+            logger.info('报文解析结果:', result);
+            return successResponse(result, '报文解析成功');
+        } catch (err) {
+            logger.error('报文解析错误:', err.message);
+            return errorResponse(err.message);
+        }
+    }
+
     async handleClearPacketParserHistory() {
         this.store.set(this.packetParserConfigFileKey, []);
         return successResponse(null, '清空报文解析历史记录成功');
@@ -174,72 +189,6 @@ class ToolsApp {
 
     setMaxStringHistory(maxStringHistory) {
         this.maxStringHistory = maxStringHistory;
-    }
-
-    async handleGetFormatterHistory() {
-        const config = this.store.get(this.formatterConfigFileKey);
-        if (!config) {
-            return successResponse([], '获取格式化历史记录成功');
-        }
-        return successResponse(config, '获取格式化历史记录成功');
-    }
-
-    async handleClearFormatterHistory() {
-        this.store.set(this.formatterConfigFileKey, []);
-        return successResponse(null, '清空格式化历史记录成功');
-    }
-
-    async handleFormatData(event, formatterData) {
-        logger.info(`格式化数据: ${JSON.stringify(formatterData)}`);
-
-        try {
-            const workerPath = this.isDev
-                ? path.join(__dirname, '../worker/FormatterWorker.js')
-                : path.join(process.resourcesPath, 'app', 'electron/worker/FormatterWorker.js');
-
-            const workerFactory = new WorkerWithPromise(workerPath);
-            const result = await workerFactory.runWorkerWithPromise(path.join(workerPath), formatterData);
-
-            logger.info('格式化结果:', result);
-            if (result.verify) {
-                this.saveFormatterToHistory(formatterData);
-                return successResponse(result.data, '格式化成功');
-            } else {
-                return errorResponse(result.msg, result.errors);
-            }
-        } catch (err) {
-            logger.error('Worker处理错误:', err.message);
-            return errorResponse(err.message);
-        }
-    }
-
-    async saveFormatterToHistory(data) {
-        let config = this.store.get(this.formatterConfigFileKey);
-        if (!config) {
-            config = [];
-        }
-
-        let isExist = false;
-        config.forEach(element => {
-            if (element.type === data.type && element.content === data.content && element.indent === data.indent) {
-                isExist = true;
-            }
-        });
-
-        if (isExist) {
-            return;
-        }
-
-        if (config.length >= this.maxFormatterHistory) {
-            config.splice(0, 1);
-        }
-
-        config.push(data);
-        this.store.set(this.formatterConfigFileKey, config);
-    }
-
-    setMaxFormatterHistory(maxFormatterHistory) {
-        this.maxFormatterHistory = maxFormatterHistory;
     }
 }
 

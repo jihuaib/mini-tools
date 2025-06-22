@@ -225,6 +225,10 @@ class BmpApp {
             return errorResponse(error.message);
         }
     }
+
+    getBmpRunning() {
+        return null != this.worker;
+    }
 }
 
 module.exports = BmpApp;

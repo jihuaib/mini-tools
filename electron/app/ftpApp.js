@@ -170,6 +170,10 @@ class FtpApp {
     setMaxFtpUser(maxFtpUser) {
         this.maxFtpUser = maxFtpUser;
     }
+
+    getFtpRunning() {
+        return null != this.worker;
+    }
 }
 
 module.exports = FtpApp;

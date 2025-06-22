@@ -396,26 +396,8 @@ class BgpApp {
         }
     }
 
-    async handleWindowClose(win) {
-        if (null != this.worker) {
-            const { dialog } = require('electron');
-            const { response } = await dialog.showMessageBox(win, {
-                type: 'warning',
-                title: '确认关闭',
-                message: 'BGP 模拟器正在运行，确定要关闭吗？',
-                buttons: ['确定', '取消'],
-                defaultId: 1,
-                cancelId: 1
-            });
-
-            if (response === 0) {
-                // 用户点击确定，先停止 BGP 然后关闭窗口
-                await this.handleStopBgp();
-                return true;
-            }
-            return false;
-        }
-        return true;
+    getBgpRunning() {
+        return null != this.worker;
     }
 }
 

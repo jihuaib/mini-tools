@@ -51,7 +51,7 @@
 
             <a-table
                 :columns="columns"
-                :data-source="filteredPackets"
+                :data-source="packets"
                 :scroll="{ y: 300 }"
                 :pagination="{ pageSize: 20, showSizeChanger: false, position: ['bottomCenter'] }"
                 size="small"
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onUnmounted, computed, toRaw } from 'vue';
+    import { ref, onMounted, onUnmounted, toRaw } from 'vue';
     import { message } from 'ant-design-vue';
     import PacketResultViewer from '../../components/PacketResultViewer.vue';
     import { PROTOCOL_TYPE, START_LAYER } from '../../const/toolsConst';
@@ -102,8 +102,6 @@
     const isStarting = ref(false);
     const isStopping = ref(false);
     const packets = ref([]);
-    const currentDevice = ref('');
-    const searchText = ref('');
     const selectedPacket = ref(null);
     const rawParseResult = ref(null);
 
@@ -136,19 +134,6 @@
         }
     ];
 
-    // 计算属性
-    const filteredPackets = computed(() => {
-        if (!searchText.value) return packets.value;
-
-        const search = searchText.value.toLowerCase();
-        return packets.value.filter(
-            packet =>
-                packet.protocol.toLowerCase().includes(search) ||
-                packet.summary.toLowerCase().includes(search) ||
-                (packet.ip && (packet.ip.src.includes(search) || packet.ip.dst.includes(search)))
-        );
-    });
-
     // 生命周期钩子
     onMounted(() => {
         loadInterfaces();
@@ -173,8 +158,6 @@
     }
 
     function handlePacketCaptured(data) {
-        console.log(`Packet event received:`, data);
-
         if (data.status === 'success' && data.data) {
             switch (data.data.type) {
                 case 'PACKET_CAPTURE_START':
@@ -183,7 +166,7 @@
 
                 case 'PACKET_CAPTURED':
                     if (data.data.packet) {
-                        packets.value.unshift(data.data.packet); // 新包添加到顶部
+                        packets.value.push(data.data.packet);
                         // 限制包数量，避免内存过多占用
                         if (packets.value.length > 10000) {
                             packets.value = packets.value.slice(0, 5000);
@@ -206,6 +189,7 @@
         try {
             const response = await window.nativeApi.getNetworkInterfaces();
             if (response.status === 'success') {
+                selectedInterface.value = response.data[0].name;
                 interfaces.value = response.data || [];
             } else {
                 message.error(`获取网卡列表失败: ${response.msg}`);
@@ -240,10 +224,9 @@
                 filter: captureFilter.value
             });
 
-            if (response.verify) {
+            if (response.status === 'success') {
                 isCapturing.value = true;
                 isStarting.value = false;
-                currentDevice.value = selectedInterface.value;
                 message.success(response.msg || '抓包已开始');
             } else {
                 isStarting.value = false;
@@ -266,7 +249,7 @@
         try {
             const response = await window.nativeApi.stopPacketCapture();
 
-            if (response.verify) {
+            if (response.status === 'success') {
                 isCapturing.value = false;
                 isStopping.value = false;
                 message.success(response.msg || '抓包已停止');
@@ -294,7 +277,7 @@
             packetData: record.raw,
             startLayer: START_LAYER.L2
         };
-        const resp = await window.toolsApi.parsePacket(packetData);
+        const resp = await window.toolsApi.parsePacketNoSaveHistory(packetData);
 
         if (resp.status === 'success') {
             rawParseResult.value = resp.data;

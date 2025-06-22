@@ -44,13 +44,9 @@ contextBridge.exposeInMainWorld('toolsApi', {
 
     // 报文解析模块
     parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
+    parsePacketNoSaveHistory: packetData => ipcRenderer.invoke('tools:parsePacketNoSaveHistory', packetData),
     getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
-    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory'),
-
-    // 格式化工具模块
-    formatData: formatterData => ipcRenderer.invoke('tools:formatData', formatterData),
-    getFormatterHistory: () => ipcRenderer.invoke('tools:getFormatterHistory'),
-    clearFormatterHistory: () => ipcRenderer.invoke('tools:clearFormatterHistory')
+    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory')
 });
 
 // bgp模块
@@ -164,6 +160,7 @@ contextBridge.exposeInMainWorld('ftpApi', {
     offClientConnection: callback => ipcRenderer.removeListener('ftp:clientConnection', callback)
 });
 
+// 依赖本地工具模块
 contextBridge.exposeInMainWorld('nativeApi', {
     // 抓包工具模块
     getNetworkInterfaces: () => ipcRenderer.invoke('native:getNetworkInterfaces'),
@@ -173,5 +170,10 @@ contextBridge.exposeInMainWorld('nativeApi', {
 
     // 抓包事件监听
     onPacketEvent: callback => ipcRenderer.on('native:packetEvent', (_event, data) => callback(data)),
-    offPacketEvent: callback => ipcRenderer.removeListener('native:packetEvent', callback)
+    offPacketEvent: callback => ipcRenderer.removeListener('native:packetEvent', callback),
+
+    // 格式化工具模块
+    formatData: formatterData => ipcRenderer.invoke('native:formatData', formatterData),
+    getFormatterHistory: () => ipcRenderer.invoke('native:getFormatterHistory'),
+    clearFormatterHistory: () => ipcRenderer.invoke('native:clearFormatterHistory')
 });

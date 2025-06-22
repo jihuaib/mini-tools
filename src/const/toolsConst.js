@@ -24,10 +24,6 @@ export const DEFAULT_TOOLS_SETTINGS = {
     },
     formatter: {
         maxFormatterHistory: 10
-    },
-    packetCapture: {
-        maxPacketHistory: 10000,
-        defaultSnaplen: 65535
     }
 };
 
