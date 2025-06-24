@@ -1,11 +1,10 @@
 const { app, dialog } = require('electron');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
-// const Cap = require('cap').Cap; // 移除静态导入
 const fs = require('fs');
 const os = require('os');
-// const libxmljs = require('libxmljs2'); // 移除静态导入
 const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
+const iconv = require('iconv-lite');
 
 class NativeApp {
     constructor(ipc, store) {
@@ -27,11 +26,12 @@ class NativeApp {
         this.initNativeDependencies();
     }
 
-    // 初始化本地依赖
     initNativeDependencies() {
-        // 尝试加载 Cap 模块
+        // 加载 Cap 模块
         try {
-            const capModule = require('cap');
+            // 清除 Windows UNC 路径前缀 \\?\
+            const cleanCapPath = require.resolve('cap').replace(/^\\\\\?\\/, '');
+            const capModule = require(cleanCapPath);
             this.Cap = capModule.Cap;
             logger.info('Cap 模块加载成功');
         } catch (error) {
@@ -39,9 +39,10 @@ class NativeApp {
             this.Cap = null;
         }
 
-        // 尝试加载 libxmljs2 模块
+        // 加载 libxmljs2 模块
         try {
-            this.libxmljs = require('libxmljs2');
+            const cleanXmlPath = require.resolve('libxmljs2').replace(/^\\\\\?\\/, '');
+            this.libxmljs = require(cleanXmlPath);
             logger.info('libxmljs2 模块加载成功');
         } catch (error) {
             logger.warn('libxmljs2 模块加载失败，XML格式化功能将不可用:', error.message);
@@ -683,7 +684,6 @@ class NativeApp {
 
     // XML格式化
     formatXML(xmlString, indent = 2) {
-        // 检查 libxmljs 模块是否可用
         if (!this.libxmljs) {
             return {
                 status: 'error',
@@ -700,10 +700,27 @@ class NativeApp {
         }
 
         try {
-            // 使用libxmljs2解析和验证XML
-            const xmlDoc = this.libxmljs.parseXml(xmlString);
+            // 自动识别 encoding 声明
+            let detectedEncoding = 'utf8';
+            const head = xmlString.slice(0, 512);
+            const encodingMatch = head.match(/encoding=["'](.*?)["']/i);
+            if (encodingMatch) {
+                const declared = encodingMatch[1].toLowerCase();
+                if (declared === 'gb2312' || declared === 'gbk') {
+                    detectedEncoding = 'gb2312';
+                }
+            }
 
-            // 获取原始XML字符串并进行格式化
+            // 如果非 utf8 编码，先解码成 UTF-8
+            if (detectedEncoding !== 'utf8' && Buffer.isBuffer(xmlString)) {
+                xmlString = iconv.decode(xmlString, detectedEncoding);
+            }
+
+            // 替换编码声明为 UTF-8
+            xmlString = xmlString.replace(/<\?xml(.*?)encoding=["'].*?["']/i, '<?xml$1encoding="UTF-8"');
+
+            // 解析和格式化
+            const xmlDoc = this.libxmljs.parseXml(xmlString);
             const rawXml = xmlDoc.toString();
             const formattedXml = this.formatXMLString(rawXml, indent);
 
@@ -712,8 +729,7 @@ class NativeApp {
                 data: formattedXml
             };
         } catch (error) {
-            // 解析XML时的错误处理
-            const errorInfo = this.getDetailedXMLError(xmlString, error);
+            const errorInfo = this.getDetailedXMLError(xmlString.toString(), error);
             return {
                 status: 'error',
                 msg: errorInfo.message,
