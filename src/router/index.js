@@ -203,7 +203,7 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     if (to.name && to.meta && to.meta.keepAlive) {
         store.dispatch('addCachedView', to);
         let matched = to.matched;

@@ -169,12 +169,6 @@ contextBridge.exposeInMainWorld('snmpApi', {
     // snmp服务
     startSnmp: config => ipcRenderer.invoke('snmp:startSnmp', config),
     stopSnmp: () => ipcRenderer.invoke('snmp:stopSnmp'),
-    getServerStatus: () => ipcRenderer.invoke('snmp:getServerStatus'),
-
-    // trap管理
-    getTrapList: params => ipcRenderer.invoke('snmp:getTrapList', params),
-    getTrapDetail: trapId => ipcRenderer.invoke('snmp:getTrapDetail', trapId),
-    clearTrapHistory: () => ipcRenderer.invoke('snmp:clearTrapHistory'),
 
     // 事件监听
     onSnmpEvent: callback => ipcRenderer.on('snmp:event', (_event, data) => callback(data)),

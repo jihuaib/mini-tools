@@ -94,11 +94,11 @@ class SimpleAsn1 {
         let temp = value;
 
         // 从最低位开始编码
-        bytes.unshift(temp & 0x7F);
+        bytes.unshift(temp & 0x7f);
         temp = temp >>> 7;
 
         while (temp > 0) {
-            bytes.unshift((temp & 0x7F) | 0x80);
+            bytes.unshift((temp & 0x7f) | 0x80);
             temp = temp >>> 7;
         }
 

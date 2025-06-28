@@ -45,7 +45,7 @@ class Asn1Parser {
         }
 
         // 处理负数（二进制补码）
-        if (length > 0 && (this.buffer[this.position - length] & 0x80)) {
+        if (length > 0 && this.buffer[this.position - length] & 0x80) {
             value = value - Math.pow(2, length * 8);
         }
 
@@ -102,7 +102,7 @@ class Asn1Parser {
 
         while (this.position < end) {
             const byte = this.readByte();
-            value = (value << 7) | (byte & 0x7F);
+            value = (value << 7) | (byte & 0x7f);
 
             if ((byte & 0x80) === 0) {
                 // 最高位为 0 表示这是最后一个字节
@@ -158,7 +158,8 @@ class Asn1Parser {
      */
     parseIpAddress() {
         const tag = this.readByte();
-        if (tag !== SnmpConst.SNMP_BER_ASN1_TAG.IP_ADDRESS) { // IpAddress tag
+        if (tag !== SnmpConst.SNMP_BER_ASN1_TAG.IP_ADDRESS) {
+            // IpAddress tag
             this.position--; // 回退
             return '0.0.0.0';
         }
@@ -179,7 +180,8 @@ class Asn1Parser {
      */
     parseTimeTicks() {
         const tag = this.readByte();
-        if (tag !== SnmpConst.SNMP_BER_ASN1_TAG.TIME_TICKS) { // TimeTicks tag
+        if (tag !== SnmpConst.SNMP_BER_ASN1_TAG.TIME_TICKS) {
+            // TimeTicks tag
             this.position--; // 回退
             return this.parseInteger(); // 作为普通整数解析
         }
@@ -346,7 +348,7 @@ class Asn1Parser {
             return firstByte;
         } else {
             // 长格式：后续字节表示长度
-            const lengthBytes = firstByte & 0x7F;
+            const lengthBytes = firstByte & 0x7f;
             if (lengthBytes === 0) {
                 // 不定长度格式，不支持
                 logger.error('不支持不定长度格式');

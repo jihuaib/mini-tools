@@ -40,7 +40,7 @@
         </a-row>
 
         <!-- 用户配置 -->
-        <a-row style="margin-top: 10px">
+        <a-row class="mt-margin-top-10">
             <a-col :span="24">
                 <a-card title="用户配置">
                     <a-form :model="ftpUserConfig" :label-col="labelCol" :wrapper-col="wrapperCol">
@@ -104,7 +104,7 @@
         </a-row>
 
         <!-- FTP客户端列表 -->
-        <a-row style="margin-top: 10px">
+        <a-row class="mt-margin-top-10">
             <a-col :span="24">
                 <a-card title="FTP客户端列表">
                     <div>

@@ -161,11 +161,6 @@ export class FormValidator {
                 };
             }
 
-            // 如果不是必填且值为空，跳过验证
-            if (!required && (value === '' || value === null || value === undefined)) {
-                return { hasError: false };
-            }
-
             // 执行自定义验证器
             if (validator) {
                 const isValid = validator(value, formData);
@@ -256,7 +251,16 @@ export const validators = {
                 default:
                     return true;
             }
+        },
+
+    minLength: minLen => value => value && value.length >= minLen,
+    arrayNotEmpty: value => Array.isArray(value) && value.length > 0,
+    conditionalRequired: condition => (value, formData) => {
+        if (condition(formData)) {
+            return value !== '' && value !== null && value !== undefined;
         }
+        return true;
+    }
 };
 
 /**
@@ -651,6 +655,74 @@ export const createRpkiRoaConfigValidationRules = () => {
                     return maxLengthNum >= maskNum;
                 },
                 message: '最大前缀长度不能小于掩码值'
+            }
+        ]
+    };
+};
+
+/**
+ * 创建SNMP配置验证规则
+ */
+export const createSnmpConfigValidationRules = () => {
+    return {
+        port: [
+            {
+                required: true,
+                message: '请输入监听端口'
+            },
+            {
+                validator: value => validators.range(1, 65535)(value),
+                message: '端口范围1-65535'
+            }
+        ],
+        supportedVersions: [
+            {
+                validator: validators.arrayNotEmpty,
+                message: '请至少选择一个SNMP版本'
+            }
+        ],
+        community: [
+            {
+                validator: (value, formData) => {
+                    if (
+                        formData.supportedVersions &&
+                        (formData.supportedVersions.includes('v1') || formData.supportedVersions.includes('v2c'))
+                    ) {
+                        return validators.required(value);
+                    }
+                    return true;
+                },
+                message: '请输入Community字符串'
+            }
+        ],
+        v3Username: [
+            {
+                validator: validators.conditionalRequired(
+                    formData => formData.supportedVersions && formData.supportedVersions.includes('v3')
+                ),
+                message: '请输入SNMPv3用户名'
+            }
+        ],
+        authPassword: [
+            {
+                validator: (value, formData) => {
+                    if (formData.supportedVersions.includes('v3') && formData.securityLevel !== 'noAuthNoPriv') {
+                        return validators.minLength(8)(value);
+                    }
+                    return true;
+                },
+                message: '认证密码至少8位'
+            }
+        ],
+        privPassword: [
+            {
+                validator: (value, formData) => {
+                    if (formData.supportedVersions.includes('v3') && formData.securityLevel === 'authPriv') {
+                        return validators.minLength(8)(value);
+                    }
+                    return true;
+                },
+                message: '加密密码至少8位'
             }
         ]
     };

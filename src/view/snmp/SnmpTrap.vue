@@ -108,12 +108,14 @@
         <a-modal
             v-model:open="detailModalVisible"
             title="Trap 详情"
-            width="80%"
+            width="900px"
+            height="600px"
             :footer="null"
             class="trap-detail-modal"
         >
             <div v-if="selectedTrap" class="trap-detail">
-                <a-descriptions title="基本信息" :column="2" bordered>
+                <a-divider>基本信息</a-divider>
+                <a-descriptions :column="2" bordered size="small">
                     <a-descriptions-item label="Trap ID">{{ selectedTrap.id }}</a-descriptions-item>
                     <a-descriptions-item label="接收时间">
                         {{ formatTimestamp(selectedTrap.timestamp) }}
@@ -149,9 +151,10 @@
                 <a-table
                     :columns="varbindColumns"
                     :data-source="selectedTrap.varbinds || []"
-                    :pagination="false"
                     size="small"
                     row-key="oid"
+                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                    :scroll="{ y: 250, x: 700 }"
                 >
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'value'">
@@ -161,10 +164,6 @@
                         </template>
                     </template>
                 </a-table>
-
-                <!-- 原始数据 -->
-                <a-divider>原始数据</a-divider>
-                <a-textarea :value="selectedTrap.rawData" :rows="6" readonly class="raw-data-textarea" />
             </div>
         </a-modal>
     </div>
@@ -271,18 +270,21 @@
             title: 'OID',
             dataIndex: 'oid',
             key: 'oid',
-            width: 200
+            width: 300,
+            ellipsis: true,
         },
         {
             title: '类型',
             dataIndex: 'type',
             key: 'type',
-            width: 100
+            width: 100,
+            ellipsis: true,
         },
         {
             title: '值',
             dataIndex: 'value',
-            key: 'value'
+            key: 'value',
+            ellipsis: true
         }
     ];
 
@@ -346,40 +348,12 @@
         return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
     };
 
-    const refreshData = async () => {
-        try {
-            loading.value = true;
-            const result = await window.snmpApi.getTrapList({
-                page: pagination.current,
-                pageSize: pagination.pageSize
-            });
-
-            if (result.status === 'success') {
-                traps.value = result.data.traps || [];
-                pagination.total = result.data.total || 0;
-
-                // 更新统计数据
-                totalTraps.value = result.data.stats.total || 0;
-                todayTraps.value = result.data.stats.today || 0;
-                recentTraps.value = result.data.stats.recent || 0;
-                onlineAgents.value = result.data.stats.onlineAgents || 0;
-            } else {
-                message.error(result.msg || '获取数据失败');
-            }
-        } catch (error) {
-            message.error('获取数据失败: ' + error.message);
-        } finally {
-            loading.value = false;
-        }
-    };
-
     const clearHistory = async () => {
         try {
             clearLoading.value = true;
             const result = await window.snmpApi.clearTrapHistory();
             if (result.status === 'success') {
                 message.success('历史记录清空成功');
-                await refreshData();
             } else {
                 message.error(result.msg || '清空失败');
             }
@@ -398,7 +372,6 @@
     const handleTableChange = pag => {
         pagination.current = pag.current;
         pagination.pageSize = pag.pageSize;
-        refreshData();
     };
 
     const showTrapDetail = trap => {
@@ -439,4 +412,13 @@
     });
 </script>
 
-<style scoped></style>
+<style scoped>
+.varbind-value {
+    width: 100px;
+}
+
+:deep(.ant-table-body) {
+    height: 250px !important;
+    overflow-y: auto !important;
+}
+</style>

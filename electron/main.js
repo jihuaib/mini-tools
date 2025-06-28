@@ -49,8 +49,6 @@ function createWindow() {
 
     new Tray(path.join(__dirname, './assets/icon.ico'));
 
-    win.webContents.openDevTools();
-
     mainWindow = win;
 }
 

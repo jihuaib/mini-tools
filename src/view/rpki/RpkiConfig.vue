@@ -37,7 +37,7 @@
         </a-row>
 
         <!-- RPKI客户端列表 -->
-        <a-row style="margin-top: 10px">
+        <a-row class="mt-margin-top-10">
             <a-col :span="24">
                 <a-card title="RPKI客户端列表">
                     <div>

@@ -127,7 +127,9 @@ class SnmpWorker {
                 return;
             }
 
-            logger.info(`解析成功: version=${snmpMessage.version}, community=${snmpMessage.community}, pduType=0x${snmpMessage.pduType.toString(16)}`);
+            logger.info(
+                `解析成功: version=${snmpMessage.version}, community=${snmpMessage.community}, pduType=0x${snmpMessage.pduType.toString(16)}`
+            );
 
             // 检查是否为Trap消息
             if (this.isTrapMessage(snmpMessage)) {
@@ -205,10 +207,14 @@ class SnmpWorker {
      */
     getVersionString(version) {
         switch (version) {
-            case 0: return 'v1';
-            case 1: return 'v2c';
-            case 3: return 'v3';
-            default: return `unknown(${version})`;
+            case 0:
+                return 'v1';
+            case 1:
+                return 'v2c';
+            case 3:
+                return 'v3';
+            default:
+                return `unknown(${version})`;
         }
     }
 

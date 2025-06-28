@@ -31,9 +31,7 @@ export const SNMP_TRAP_STATUS = {
 export const DEFAULT_VALUES = {
     DEFAULT_SNMP_PORT: 162,
     DEFAULT_COMMUNITY: 'public',
-    DEFAULT_VERSION: SNMP_VERSION.v2c,
-    DEFAULT_TIMEOUT: 5000,
-    DEFAULT_RETRIES: 3
+    DEFAULT_VERSION: SNMP_VERSION.v2c
 };
 
 // SNMP PDU类型
@@ -74,11 +72,4 @@ export const SNMP_PRIV_PROTOCOL = {
     AES: 'AES',
     AES192: 'AES192',
     AES256: 'AES256'
-};
-
-// 默认SNMP设置
-export const DEFAULT_SNMP_SETTINGS = {
-    maxTrapHistory: 1000,
-    autoRefresh: true,
-    refreshInterval: 5000
 };

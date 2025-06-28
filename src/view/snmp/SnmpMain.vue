@@ -20,19 +20,14 @@
 </template>
 
 <script setup>
-    import { ref, onActivated, watch } from 'vue';
-    import { useRouter, useRoute } from 'vue-router';
+    import { ref, onActivated } from 'vue';
+    import { useRouter } from 'vue-router';
 
     defineOptions({ name: 'SnmpMain' });
 
     const router = useRouter();
-    const route = useRoute();
     const activeTabKey = ref('snmp-config');
     const currentTab = ref(null);
-
-    const handleTabChange = key => {
-        router.push(`/snmp/${key}`);
-    };
 
     defineExpose({
         clearValidationErrors: () => {
@@ -42,28 +37,13 @@
         }
     });
 
-    watch(
-        () => route.path,
-        path => {
-            if (path === '/snmp/snmp-config') {
-                activeTabKey.value = 'snmp-config';
-            } else if (path === '/snmp/snmp-trap') {
-                activeTabKey.value = 'snmp-trap';
-            }
-        },
-        { immediate: true }
-    );
+    const handleTabChange = key => {
+        router.push(`/snmp/${key}`);
+    };
 
     onActivated(() => {
-        const path = route.path;
-        if (path === '/snmp/snmp-config') {
-            activeTabKey.value = 'snmp-config';
-        } else if (path === '/snmp/snmp-trap') {
-            activeTabKey.value = 'snmp-trap';
-        } else {
-            activeTabKey.value = 'snmp-config';
-            router.push('/snmp/snmp-config');
-        }
+        activeTabKey.value = 'snmp-config';
+        router.push('/snmp/snmp-config');
     });
 </script>
 

@@ -15,7 +15,6 @@ const SnmpApp = require('./snmpApp');
 const AppUpdater = require('./updater');
 const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
-const SnmpConst = require('../const/snmpConst');
 /**
  * 用于系统菜单处理
  */
@@ -28,7 +27,6 @@ class SystemApp {
         this.generalSettingsFileKey = 'GeneralSettings';
         this.toolsSettingsFileKey = 'ToolsSettings';
         this.ftpSettingsFileKey = 'FtpSettings';
-        this.snmpSettingsFileKey = 'SnmpSettings';
         this.updateSettingsFileKey = 'UpdateSettings';
         this.appVersionFileKey = 'appVersion';
 
@@ -165,8 +163,6 @@ class SystemApp {
         ipc.handle('common:getToolsSettings', () => this.handleGetToolsSettings());
         ipc.handle('common:saveFtpSettings', (event, settings) => this.handleSaveFtpSettings(settings));
         ipc.handle('common:getFtpSettings', () => this.handleGetFtpSettings());
-        ipc.handle('common:saveSnmpSettings', (event, settings) => this.handleSaveSnmpSettings(settings));
-        ipc.handle('common:getSnmpSettings', () => this.handleGetSnmpSettings());
         ipc.handle('common:saveUpdateSettings', (event, settings) => this.handleSaveUpdateSettings(settings));
         ipc.handle('common:getUpdateSettings', () => this.handleGetUpdateSettings());
         ipc.handle('common:selectDirectory', () => this.handleSelectDirectory());
@@ -270,37 +266,6 @@ class SystemApp {
         }
     }
 
-    handleSaveSnmpSettings(settings) {
-        try {
-            this.store.set(this.snmpSettingsFileKey, settings);
-
-            let maxTrapHistory = SnmpConst.DEFAULT_SNMP_SETTINGS.maxTrapHistory;
-            if (settings.maxTrapHistory) {
-                maxTrapHistory = settings.maxTrapHistory;
-            }
-
-            this.snmpApp.setMaxTrapHistory(maxTrapHistory);
-
-            return successResponse(null, 'SNMP settings saved successfully');
-        } catch (error) {
-            logger.error('Error saving SNMP settings:', error.message);
-            return errorResponse(error.message);
-        }
-    }
-
-    handleGetSnmpSettings() {
-        try {
-            const settings = this.store.get(this.snmpSettingsFileKey);
-            if (!settings) {
-                return successResponse(null, 'SNMP settings not found');
-            }
-            return successResponse(settings, 'SNMP settings loaded successfully');
-        } catch (error) {
-            logger.error('Error getting SNMP settings:', error.message);
-            return errorResponse(error.message);
-        }
-    }
-
     handleOpenDeveloperOptions() {
         this.win.webContents.openDevTools();
     }
@@ -345,7 +310,6 @@ class SystemApp {
         let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;
         let maxStringHistory = DEFAULT_TOOLS_SETTINGS.stringGenerator.maxStringHistory;
         let maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
-        let maxTrapHistory = SnmpConst.DEFAULT_SNMP_SETTINGS.maxTrapHistory;
         let maxFormatterHistory = DEFAULT_TOOLS_SETTINGS.formatter.maxFormatterHistory;
         const toolsSettings = this.store.get(this.toolsSettingsFileKey);
         if (toolsSettings && toolsSettings.packetParser) {
@@ -371,11 +335,7 @@ class SystemApp {
         this.toolsApp.setMaxMessageHistory(maxMessageHistory);
         this.toolsApp.setMaxStringHistory(maxStringHistory);
         this.ftpApp.setMaxFtpUser(maxFtpUser);
-        this.snmpApp.setMaxTrapHistory(maxTrapHistory);
         this.nativeApp.setMaxFormatterHistory(maxFormatterHistory);
-
-        // 初始化SNMP历史记录
-        this.snmpApp.initTrapHistory();
 
         // 加载更新设置并应用
         let updateSetting = DEFAULT_UPDATE_SETTINGS;
