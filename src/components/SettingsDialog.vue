@@ -1,10 +1,9 @@
 <template>
     <a-modal
         v-model:open="isVisible"
-        :width="680"
         title="设置"
         :footer="null"
-        class="settings-dialog"
+        class="modal-xlarge"
         :mask-closable="false"
         @cancel="onClose"
     >
@@ -132,25 +131,8 @@
 
     .settings-content {
         flex: 1;
-        padding: 16px;
+        padding-left: 16px;
         overflow: auto;
         font-size: 0.9rem;
-    }
-
-    :deep(.settings-dialog) {
-        font-size: 0.9rem;
-    }
-
-    :deep(.ant-modal-header) {
-        padding: 12px 16px;
-    }
-
-    :deep(.ant-modal-body) {
-        padding: 16px;
-    }
-
-    :deep(.ant-menu-item) {
-        height: 36px;
-        line-height: 36px;
     }
 </style>

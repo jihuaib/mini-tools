@@ -341,12 +341,4 @@
         height: 400px !important;
         overflow-y: auto !important;
     }
-
-    :deep(.ant-table-row) {
-        cursor: pointer;
-    }
-
-    :deep(.ant-table-row:hover) {
-        background-color: #f5f5f5;
-    }
 </style>

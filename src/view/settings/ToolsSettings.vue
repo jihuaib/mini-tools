@@ -94,7 +94,7 @@
 
 <style scoped>
     .tools-settings {
-        max-width: 600px;
+        max-width: 100%;
     }
 
     h2 {

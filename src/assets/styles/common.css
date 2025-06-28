@@ -89,6 +89,14 @@
     font-size: 13px !important;
 }
 
+.ant-table-row {
+    cursor: pointer !important;
+}
+
+.ant-table-row:hover {
+    background-color: #f5f5f5 !important;
+}
+
 /* 表单样式 */
 .ant-input[disabled] {
     background-color: #f5f5f5 !important;
@@ -117,4 +125,125 @@
     font-size: 12px !important;
     color: #125798 !important;
     margin: 5px 0 !important;
+}
+
+/* ===========================
+   弹出框样式 - 适用于1100*800及以上分辨率
+   ========================== */
+
+/* 通用弹出框样式 */
+.ant-modal {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    margin: 0 auto !important;
+    transform-origin: center center !important;
+}
+
+.ant-modal-wrap {
+    padding: 8px !important;
+}
+
+/* 弹出框主体样式 */
+.ant-modal-content {
+    max-height: 85vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+}
+
+.ant-modal-body {
+    flex: 1 !important;
+    overflow: auto !important;
+    max-height: calc(85vh - 140px) !important;
+    min-height: 150px !important;
+    padding: 2px 16px 10px 16px !important;
+}
+
+.ant-modal-header {
+    padding: 8px 16px 6px 16px !important;
+    flex-shrink: 0 !important;
+    min-height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 0px !important;
+}
+
+.ant-modal-footer {
+    padding: 2px 16px 10px 16px !important;
+    flex-shrink: 0 !important;
+    min-height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+/* 小型弹出框 (设置、表单等) */
+.modal-small {
+    width: 600px !important;
+    max-width: 80vw !important;
+}
+
+/* 中型弹出框 (详情、历史记录等) */
+.modal-medium {
+    width: 800px !important;
+    max-width: 80vw !important;
+}
+
+/* 大型弹出框 (复杂内容、图表等) */
+.modal-large {
+    width: 1200px !important;
+    max-width: 80vw !important;
+}
+
+/* 超大弹出框 (数据展示、编辑器等) */
+.modal-xlarge {
+    width: 1400px !important;
+    max-width: 80vw !important;
+}
+
+/* 弹出框内容样式 */
+.ant-modal-body .ant-table-wrapper {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    font-size: 13px !important;
+}
+
+.ant-modal-body .ant-form {
+    max-width: 100% !important;
+    font-size: 14px !important;
+}
+
+.ant-modal-body .ant-card {
+    margin-bottom: 0 !important;
+}
+
+.ant-modal-body .ant-card .ant-card-body {
+    padding: 10px !important;
+}
+
+.ant-modal-body .ant-table-body {
+    overflow-x: auto !important;
+    min-height: 150px !important;
+}
+
+.ant-modal-body .ant-btn {
+    font-size: 13px !important;
+    padding: 4px 12px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    line-height: 1.4 !important;
+}
+
+.ant-modal-body .ant-input,
+.ant-modal-body .ant-textarea {
+    font-size: 13px !important;
+    padding: 4px 8px !important;
+}
+
+.ant-modal-body * {
+    box-sizing: border-box !important;
+}
+
+.ant-modal-title {
+    font-size: 16px !important;
 }

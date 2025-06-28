@@ -75,7 +75,7 @@
                 :pagination="pagination"
                 :scroll="{ y: 400 }"
                 row-key="id"
-                class="trap-table"
+                class="mt-margin-top-10"
                 @change="handleTableChange"
             >
                 <template #bodyCell="{ column, record }">
@@ -105,14 +105,7 @@
         </a-card>
 
         <!-- Trap详情模态框 -->
-        <a-modal
-            v-model:open="detailModalVisible"
-            title="Trap 详情"
-            width="900px"
-            height="600px"
-            :footer="null"
-            class="trap-detail-modal"
-        >
+        <a-modal v-model:open="detailModalVisible" title="Trap 详情" :footer="null" class="modal-xlarge">
             <div v-if="selectedTrap" class="trap-detail">
                 <a-divider>基本信息</a-divider>
                 <a-descriptions :column="2" bordered size="small">
@@ -271,14 +264,14 @@
             dataIndex: 'oid',
             key: 'oid',
             width: 300,
-            ellipsis: true,
+            ellipsis: true
         },
         {
             title: '类型',
             dataIndex: 'type',
             key: 'type',
             width: 100,
-            ellipsis: true,
+            ellipsis: true
         },
         {
             title: '值',
@@ -413,12 +406,12 @@
 </script>
 
 <style scoped>
-.varbind-value {
-    width: 100px;
-}
+    .varbind-value {
+        width: 100px;
+    }
 
-:deep(.ant-table-body) {
-    height: 250px !important;
-    overflow-y: auto !important;
-}
+    :deep(.ant-table-body) {
+        height: 250px !important;
+        overflow-y: auto !important;
+    }
 </style>

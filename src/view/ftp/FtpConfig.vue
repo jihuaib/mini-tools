@@ -131,11 +131,11 @@
         <a-modal
             v-model:open="userListModalVisible"
             title="用户列表"
-            width="700px"
             :mask-closable="false"
+            class="modal-xlarge"
             @cancel="closeUserListModal"
         >
-            <div class="user-list-modal-content">
+            <div>
                 <a-table
                     :columns="userListColumns"
                     :data-source="userList"
@@ -146,7 +146,6 @@
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'password'">
                             <span
-                                style="cursor: pointer; color: #1890ff"
                                 :title="passwordVisibility[index] ? '点击隐藏密码' : '点击显示密码'"
                                 @click="togglePasswordVisibility(index)"
                             >
@@ -482,11 +481,5 @@
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    /* 用户列表样式 */
-    .user-list-modal-content {
-        max-height: 400px;
-        overflow-y: auto;
     }
 </style>

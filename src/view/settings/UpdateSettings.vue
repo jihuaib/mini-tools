@@ -2,7 +2,7 @@
     <div class="update-settings">
         <h2>应用更新</h2>
         <!-- 当前版本信息 -->
-        <a-row :gutter="16" class="version-info">
+        <a-row class="version-info">
             <a-col :span="12">
                 <a-statistic title="当前版本" :value="currentVersion" />
             </a-col>
@@ -232,7 +232,7 @@
 
 <style scoped>
     .update-settings {
-        max-width: 800px;
+        max-width: 100%;
     }
     h2 {
         margin-bottom: 10px;

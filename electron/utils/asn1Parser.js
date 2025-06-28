@@ -281,50 +281,64 @@ class Asn1Parser {
                 this.position = startPosition; // 回退到开始位置
                 return { type: 'ObjectIdentifier', value: this.parseObjectIdentifier() };
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.IP_ADDRESS: // IpAddress
+            case SnmpConst.SNMP_BER_ASN1_TAG.IP_ADDRESS: {
+                // IpAddress
                 const ip = [];
                 for (let i = 0; i < Math.min(length, 4); i++) {
                     ip.push(this.readByte());
                 }
                 return { type: 'IpAddress', value: ip.join('.') };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.COUNTER32: // Counter32
+            case SnmpConst.SNMP_BER_ASN1_TAG.COUNTER32: {
+                // Counter32
                 let counter = 0;
                 for (let i = 0; i < length; i++) {
                     counter = (counter << 8) | this.readByte();
                 }
                 return { type: 'Counter32', value: counter };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.GAUGE32: // Gauge32
+            case SnmpConst.SNMP_BER_ASN1_TAG.GAUGE32: {
+                // Gauge32
                 let gauge = 0;
                 for (let i = 0; i < length; i++) {
                     gauge = (gauge << 8) | this.readByte();
                 }
                 return { type: 'Gauge32', value: gauge };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.TIME_TICKS: // TimeTicks
+            case SnmpConst.SNMP_BER_ASN1_TAG.TIME_TICKS: {
+                // TimeTicks
                 let ticks = 0;
                 for (let i = 0; i < length; i++) {
                     ticks = (ticks << 8) | this.readByte();
                 }
                 return { type: 'TimeTicks', value: ticks };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.OPAQUE: // Opaque
+            case SnmpConst.SNMP_BER_ASN1_TAG.OPAQUE: {
+                // Opaque
                 const opaque = [];
                 for (let i = 0; i < length; i++) {
                     opaque.push(this.readByte());
                 }
                 return { type: 'Opaque', value: Buffer.from(opaque).toString('hex') };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.COUNTER64: // Counter64
+            case SnmpConst.SNMP_BER_ASN1_TAG.COUNTER64: {
+                // Counter64
                 let counter64 = 0;
                 for (let i = 0; i < length; i++) {
                     counter64 = (counter64 << 8) | this.readByte();
                 }
                 return { type: 'Counter64', value: counter64 };
+            }
 
-            case SnmpConst.SNMP_BER_ASN1_TAG.NULL: // NULL
+            case SnmpConst.SNMP_BER_ASN1_TAG.NULL: {
+                // NULL
                 return { type: 'Null', value: null };
+            }
 
             default:
                 // 跳过未知类型的数据

@@ -64,11 +64,11 @@
     <a-modal
         v-model:open="generateHistoryModalVisible"
         title="生成历史"
-        width="700px"
         :mask-closable="false"
+        class="modal-xlarge"
         @cancel="closeHistoryModal"
     >
-        <div class="history-modal-content">
+        <div>
             <a-table
                 :columns="historyColumns"
                 :data-source="generateHistory"
@@ -81,7 +81,7 @@
                         <a-button type="link" @click="loadHistoryItem(record)">使用</a-button>
                     </template>
                     <template v-else-if="column.key === 'template'">
-                        <div class="history-packet-data">{{ truncateString(record.template, 40) }}</div>
+                        <div>{{ truncateString(record.template, 40) }}</div>
                     </template>
                 </template>
             </a-table>
@@ -242,25 +242,6 @@
 </script>
 
 <style scoped>
-    /* 历史记录样式 */
-    .history-modal-content {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .history-packet-data {
-        font-family: monospace;
-        word-break: break-all;
-    }
-
-    :deep(.ant-table-row) {
-        cursor: pointer;
-    }
-
-    :deep(.ant-table-row:hover) {
-        background-color: #f5f5f5;
-    }
-
     :deep(.ant-table-body) {
         height: 200px !important;
         overflow-y: auto !important;

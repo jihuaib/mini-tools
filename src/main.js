@@ -5,6 +5,8 @@ import './assets/styles/common.css';
 import App from './App.vue';
 import router from './router';
 import store from './store';
+// 引入弹出框缩放自适应处理工具
+import './utils/modalResizeHandler';
 
 const app = createApp(App);
 

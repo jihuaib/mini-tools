@@ -53,11 +53,11 @@
     <a-modal
         v-model:open="formatterHistoryModalVisible"
         title="格式化历史"
-        width="700px"
         :mask-closable="false"
+        class="modal-xlarge"
         @cancel="closeHistoryModal"
     >
-        <div class="history-modal-content">
+        <div>
             <a-table
                 :columns="historyColumns"
                 :data-source="formatterHistory"
@@ -70,7 +70,7 @@
                         <a-button type="link" @click="loadHistoryItem(record)">使用</a-button>
                     </template>
                     <template v-else-if="column.key === 'content'">
-                        <div class="history-content">{{ truncateString(record.content, 40) }}</div>
+                        <div>{{ truncateString(record.content, 40) }}</div>
                     </template>
                     <template v-else-if="column.key === 'type'">
                         <div>{{ record.type === 'json' ? 'JSON' : 'XML' }}</div>
@@ -248,26 +248,8 @@
 </script>
 
 <style scoped>
-    .history-content {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 400px;
-    }
-
-    .history-modal-content {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
     :deep(.ant-table-body) {
         height: 300px !important;
         overflow-y: auto !important;
-    }
-
-    /* 用户列表样式 */
-    .user-list-modal-content {
-        max-height: 400px;
-        overflow-y: auto;
     }
 </style>

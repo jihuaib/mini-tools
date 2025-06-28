@@ -2,9 +2,9 @@
     <a-modal
         v-model:open="modalVisible"
         title="报文解析结果"
-        width="90%"
         :mask-closable="false"
         :footer="null"
+        class="modal-xlarge"
         @cancel="handleClose"
     >
         <div class="packet-result-viewer">
@@ -344,7 +344,7 @@
     .packet-result-viewer {
         display: flex;
         gap: 16px;
-        height: 550px;
+        height: 500px;
         overflow: hidden;
     }
 
@@ -462,18 +462,6 @@
     :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected .ant-tree-title) {
         color: #ff0000;
         font-weight: bold;
-    }
-
-    @media (max-width: 768px) {
-        .packet-result-viewer {
-            flex-direction: column;
-            height: auto;
-        }
-
-        .hex-view-card,
-        .tree-view-card {
-            width: 100%;
-        }
     }
 
     :deep(.ant-card-body) {
