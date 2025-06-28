@@ -9,16 +9,16 @@ let systemApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1100,
-        height: 800,
         minWidth: 1100, // 最小宽度
         minHeight: 800, // 最小高度
         resizable: true, // 允许调整大小
         maximizable: true, // 允许最大化
+        fullscreen: false, // 取消全屏启动
         autoHideMenuBar: true, // 显示菜单栏
         frame: true, // 保持原生边框
         center: true, // 窗口居中显示
         backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
+        show: false, // 先隐藏窗口，避免最大化过程中的闪烁
         icon: path.join(__dirname, './assets/icon.ico'),
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
@@ -26,6 +26,10 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     });
+
+    // 最大化窗口并显示，避免黑边闪烁
+    win.maximize();
+    win.show();
 
     logger.info(`Dev ${isDev} __dirname ${__dirname}`);
     const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
@@ -44,6 +48,8 @@ function createWindow() {
     });
 
     new Tray(path.join(__dirname, './assets/icon.ico'));
+
+    win.webContents.openDevTools();
 
     mainWindow = win;
 }

@@ -160,6 +160,29 @@ contextBridge.exposeInMainWorld('ftpApi', {
     offClientConnection: callback => ipcRenderer.removeListener('ftp:clientConnection', callback)
 });
 
+// snmp模块
+contextBridge.exposeInMainWorld('snmpApi', {
+    // 配置相关
+    saveSnmpConfig: config => ipcRenderer.invoke('snmp:saveSnmpConfig', config),
+    getSnmpConfig: () => ipcRenderer.invoke('snmp:getSnmpConfig'),
+
+    // snmp服务
+    startSnmp: config => ipcRenderer.invoke('snmp:startSnmp', config),
+    stopSnmp: () => ipcRenderer.invoke('snmp:stopSnmp'),
+    getServerStatus: () => ipcRenderer.invoke('snmp:getServerStatus'),
+
+    // trap管理
+    getTrapList: params => ipcRenderer.invoke('snmp:getTrapList', params),
+    getTrapDetail: trapId => ipcRenderer.invoke('snmp:getTrapDetail', trapId),
+    clearTrapHistory: () => ipcRenderer.invoke('snmp:clearTrapHistory'),
+
+    // 事件监听
+    onSnmpEvent: callback => ipcRenderer.on('snmp:event', (_event, data) => callback(data)),
+
+    // 移除事件监听
+    offSnmpEvent: callback => ipcRenderer.removeListener('snmp:event', callback)
+});
+
 // 依赖本地工具模块
 contextBridge.exposeInMainWorld('nativeApi', {
     // 抓包工具模块

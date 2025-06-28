@@ -85,7 +85,8 @@
         ToolOutlined,
         InfoCircleOutlined,
         SafetyCertificateOutlined,
-        DownloadOutlined
+        DownloadOutlined,
+        ApiOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
@@ -134,6 +135,13 @@
             label: 'ftp',
             title: 'ftp',
             route: '/ftp'
+        },
+        {
+            key: 'snmp',
+            icon: () => h(ApiOutlined),
+            label: 'snmp',
+            title: 'snmp',
+            route: '/snmp'
         }
     ]);
 

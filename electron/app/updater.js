@@ -15,6 +15,9 @@ class AppUpdater {
 
         this.setupAutoUpdater();
         this.registerHandlers();
+
+        // 设置更新事件监听器
+        this.setupUpdateEvents();
     }
 
     registerHandlers() {
@@ -61,8 +64,6 @@ class AppUpdater {
 
         // 启动时检查更新
         if (this.updateSettingsConfig.autoCheckOnStartup) {
-            // 设置更新事件监听器
-            this.setupUpdateEvents();
             // 延迟一段时间后再检查更新，确保应用完全启动
             setTimeout(() => {
                 this.checkForUpdates();
@@ -137,7 +138,6 @@ class AppUpdater {
     async checkForUpdates() {
         try {
             logger.info('手动检查更新');
-            this.setupUpdateEvents();
             const result = await autoUpdater.checkForUpdates();
             // 返回简化的结果，避免 IPC 序列化问题
             return {

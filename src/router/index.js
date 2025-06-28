@@ -18,6 +18,9 @@ import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
 import FtpMain from '../view/ftp/FtpMain.vue';
 import FtpConfig from '../view/ftp/FtpConfig.vue';
+import SnmpMain from '../view/snmp/SnmpMain.vue';
+import SnmpConfig from '../view/snmp/SnmpConfig.vue';
+import SnmpTrap from '../view/snmp/SnmpTrap.vue';
 import store from '../store';
 
 const routes = [
@@ -163,6 +166,30 @@ const routes = [
                         path: 'ftp-config',
                         name: 'FtpConfig',
                         component: FtpConfig,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/snmp',
+                name: 'SnmpMain',
+                component: SnmpMain,
+                meta: { keepAlive: true },
+                children: [
+                    {
+                        path: '/',
+                        redirect: '/snmp/snmp-config'
+                    },
+                    {
+                        path: 'snmp-config',
+                        name: 'SnmpConfig',
+                        component: SnmpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'snmp-trap',
+                        name: 'SnmpTrap',
+                        component: SnmpTrap,
                         meta: { keepAlive: true }
                     }
                 ]
