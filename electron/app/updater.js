@@ -137,6 +137,7 @@ class AppUpdater {
     async checkForUpdates() {
         try {
             logger.info('手动检查更新');
+            this.setupUpdateEvents();
             const result = await autoUpdater.checkForUpdates();
             // 返回简化的结果，避免 IPC 序列化问题
             return {

@@ -45,21 +45,20 @@
     },
     "scripts": {
         "install-x64": "electron-builder install-app-deps --arch x64",
-        "install-ia32": "electron-builder install-app-deps --arch ia32",
         "build": "vite build",
         "start": "vite",
         "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
-        "pack": "electron-builder --win --x64 --ia32 --dir",
-        "dist": "electron-builder --win --x64 --ia32",
+        "pack": "electron-builder --win --x64 --dir",
+        "dist": "electron-builder --win --x64",
         "prepack": "npm run build",
         "predist": "npm run build",
         "format": "prettier --write .",
-        "release": "electron-builder --win --x64 --ia32",
+        "release": "electron-builder --win --x64",
         "prerelease": "npm run build",
         "lint": "eslint --ext .js,.vue src electron",
         "lint:fix": "eslint --fix --ext .js,.vue src electron",
         "postinstall": "npm run install-deps",
-        "install-deps": "npm run install-x64 && npm run install-ia32"
+        "install-deps": "npm run install-x64"
     },
     "build": {
         "appId": "MiniTools",
@@ -85,15 +84,13 @@
                 {
                     "target": "nsis",
                     "arch": [
-                        "x64",
-                        "ia32"
+                        "x64"
                     ]
                 },
                 {
                     "target": "msi",
                     "arch": [
-                        "x64",
-                        "ia32"
+                        "x64"
                     ]
                 }
             ],
