@@ -11,7 +11,10 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1100,
         height: 800,
-        resizable: false, // 固定大小，不允许调整
+        minWidth: 1100, // 最小宽度
+        minHeight: 800, // 最小高度
+        resizable: true, // 允许调整大小
+        maximizable: true, // 允许最大化
         autoHideMenuBar: true, // 显示菜单栏
         frame: true, // 保持原生边框
         center: true, // 窗口居中显示

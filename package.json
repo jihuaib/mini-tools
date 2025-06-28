@@ -44,20 +44,22 @@
         "url": "https://github.com/jihuaib/mini-tools.git"
     },
     "scripts": {
+        "install-x64": "electron-builder install-app-deps --arch x64",
+        "install-ia32": "electron-builder install-app-deps --arch ia32",
         "build": "vite build",
         "start": "vite",
         "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
-        "pack": "electron-builder --dir",
-        "dist": "electron-builder",
-        "rebuild": "electron-rebuild",
-        "prepack": "npm run build && npm run rebuild",
-        "predist": "npm run build && npm run rebuild",
+        "pack": "electron-builder --win --x64 --ia32 --dir",
+        "dist": "electron-builder --win --x64 --ia32",
+        "prepack": "npm run build",
+        "predist": "npm run build",
         "format": "prettier --write .",
-        "release": "electron-builder",
-        "prerelease": "npm run build && npm run rebuild",
+        "release": "electron-builder --win --x64 --ia32",
+        "prerelease": "npm run build",
         "lint": "eslint --ext .js,.vue src electron",
         "lint:fix": "eslint --fix --ext .js,.vue src electron",
-        "postbuild": "electron-builder install-app-deps"
+        "postinstall": "npm run install-deps",
+        "install-deps": "npm run install-x64 && npm run install-ia32"
     },
     "build": {
         "appId": "MiniTools",
@@ -80,11 +82,23 @@
         },
         "win": {
             "target": [
-                "msi",
-                "nsis"
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64",
+                        "ia32"
+                    ]
+                },
+                {
+                    "target": "msi",
+                    "arch": [
+                        "x64",
+                        "ia32"
+                    ]
+                }
             ],
             "icon": "icon.ico",
-            "artifactName": "${productName}-Setup-${version}.${ext}",
+            "artifactName": "${productName}-Setup-${version}-${os}-${arch}.${ext}",
             "publisherName": "jihuaibin",
             "verifyUpdateCodeSignature": false
         },
@@ -104,7 +118,6 @@
         "cross-env": "^7.0.3",
         "electron": "^15.3.0",
         "electron-builder": "^22.14.13",
-        "electron-rebuild": "^3.2.9",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.29.1",

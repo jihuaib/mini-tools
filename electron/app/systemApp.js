@@ -275,6 +275,8 @@ class SystemApp {
       Email: ${packageJson.author.email}
       Environment: ${this.isDev ? 'Development' : 'Production'}
       Electron: ${process.versions.electron}
+      arch: ${process.arch}
+      platform: ${process.platform}
       Node.js: ${process.versions.node}
       Chrome: ${process.versions.chrome}`;
 
