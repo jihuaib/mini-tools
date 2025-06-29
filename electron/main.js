@@ -9,8 +9,8 @@ let systemApp = null;
 
 function createWindow() {
     const win = new BrowserWindow({
-        minWidth: 1100, // 最小宽度
-        minHeight: 800, // 最小高度
+        minWidth: 1200, // 最小宽度
+        minHeight: 900, // 最小高度
         resizable: true, // 允许调整大小
         maximizable: true, // 允许最大化
         fullscreen: false, // 取消全屏启动

@@ -112,8 +112,8 @@ class ParserRegistry {
             const payload = result.payload;
             if (payload) {
                 if (payload.type && payload.nextLayer) {
-                    const result = this.parse(payload.nextLayer, payload.type, tree, buffer, payload.offset);
-                    if (!result.valid) return result;
+                    const nextResult = this.parse(payload.nextLayer, payload.type, tree, buffer, payload.offset);
+                    if (!nextResult.valid) return nextResult;
                 }
             }
 

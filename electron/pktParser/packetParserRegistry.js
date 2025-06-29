@@ -13,6 +13,7 @@ const { parseEthernetPacket } = require('./ethernetPacketParser');
 const { parseIPv4Packet, parseIPv6Packet } = require('./ipPacketParser');
 const { parseTcpPacket } = require('./tcpPacketParser');
 const { parseUdpPacket } = require('./udpPacketParser');
+const { parseArpPacket } = require('./arpPacketParser');
 
 // Register parsers
 // 数据链路层解析器
@@ -21,6 +22,7 @@ registry.registerParser('ethernet', 0, parseEthernetPacket);
 // 网络层解析器
 registry.registerParser('ip', 0x0800, parseIPv4Packet);
 registry.registerParser('ip', 0x86dd, parseIPv6Packet);
+registry.registerParser('arp', 0x0806, parseArpPacket);
 
 // 传输层解析器
 registry.registerParser('tcp', 6, parseTcpPacket);

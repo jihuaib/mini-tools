@@ -122,8 +122,7 @@ function parseUdpPacket(buffer, tree, offset = 0) {
 
         return {
             valid: true,
-            payload,
-            tree
+            payload
         };
     } catch (error) {
         return {

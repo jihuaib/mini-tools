@@ -45,7 +45,7 @@
                     v-model:selectedKeys="treeSelectedKeys"
                     :tree-data="parsedTreeData"
                     :default-expand-all="true"
-                    :height="500"
+                    :height="480"
                     @select="onTreeNodeSelect"
                 />
                 <div v-else class="no-data-message">暂无解析数据</div>
@@ -343,8 +343,8 @@
 <style scoped>
     .packet-result-viewer {
         display: flex;
-        gap: 16px;
-        height: 500px;
+        /* gap: 16px; */
+        height: 100%;
         overflow: hidden;
     }
 
