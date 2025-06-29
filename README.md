@@ -17,57 +17,29 @@
 
 ## 功能特性
 
-### BGP 模拟器
+### 🌐 网络协议工具
 
-- 模拟 BGP 协议行为和路由传播
-- 支持多 BGP 对等体配置
-- 可视化 BGP 路由信息
-- 支持路由策略配置
+#### [BGP 模拟器](docs/BGP_SIMULATOR.md)
+专业的 BGP 协议模拟工具，支持多对等体配置、路由传播模拟和可视化监控。
 
-![BGP 配置界面](docs/images/bgp_config.png)
-![BGP 对等体信息](docs/images/bgp_peer.png)
-![BGP 路由信息](docs/images/bgp_route.png)
+#### [BMP 监控器](docs/BMP_MONITOR.md)
+BGP 监控协议工具，提供实时路由监控、数据分析和统计报告功能。
 
-### BMP 监控器
+#### [RPKI 验证器](docs/RPKI_VALIDATOR.md)
+路由源验证工具，支持 ROA 记录管理和路由合法性验证。
 
-- 支持 BGP 监控协议(BMP)配置
-- 监控和显示 BMP 对等体信息
-- 实时查看 BMP 对等体路由信息
-- 详细的路由属性展示
+#### [SNMP 管理器](docs/SNMP_MANAGER.md)
+专业的 SNMP 网络管理工具，支持设备监控、数据收集和 Trap 消息处理。
 
-![BMP 配置界面](docs/images/bmp_config.png)
-![BMP 对等体信息](docs/images/bmp_peer.png)
-![BMP 路由信息](docs/images/bmp_peer_route.png)
+#### [FTP 服务器](docs/FTP_SERVER.md)
+内置的 FTP 服务器，提供完整的文件传输服务和多用户管理功能。
 
-### 报文解析器
+### 🛠️开发工具集
 
-- 支持多种网络协议报文格式解析
-- 可视化展示报文字段和结构
-- 详细解析报文内容和属性
-- 支持常见协议格式
+#### [工具集合](docs/TOOLS.md)
+包含格式化工具、报文解析器、报文捕获工具、字符串生成器等多种实用工具。
 
-![报文解析器界面](docs/images/packet_parser.png)
-
-### RPKI 验证器
-
-- 支持 RPKI 路由源验证
-- 配置和管理 ROA 记录
-- 实时验证路由的有效性
-- 与 BGP 路由信息集成
-
-![RPKI 配置界面](docs/images/rpki_config.png)
-![RPKI ROA 配置](docs/images/rpki_roa_config.png)
-
-### 字符串生成器
-
-- 生成多种格式的字符串
-- 支持正则表达式模式
-- 支持批量生成和自定义设置
-- 快速复制和导出功能
-
-![字符串生成器界面](docs/images/tools_string_generator.png)
-
-### 未来计划
+### 🚀 未来计划
 
 - JSON 解析与格式化工具
 - 网络连接测试工具
@@ -126,46 +98,41 @@ npm run release
 
 ## 使用指南
 
-### BGP 模拟器
+MiniTools 提供直观的图形界面和简单的操作流程，每个功能模块都有详细的使用指南：
 
-1. 在主界面选择 "BGP 模拟器"
-2. 在 BGP 配置页面添加 BGP 对等体并配置 AS 号、IP 地址等信息
-3. 通过路由配置页面设置路由策略和路由通告
-4. 在 BGP 对等体信息页面查看路由传播状态
+- **[BGP 模拟器使用指南](docs/BGP_SIMULATOR.md#使用指南)** - 详细的 BGP 配置和使用说明
+- **[BMP 监控器使用指南](docs/BMP_MONITOR.md#使用指南)** - BMP 监控配置和数据分析方法
+- **[RPKI 验证器使用指南](docs/RPKI_VALIDATOR.md#使用指南)** - RPKI 配置和路由验证流程
+- **[SNMP 管理器使用指南](docs/SNMP_MANAGER.md#使用指南)** - SNMP 设备监控和管理方法
+- **[FTP 服务器使用指南](docs/FTP_SERVER.md#使用指南)** - FTP 服务器配置和用户管理
+- **[工具集合使用指南](docs/TOOLS.md#使用指南)** - 各种开发和网络工具的使用方法
 
-### BMP 监控器
+### 快速开始
 
-1. 在主界面选择 "BMP 监控器"
-2. 在 BMP 配置页面设置监听地址和端口
-3. 在 BMP 对等体页面查看连接的 BMP 客户端和对等体信息
-4. 点击对等体查看详细的路由信息
-
-### RPKI 验证器
-
-1. 在主界面选择 "RPKI 验证器"
-2. 在 RPKI 配置页面设置验证参数
-3. 添加和管理 ROA 记录
-4. 查看验证结果和与 BGP 路由的集成信息
-
-### 报文解析器
-
-1. 在主界面选择 "报文解析器"
-2. 导入网络报文数据或手动输入报文内容
-3. 选择协议类型进行解析
-4. 查看解析后的报文结构和详细字段说明
-
-### 字符串生成器
-
-1. 在主界面选择 "工具" 下的 "字符串生成器"
-2. 选择所需的字符串格式或输入自定义正则表达式
-3. 设置生成数量和其他参数
-4. 点击生成按钮获取结果
-5. 使用复制功能保存结果
+1. **下载安装** - 从 [Releases](https://github.com/jihuaib/mini-tools/releases) 页面下载最新版本
+2. **选择功能** - 在主界面选择需要使用的功能模块
+3. **查看文档** - 点击上述链接查看对应功能的详细使用指南
+4. **开始使用** - 按照指南进行配置和操作
 
 ## 项目结构
 
 ```
 mini-tools/
+├── docs/              # 项目文档
+│   ├── BGP_SIMULATOR.md    # BGP 模拟器详细文档
+│   ├── BMP_MONITOR.md      # BMP 监控器详细文档
+│   ├── RPKI_VALIDATOR.md   # RPKI 验证器详细文档
+│   ├── SNMP_MANAGER.md     # SNMP 管理器详细文档
+│   ├── FTP_SERVER.md       # FTP 服务器详细文档
+│   ├── TOOLS.md            # 工具集合详细文档
+│   └── images/             # 功能截图和示意图
+│       ├── bgp/            # BGP 相关图片
+│       ├── bmp/            # BMP 相关图片
+│       ├── rpki/           # RPKI 相关图片
+│       ├── snmp/           # SNMP 相关图片
+│       ├── ftp/            # FTP 相关图片
+│       ├── tools/          # 工具相关图片
+│       └── setting/        # 设置相关图片
 ├── electron/          # Electron 主进程代码
 │   ├── main.js        # 主进程入口
 │   └── preload.js     # 预加载脚本
@@ -180,13 +147,12 @@ mini-tools/
 │   │   ├── bgp/       # BGP 模拟器相关视图
 │   │   ├── bmp/       # BMP 监控器相关视图
 │   │   ├── rpki/      # RPKI 验证器相关视图
-│   │   ├── parser/    # 报文解析器相关视图
+│   │   ├── snmp/      # SNMP 管理器相关视图
+│   │   ├── ftp/       # FTP 服务器相关视图
 │   │   └── tools/     # 通用工具视图
 │   ├── App.vue        # 应用根组件
 │   └── main.js        # 渲染进程入口
 ├── dist/              # 构建输出目录
-├── doc/               # 文档和素材
-│   └── images/        # 截图和示意图
 ├── index.html         # HTML 入口
 ├── vite.config.js     # Vite 配置
 └── package.json       # 项目配置和依赖
@@ -204,6 +170,21 @@ mini-tools/
 - 遵循项目的 ESLint 和 Prettier 配置
 - 组件使用 Vue 3 Composition API
 - 保持代码简洁和可读性
+
+## 📚 文档导航
+
+### 功能文档
+- 🌐 **[BGP 模拟器](docs/BGP_SIMULATOR.md)** - 完整的 BGP 协议模拟和路由管理
+- 📡 **[BMP 监控器](docs/BMP_MONITOR.md)** - BGP 路由监控和数据分析
+- 🔐 **[RPKI 验证器](docs/RPKI_VALIDATOR.md)** - 路由源验证和安全检查
+- 🌐 **[SNMP 管理器](docs/SNMP_MANAGER.md)** - 网络设备监控和管理
+- 📁 **[FTP 服务器](docs/FTP_SERVER.md)** - 文件传输服务和用户管理
+- 🛠️ **[工具集合](docs/TOOLS.md)** - 开发和网络实用工具
+
+### 开发文档
+- 📦 **[安装与运行](#安装与运行)** - 环境配置和项目启动
+- 🏗️ **[项目结构](#项目结构)** - 代码组织和目录说明
+- 🤝 **[贡献指南](#贡献指南)** - 参与项目开发的指南
 
 ## 常见问题
 

@@ -32,12 +32,12 @@ function createArpRequestPacket() {
     offset += 2;
 
     // Sender Hardware Address (AA:BB:CC:DD:EE:FF)
-    buffer.writeUInt8(0xAA, offset++);
-    buffer.writeUInt8(0xBB, offset++);
-    buffer.writeUInt8(0xCC, offset++);
-    buffer.writeUInt8(0xDD, offset++);
-    buffer.writeUInt8(0xEE, offset++);
-    buffer.writeUInt8(0xFF, offset++);
+    buffer.writeUInt8(0xaa, offset++);
+    buffer.writeUInt8(0xbb, offset++);
+    buffer.writeUInt8(0xcc, offset++);
+    buffer.writeUInt8(0xdd, offset++);
+    buffer.writeUInt8(0xee, offset++);
+    buffer.writeUInt8(0xff, offset++);
 
     // Sender Protocol Address (192.168.1.100)
     buffer.writeUInt8(192, offset++);

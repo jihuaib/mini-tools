@@ -1,0 +1,16 @@
+# 忽略 markdown 文件
+*.md
+
+# 忽略构建输出
+dist/
+build/
+
+# 忽略依赖目录
+node_modules/
+
+# 忽略日志文件
+*.log
+
+# 忽略临时文件
+*.tmp
+*.temp

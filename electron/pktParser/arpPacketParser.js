@@ -222,7 +222,7 @@ function parseArpPacket(buffer, tree, offset = 0) {
         headerNode.children.push(protocolLengthNode);
 
         // Calculate total header length
-        const totalHeaderLength = 8 + (hardwareLength * 2) + (protocolLength * 2);
+        const totalHeaderLength = 8 + hardwareLength * 2 + protocolLength * 2;
 
         // Check if buffer has enough data for the complete ARP packet
         if (buffer.length < offset + totalHeaderLength) {
