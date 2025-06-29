@@ -12,7 +12,7 @@ class BgpPeer {
 
     changePeerState(state) {
         if (state !== BgpConst.BGP_PEER_STATE.IDLE) {
-            if (this.peerState == BgpConst.BGP_PEER_STATE.NO_NEG) {
+            if (this.peerState === BgpConst.BGP_PEER_STATE.NO_NEG) {
                 return;
             }
         }

@@ -61,7 +61,7 @@ class BmpApp {
     async handleStartBmp(event, bmpConfigData) {
         const webContents = event.sender;
         try {
-            if (null != this.worker) {
+            if (null !== this.worker) {
                 logger.error(`bmp协议已经启动`);
                 return errorResponse('bmp协议已经启动');
             }
@@ -122,7 +122,7 @@ class BmpApp {
     }
 
     async handleStopBmp() {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('BMP未启动');
             return errorResponse('BMP未启动');
         }
@@ -147,7 +147,7 @@ class BmpApp {
     }
 
     async handleGetClientList() {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
@@ -162,7 +162,7 @@ class BmpApp {
     }
 
     async handleGetPeers(event, client) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
@@ -179,7 +179,7 @@ class BmpApp {
     }
 
     async handleGetRoutes(event, client, peer, ribType) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
@@ -198,7 +198,7 @@ class BmpApp {
     }
 
     async handleGetClient(event, client) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
@@ -215,7 +215,7 @@ class BmpApp {
     }
 
     async handleGetPeer(event, client, peer) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
@@ -233,7 +233,7 @@ class BmpApp {
     }
 
     getBmpRunning() {
-        return null != this.worker;
+        return null !== this.worker;
     }
 }
 

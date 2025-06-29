@@ -88,7 +88,7 @@
 
     // 处理更新状态
     const handleUpdateStatus = respData => {
-        if (respData.status != 'success') {
+        if (respData.status !== 'success') {
             message.error('检查更新失败');
             return;
         }

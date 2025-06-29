@@ -175,7 +175,7 @@ function parseIPv4Packet(buffer, tree, offset = 0) {
             curOffset += optLen;
             headerNode.children.push(options);
         }
-        if (curOffset - offset != ihl) {
+        if (curOffset - offset !== ihl) {
             return {
                 valid: false,
                 error: 'ipv4 packet parse error'

@@ -61,7 +61,7 @@ class BgpWorker {
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
                     const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
-                    if (null == bgpSession) {
+                    if (!bgpSession) {
                         socket.destroy();
                         return;
                     }
@@ -81,7 +81,7 @@ class BgpWorker {
                 });
 
                 const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
-                if (null == bgpSession) {
+                if (!bgpSession) {
                     socket.destroy();
                     return;
                 }
@@ -99,7 +99,7 @@ class BgpWorker {
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
                     const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
-                    if (null == bgpSession) {
+                    if (!bgpSession) {
                         socket.destroy();
                         return;
                     }
@@ -119,7 +119,7 @@ class BgpWorker {
                 });
 
                 const bgpSession = this.bgpSessionMap.get(BgpSession.makeKey(0, socket.remoteAddress));
-                if (null == bgpSession) {
+                if (!bgpSession) {
                     socket.destroy();
                     return;
                 }
@@ -164,7 +164,7 @@ class BgpWorker {
             const family = ipv4PeerConfigData.addressFamily[i];
             const { afi, safi } = getAfiAndSafi(family);
             const bgpInstance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
-            if (null == bgpInstance) {
+            if (!bgpInstance) {
                 // 有地址组实例没创建
                 isExist = false;
                 errorFamily = family;
@@ -264,7 +264,7 @@ class BgpWorker {
             const family = ipv6PeerConfigData.addressFamilyIpv6[i];
             const { afi, safi } = getAfiAndSafi(family);
             const bgpInstance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
-            if (null == bgpInstance) {
+            if (!bgpInstance) {
                 // 有地址组实例没创建
                 isExist = false;
                 errorFamily = family;
@@ -441,7 +441,7 @@ class BgpWorker {
         // 生成路由IP
         const ipType = afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 ? BgpConst.IP_TYPE.IPV4 : BgpConst.IP_TYPE.IPV6;
         const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
-        if (routes.length == 0) {
+        if (routes.length === 0) {
             this.messageHandler.sendSuccessResponse(messageId, null, '路由生成成功');
             return;
         }
@@ -483,7 +483,7 @@ class BgpWorker {
         // 生成路由IP
         const ipType = afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 ? BgpConst.IP_TYPE.IPV4 : BgpConst.IP_TYPE.IPV6;
         const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
-        if (routes.length == 0) {
+        if (routes.length === 0) {
             this.messageHandler.sendSuccessResponse(messageId, null, '路由删除成功');
             return;
         }

@@ -42,7 +42,7 @@ class RpkiWorker {
                     const rpkiSession = this.rpkiSessionMap.get(
                         RpkiSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -58,7 +58,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -77,7 +77,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -96,7 +96,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -116,7 +116,7 @@ class RpkiWorker {
                     clientPort
                 );
                 rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                if (null != rpkiSession) {
+                if (rpkiSession) {
                     rpkiSession.closeSession();
                     this.rpkiSessionMap.delete(sessionKey);
                 } else {
@@ -148,7 +148,7 @@ class RpkiWorker {
                     const rpkiSession = this.rpkiSessionMap.get(
                         RpkiSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -164,7 +164,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -183,7 +183,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -202,7 +202,7 @@ class RpkiWorker {
                         clientPort
                     );
                     const rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                    if (null == rpkiSession) {
+                    if (!rpkiSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in rpkiSessionMap`);
                         socket.destroy();
                         return;
@@ -222,7 +222,7 @@ class RpkiWorker {
                     clientPort
                 );
                 rpkiSession = this.rpkiSessionMap.get(sessionKey);
-                if (null != rpkiSession) {
+                if (rpkiSession) {
                     rpkiSession.closeSession();
                     this.rpkiSessionMap.delete(sessionKey);
                 } else {

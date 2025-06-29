@@ -45,7 +45,7 @@ class BmpWorker {
                     const bmpSession = this.bmpSessionMap.get(
                         BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
-                    if (null == bmpSession) {
+                    if (!bmpSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
                         socket.destroy();
                         return;
@@ -69,7 +69,7 @@ class BmpWorker {
                 let bmpSession = null;
                 const sessionKey = BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 bmpSession = this.bmpSessionMap.get(sessionKey);
-                if (null != bmpSession) {
+                if (bmpSession) {
                     bmpSession.closeSession();
                     this.bmpSessionMap.delete(sessionKey);
                 } else {
@@ -96,7 +96,7 @@ class BmpWorker {
                     const bmpSession = this.bmpSessionMap.get(
                         BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
-                    if (null == bmpSession) {
+                    if (!bmpSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in bmpSessionMap`);
                         socket.destroy();
                         return;
@@ -120,7 +120,7 @@ class BmpWorker {
                 let bmpSession = null;
                 const sessionKey = BmpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 bmpSession = this.bmpSessionMap.get(sessionKey);
-                if (null != bmpSession) {
+                if (bmpSession) {
                     bmpSession.closeSession();
                     this.bmpSessionMap.delete(sessionKey);
                 } else {
@@ -197,7 +197,7 @@ class BmpWorker {
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const peerList = [];
-        if (null == bmpSession) {
+        if (!bmpSession) {
             logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
@@ -213,7 +213,7 @@ class BmpWorker {
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const routeList = [];
-        if (null == bmpSession) {
+        if (!bmpSession) {
             logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
@@ -221,7 +221,7 @@ class BmpWorker {
         const { afi, safi } = getAfiAndSafi(peer.addrFamilyType);
         const peerKey = BmpBgpPeer.makeKey(afi, safi, peer.peerIp, peer.peerRd);
         const bgpPeer = bmpSession.peerMap.get(peerKey);
-        if (null == bgpPeer) {
+        if (!bgpPeer) {
             logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
             this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
             return;
@@ -250,7 +250,7 @@ class BmpWorker {
     getClient(messageId, client) {
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
-        if (null == bmpSession) {
+        if (!bmpSession) {
             logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
@@ -262,7 +262,7 @@ class BmpWorker {
         const { client, peer } = data;
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
-        if (null == bmpSession) {
+        if (!bmpSession) {
             logger.error(`BMP会话 ${sessionKey} 不存在`);
             this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
             return;
@@ -270,7 +270,7 @@ class BmpWorker {
         const { afi, safi } = getAfiAndSafi(peer.addrFamilyType);
         const peerKey = BmpBgpPeer.makeKey(afi, safi, peer.peerIp, peer.peerRd);
         const bgpPeer = bmpSession.peerMap.get(peerKey);
-        if (null == bgpPeer) {
+        if (!bgpPeer) {
             logger.error(`BMP会话 ${sessionKey} 不存在对等体 ${peerKey}`);
             this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
             return;

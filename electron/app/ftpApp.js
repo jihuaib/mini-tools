@@ -108,7 +108,7 @@ class FtpApp {
      */
     async handleStartFtp(event, config, user) {
         try {
-            if (null != this.worker) {
+            if (null !== this.worker) {
                 logger.error(`ftp协议已经启动`);
                 return errorResponse('ftp协议已经启动');
             }
@@ -150,7 +150,7 @@ class FtpApp {
      */
     async handleStopFtp() {
         try {
-            if (null == this.worker) {
+            if (null === this.worker) {
                 logger.error('FTP未启动');
                 return errorResponse('FTP未启动');
             }
@@ -172,7 +172,7 @@ class FtpApp {
     }
 
     getFtpRunning() {
-        return null != this.worker;
+        return null !== this.worker;
     }
 }
 

@@ -183,7 +183,7 @@ class BgpApp {
 
     async handleDeletePeer(event, peer) {
         try {
-            if (null == this.worker) {
+            if (null === this.worker) {
                 logger.error('bgp协议没有运行');
                 return errorResponse('bgp协议没有运行');
             }
@@ -200,7 +200,7 @@ class BgpApp {
 
     async handleConfigIpv4Peer(event, ipv4PeerConfigData) {
         try {
-            if (null == this.worker) {
+            if (null === this.worker) {
                 logger.error(`bgp协议没有启动`);
                 return errorResponse('bgp协议没有启动');
             }
@@ -221,7 +221,7 @@ class BgpApp {
 
     async handleConfigIpv6Peer(event, ipv6PeerConfigData) {
         try {
-            if (null == this.worker) {
+            if (null === this.worker) {
                 logger.error(`bgp协议没有启动`);
                 return errorResponse('bgp协议没有启动');
             }
@@ -243,7 +243,7 @@ class BgpApp {
     async handleStartBgp(event, bgpConfigData) {
         const webContents = event.sender;
         try {
-            if (null != this.worker) {
+            if (null !== this.worker) {
                 logger.error(`bgp协议已经启动`);
                 return errorResponse('bgp协议已经启动');
             }
@@ -286,7 +286,7 @@ class BgpApp {
     }
 
     async handleStopBgp() {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('BGP未启动');
             return errorResponse('BGP未启动');
         }
@@ -308,7 +308,7 @@ class BgpApp {
     }
 
     async handleGetPeerInfo() {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse({}, 'bgp协议没有运行');
         }
 
@@ -323,7 +323,7 @@ class BgpApp {
     }
 
     async handleGenerateIpv4Routes(event, config) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
@@ -340,7 +340,7 @@ class BgpApp {
     }
 
     async handleGenerateIpv6Routes(event, config) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
@@ -357,7 +357,7 @@ class BgpApp {
     }
 
     async handleDeleteIpv4Routes(event, config) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
@@ -374,7 +374,7 @@ class BgpApp {
     }
 
     async handleDeleteIpv6Routes(event, config) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('bgp协议没有运行');
             return errorResponse('bgp协议没有运行');
         }
@@ -391,7 +391,7 @@ class BgpApp {
     }
 
     async handleGetRoutes(event, addressFamily) {
-        if (null == this.worker) {
+        if (null === this.worker) {
             return successResponse({}, 'bgp协议没有运行');
         }
 
@@ -406,7 +406,7 @@ class BgpApp {
     }
 
     getBgpRunning() {
-        return null != this.worker;
+        return null !== this.worker;
     }
 }
 

@@ -60,7 +60,7 @@ class RpkiApp {
     async handleStartRpki(event, rpkiConfigData) {
         const webContents = event.sender;
         try {
-            if (null != this.worker) {
+            if (null !== this.worker) {
                 logger.error(`rpki协议已经启动`);
                 return errorResponse('rpki协议已经启动');
             }
@@ -121,7 +121,7 @@ class RpkiApp {
     }
 
     async handleStopRpki() {
-        if (null == this.worker) {
+        if (null === this.worker) {
             logger.error('RPKI未启动');
             return errorResponse('RPKI未启动');
         }
@@ -262,7 +262,7 @@ class RpkiApp {
     }
 
     getRpkiRunning() {
-        return null != this.worker;
+        return null !== this.worker;
     }
 }
 

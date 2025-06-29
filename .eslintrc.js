@@ -32,7 +32,8 @@ module.exports = {
         ],
         'no-case-declarations': 'warn',
         'no-undef': 'error',
-        'no-dupe-keys': 'error'
+        'no-dupe-keys': 'error',
+        'eqeqeq': ['error', 'always']
     },
     overrides: [
         {

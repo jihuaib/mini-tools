@@ -448,7 +448,7 @@ class NativeApp {
     }
 
     getPacketCaptureRunning() {
-        return null != this.capSession;
+        return null !== this.capSession;
     }
 
     // JSON格式化

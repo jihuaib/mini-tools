@@ -201,7 +201,7 @@ function parseTcpPacket(buffer, tree, offset = 0) {
             curOffset += optLen;
         }
 
-        if (curOffset - offset != headerLength) {
+        if (curOffset - offset !== headerLength) {
             return {
                 valid: false,
                 error: 'tcp packet parse error'

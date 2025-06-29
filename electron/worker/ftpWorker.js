@@ -38,7 +38,7 @@ class FtpWorker {
                 // 当接收到数据时处理数据
                 socket.on('data', data => {
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -48,7 +48,7 @@ class FtpWorker {
 
                 socket.on('end', () => {
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -61,7 +61,7 @@ class FtpWorker {
 
                 socket.on('close', () => {
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -74,7 +74,7 @@ class FtpWorker {
 
                 socket.on('error', err => {
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv4 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -88,7 +88,7 @@ class FtpWorker {
                 // 创建RPKI会话
                 let ftpSession = null;
                 ftpSession = this.ftpSessionMap.get(sessionKey);
-                if (null != ftpSession) {
+                if (ftpSession) {
                     ftpSession.closeSession();
                     this.ftpSessionMap.delete(sessionKey);
                 } else {
@@ -122,7 +122,7 @@ class FtpWorker {
                     const ftpSession = this.ftpSessionMap.get(
                         FtpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort)
                     );
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -138,7 +138,7 @@ class FtpWorker {
                         clientPort
                     );
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -157,7 +157,7 @@ class FtpWorker {
                         clientPort
                     );
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -176,7 +176,7 @@ class FtpWorker {
                         clientPort
                     );
                     const ftpSession = this.ftpSessionMap.get(sessionKey);
-                    if (null == ftpSession) {
+                    if (!ftpSession) {
                         logger.error(`ipv6 Client ${clientAddress}:${clientPort} not found in ftpSessionMap`);
                         socket.destroy();
                         return;
@@ -191,7 +191,7 @@ class FtpWorker {
                 let ftpSession = null;
                 const sessionKey = FtpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 ftpSession = this.ftpSessionMap.get(sessionKey);
-                if (null != ftpSession) {
+                if (ftpSession) {
                     ftpSession.closeSession();
                     this.ftpSessionMap.delete(sessionKey);
                 } else {
