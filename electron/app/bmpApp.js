@@ -4,6 +4,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const logger = require('../log/logger');
 const BmpConst = require('../const/bmpConst');
+const EventDispatcher = require('../utils/eventDispatcher');
 
 class BmpApp {
     constructor(ipcMain, store) {
@@ -12,6 +13,7 @@ class BmpApp {
         this.bmpConfigFileKey = 'bmp-config';
         this.isDev = !app.isPackaged;
         this.worker = null;
+        this.eventDispatcher = null;
 
         this.bmpInitiationHandler = null;
         this.bmpPeerUpdateHandler = null;
@@ -73,25 +75,25 @@ class BmpApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
+            // 设置事件发送器的 webContents
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(webContents);
+
             // 定义事件处理函数
             this.bmpInitiationHandler = data => {
-                logger.info(`bmpInitiationHandler data: ${JSON.stringify(data)}`);
-                webContents.send('bmp:initiation', successResponse(data.data));
+                this.eventDispatcher.emit('bmp:initiation', successResponse(data.data));
             };
 
             this.bmpPeerUpdateHandler = data => {
-                logger.info(`bmpPeerUpdateHandler data: ${JSON.stringify(data)}`);
-                webContents.send('bmp:peerUpdate', successResponse(data.data));
+                this.eventDispatcher.emit('bmp:peerUpdate', successResponse(data.data));
             };
 
             this.bmpRouteUpdateHandler = data => {
-                logger.info(`bmpRouteUpdateHandler data: ${JSON.stringify(data)}`);
-                webContents.send('bmp:routeUpdate', successResponse(data.data));
+                this.eventDispatcher.emit('bmp:routeUpdate', successResponse(data.data));
             };
 
             this.bmpTerminationHandler = data => {
-                logger.info(`bmpTerminationHandler data: ${JSON.stringify(data)}`);
-                webContents.send('bmp:termination', successResponse(data.data));
+                this.eventDispatcher.emit('bmp:termination', successResponse(data.data));
             };
 
             // 注册事件监听器，处理来自worker的事件通知
@@ -112,6 +114,8 @@ class BmpApp {
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
             logger.error('Error starting BMP:', error.message);
             return errorResponse(error.message);
         }
@@ -137,6 +141,8 @@ class BmpApp {
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
         }
     }
 

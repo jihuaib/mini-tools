@@ -5,6 +5,7 @@ const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { getNetworkAddress } = require('../utils/ipUtils');
 const RpkiConst = require('../const/rpkiConst');
+const EventDispatcher = require('../utils/eventDispatcher');
 
 class RpkiApp {
     constructor(ipcMain, store) {
@@ -14,6 +15,7 @@ class RpkiApp {
         this.rpkiRoaFileKey = 'rpki-roa';
         this.isDev = !app.isPackaged;
         this.worker = null;
+        this.eventDispatcher = null; // 添加事件发送器
 
         this.rpkiClientConnectionHandler = null;
 
@@ -72,10 +74,13 @@ class RpkiApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
+            // 设置事件发送器的 webContents
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(webContents);
+
             // 注册事件监听
             this.rpkiClientConnectionHandler = data => {
-                logger.info(`rpkiClientConnectionHandler data: ${JSON.stringify(data)}`);
-                webContents.send('rpki:clientConnection', successResponse(data));
+                this.eventDispatcher.emit('rpki:clientConnection', successResponse(data));
             };
 
             this.worker.addEventListener(RpkiConst.RPKI_EVT_TYPES.CLIENT_CONNECTION, this.rpkiClientConnectionHandler);
@@ -108,6 +113,8 @@ class RpkiApp {
             );
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
             logger.error('Error starting RPKI:', error.message);
             return errorResponse(error.message);
         }
@@ -132,6 +139,8 @@ class RpkiApp {
             );
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
         }
     }
 

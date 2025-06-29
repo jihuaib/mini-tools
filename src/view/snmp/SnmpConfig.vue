@@ -219,9 +219,9 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue';
+    import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
-    import { DEFAULT_VALUES, SNMP_SECURITY_LEVEL } from '../../const/snmpConst';
+    import { DEFAULT_VALUES, SNMP_SECURITY_LEVEL, SNMP_SUB_EVT_TYPES } from '../../const/snmpConst';
     import { FormValidator, createSnmpConfigValidationRules } from '../../utils/validationCommon';
 
     defineOptions({ name: 'SnmpConfig' });
@@ -324,8 +324,22 @@
         }
     });
 
+    const handleSnmpEvent = respData => {
+        if (respData.status === 'success') {
+            const type = respData.data.type;
+            if (type === SNMP_SUB_EVT_TYPES.TRAP_RECEIVED) {
+                trapCount.value++;
+            }
+        }
+    };
+
     onMounted(() => {
         loadConfig();
+        window.snmpApi.onSnmpEvent(handleSnmpEvent);
+    });
+
+    onBeforeUnmount(() => {
+        window.snmpApi.offSnmpEvent(handleSnmpEvent);
     });
 </script>
 

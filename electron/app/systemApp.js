@@ -384,6 +384,7 @@ class SystemApp {
                 if (isNativeRunning) {
                     await this.nativeApp.handleStopPacketCapture();
                 }
+
                 return true;
             }
             return false;

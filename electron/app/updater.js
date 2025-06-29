@@ -4,7 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('../log/logger');
 const { DEFAULT_UPDATE_SETTINGS } = require('../const/toolsConst');
-
+const EventDispatcher = require('../utils/eventDispatcher');
+const { successResponse } = require('../utils/responseUtils');
 class AppUpdater {
     constructor(ipc, mainWindow) {
         this.mainWindow = mainWindow;
@@ -13,11 +14,12 @@ class AppUpdater {
         this.isDev = !app.isPackaged;
         this.updateSettingsConfig = DEFAULT_UPDATE_SETTINGS;
 
+        // 保存事件监听器引用，便于后续清理
+        this.eventListeners = {};
+        this.eventDispatcher = null;
+
         this.setupAutoUpdater();
         this.registerHandlers();
-
-        // 设置更新事件监听器
-        this.setupUpdateEvents();
     }
 
     registerHandlers() {
@@ -86,58 +88,94 @@ class AppUpdater {
 
     setupUpdateEvents() {
         // 检查更新时
-        autoUpdater.on('checking-for-update', () => {
+        this.eventListeners.checkingForUpdate = () => {
             logger.info('正在检查更新...');
             this.sendUpdateStatus('checking-for-update');
-        });
+        };
+        autoUpdater.on('checking-for-update', this.eventListeners.checkingForUpdate);
 
         // 有可用更新时
-        autoUpdater.on('update-available', info => {
+        this.eventListeners.updateAvailable = info => {
             logger.info('发现新版本:', info.version);
             this.sendUpdateStatus('update-available', info);
             if (this.updateSettingsConfig.autoDownload) {
                 this.sendUpdateStatus('download-started');
             }
-        });
+        };
+        autoUpdater.on('update-available', this.eventListeners.updateAvailable);
 
         // 没有可用更新时
-        autoUpdater.on('update-not-available', info => {
+        this.eventListeners.updateNotAvailable = info => {
             logger.info('当前已是最新版本');
             this.sendUpdateStatus('update-not-available', info);
-        });
+        };
+        autoUpdater.on('update-not-available', this.eventListeners.updateNotAvailable);
 
         // 更新错误时
-        autoUpdater.on('error', err => {
+        this.eventListeners.error = err => {
             logger.error('更新过程中出现错误:', err);
             this.sendUpdateStatus('update-error', { error: err.message });
-        });
+        };
+        autoUpdater.on('error', this.eventListeners.error);
 
         // 下载进度
-        autoUpdater.on('download-progress', progressObj => {
+        this.eventListeners.downloadProgress = progressObj => {
             const logMessage = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
             logger.info(logMessage);
             this.sendUpdateStatus('download-progress', progressObj);
-        });
+        };
+        autoUpdater.on('download-progress', this.eventListeners.downloadProgress);
 
         // 更新下载完成
-        autoUpdater.on('update-downloaded', info => {
+        this.eventListeners.updateDownloaded = info => {
             logger.info('更新下载完成');
             this.updateDownloaded = true;
             this.sendUpdateStatus('update-downloaded', info);
-        });
+        };
+        autoUpdater.on('update-downloaded', this.eventListeners.updateDownloaded);
+    }
+
+    // 清理事件监听器
+    cleanup() {
+        logger.info('清理更新器事件监听器');
+
+        // 移除所有事件监听器
+        if (this.eventListeners.checkingForUpdate) {
+            autoUpdater.removeListener('checking-for-update', this.eventListeners.checkingForUpdate);
+        }
+        if (this.eventListeners.updateAvailable) {
+            autoUpdater.removeListener('update-available', this.eventListeners.updateAvailable);
+        }
+        if (this.eventListeners.updateNotAvailable) {
+            autoUpdater.removeListener('update-not-available', this.eventListeners.updateNotAvailable);
+        }
+        if (this.eventListeners.error) {
+            autoUpdater.removeListener('error', this.eventListeners.error);
+        }
+        if (this.eventListeners.downloadProgress) {
+            autoUpdater.removeListener('download-progress', this.eventListeners.downloadProgress);
+        }
+        if (this.eventListeners.updateDownloaded) {
+            autoUpdater.removeListener('update-downloaded', this.eventListeners.updateDownloaded);
+        }
+
+        // 清空引用
+        this.eventListeners = {};
     }
 
     // 发送更新状态到渲染进程
     sendUpdateStatus(type, data = {}) {
-        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-            this.mainWindow.webContents.send('updater:update-status', { type, data });
-        }
+        this.eventDispatcher.emit('updater:update-status', successResponse({ type, data }));
     }
 
     // 检查更新
     async checkForUpdates() {
         try {
             logger.info('手动检查更新');
+            // 设置更新事件监听器
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(this.mainWindow.webContents);
+            this.setupUpdateEvents();
             const result = await autoUpdater.checkForUpdates();
             // 返回简化的结果，避免 IPC 序列化问题
             return {
@@ -156,6 +194,10 @@ class AppUpdater {
                 success: false,
                 error: error.message
             };
+        } finally {
+            this.eventDispatcher.cleanup();
+            this.eventDispatcher = null;
+            this.cleanup();
         }
     }
 

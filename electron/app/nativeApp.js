@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
 const iconv = require('iconv-lite');
+const EventDispatcher = require('../utils/eventDispatcher');
 
 class NativeApp {
     constructor(ipc, store) {
@@ -24,6 +25,8 @@ class NativeApp {
         this.Cap = null;
         this.libxmljs = null;
         this.initNativeDependencies();
+
+        this.eventDispatcher = null;
     }
 
     initNativeDependencies() {
@@ -288,15 +291,18 @@ class NativeApp {
             this.isCapturing = true;
             let packetCount = 0;
 
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(webContents);
+
             // 响应抓包已开始
-            webContents.send('native:packetEvent', {
-                status: 'success',
-                data: {
+            this.eventDispatcher.emit(
+                'native:packetEvent',
+                successResponse({
                     type: 'PACKET_CAPTURE_START',
                     device: device,
                     linkType: linkType
-                }
-            });
+                })
+            );
 
             this.capSession.setMinBytes && this.capSession.setMinBytes(0);
 
@@ -315,21 +321,20 @@ class NativeApp {
                         raw: buffer.toString('hex', 0, nbytes)
                     };
 
-                    webContents.send('native:packetEvent', {
-                        status: 'success',
-                        data: {
+                    this.eventDispatcher.emit(
+                        'native:packetEvent',
+                        successResponse({
                             type: 'PACKET_CAPTURED',
                             packet: packetInfo
-                        }
-                    });
+                        })
+                    );
                 } catch (err) {
-                    webContents.send('native:packetEvent', {
-                        status: 'error',
-                        msg: err.message,
-                        data: {
+                    this.eventDispatcher.emit(
+                        'native:packetEvent',
+                        errorResponse(err.message, {
                             type: 'PACKET_ERROR'
-                        }
-                    });
+                        })
+                    );
                 }
             });
 
@@ -337,7 +342,12 @@ class NativeApp {
             return successResponse(null, '抓包启动成功');
         } catch (err) {
             this.isCapturing = false;
-            this.capSession = null;
+            if (this.capSession) {
+                this.capSession.close();
+                this.capSession = null;
+            }
+            this.eventDispatcher.cleanup();
+            this.eventDispatcher = null;
             logger.error('启动抓包错误:', err.message);
             return errorResponse(`启动抓包失败: ${err.message}`);
         }
@@ -355,6 +365,9 @@ class NativeApp {
         } catch (err) {
             logger.error('停止抓包错误:', err.message);
             return errorResponse(err.message);
+        } finally {
+            this.eventDispatcher.cleanup();
+            this.eventDispatcher = null;
         }
     }
 

@@ -140,8 +140,12 @@
     };
 
     // 处理更新状态
-    const handleUpdateStatus = status => {
-        const { type, data } = status;
+    const handleUpdateStatus = respData => {
+        if (respData.status != 'success') {
+            message.error('检查更新失败');
+            return;
+        }
+        const { type, data } = respData.data;
 
         switch (type) {
             case 'checking-for-update':

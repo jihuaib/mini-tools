@@ -4,6 +4,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const logger = require('../log/logger');
 const BgpConst = require('../const/bgpConst');
+const EventDispatcher = require('../utils/eventDispatcher');
 class BgpApp {
     constructor(ipc, store) {
         this.worker = null;
@@ -15,6 +16,7 @@ class BgpApp {
         this.isDev = !app.isPackaged;
         this.peerChangeHandler = null;
         this.store = store;
+        this.eventDispatcher = null;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
     }
@@ -255,10 +257,13 @@ class BgpApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
+            // 设置事件发送器的 webContents
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(webContents);
+
             // 定义事件处理函数
             this.peerChangeHandler = data => {
-                logger.info(`peerChangeHandler data: ${JSON.stringify(data)}`);
-                webContents.send('bgp:peerChange', successResponse(data.data));
+                this.eventDispatcher.emit('bgp:peerChange', successResponse(data.data));
             };
 
             // 注册事件监听器，处理来自worker的事件通知
@@ -273,6 +278,8 @@ class BgpApp {
             this.worker.removeEventListener(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
             logger.error('Error starting BGP:', error.message);
             return errorResponse(error.message);
         }
@@ -295,6 +302,8 @@ class BgpApp {
             this.worker.removeEventListener(BgpConst.BGP_EVT_TYPES.BGP_PEER_CHANGE, this.peerChangeHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
         }
     }
 
