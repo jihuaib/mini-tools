@@ -42,7 +42,7 @@
                 <a-tree
                     v-if="parsedTreeData && parsedTreeData.length > 0"
                     ref="treeRef"
-                    v-model:selectedKeys="treeSelectedKeys"
+                    v-model:selected-keys="treeSelectedKeys"
                     :tree-data="parsedTreeData"
                     :default-expand-all="true"
                     :height="480"

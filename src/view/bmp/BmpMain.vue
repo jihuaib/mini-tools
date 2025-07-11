@@ -2,7 +2,7 @@
     <div class="mt-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
+            <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="bmp-config" tab="BMP配置" />
                 <a-tab-pane key="bmp-peer" tab="BMP邻居" />
                 <!-- 为每个活跃的peer添加动态Tab -->

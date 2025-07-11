@@ -18,7 +18,7 @@
                 <!-- 内容输入 -->
                 <a-form-item label="源内容" name="content">
                     <CodeEditor
-                        v-model:modelValue="formState.content"
+                        v-model:model-value="formState.content"
                         :height="200"
                         :status="lineErrors.length > 0 ? 'error' : ''"
                         :errors="lineErrors"

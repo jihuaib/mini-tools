@@ -1,7 +1,7 @@
 <template>
     <div class="mt-container">
         <a-card :title="`BGP路由 - ${peerName}`">
-            <a-tabs v-model:activeKey="activeRibType" @change="onRibTypeChange">
+            <a-tabs v-model:active-key="activeRibType" @change="onRibTypeChange">
                 <a-tab-pane key="preRibIn" tab="Pre-RIB-In" />
                 <a-tab-pane key="ribIn" tab="RIB-In" />
                 <a-tab-pane key="locRib" tab="Loc-Rib" />

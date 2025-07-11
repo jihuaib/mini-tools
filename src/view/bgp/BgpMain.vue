@@ -2,7 +2,7 @@
     <div class="mt-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
+            <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="bgp-config" tab="BGP配置" />
                 <a-tab-pane key="bgp-peer-info" tab="邻居信息" />
                 <a-tab-pane key="route-config" tab="路由配置" />

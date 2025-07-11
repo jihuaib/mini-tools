@@ -10,7 +10,7 @@
         <div class="settings-layout">
             <!-- 左侧分类菜单 -->
             <div class="settings-sidebar">
-                <a-menu v-model:selectedKeys="selectedCategory" mode="inline" class="settings-menu">
+                <a-menu v-model:selected-keys="selectedCategory" mode="inline" class="settings-menu">
                     <a-menu-item key="general">
                         <template #icon><SettingOutlined /></template>
                         <span>通用设置</span>

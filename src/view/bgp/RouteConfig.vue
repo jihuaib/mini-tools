@@ -1,7 +1,7 @@
 <template>
     <div class="mt-container">
         <a-card title="BGP路由配置">
-            <a-tabs v-model:activeKey="activeTabKey">
+            <a-tabs v-model:active-key="activeTabKey">
                 <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC路由">
                     <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
                         <a-row>
@@ -188,13 +188,13 @@
 
         <CustomPktDrawer
             v-model:visible="customIpv4RouteAttrVisible"
-            v-model:inputValue="ipv4Data.customAttr"
+            v-model:input-value="ipv4Data.customAttr"
             @submit="handleCustomIpv4RouteAttrSubmit"
         />
 
         <CustomPktDrawer
             v-model:visible="customIpv6RouteAttrVisible"
-            v-model:inputValue="ipv6Data.customAttr"
+            v-model:input-value="ipv6Data.customAttr"
             @submit="handleCustomIpv6RouteAttrSubmit"
         />
     </div>

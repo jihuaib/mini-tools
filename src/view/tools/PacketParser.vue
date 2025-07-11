@@ -33,7 +33,7 @@
                 <a-form-item label="报文数据" name="packetData">
                     <a-tooltip :title="validationErrors.packetData" :open="!!validationErrors.packetData">
                         <ScrollTextarea
-                            v-model:modelValue="formState.packetData"
+                            v-model:model-value="formState.packetData"
                             :height="420"
                             placeholder="请输入16进制格式的报文内容, 如: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 00 13 01"
                             :status="validationErrors.packetData ? 'error' : ''"

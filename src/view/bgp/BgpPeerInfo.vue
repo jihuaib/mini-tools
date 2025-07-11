@@ -4,7 +4,7 @@
             <a-col :span="24">
                 <a-card title="邻居信息">
                     <div>
-                        <a-tabs v-model:activeKey="activePeerInfoTabKey">
+                        <a-tabs v-model:active-key="activePeerInfoTabKey">
                             <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_UNC" tab="IPv4-UNC邻居">
                                 <div class="bgp-peer-info-header">
                                     <UnorderedListOutlined />

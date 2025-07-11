@@ -4,7 +4,7 @@
             <a-col :span="24">
                 <a-card title="BMP Client">
                     <div v-if="clientList.length > 0">
-                        <a-tabs v-model:activeKey="activeClientKey">
+                        <a-tabs v-model:active-key="activeClientKey">
                             <a-tab-pane
                                 v-for="client in clientList"
                                 :key="`${client.localIp}|${client.localPort}|${client.remoteIp}|${client.remotePort}`"

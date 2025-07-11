@@ -2,7 +2,7 @@
     <div class="mt-main-container">
         <!-- 固定 Tabs -->
         <div class="fixed-tabs">
-            <a-tabs v-model:activeKey="activeTabKey" @change="handleTabChange">
+            <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="snmp-config" tab="SNMP配置" />
                 <a-tab-pane key="snmp-trap" tab="Trap监控" />
             </a-tabs>

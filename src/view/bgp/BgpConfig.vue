@@ -58,7 +58,7 @@
         </a-form>
 
         <a-card title="邻居配置" class="mt-margin-top-10">
-            <a-tabs v-model:activeKey="activeTabKey">
+            <a-tabs v-model:active-key="activeTabKey">
                 <a-tab-pane :key="IP_TYPE.IPV4" tab="IPv4邻居">
                     <a-form
                         :model="ipv4PeerConfigData"
@@ -274,12 +274,12 @@
 
         <CustomPktDrawer
             v-model:visible="customOpenCapVisible"
-            v-model:inputValue="ipv4PeerConfigData.openCapCustom"
+            v-model:input-value="ipv4PeerConfigData.openCapCustom"
             @submit="handleCustomOpenCapSubmit"
         />
         <CustomPktDrawer
             v-model:visible="customOpenCapIpv6Visible"
-            v-model:inputValue="ipv6PeerConfigData.openCapCustomIpv6"
+            v-model:input-value="ipv6PeerConfigData.openCapCustomIpv6"
             @submit="handleCustomOpenCapIpv6Submit"
         />
     </div>

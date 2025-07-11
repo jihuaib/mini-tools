@@ -11,7 +11,7 @@
                 </a-button>
             </div>
             <a-menu
-                v-model:selectedKeys="current"
+                v-model:selected-keys="current"
                 mode="inline"
                 :items="items"
                 class="main-menu"

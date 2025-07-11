@@ -6,7 +6,7 @@
                 <a-form-item label="字符串模板" name="template">
                     <a-tooltip :title="validationErrors.template" :open="!!validationErrors.template">
                         <ScrollTextarea
-                            v-model:modelValue="formState.template"
+                            v-model:model-value="formState.template"
                             :height="120"
                             :status="validationErrors.template ? 'error' : ''"
                         />
@@ -54,7 +54,7 @@
 
                 <!-- 结果显示 -->
                 <a-form-item label="生成结果">
-                    <ScrollTextarea v-model:modelValue="result" :height="400" />
+                    <ScrollTextarea v-model:model-value="result" :height="400" />
                 </a-form-item>
             </a-form>
         </a-card>
