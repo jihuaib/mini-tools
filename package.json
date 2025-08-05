@@ -57,7 +57,7 @@
         "prerelease": "npm run build",
         "lint": "eslint --ext .js,.vue src electron",
         "lint:fix": "eslint --fix --ext .js,.vue src electron",
-        "postinstall": "npm run install-deps",
+        "postinstall": "electron-rebuild --arch x64 && npm run install-deps",
         "install-deps": "npm run install-x64"
     },
     "build": {
@@ -113,8 +113,9 @@
         "ant-design-vue": "^4.2.6",
         "concurrently": "^7.6.0",
         "cross-env": "^7.0.3",
-        "electron": "^15.3.0",
+        "electron": "^15.5.7",
         "electron-builder": "^22.14.13",
+        "electron-rebuild": "^3.2.9",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.29.1",
