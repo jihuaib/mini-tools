@@ -175,7 +175,7 @@
         createFtpConfigValidationRules,
         createFtpUserValidationRules
     } from '../../utils/validationCommon';
-    import { DEFAULT_VALUES } from '../../const/ftpConst';
+    import { DEFAULT_VALUES, FTP_EVT_TYPES, FTP_SUB_EVT_TYPES } from '../../const/ftpConst';
 
     defineOptions({
         name: 'FtpConfig'
@@ -319,25 +319,30 @@
         }
     };
 
-    const onClientConnection = data => {
-        if (data.event === 'connect') {
-            // 新连接
-            clientList.value = [...clientList.value, data.client];
-        } else if (data.event === 'disconnect') {
-            // 断开连接
-            clientList.value = clientList.value.filter(
-                client => !(client.remoteIp === data.client.remoteIp && client.remotePort === data.client.remotePort)
-            );
-        } else if (data.event === 'update') {
-            // 更新客户端状态
-            const index = clientList.value.findIndex(
-                client => client.remoteIp === data.client.remoteIp && client.remotePort === data.client.remotePort
-            );
+    const onFtpEvt = result => {
+        console.log(result);
+        if (result.status === 'success') {
+            const data = result.data;
+            if (data.type === FTP_SUB_EVT_TYPES.FTP_SUB_EVT_CONNCET) {
+                if (data.opType === 'add') {
+                    clientList.value = [...clientList.value, data.data];
+                } else if (data.opType === 'remove') {
+                    // 断开连接
+                    clientList.value = clientList.value.filter(
+                        client => !(client.remoteIp === data.data.remoteIp && client.remotePort === data.data.remotePort)
+                    );
+                } else if (data.event === 'update') {
+                    // 更新客户端状态
+                    const index = clientList.value.findIndex(
+                        client => client.remoteIp === data.data.remoteIp && client.remotePort === data.data.remotePort
+                    );
 
-            if (index !== -1) {
-                const newList = [...clientList.value];
-                newList[index] = data.client;
-                clientList.value = newList;
+                    if (index !== -1) {
+                        const newList = [...clientList.value];
+                        newList[index] = data.data;
+                        clientList.value = newList;
+                    }
+                }
             }
         }
     };
@@ -370,7 +375,7 @@
             }
 
             // 注册客户端连接事件监听
-            window.ftpApi.onClientConnection(onClientConnection);
+            window.ftpApi.onFtpEvt(onFtpEvt);
         } catch (error) {
             console.error('初始化FTP配置出错:', error);
         }
@@ -378,7 +383,7 @@
 
     onBeforeUnmount(() => {
         // 移除事件监听
-        window.ftpApi.offClientConnection(onClientConnection);
+        window.ftpApi.onFtpEvt(onFtpEvt);
     });
 
     const addUser = async () => {

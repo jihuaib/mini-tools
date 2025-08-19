@@ -612,7 +612,8 @@ class FtpSession {
         }
 
         // Update the client connection event
-        this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
+        this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FTP_EVT, {
+            type: FtpConst.FTP_SUB_EVT_TYPES.FTP_SUB_EVT_CONNCET,
             opType: 'remove',
             data: this.getClientInfo()
         });

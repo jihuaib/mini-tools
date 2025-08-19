@@ -85,7 +85,7 @@ class FtpWorker {
                     logger.error(`ipv4 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
-                // 创建RPKI会话
+                // 创建FTP会话
                 let ftpSession = null;
                 ftpSession = this.ftpSessionMap.get(sessionKey);
                 if (ftpSession) {
@@ -102,9 +102,10 @@ class FtpWorker {
                 ftpSession.remoteIp = clientAddress;
                 ftpSession.remotePort = clientPort;
 
-                ftpSession.sendMsg(Buffer.from('220 Welcome to the FTP server'));
+                ftpSession.sendMsg(Buffer.from('220  Welcome to the Mini Tools FTP server'));
 
-                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FTP_EVT, {
+                    type: FtpConst.FTP_SUB_EVT_TYPES.FTP_SUB_EVT_CONNCET,
                     opType: 'add',
                     data: ftpSession.getClientInfo()
                 });
@@ -187,7 +188,7 @@ class FtpWorker {
                     logger.error(`ipv6 TCP Error from ${clientAddress}:${clientPort}: ${err.message}`);
                 });
 
-                // 创建RPKI会话
+                // 创建FTP会话
                 let ftpSession = null;
                 const sessionKey = FtpSession.makeKey(socket.localAddress, socket.localPort, clientAddress, clientPort);
                 ftpSession = this.ftpSessionMap.get(sessionKey);
@@ -205,9 +206,10 @@ class FtpWorker {
                 ftpSession.remoteIp = clientAddress;
                 ftpSession.remotePort = clientPort;
 
-                ftpSession.sendMsg(Buffer.from('220 Welcome to the FTP server'));
+                ftpSession.sendMsg(Buffer.from('220 Welcome to the Mini Tools FTP server'));
 
-                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.CLIENT_CONNECTION, {
+                this.messageHandler.sendEvent(FtpConst.FTP_EVT_TYPES.FTP_EVT, {
+                    type: FtpConst.FTP_SUB_EVT_TYPES.FTP_SUB_EVT_CONNCET,
                     opType: 'add',
                     data: ftpSession.getClientInfo()
                 });

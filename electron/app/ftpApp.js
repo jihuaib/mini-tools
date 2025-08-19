@@ -5,7 +5,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const FtpConst = require('../const/ftpConst');
-
+const EventDispatcher = require('../utils/eventDispatcher');
 class FtpApp {
     constructor(ipcMain, store) {
         this.ipcMain = ipcMain;
@@ -17,6 +17,9 @@ class FtpApp {
         this.maxFtpUser = DEFAULT_TOOLS_SETTINGS.ftpServer.maxFtpUser;
         // 注册IPC处理程序
         this.registerIpcHandlers();
+
+        this.eventDispatcher = null;
+        this.ftpEvtHandler = null;
     }
 
     /**
@@ -107,6 +110,7 @@ class FtpApp {
      * @returns {Promise<object>} 操作结果
      */
     async handleStartFtp(event, config, user) {
+        const webContents = event.sender;
         try {
             if (null !== this.worker) {
                 logger.error(`ftp协议已经启动`);
@@ -123,6 +127,18 @@ class FtpApp {
             const workerFactory = new WorkerWithPromise(workerPath);
             this.worker = workerFactory.createLongRunningWorker();
 
+            // 设置事件发送器的 webContents
+            this.eventDispatcher = new EventDispatcher();
+            this.eventDispatcher.setWebContents(webContents);
+
+            // 定义事件处理函数
+            this.ftpEvtHandler = data => {
+                this.eventDispatcher.emit('ftp:event', successResponse(data));
+            };
+
+            // 注册事件监听器，处理来自worker的事件通知
+            this.worker.addEventListener(FtpConst.FTP_EVT_TYPES.FTP_EVT, this.ftpEvtHandler);
+
             const result = await this.worker.sendRequest(FtpConst.FTP_REQ_TYPES.START_FTP, {
                 ftpConfig: config,
                 userConfig: user
@@ -137,8 +153,11 @@ class FtpApp {
             logger.info(`ftp启动成功 result: ${JSON.stringify(result)}`);
             return successResponse(null, result.msg);
         } catch (error) {
+            this.worker.removeEventListener(FtpConst.FTP_EVT_TYPES.FTP_EVT, this.ftpEvtHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
             logger.error('Error starting FTP:', error.message);
             return errorResponse(error.message);
         }
@@ -162,8 +181,12 @@ class FtpApp {
             logger.error('Error stopping FTP:', error.message);
             return errorResponse(error.message);
         } finally {
+            // 移除事件监听器
+            this.worker.removeEventListener(FtpConst.FTP_EVT_TYPES.FTP_EVT, this.ftpEvtHandler);
             await this.worker.terminate();
             this.worker = null;
+            this.eventDispatcher.cleanup(); // 清理事件发送器
+            this.eventDispatcher = null;
         }
     }
 

@@ -204,8 +204,8 @@ contextBridge.exposeInMainWorld('ftpApi', {
     getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus'),
 
     // 使用统一事件管理
-    onClientConnection: callback => eventManager.on('ftp:clientConnection', callback),
-    offClientConnection: callback => eventManager.off('ftp:clientConnection', callback)
+    onFtpEvt: callback => eventManager.on('ftp:event', callback),
+    offFtpEvt: callback => eventManager.off('ftp:event', callback)
 });
 
 // snmp模块

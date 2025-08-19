@@ -1,12 +1,11 @@
 // 事件类型
 const FTP_EVT_TYPES = {
-    CLIENT_CONNECTION: 1,
-    AUTHENTICATION: 2,
-    FILE_TRANSFER_START: 3,
-    FILE_TRANSFER_COMPLETE: 4,
-    FILE_TRANSFER_ERROR: 5,
-    DIRECTORY_LISTING: 6,
-    COMMAND_EXECUTED: 7
+    FTP_EVT: 1
+};
+
+// 子事件类型
+const FTP_SUB_EVT_TYPES = {
+    FTP_SUB_EVT_CONNCET: 1 // 客户断连接子事件
 };
 
 // FTP请求-响应类型
@@ -21,6 +20,7 @@ const DEFAULT_FTP_SETTINGS = {
 
 module.exports = {
     FTP_EVT_TYPES,
+    FTP_SUB_EVT_TYPES,
     FTP_REQ_TYPES,
     DEFAULT_FTP_SETTINGS
 };
