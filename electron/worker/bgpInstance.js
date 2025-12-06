@@ -10,6 +10,8 @@ class BgpInstance {
         this.routeMap = new Map();
         // 自定义属性,
         this.customAttr = '';
+        // 扩展团体属性
+        this.RT = '';
     }
 
     static makeKey(vrfIndex, afi, safi) {

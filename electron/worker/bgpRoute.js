@@ -9,6 +9,12 @@ class BgpRoute {
         this.nextHop = null;
         this.origin = null;
         this.customAttr = null;
+        this.RT = null;
+
+        // MVPN
+        this.routeType = null;
+        this.rd = null;
+        this.originatingRouterIp = null;
     }
 
     static makeKey(ip, mask) {
@@ -30,6 +36,10 @@ class BgpRoute {
             nextHop: this.nextHop,
             origin: this.origin,
             customAttr: this.customAttr,
+            RT: this.RT,
+            routeType: this.routeType,
+            rd: this.rd,
+            originatingRouterIp: this.originatingRouterIp,
             addressFamily: addressFamily
         };
     }

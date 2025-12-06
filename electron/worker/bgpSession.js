@@ -162,6 +162,16 @@ class BgpSession {
                                 this.peerAddrFamilyFlags,
                                 BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_UNC
                             );
+                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV4_MVPN) {
+                            this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
+                                this.peerAddrFamilyFlags,
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN
+                            );
+                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN) {
+                            this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
+                                this.peerAddrFamilyFlags,
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN
+                            );
                         }
                     } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
                         this.peerCapFlags = CommonUtils.BIT_SET(
@@ -211,6 +221,35 @@ class BgpSession {
                         this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
                     }
                 }
+
+                // 同样检查IPv4 MVPN地址族
+                if (
+                    !CommonUtils.BIT_TEST(
+                        this.peerAddrFamilyFlags,
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN
+                    )
+                ) {
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV4_MVPN);
+                    const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
+                    if (instance) {
+                        this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
+                    }
+                }
+
+                // 同样检查IPv6 MVPN地址族
+                if (
+                    !CommonUtils.BIT_TEST(
+                        this.peerAddrFamilyFlags,
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN
+                    )
+                ) {
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN);
+                    const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
+                    if (instance) {
+                        this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
+                    }
+                }
+
                 this.sendKeepAliveMsg();
                 this.changeSessionFsmState(BgpConst.BGP_PEER_STATE.OPEN_CONFIRM);
 
@@ -307,6 +346,38 @@ class BgpSession {
                         [
                             ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
                             ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
+                        ]
+                    )
+                );
+            }
+            if (
+                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN)
+            ) {
+                optParams.push(
+                    ...this.buildBgpCapability(
+                        BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
+                        0x06,
+                        BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
+                        0x04,
+                        [
+                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4),
+                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_MVPN)
+                        ]
+                    )
+                );
+            }
+            if (
+                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN)
+            ) {
+                optParams.push(
+                    ...this.buildBgpCapability(
+                        BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
+                        0x06,
+                        BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
+                        0x04,
+                        [
+                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
+                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_MVPN)
                         ]
                     )
                 );

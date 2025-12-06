@@ -330,17 +330,23 @@
 
     const bgpAddressFamilyOptions = [
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
-        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC }
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC },
+        { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
     ];
 
     const addressFamilyOptions = [
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
-        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC }
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC },
+        { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
     ];
 
     const addressFamilyOptionsIpv6 = [
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC },
-        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC, disabled: true }
+        { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC, disabled: true },
+        { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
     ];
 
     const bgpConfigData = ref({

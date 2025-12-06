@@ -67,7 +67,9 @@ const BGP_ADDR_FAMILY = {
     IPV6_UNC: 2,
     L2VPN_EVPN: 3,
     VPNV4: 4,
-    VPNV6: 5
+    VPNV6: 5,
+    IPV4_MVPN: 6,
+    IPV6_MVPN: 7
 };
 
 // 协议规定的afi
@@ -80,6 +82,7 @@ const BGP_AFI_TYPE = {
 // 协议规定的safi
 const BGP_SAFI_TYPE = {
     SAFI_UNICAST: 1,
+    SAFI_MVPN: 5,
     SAFI_EVPN: 70,
     SAFI_VPN: 128
 };
@@ -107,7 +110,9 @@ const BGP_CAP_FLAGS = {
 // 定义能力标志位掩码
 const BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS = {
     IPV4_UNC: 0x00000001, // 1 << 0
-    IPV6_UNC: 0x00000002 // 1 << 1
+    IPV6_UNC: 0x00000002, // 1 << 1
+    IPV4_MVPN: 0x00000004, // 1 << 2
+    IPV6_MVPN: 0x00000008 // 1 << 3
 };
 
 // BGP Path Attribute Types
@@ -127,7 +132,25 @@ const BGP_PATH_ATTR = {
     EXTENDED_COMMUNITIES: 0x10,
     AS4_PATH: 0x11,
     AS4_AGGREGATOR: 0x12,
+    PMSI_TUNNEL: 0x16, // 22
     PATH_OTC: 0x23
+};
+
+const EXT_COMMUNITY_TYPE = {
+    AS2: 0x0,
+    IP: 0x1,
+    AS4: 0x2
+};
+
+const EXT_COMMUNITY_SUB_TYPE = {
+    RT: 0x2,
+    SOO: 0x3
+};
+
+const RD_TYPE = {
+    AS2: 0x0,
+    IP: 0x1,
+    AS4: 0x2
 };
 
 // BGP Path Attribute Flags
@@ -229,7 +252,22 @@ const BGP_REQ_TYPES = {
     DELETE_IPV4_ROUTES: 8,
     DELETE_IPV6_ROUTES: 9,
     GET_PEER_INFO: 10,
-    GET_ROUTES: 11
+    GET_ROUTES: 11,
+    GENERATE_IPV4_MVPN_ROUTES: 12,
+    DELETE_IPV4_MVPN_ROUTES: 13,
+    // Configuration
+    SAVE_IPV4_MVPN_ROUTE_CONFIG: 30,
+    LOAD_IPV4_MVPN_ROUTE_CONFIG: 31
+};
+
+const BGP_MVPN_ROUTE_TYPE = {
+    INTRA_AS_I_PMSI_AD: 1,
+    INTER_AS_I_PMSI_AD: 2,
+    S_PMSI_AD: 3,
+    LEAF_AD: 4,
+    SOURCE_ACTIVE_AD: 5,
+    SHARED_TREE_JOIN: 6,
+    SOURCE_TREE_JOIN: 7
 };
 
 module.exports = {
@@ -266,5 +304,9 @@ module.exports = {
     BGP_RD_LEN,
     BGP_PEER_TYPE,
     BGP_EVT_TYPES,
-    BGP_REQ_TYPES
+    BGP_REQ_TYPES,
+    BGP_MVPN_ROUTE_TYPE,
+    EXT_COMMUNITY_SUB_TYPE,
+    EXT_COMMUNITY_TYPE,
+    RD_TYPE
 };

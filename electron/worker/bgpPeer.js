@@ -1,5 +1,12 @@
 const BgpConst = require('../const/bgpConst');
-const { writeUInt32, ipToBytes, writeUInt16, getIpType } = require('../utils/ipUtils');
+const {
+    writeUInt32,
+    ipToBytes,
+    writeUInt16,
+    getIpType,
+    rdStringToBytes,
+    extCommunitiesToBytes
+} = require('../utils/ipUtils');
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 const logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
@@ -61,7 +68,7 @@ class BgpPeer {
         const attr = [];
         attr.push(flags);
         attr.push(type);
-        if (value.length > 255) {
+        if (value.length > 255 || flags & BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH) {
             attr.push(...writeUInt16(value.length));
         } else {
             attr.push(value.length);
@@ -92,6 +99,25 @@ class BgpPeer {
             attr.push(nextHopBytes.length);
             attr.push(...nextHopBytes);
             msgLen += 1 + nextHopBytes.length;
+        } else if (
+            this.instance.afType === BgpConst.BGP_AFI_TYPE.AF_TYPE_IPV4 &&
+            this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+        ) {
+            // MVPN Next Hop
+            // For MVPN, the Next Hop is 4 bytes (IPv4) or 16 bytes (IPv6)
+            // Typically same as local IP.
+            if (CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
+                const nextHopBytes = ipToBytes(`${this.session.localIp}`);
+                attr.push(nextHopBytes.length);
+                attr.push(...nextHopBytes);
+                msgLen += 1 + nextHopBytes.length;
+            } else {
+                // For now assuming IPv4 peering for MVPN IPv4 routes or basic encoding
+                const nextHopBytes = ipToBytes(this.session.localIp);
+                attr.push(nextHopBytes.length);
+                attr.push(...nextHopBytes);
+                msgLen += 1 + nextHopBytes.length;
+            }
         } else {
             const nextHopBytes = ipToBytes(`::ffff:${this.session.localIp}`);
             attr.push(nextHopBytes.length);
@@ -105,21 +131,42 @@ class BgpPeer {
 
         // NLRI
         let route = routes[routeIndex];
-        let prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
-        let nlriLen = 1 + prefixLength;
-        while (msgLen + nlriLen < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
-            attr.push(route.mask); // 前缀长度（单位bit）
-            const prefixBytes = ipToBytes(route.ip);
-            attr.push(...prefixBytes.slice(0, prefixLength));
+        let nlriBuf = [];
 
-            routeIndex++;
-            msgLen += nlriLen;
-            if (routeIndex < routes.length) {
-                route = routes[routeIndex];
-                prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
-                nlriLen = 1 + prefixLength;
-            } else {
-                break;
+        if (
+            this.instance.afType === BgpConst.BGP_AFI_TYPE.AF_TYPE_IPV4 &&
+            this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+        ) {
+            while (msgLen + nlriBuf.length < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+                const mvpnNlri = this.buildMvpnNlri(route);
+                nlriBuf.push(...mvpnNlri);
+
+                routeIndex++;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                } else {
+                    break;
+                }
+            }
+            attr.push(...nlriBuf);
+            msgLen += nlriBuf.length;
+        } else {
+            let prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+            let nlriLen = 1 + prefixLength;
+            while (msgLen + nlriLen < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+                attr.push(route.mask); // 前缀长度（单位bit）
+                const prefixBytes = ipToBytes(route.ip);
+                attr.push(...prefixBytes.slice(0, prefixLength));
+
+                routeIndex++;
+                msgLen += nlriLen;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                    prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+                    nlriLen = 1 + prefixLength;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -151,21 +198,39 @@ class BgpPeer {
 
         // NLRI
         let route = routes[routeIndex];
-        let prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
-        let nlriLen = 1 + prefixLength;
-        while (msgLen + nlriLen < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
-            attr.push(route.mask); // 前缀长度（单位bit）
-            const prefixBytes = ipToBytes(route.ip);
-            attr.push(...prefixBytes.slice(0, prefixLength));
 
-            routeIndex++;
-            msgLen += nlriLen;
-            if (routeIndex < routes.length) {
-                route = routes[routeIndex];
-                prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
-                nlriLen = 1 + prefixLength;
-            } else {
-                break;
+        if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN) {
+            let nlriBuf = [];
+            while (msgLen + nlriBuf.length < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+                const mvpnNlri = this.buildMvpnNlri(route);
+                nlriBuf.push(...mvpnNlri);
+
+                routeIndex++;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                } else {
+                    break;
+                }
+            }
+            attr.push(...nlriBuf);
+            msgLen += nlriBuf.length;
+        } else {
+            let prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+            let nlriLen = 1 + prefixLength;
+            while (msgLen + nlriLen < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+                attr.push(route.mask); // 前缀长度（单位bit）
+                const prefixBytes = ipToBytes(route.ip);
+                attr.push(...prefixBytes.slice(0, prefixLength));
+
+                routeIndex++;
+                msgLen += nlriLen;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                    prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+                    nlriLen = 1 + prefixLength;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -179,7 +244,7 @@ class BgpPeer {
         return { index: routeIndex, attr: attr };
     }
 
-    buildUpdateMsgIpv6(routes, routeIndex) {
+    buildUpdateMpMsg(routes, routeIndex) {
         try {
             // 构建撤销路由缓冲区
             const withdrawnRoutesBuf = Buffer.alloc(2);
@@ -235,6 +300,18 @@ class BgpPeer {
                         buffer: null
                     };
                 }
+            }
+
+            if (this.instance.RT?.trim()) {
+                pathAttr.push(
+                    ...this.buildPathAttribute(
+                        BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
+                        BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                        extCommunitiesToBytes(BgpConst.EXT_COMMUNITY_SUB_TYPE.RT, this.instance.RT)
+                    )
+                );
             }
 
             const msgLen = BgpConst.BGP_HEAD_LEN + withdrawnRoutesBuf.length + 2 + pathAttr.length; // 固定长度
@@ -437,7 +514,7 @@ class BgpPeer {
         }
     }
 
-    buildWithdrawMsgIpv6(routes, routeIndex) {
+    buildWithdrawMpMsg(routes, routeIndex) {
         try {
             // 构建撤销路由缓冲区
             const withdrawnRoutesBuf = Buffer.alloc(2);
@@ -496,7 +573,7 @@ class BgpPeer {
         ) {
             if (CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
                 while (routeIndex < routes.length) {
-                    const result = this.buildUpdateMsgIpv6(routes, routeIndex);
+                    const result = this.buildUpdateMpMsg(routes, routeIndex);
                     if (result.status) {
                         this.session.sendRoute(result.buffer);
                         routeIndex = result.index;
@@ -521,7 +598,20 @@ class BgpPeer {
             this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
         ) {
             while (routeIndex < routes.length) {
-                const result = this.buildUpdateMsgIpv6(routes, routeIndex);
+                const result = this.buildUpdateMpMsg(routes, routeIndex);
+                if (result.status) {
+                    this.session.sendRoute(result.buffer);
+                    routeIndex = result.index;
+                } else {
+                    break;
+                }
+            }
+        } else if (
+            this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+            this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+        ) {
+            while (routeIndex < routes.length) {
+                const result = this.buildUpdateMpMsg(routes, routeIndex);
                 if (result.status) {
                     this.session.sendRoute(result.buffer);
                     routeIndex = result.index;
@@ -545,7 +635,7 @@ class BgpPeer {
         ) {
             if (CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
                 while (routeIndex < withdrawnRoutes.length) {
-                    const result = this.buildWithdrawMsgIpv6(withdrawnRoutes, routeIndex);
+                    const result = this.buildWithdrawMpMsg(withdrawnRoutes, routeIndex);
                     if (result.status) {
                         this.session.sendRoute(result.buffer);
                         routeIndex = result.index;
@@ -569,7 +659,20 @@ class BgpPeer {
             this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
         ) {
             while (routeIndex < withdrawnRoutes.length) {
-                const result = this.buildWithdrawMsgIpv6(withdrawnRoutes, routeIndex);
+                const result = this.buildWithdrawMpMsg(withdrawnRoutes, routeIndex);
+                if (result.status) {
+                    this.session.sendRoute(result.buffer);
+                    routeIndex = result.index;
+                } else {
+                    break;
+                }
+            }
+        } else if (
+            this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+            this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+        ) {
+            while (routeIndex < withdrawnRoutes.length) {
+                const result = this.buildWithdrawMpMsg(withdrawnRoutes, routeIndex);
                 if (result.status) {
                     this.session.sendRoute(result.buffer);
                     routeIndex = result.index;
@@ -578,6 +681,84 @@ class BgpPeer {
                 }
             }
         }
+    }
+
+    buildMvpnNlri(route) {
+        const type = route.routeType;
+        const rdBytes = rdStringToBytes(route.rd);
+        const bufferParts = [];
+
+        bufferParts.push(Buffer.from([type]));
+
+        const contentParts = [];
+
+        contentParts.push(rdBytes);
+
+        switch (type) {
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD: {
+                // Type 1
+                const ipBytes = ipToBytes(route.originatingRouterIp);
+                contentParts.push(Buffer.from(ipBytes));
+                break;
+            }
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD: {
+                // Type 2
+                const asBuf = Buffer.alloc(4);
+                asBuf.writeUInt32BE(route.sourceAs || this.session.localAs, 0);
+                contentParts.push(asBuf);
+                break;
+            }
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.S_PMSI_AD: {
+                // Type 3
+                const sourceBytes = ipToBytes(route.sourceIp);
+                const groupBytes = ipToBytes(route.groupIp);
+                const origIpBytes = ipToBytes(route.originatingRouterIp || this.session.localIp);
+
+                contentParts.push(Buffer.from([sourceBytes.length * 8]));
+                contentParts.push(Buffer.from(sourceBytes));
+                contentParts.push(Buffer.from([groupBytes.length * 8]));
+                contentParts.push(Buffer.from(groupBytes));
+                contentParts.push(Buffer.from(origIpBytes));
+                break;
+            }
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.LEAF_AD: {
+                // Type 4
+                break;
+            }
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD: {
+                // Type 5
+                const sourceBytes = ipToBytes(route.sourceIp);
+                const groupBytes = ipToBytes(route.groupIp);
+
+                contentParts.push(Buffer.from([sourceBytes.length * 8]));
+                contentParts.push(Buffer.from(sourceBytes));
+                contentParts.push(Buffer.from([groupBytes.length * 8]));
+                contentParts.push(Buffer.from(groupBytes));
+                break;
+            }
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN: // Type 6
+            case BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN: {
+                // Type 7
+                const asBuf = Buffer.alloc(4);
+                asBuf.writeUInt32BE(route.sourceAs || 0, 0);
+                contentParts.push(asBuf);
+
+                const groupBytes = ipToBytes(route.groupIp);
+                contentParts.push(Buffer.from([groupBytes.length * 8]));
+                contentParts.push(Buffer.from(groupBytes));
+
+                const sourceBytes = ipToBytes(route.sourceIp);
+                contentParts.push(Buffer.from([sourceBytes.length * 8]));
+                contentParts.push(Buffer.from(sourceBytes));
+                break;
+            }
+        }
+
+        const dataBuffer = Buffer.concat(contentParts);
+        bufferParts.push(Buffer.from([dataBuffer.length]));
+        bufferParts.push(dataBuffer);
+
+        return Buffer.concat(bufferParts);
     }
 }
 

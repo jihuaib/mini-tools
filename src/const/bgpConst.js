@@ -26,7 +26,9 @@ export const BGP_ADDR_FAMILY = {
     IPV6_UNC: 2,
     L2VPN_EVPN: 3,
     VPNV4: 4,
-    VPNV6: 5
+    VPNV6: 5,
+    IPV4_MVPN: 6,
+    IPV6_MVPN: 7
 };
 
 // IP Type Values, 需要和后台定义保持一致, 后台会
@@ -49,7 +51,8 @@ export const ADDRESS_FAMILY_NAME = {
     [BGP_ADDR_FAMILY.IPV6_UNC]: 'IPv6 UNC',
     [BGP_ADDR_FAMILY.L2VPN_EVPN]: 'L2VPN EVPN',
     [BGP_ADDR_FAMILY.VPNV4]: 'VPNV4',
-    [BGP_ADDR_FAMILY.VPNV6]: 'VPNV6'
+    [BGP_ADDR_FAMILY.VPNV6]: 'VPNV6',
+    [BGP_ADDR_FAMILY.IPV4_MVPN]: 'IPv4 MVPN'
 };
 
 // Default Values
@@ -81,4 +84,14 @@ export const DEFAULT_VALUES = {
         BGP_OPEN_CAP_CODE.FOUR_OCTET_AS
     ],
     DEFAULT_ADDRESS_FAMILY_IPV6: [BGP_ADDR_FAMILY.IPV6_UNC]
+};
+
+export const BGP_MVPN_ROUTE_TYPE = {
+    INTRA_AS_I_PMSI_AD: 1,
+    INTER_AS_I_PMSI_AD: 2,
+    S_PMSI_AD: 3,
+    LEAF_AD: 4,
+    SOURCE_ACTIVE_AD: 5,
+    SHARED_TREE_JOIN: 6,
+    SOURCE_TREE_JOIN: 7
 };

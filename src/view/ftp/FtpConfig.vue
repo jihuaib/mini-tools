@@ -175,7 +175,7 @@
         createFtpConfigValidationRules,
         createFtpUserValidationRules
     } from '../../utils/validationCommon';
-    import { DEFAULT_VALUES, FTP_EVT_TYPES, FTP_SUB_EVT_TYPES } from '../../const/ftpConst';
+    import { DEFAULT_VALUES, FTP_SUB_EVT_TYPES } from '../../const/ftpConst';
 
     defineOptions({
         name: 'FtpConfig'
@@ -329,7 +329,8 @@
                 } else if (data.opType === 'remove') {
                     // 断开连接
                     clientList.value = clientList.value.filter(
-                        client => !(client.remoteIp === data.data.remoteIp && client.remotePort === data.data.remotePort)
+                        client =>
+                            !(client.remoteIp === data.data.remoteIp && client.remotePort === data.data.remotePort)
                     );
                 } else if (data.event === 'update') {
                     // 更新客户端状态

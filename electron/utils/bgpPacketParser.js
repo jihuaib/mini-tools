@@ -7,7 +7,13 @@
 
 // Import constants from existing BGP constants file
 const BgpConst = require('../const/bgpConst');
-const { ipv4BufferToString, ipv6BufferToString, getIpTypeName, rdBufferToString } = require('../utils/ipUtils');
+const {
+    ipv4BufferToString,
+    ipv6BufferToString,
+    getIpTypeName,
+    rdBufferToString,
+    extCommunitiesBufferToString
+} = require('../utils/ipUtils');
 const {
     getBgpPacketTypeName,
     getBgpOpenCapabilityName,
@@ -289,6 +295,9 @@ function parseUpdateMessage(buffer) {
             case BgpConst.BGP_PATH_ATTR.COMMUNITY: // COMMUNITY
                 attribute.communities = parseCommunities(attributeValue);
                 break;
+            case BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES: // EXTENDED_COMMUNITIES
+                attribute.extCommunities = parseExtCommunities(attributeValue);
+                break;
             case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: // MP_REACH_NLRI
                 attribute.mpReach = parseMpReachNlri(attributeValue);
                 break;
@@ -425,6 +434,19 @@ function parseCommunities(buffer) {
     }
 
     return communities;
+}
+
+function parseExtCommunities(buffer) {
+    const extCommunities = [];
+
+    for (let i = 0; i < buffer.length; i += 8) {
+        const subBuffer = buffer.subarray(i, i + 8);
+        extCommunities.push({
+            formatted: extCommunitiesBufferToString(subBuffer)
+        });
+    }
+
+    return extCommunities;
 }
 
 /**
@@ -740,6 +762,10 @@ function getBgpPacketSummary(parsedPacket) {
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.COMMUNITY) {
                         if (attr.communities) {
                             summary += `: ${attr.communities.map(c => c.formatted).join(' ')}`;
+                        }
+                    } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES) {
+                        if (attr.extCommunities) {
+                            summary += `: ${attr.extCommunities.map(c => c.formatted).join(' ')}`;
                         }
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.MED) {
                         summary += `: ${attr.med}`;

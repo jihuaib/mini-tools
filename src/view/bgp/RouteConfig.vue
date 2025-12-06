@@ -183,6 +183,157 @@
                         </div>
                     </a-form>
                 </a-tab-pane>
+
+                <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_MVPN" tab="IPv4-MVPN路由">
+                    <a-form :model="ipv4MvpnData" :label-col="labelCol" :wrapper-col="wrapperCol">
+                        <a-row>
+                            <a-col :span="6">
+                                <a-form-item label="RD" name="rd">
+                                    <a-input v-model:value="ipv4MvpnData.rd" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="6">
+                                <a-form-item label="Route Type" name="routeType">
+                                    <a-select v-model:value="ipv4MvpnData.routeType" :options="mvpnRouteTypeOptions" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="6">
+                                <a-form-item label="RT" name="RT">
+                                    <a-input v-model:value="ipv4MvpnData.RT" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="6">
+                                <a-form-item label="Count" name="count">
+                                    <a-input v-model:value="ipv4MvpnData.count" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- Type 1: Intra-AS I-PMSI A-D - Only Originating Router -->
+                        <a-row v-if="ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD">
+                            <a-col :span="12">
+                                <a-form-item label="Orig Router" name="originatingRouterIp">
+                                    <a-input v-model:value="ipv4MvpnData.originatingRouterIp" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- Type 2: Inter-AS I-PMSI A-D - Only Source AS -->
+                        <a-row v-if="ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD">
+                            <a-col :span="12">
+                                <a-form-item label="Source AS" name="sourceAs">
+                                    <a-input v-model:value="ipv4MvpnData.sourceAs" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- Type 3: S-PMSI A-D - Source, Group, Orig Router -->
+                        <a-row v-if="ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.S_PMSI_AD">
+                            <a-col :span="8">
+                                <a-form-item label="Source IP" name="sourceIp">
+                                    <a-input v-model:value="ipv4MvpnData.sourceIp" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Group IP" name="groupIp">
+                                    <a-input v-model:value="ipv4MvpnData.groupIp" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Orig Router" name="originatingRouterIp">
+                                    <a-input v-model:value="ipv4MvpnData.originatingRouterIp" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- Type 5: Source Active A-D - Source, Group -->
+                        <a-row v-if="ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD">
+                            <a-col :span="12">
+                                <a-form-item label="Source IP" name="sourceIp">
+                                    <a-input v-model:value="ipv4MvpnData.sourceIp" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="Group IP" name="groupIp">
+                                    <a-input v-model:value="ipv4MvpnData.groupIp" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- Type 6/7: Join routes - Source AS, Group, Source -->
+                        <a-row
+                            v-if="
+                                ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN ||
+                                ipv4MvpnData.routeType === BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                            "
+                        >
+                            <a-col :span="8">
+                                <a-form-item label="Source AS" name="sourceAs">
+                                    <a-input v-model:value="ipv4MvpnData.sourceAs" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Group IP" name="groupIp">
+                                    <a-input v-model:value="ipv4MvpnData.groupIp" />
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="8">
+                                <a-form-item label="Source IP" name="sourceIp">
+                                    <a-input v-model:value="ipv4MvpnData.sourceIp" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+
+                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
+                            <a-space size="middle">
+                                <a-button type="primary" @click="generateIpv4MvpnRoutes">生成MVPN路由</a-button>
+                            </a-space>
+                        </a-form-item>
+
+                        <!-- MVPN路由列表 -->
+                        <div class="route-list-section">
+                            <div class="route-list-header">
+                                <UnorderedListOutlined />
+                                <span class="header-text">已生成MVPN路由列表</span>
+                                <a-tag v-if="sentIpv4MvpnRoutes.length > 0" color="blue">
+                                    {{ sentIpv4MvpnRoutes.length }}
+                                </a-tag>
+                            </div>
+                            <a-table
+                                :data-source="sentIpv4MvpnRoutes"
+                                :columns="mvpnRouteColumns"
+                                :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                size="small"
+                                :row-key="
+                                    record =>
+                                        `${record.mvpnNlri?.rd}-${record.mvpnNlri?.type}-${record.mvpnNlri?.sourceIp}-${record.mvpnNlri?.groupIp}`
+                                "
+                                :scroll="{ y: 240 }"
+                            >
+                                <template #bodyCell="{ column, record }">
+                                    <template v-if="column.key === 'action'">
+                                        <a-button
+                                            type="primary"
+                                            danger
+                                            size="small"
+                                            @click="deleteSingleMvpnRoute(record)"
+                                        >
+                                            <template #icon><DeleteOutlined /></template>
+                                            删除
+                                        </a-button>
+                                    </template>
+                                    <template v-else-if="column.key === 'type'">
+                                        {{ getMvpnRouteTypeName(record.mvpnNlri?.type) }}
+                                    </template>
+                                    <template v-else-if="column.key === 'rd'">
+                                        {{ record.mvpnNlri?.rd }}
+                                    </template>
+                                    <template v-else-if="column.key === 'source'">
+                                        {{ record.mvpnNlri?.sourceIp }}
+                                    </template>
+                                    <template v-else-if="column.key === 'group'">
+                                        {{ record.mvpnNlri?.groupIp }}
+                                    </template>
+                                </template>
+                            </a-table>
+                        </div>
+                    </a-form>
+                </a-tab-pane>
             </a-tabs>
         </a-card>
 
@@ -205,7 +356,7 @@
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import { message } from 'ant-design-vue';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
-    import { BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY, DEFAULT_VALUES, IP_TYPE, BGP_MVPN_ROUTE_TYPE } from '../../const/bgpConst';
     import {
         FormValidator,
         createBgpIpv4RouteConfigValidationRules,
@@ -235,6 +386,28 @@
         customAttr: '',
         addressFamily: BGP_ADDR_FAMILY.IPV6_UNC
     });
+
+    const ipv4MvpnData = ref({
+        rd: '100:1',
+        routeType: BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD,
+        RT: '1:1',
+        sourceIp: '1.1.1.1',
+        groupIp: '239.1.1.1',
+        originatingRouterIp: DEFAULT_VALUES.ROUTER_ID,
+        sourceAs: DEFAULT_VALUES.LOCAL_AS,
+        count: '1',
+        addressFamily: BGP_ADDR_FAMILY.IPV4_MVPN
+    });
+
+    const mvpnRouteTypeOptions = [
+        { label: 'Intra-AS I-PMSI A-D (Type 1)', value: BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD },
+        { label: 'Inter-AS I-PMSI A-D (Type 2)', value: BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD },
+        { label: 'S-PMSI A-D (Type 3)', value: BGP_MVPN_ROUTE_TYPE.S_PMSI_AD },
+        { label: 'Leaf A-D (Type 4)', value: BGP_MVPN_ROUTE_TYPE.LEAF_AD },
+        { label: 'Source Active A-D (Type 5)', value: BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD },
+        { label: 'Shared Tree Join (Type 6)', value: BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN },
+        { label: 'Source Tree Join (Type 7)', value: BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN }
+    ];
 
     const ipv4UNCValidationErrors = ref({
         prefix: '',
@@ -310,6 +483,12 @@
         } else {
             console.error('IPv6-UNC路由配置文件加载失败', savedIpv6UNCRouteConfig.msg);
         }
+
+        // Load MVPN Config
+        const savedIpv4MvpnRouteConfig = await window.bgpApi.loadIpv4MvpnRouteConfig();
+        if (savedIpv4MvpnRouteConfig.status === 'success' && savedIpv4MvpnRouteConfig.data) {
+            Object.assign(ipv4MvpnData.value, savedIpv4MvpnRouteConfig.data);
+        }
     });
 
     const customIpv4RouteAttrVisible = ref(false);
@@ -334,6 +513,12 @@
     // 添加显示已发送路由相关数据
     const sentIpv4Routes = ref([]);
     const sentIpv6Routes = ref([]);
+    const sentIpv4MvpnRoutes = ref([]);
+
+    const getMvpnRouteTypeName = type => {
+        const option = mvpnRouteTypeOptions.find(opt => opt.value === type);
+        return option ? option.label : type;
+    };
 
     // 路由表列配置
     const routeColumns = [
@@ -362,6 +547,14 @@
         }
     ];
 
+    const mvpnRouteColumns = [
+        { title: 'Type', key: 'type', width: 150 },
+        { title: 'RD', key: 'rd', width: 100 },
+        { title: 'Source', key: 'source', width: 120 },
+        { title: 'Group', key: 'group', width: 120 },
+        { title: '操作', key: 'action', width: 80, align: 'center' }
+    ];
+
     // 撤销单个路由
     const deleteSingleRoute = async route => {
         try {
@@ -378,6 +571,9 @@
                 result = await window.bgpApi.deleteIpv4Routes(config);
             } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 result = await window.bgpApi.deleteIpv6Routes(config);
+            } else if (route.addressFamily === BGP_ADDR_FAMILY.IPV4_MVPN) {
+                // For MVPN, config needs to be constructed from route record if not passed directly.
+                // But deleteSingleMvpnRoute handles it separately.
             }
 
             if (result.status === 'success') {
@@ -405,6 +601,8 @@
                 sentIpv4Routes.value = Array.isArray(routes) ? [...routes] : [];
             } else if (addressFamily === BGP_ADDR_FAMILY.IPV6_UNC) {
                 sentIpv6Routes.value = Array.isArray(routes) ? [...routes] : [];
+            } else if (addressFamily === BGP_ADDR_FAMILY.IPV4_MVPN) {
+                sentIpv4MvpnRoutes.value = Array.isArray(routes) ? [...routes] : [];
             }
         } else {
             console.error(result.msg);
@@ -529,9 +727,49 @@
         }
     };
 
+    const generateIpv4MvpnRoutes = async () => {
+        try {
+            const payload = JSON.parse(JSON.stringify(ipv4MvpnData.value));
+            // Save config
+            await window.bgpApi.saveIpv4MvpnRouteConfig(payload);
+
+            const result = await window.bgpApi.generateIpv4MvpnRoutes(payload);
+            if (result.status === 'success') {
+                message.success(result.msg);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_MVPN);
+            } else {
+                message.error(result.msg);
+            }
+        } catch (e) {
+            message.error(`MVPN路由生成失败: ${e.message}`);
+        }
+    };
+
+    const deleteSingleMvpnRoute = async record => {
+        try {
+            const config = {
+                rd: record.mvpnNlri.rd,
+                routeType: record.mvpnNlri.type,
+                sourceIp: record.mvpnNlri.sourceIp,
+                groupIp: record.mvpnNlri.groupIp,
+                addressFamily: BGP_ADDR_FAMILY.IPV4_MVPN
+            };
+            const result = await window.bgpApi.deleteIpv4MvpnRoutes(config);
+            if (result.status === 'success') {
+                message.success(result.msg);
+                await getRoutes(BGP_ADDR_FAMILY.IPV4_MVPN);
+            } else {
+                message.error(result.msg);
+            }
+        } catch (e) {
+            message.error(`MVPN路由删除失败: ${e.message}`);
+        }
+    };
+
     onActivated(async () => {
         await getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
         await getRoutes(BGP_ADDR_FAMILY.IPV6_UNC);
+        await getRoutes(BGP_ADDR_FAMILY.IPV4_MVPN);
     });
 </script>
 

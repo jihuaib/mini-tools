@@ -136,6 +136,12 @@ contextBridge.exposeInMainWorld('bgpApi', {
     deleteIpv6Routes: config => ipcRenderer.invoke('bgp:deleteIpv6Routes', config),
     getRoutes: addressFamily => ipcRenderer.invoke('bgp:getRoutes', addressFamily),
 
+    // MVPN route操作
+    saveIpv4MvpnRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4MvpnRouteConfig', config),
+    loadIpv4MvpnRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv4MvpnRouteConfig'),
+    generateIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:generateIpv4MvpnRoutes', config),
+    deleteIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4MvpnRoutes', config),
+
     // 使用统一事件管理
     onPeerChange: callback => eventManager.on('bgp:peerChange', callback),
     offPeerChange: callback => eventManager.off('bgp:peerChange', callback)

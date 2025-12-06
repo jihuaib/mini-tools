@@ -13,6 +13,7 @@ class BgpApp {
         this.ipv6PeerConfigFileKey = 'ipv6-peer-config';
         this.ipv4UNCRouteConfigFileKey = 'ipv4-unc-route-config';
         this.ipv6UNCRouteConfigFileKey = 'ipv6-unc-route-config';
+        this.ipv4MvpnRouteConfigFileKey = 'ipv4-mvpn-route-config';
         this.isDev = !app.isPackaged;
         this.peerChangeHandler = null;
         this.store = store;
@@ -58,6 +59,16 @@ class BgpApp {
         ipc.handle('bgp:deleteIpv4Routes', async (event, config) => this.handleDeleteIpv4Routes(event, config));
         ipc.handle('bgp:deleteIpv6Routes', async (event, config) => this.handleDeleteIpv6Routes(event, config));
         ipc.handle('bgp:getRoutes', async (event, addressFamily) => this.handleGetRoutes(event, addressFamily));
+
+        // mvpn route
+        ipc.handle('bgp:saveIpv4MvpnRouteConfig', async (event, config) =>
+            this.handleSaveIpv4MvpnRouteConfig(event, config)
+        );
+        ipc.handle('bgp:loadIpv4MvpnRouteConfig', async () => this.handleLoadIpv4MvpnRouteConfig());
+        ipc.handle('bgp:generateIpv4MvpnRoutes', async (event, config) =>
+            this.handleGenerateIpv4MvpnRoutes(event, config)
+        );
+        ipc.handle('bgp:deleteIpv4MvpnRoutes', async (event, config) => this.handleDeleteIpv4MvpnRoutes(event, config));
     }
 
     // 保存配置
@@ -401,6 +412,63 @@ class BgpApp {
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {
             logger.error('Error getting routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSaveIpv4MvpnRouteConfig(event, config) {
+        try {
+            this.store.set(this.ipv4MvpnRouteConfigFileKey, config);
+            return successResponse(null, 'IPv4 MVPN Route配置文件保存成功');
+        } catch (error) {
+            logger.error('Error saving ipv4 mvpn route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadIpv4MvpnRouteConfig() {
+        try {
+            const config = this.store.get(this.ipv4MvpnRouteConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv4 MVPN Route配置文件不存在');
+            }
+            return successResponse(config, 'IPv4 MVPN Route配置文件加载成功');
+        } catch (error) {
+            logger.error('Error loading ipv4 mvpn route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGenerateIpv4MvpnRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        logger.info(`${JSON.stringify(config)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GENERATE_IPV4_MVPN_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error generating ipv4 mvpn routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteIpv4MvpnRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        logger.info(`${JSON.stringify(config)}`);
+
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_MVPN_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error deleting ipv4 mvpn routes:', error.message);
             return errorResponse(error.message);
         }
     }

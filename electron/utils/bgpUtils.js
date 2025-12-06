@@ -54,6 +54,8 @@ function getBgpAfiName(afi) {
             return 'IPv4';
         case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             return 'IPv6';
+        case BgpConst.BGP_AFI_TYPE.L2VPN_EVPN:
+            return 'L2VPN';
         default:
             return `Unknown (${afi})`;
     }
@@ -68,6 +70,12 @@ function getBgpSafiName(safi) {
     switch (safi) {
         case BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST:
             return 'Unicast';
+        case BgpConst.BGP_SAFI_TYPE.SAFI_MVPN:
+            return 'MVPN';
+        case BgpConst.BGP_SAFI_TYPE.SAFI_EVPN:
+            return 'EVPN';
+        case BgpConst.BGP_SAFI_TYPE.SAFI_VPN:
+            return 'VPN';
         default:
             return `Unknown (${safi})`;
     }
@@ -289,6 +297,9 @@ function getAddrFamilyType(afi, safi) {
             if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
                 addrFamily = BgpConst.BGP_ADDR_FAMILY.VPNV4;
             }
+            if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN) {
+                addrFamily = BgpConst.BGP_ADDR_FAMILY.IPV4_MVPN;
+            }
             break;
         case BgpConst.BGP_AFI_TYPE.AFI_IPV6:
             if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST) {
@@ -296,6 +307,9 @@ function getAddrFamilyType(afi, safi) {
             }
             if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_VPN) {
                 addrFamily = BgpConst.BGP_ADDR_FAMILY.VPNV6;
+            }
+            if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN) {
+                addrFamily = BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN;
             }
             break;
         case BgpConst.BGP_AFI_TYPE.AFI_L2VPN:
@@ -332,6 +346,14 @@ function getAfiAndSafi(addrFamily) {
         case BgpConst.BGP_ADDR_FAMILY.VPNV6:
             afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
             safi = BgpConst.BGP_SAFI_TYPE.SAFI_VPN;
+            break;
+        case BgpConst.BGP_ADDR_FAMILY.IPV4_MVPN:
+            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV4;
+            safi = BgpConst.BGP_SAFI_TYPE.SAFI_MVPN;
+            break;
+        case BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN:
+            afi = BgpConst.BGP_AFI_TYPE.AFI_IPV6;
+            safi = BgpConst.BGP_SAFI_TYPE.SAFI_MVPN;
             break;
     }
 
