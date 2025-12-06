@@ -15,6 +15,9 @@ class BgpRoute {
         this.routeType = null;
         this.rd = null;
         this.originatingRouterIp = null;
+        this.sourceIp = null;
+        this.groupIp = null;
+        this.sourceAs = null;
     }
 
     static makeKey(ip, mask) {
@@ -40,6 +43,9 @@ class BgpRoute {
             routeType: this.routeType,
             rd: this.rd,
             originatingRouterIp: this.originatingRouterIp,
+            sourceIp: this.sourceIp,
+            groupIp: this.groupIp,
+            sourceAs: this.sourceAs,
             addressFamily: addressFamily
         };
     }

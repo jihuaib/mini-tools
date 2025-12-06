@@ -642,32 +642,94 @@ class BgpWorker {
             return;
         }
 
-        const count = parseInt(config.count) || 1;
         let hasRouteChanged = false;
 
+        let baseIp = '';
         if (config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD) {
-            const routes = genRouteIps(
-                BgpConst.IP_TYPE.IPV4,
-                config.originatingRouterIp,
-                BgpConst.IP_HOST_LEN,
-                config.count
-            );
-            if (routes.length === 0) {
-                this.messageHandler.sendSuccessResponse(messageId, null, '路由生成成功');
-                return;
-            }
-            routes.forEach(route => {
-                const routeKey = `${config.routeType}|${config.rd}|${route.ip}`;
-                if (!instance.routeMap.has(routeKey)) {
-                    const bgpRoute = new BgpRoute(instance);
-                    bgpRoute.routeType = config.routeType;
-                    bgpRoute.rd = config.rd;
-                    bgpRoute.originatingRouterIp = route.ip;
-                    instance.routeMap.set(routeKey, bgpRoute);
-                    hasRouteChanged = true;
-                }
-            });
+            baseIp = config.originatingRouterIp;
+        } else if (
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.S_PMSI_AD ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+        ) {
+            baseIp = config.groupIp;
         }
+
+        let ips = [];
+        if (baseIp) {
+            ips = genRouteIps(BgpConst.IP_TYPE.IPV4, baseIp, BgpConst.IP_HOST_LEN, config.count);
+        } else {
+            // types without IP increment (e.g. Type 2), treat as single or implement RD increment if needed.
+            // For now, if no base IP found, generate 1 entry (loop once)
+            ips = [{ ip: '' }];
+        }
+
+        if (ips.length === 0) {
+            this.messageHandler.sendSuccessResponse(messageId, null, '路由生成成功');
+            return;
+        }
+
+        ips.forEach(ipObj => {
+            const currentIp = ipObj.ip;
+
+            // Construct dynamic values based on the incrementing IP
+            let currentGroupIp = config.groupIp;
+            let currentOrigRouterIp = config.originatingRouterIp;
+
+            if (config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD) {
+                currentOrigRouterIp = currentIp;
+            } else if ([3, 5, 6, 7].includes(config.routeType)) {
+                currentGroupIp = currentIp;
+            }
+
+            // Create a comprehensive key
+            // Key format: type|rd|sourceAs|sourceIp|groupIp|origRouterIp
+            const routeKey = `${config.routeType}|${config.rd}|${config.sourceAs || ''}|${config.sourceIp || ''}|${currentGroupIp || ''}|${currentOrigRouterIp || ''}`;
+
+            console.log(routeKey);
+
+            if (!instance.routeMap.has(routeKey)) {
+                const bgpRoute = new BgpRoute(instance);
+                bgpRoute.routeType = config.routeType;
+                bgpRoute.rd = config.rd;
+
+                // Set specific fields based on type
+                switch (config.routeType) {
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD: // Type 1
+                        bgpRoute.originatingRouterIp = currentOrigRouterIp;
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD: // Type 2
+                        bgpRoute.sourceAs = config.sourceAs;
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.S_PMSI_AD: // Type 3
+                        bgpRoute.sourceIp = config.sourceIp;
+                        bgpRoute.groupIp = currentGroupIp;
+                        bgpRoute.originatingRouterIp = config.originatingRouterIp;
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.LEAF_AD: // Type 4
+                        bgpRoute.originatingRouterIp = config.originatingRouterIp;
+                        // Add Route Key fields if supported later
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD: // Type 5
+                        bgpRoute.sourceIp = config.sourceIp;
+                        bgpRoute.groupIp = currentGroupIp;
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN: // Type 6
+                        bgpRoute.sourceAs = config.sourceAs;
+                        bgpRoute.groupIp = currentGroupIp;
+                        break;
+                    case BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN: // Type 7
+                        bgpRoute.sourceAs = config.sourceAs;
+                        bgpRoute.sourceIp = config.sourceIp;
+                        bgpRoute.groupIp = currentGroupIp;
+                        break;
+                }
+
+                instance.routeMap.set(routeKey, bgpRoute);
+                hasRouteChanged = true;
+            }
+        });
 
         if (instance.RT !== config.RT) {
             instance.RT = config.RT;
@@ -677,7 +739,7 @@ class BgpWorker {
             instance.sendRoute();
         }
 
-        this.messageHandler.sendSuccessResponse(messageId, null, `MVPN路由生成成功，共${count}条`);
+        this.messageHandler.sendSuccessResponse(messageId, null, `MVPN路由生成成功，共${ips.length}条`);
     }
 
     deleteMvpnRoutes(messageId, config) {
@@ -689,28 +751,55 @@ class BgpWorker {
             return;
         }
 
-        const withdrawnRoutes = [];
-
+        let baseIp = '';
         if (config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD) {
-            const routes = genRouteIps(
-                BgpConst.IP_TYPE.IPV4,
-                config.originatingRouterIp,
-                BgpConst.IP_HOST_LEN,
-                config.count
-            );
-            if (routes.length === 0) {
-                this.messageHandler.sendSuccessResponse(messageId, null, '路由删除成功');
-                return;
-            }
-            routes.forEach(route => {
-                const routeKey = `${config.routeType}|${config.rd}|${route.ip}`;
-                if (instance.routeMap.has(routeKey)) {
-                    const bgpRoute = instance.routeMap.get(routeKey);
-                    instance.routeMap.delete(routeKey);
-                    withdrawnRoutes.push(bgpRoute);
-                }
-            });
+            baseIp = config.originatingRouterIp;
+        } else if (
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.S_PMSI_AD ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN ||
+            config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+        ) {
+            baseIp = config.groupIp;
         }
+
+        let ips = [];
+        if (baseIp) {
+            ips = genRouteIps(BgpConst.IP_TYPE.IPV4, baseIp, BgpConst.IP_HOST_LEN, config.count);
+        } else {
+            ips = [{ ip: '' }];
+        }
+
+        if (ips.length === 0) {
+            this.messageHandler.sendSuccessResponse(messageId, null, '路由删除成功');
+            return;
+        }
+
+        const withdrawnRoutes = [];
+        ips.forEach(ipObj => {
+            const currentIp = ipObj.ip;
+
+            // Construct dynamic values based on the incrementing IP
+            let currentGroupIp = config.groupIp;
+            let currentOrigRouterIp = config.originatingRouterIp;
+
+            if (config.routeType === BgpConst.BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD) {
+                currentOrigRouterIp = currentIp;
+            } else if ([3, 5, 6, 7].includes(config.routeType)) {
+                currentGroupIp = currentIp;
+            }
+
+            // Use same key logic as generation
+            const routeKey = `${config.routeType}|${config.rd}|${config.sourceAs || ''}|${config.sourceIp || ''}|${currentGroupIp || ''}|${currentOrigRouterIp || ''}`;
+
+            console.log(routeKey);
+
+            if (instance.routeMap.has(routeKey)) {
+                const bgpRoute = instance.routeMap.get(routeKey);
+                instance.routeMap.delete(routeKey);
+                withdrawnRoutes.push(bgpRoute);
+            }
+        });
 
         if (withdrawnRoutes.length > 0) {
             instance.withdrawRoute(withdrawnRoutes);
