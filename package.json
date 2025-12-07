@@ -53,7 +53,7 @@
         "prepack": "npm run build",
         "predist": "npm run build",
         "format": "prettier --write .",
-        "release": "electron-builder --win --x64",
+        "release": "node release.js",
         "prerelease": "npm run build",
         "lint": "eslint --ext .js,.vue src electron",
         "lint:fix": "eslint --fix --ext .js,.vue src electron",
