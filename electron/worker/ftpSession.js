@@ -23,7 +23,9 @@ class FtpSession {
         this.passive = false;
         this.passiveServer = null;
         this.dataSocket = null;
+        this.dataSocket = null;
         this.transferType = 'ascii'; // default to ASCII
+        this.connectedTime = new Date();
     }
 
     static makeKey(localIp, localPort, remoteIp, remotePort) {
@@ -620,13 +622,20 @@ class FtpSession {
     }
 
     getClientInfo() {
+        const status = this.authenticated ? '已登录' : '已连接';
+        const connectedTime = this.connectedTime
+            ? this.connectedTime.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+            : '';
+
         return {
             localIp: this.localIp,
             localPort: this.localPort,
             remoteIp: this.remoteIp,
             remotePort: this.remotePort,
-            username: this.username,
-            authenticated: this.authenticated
+            username: this.username || '匿名',
+            authenticated: this.authenticated,
+            status: status,
+            connectedTime: connectedTime
         };
     }
 }

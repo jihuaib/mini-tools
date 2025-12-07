@@ -81,7 +81,7 @@
 
 <script setup>
     import { ref, onMounted, onUnmounted, toRaw } from 'vue';
-    import { message } from 'ant-design-vue';
+    import { message, Modal } from 'ant-design-vue';
     import PacketResultViewer from '../../components/PacketResultViewer.vue';
     import { PROTOCOL_TYPE, START_LAYER } from '../../const/toolsConst';
 
@@ -192,6 +192,15 @@
                 selectedInterface.value = response.data[0].name;
                 interfaces.value = response.data || [];
             } else {
+                if (response.data && response.data.code === 'NPCAP_MISSING') {
+                    Modal.confirm({
+                        title: '需安装Npcap',
+                        content: '检测到本地未安装Npcap，无法使用抓包功能。是否前往下载？',
+                        onOk() {
+                            window.open('https://npcap.com/#download');
+                        }
+                    });
+                }
                 message.error(`获取网卡列表失败: ${response.msg}`);
             }
         } catch (err) {

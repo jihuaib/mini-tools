@@ -481,6 +481,11 @@
             message.error(result.msg || '用户删除失败');
         }
     };
+
+    const viewClientDetails = record => {
+        // todo
+        console.log(record);
+    };
 </script>
 
 <style scoped>

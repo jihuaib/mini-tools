@@ -145,7 +145,7 @@ class NativeApp {
         // 检查 Cap 模块是否可用
         if (!this.Cap) {
             logger.error('Cap 模块不可用，网络抓包功能无法使用');
-            return errorResponse('网络抓包功能不可用，请检查 Cap 模块是否正确安装');
+            return errorResponse('网络抓包功能不可用，请检查 Cap 模块是否正确安装', { code: 'NPCAP_MISSING' });
         }
 
         try {
@@ -222,7 +222,7 @@ class NativeApp {
         // 检查 Cap 模块是否可用
         if (!this.Cap) {
             logger.error('Cap 模块不可用，无法启动网络抓包');
-            return errorResponse('网络抓包功能不可用，请检查 Cap 模块是否正确安装');
+            return errorResponse('网络抓包功能不可用，请检查 Cap 模块是否正确安装', { code: 'NPCAP_MISSING' });
         }
 
         if (this.isCapturing) {
