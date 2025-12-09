@@ -302,16 +302,27 @@ class BgpPeer {
                 }
             }
 
-            if (this.instance.RT?.trim()) {
-                pathAttr.push(
-                    ...this.buildPathAttribute(
-                        BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
-                        BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                        extCommunitiesToBytes(BgpConst.EXT_COMMUNITY_SUB_TYPE.RT, this.instance.RT)
-                    )
-                );
+            if (this.instance.rt?.trim()) {
+                const rtList = this.instance.rt.trim().split(/\s+/);
+                const rtBuffers = [];
+                for (const rt of rtList) {
+                    if (rt) {
+                        rtBuffers.push(extCommunitiesToBytes(BgpConst.EXT_COMMUNITY_SUB_TYPE.RT, rt));
+                    }
+                }
+                const combinedBuffer = Buffer.concat(rtBuffers);
+
+                if (combinedBuffer.length > 0) {
+                    pathAttr.push(
+                        ...this.buildPathAttribute(
+                            BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            combinedBuffer
+                        )
+                    );
+                }
             }
 
             const msgLen = BgpConst.BGP_HEAD_LEN + withdrawnRoutesBuf.length + 2 + pathAttr.length; // 固定长度
@@ -409,6 +420,28 @@ class BgpPeer {
                 }
             }
 
+            if (this.instance.rt?.trim()) {
+                const rtList = this.instance.rt.trim().split(/\s+/);
+                const rtBuffers = [];
+                for (const rt of rtList) {
+                    if (rt) {
+                        rtBuffers.push(extCommunitiesToBytes(BgpConst.EXT_COMMUNITY_SUB_TYPE.RT, rt));
+                    }
+                }
+                const combinedBuffer = Buffer.concat(rtBuffers);
+
+                if (combinedBuffer.length > 0) {
+                    pathAttr.push(
+                        ...this.buildPathAttribute(
+                            BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            combinedBuffer
+                        )
+                    );
+                }
+            }
             // 构建路径属性缓冲区
             const pathAttrBuf = Buffer.alloc(pathAttr.length + 2);
             pathAttrBuf.writeUInt16BE(pathAttr.length, 0);

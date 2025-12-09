@@ -5,7 +5,9 @@
             <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="bgp-config" tab="BGP配置" />
                 <a-tab-pane key="bgp-peer-info" tab="邻居信息" />
-                <a-tab-pane key="route-config" tab="路由配置" />
+                <a-tab-pane key="route-ipv4" tab="IPv4路由" />
+                <a-tab-pane key="route-ipv6" tab="IPv6路由" />
+                <a-tab-pane key="route-mvpn" tab="MVPN路由" />
             </a-tabs>
         </div>
 

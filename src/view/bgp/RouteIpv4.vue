@@ -1,0 +1,310 @@
+<template>
+    <div class="mt-container">
+        <a-card title="IPv4-UNC路由配置">
+            <a-form :model="ipv4Data" :label-col="labelCol" :wrapper-col="wrapperCol">
+                <a-row>
+                    <a-col :span="8">
+                        <a-form-item label="Prefix" name="prefix">
+                            <a-tooltip :title="validationErrors.prefix" :open="!!validationErrors.prefix">
+                                <a-input
+                                    v-model:value="ipv4Data.prefix"
+                                    :status="validationErrors.prefix ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="Mask" name="mask">
+                            <a-tooltip :title="validationErrors.mask" :open="!!validationErrors.mask">
+                                <a-input v-model:value="ipv4Data.mask" :status="validationErrors.mask ? 'error' : ''" />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="8">
+                        <a-form-item label="Count" name="count">
+                            <a-tooltip :title="validationErrors.count" :open="!!validationErrors.count">
+                                <a-input
+                                    v-model:value="ipv4Data.count"
+                                    :status="validationErrors.count ? 'error' : ''"
+                                />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+                <a-row>
+                    <a-col :span="8">
+                        <a-form-item label="RT" name="rt">
+                            <a-tooltip :title="validationErrors.rt" :open="!!validationErrors.rt">
+                                <a-input v-model:value="ipv4Data.rt" :status="validationErrors.rt ? 'error' : ''" />
+                            </a-tooltip>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+                <a-form-item>
+                    <a-button type="link" @click="showCustomRouteAttr">
+                        <template #icon><SettingOutlined /></template>
+                        配置自定义路由属性
+                    </a-button>
+                </a-form-item>
+                <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
+                    <a-space size="middle">
+                        <a-button type="primary" @click="generateRoutes">生成IPv4路由</a-button>
+                        <a-button type="primary" danger :disabled="!hasRoutes" @click="deleteRoutes">
+                            删除IPv4路由
+                        </a-button>
+                    </a-space>
+                </a-form-item>
+
+                <!-- 路由列表 -->
+                <div class="route-list-section">
+                    <div class="route-list-header">
+                        <UnorderedListOutlined />
+                        <span class="header-text">已生成IPv4路由列表</span>
+                        <a-tag v-if="sentRoutes.length > 0" color="blue">
+                            {{ sentRoutes.length }}
+                        </a-tag>
+                    </div>
+                    <a-table
+                        :data-source="sentRoutes"
+                        :columns="routeColumns"
+                        :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                        size="small"
+                        :row-key="record => `${record.prefix}-${record.addressFamily}`"
+                        :scroll="{ y: 240 }"
+                    >
+                        <template #bodyCell="{ column, record }">
+                            <template v-if="column.key === 'action'">
+                                <a-button type="primary" danger size="small" @click="deleteSingleRoute(record)">
+                                    <template #icon><DeleteOutlined /></template>
+                                    删除
+                                </a-button>
+                            </template>
+                            <template v-else-if="column.key === 'prefix'">
+                                <div>{{ record.prefix }}/{{ record.mask }}</div>
+                            </template>
+                            <template v-else-if="column.key === 'addressFamily'">
+                                <div>IPv4-UNC</div>
+                            </template>
+                        </template>
+                    </a-table>
+                </div>
+            </a-form>
+        </a-card>
+
+        <CustomPktDrawer
+            v-model:visible="customRouteAttrVisible"
+            v-model:input-value="ipv4Data.customAttr"
+            @submit="handleCustomRouteAttrSubmit"
+        />
+    </div>
+</template>
+
+<script setup>
+    import { onMounted, ref, computed } from 'vue';
+    import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
+    import { message } from 'ant-design-vue';
+    import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+    import { BGP_ADDR_FAMILY, DEFAULT_VALUES } from '../../const/bgpConst';
+    import { FormValidator, createBgpIpv4RouteConfigValidationRules } from '../../utils/validationCommon';
+
+    defineOptions({
+        name: 'RouteIpv4'
+    });
+
+    const labelCol = { style: { width: '100px' } };
+    const wrapperCol = { span: 40 };
+
+    const ipv4Data = ref({
+        prefix: DEFAULT_VALUES.IPV4_PREFIX,
+        mask: DEFAULT_VALUES.IPV4_MASK,
+        count: DEFAULT_VALUES.IPV4_COUNT,
+        customAttr: '',
+        rt: '',
+        addressFamily: BGP_ADDR_FAMILY.IPV4_UNC
+    });
+
+    const validationErrors = ref({
+        prefix: '',
+        mask: '',
+        count: '',
+        rt: ''
+    });
+
+    const validator = new FormValidator(validationErrors);
+    validator.addRules(createBgpIpv4RouteConfigValidationRules());
+
+    // 暴露给父组件
+    defineExpose({
+        clearValidationErrors: () => {
+            if (validator) {
+                validator.clearErrors();
+            }
+        }
+    });
+
+    const sentRoutes = ref([]);
+    const hasRoutes = computed(() => sentRoutes.value.length > 0);
+
+    const customRouteAttrVisible = ref(false);
+
+    const showCustomRouteAttr = () => {
+        customRouteAttrVisible.value = true;
+    };
+
+    const handleCustomRouteAttrSubmit = data => {
+        ipv4Data.value.customAttr = data;
+    };
+
+    const routeColumns = [
+        {
+            title: '前缀',
+            dataIndex: 'ip',
+            key: 'prefix'
+        },
+        {
+            title: '掩码',
+            dataIndex: 'mask',
+            key: 'mask',
+            width: 80
+        },
+        {
+            title: 'MED',
+            dataIndex: 'med',
+            key: 'med',
+            width: 80
+        },
+        {
+            title: 'RT',
+            dataIndex: 'rt',
+            key: 'rt',
+            width: 80
+        },
+        {
+            title: '操作',
+            key: 'action',
+            width: 100,
+            align: 'center'
+        }
+    ];
+
+    onMounted(async () => {
+        // 加载保存的配置
+        const savedConfig = await window.bgpApi.loadIpv4UNCRouteConfig();
+        if (savedConfig.status === 'success' && savedConfig.data) {
+            Object.assign(ipv4Data.value, savedConfig.data);
+        } else {
+            console.error('IPv4-UNC路由配置文件加载失败', savedConfig.msg);
+        }
+
+        // 加载已生成的路由列表
+        await refreshRoutes();
+    });
+
+    const refreshRoutes = async () => {
+        const result = await window.bgpApi.getRoutes(BGP_ADDR_FAMILY.IPV4_UNC);
+        if (result.status === 'success') {
+            sentRoutes.value = Array.isArray(result.data) ? [...result.data] : [];
+        } else {
+            console.error(result.msg);
+        }
+    };
+
+    const generateRoutes = async () => {
+        try {
+            const hasErrors = validator.validate(ipv4Data.value);
+            if (hasErrors) {
+                message.error('请检查IPv4路由配置信息是否正确');
+                return;
+            }
+
+            const payload = JSON.parse(JSON.stringify(ipv4Data.value));
+            const saveResult = await window.bgpApi.saveIpv4UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            const result = await window.bgpApi.generateIpv4Routes(payload);
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                await refreshRoutes();
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            message.error(`IPv4路由生成失败: ${e.message}`);
+        }
+    };
+
+    const deleteRoutes = async () => {
+        try {
+            const hasErrors = validator.validate(ipv4Data.value);
+            if (hasErrors) {
+                message.error('请检查IPv4路由配置信息是否正确');
+                return;
+            }
+
+            const payload = JSON.parse(JSON.stringify(ipv4Data.value));
+            const saveResult = await window.bgpApi.saveIpv4UNCRouteConfig(payload);
+            if (saveResult.status !== 'success') {
+                message.error(saveResult.msg || '配置文件保存失败');
+                return;
+            }
+
+            const result = await window.bgpApi.deleteIpv4Routes(payload);
+
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                await refreshRoutes();
+            } else {
+                message.error(`${result.msg}`);
+            }
+        } catch (e) {
+            message.error(`IPv4路由删除失败: ${e.message}`);
+        }
+    };
+
+    const deleteSingleRoute = async route => {
+        try {
+            const config = {
+                prefix: route.ip,
+                mask: parseInt(route.mask),
+                count: 1,
+                customAttr: route.customAttr || '',
+                addressFamily: route.addressFamily
+            };
+
+            const result = await window.bgpApi.deleteIpv4Routes(config);
+
+            if (result.status === 'success') {
+                message.success(`${result.msg}`);
+                await refreshRoutes();
+            } else {
+                message.error(`路由删除失败: ${result.msg}`);
+            }
+        } catch (e) {
+            message.error(`路由删除失败: ${e.message}`);
+        }
+    };
+</script>
+
+<style scoped>
+    .route-list-section {
+        margin-top: 24px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 16px;
+    }
+
+    .route-list-header {
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.85);
+    }
+
+    .header-text {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+</style>

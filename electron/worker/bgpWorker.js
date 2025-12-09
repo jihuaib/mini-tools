@@ -496,6 +496,11 @@ class BgpWorker {
             hasRouteChanged = true;
         }
 
+        if (instance.rt !== config.rt) {
+            instance.rt = config.rt;
+            hasRouteChanged = true;
+        }
+
         if (hasRouteChanged) {
             instance.sendRoute();
         }
@@ -687,8 +692,6 @@ class BgpWorker {
             // Key format: type|rd|sourceAs|sourceIp|groupIp|origRouterIp
             const routeKey = `${config.routeType}|${config.rd}|${config.sourceAs || ''}|${config.sourceIp || ''}|${currentGroupIp || ''}|${currentOrigRouterIp || ''}`;
 
-            console.log(routeKey);
-
             if (!instance.routeMap.has(routeKey)) {
                 const bgpRoute = new BgpRoute(instance);
                 bgpRoute.routeType = config.routeType;
@@ -731,8 +734,8 @@ class BgpWorker {
             }
         });
 
-        if (instance.RT !== config.RT) {
-            instance.RT = config.RT;
+        if (instance.rt !== config.rt) {
+            instance.rt = config.rt;
             hasRouteChanged = true;
         }
         if (hasRouteChanged) {
@@ -791,8 +794,6 @@ class BgpWorker {
 
             // Use same key logic as generation
             const routeKey = `${config.routeType}|${config.rd}|${config.sourceAs || ''}|${config.sourceIp || ''}|${currentGroupIp || ''}|${currentOrigRouterIp || ''}`;
-
-            console.log(routeKey);
 
             if (instance.routeMap.has(routeKey)) {
                 const bgpRoute = instance.routeMap.get(routeKey);

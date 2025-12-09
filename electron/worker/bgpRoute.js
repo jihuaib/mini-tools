@@ -9,7 +9,7 @@ class BgpRoute {
         this.nextHop = null;
         this.origin = null;
         this.customAttr = null;
-        this.RT = null;
+        this.rt = null;
 
         // MVPN
         this.routeType = null;
@@ -38,8 +38,8 @@ class BgpRoute {
             med: this.med,
             nextHop: this.nextHop,
             origin: this.origin,
-            customAttr: this.customAttr,
-            RT: this.RT,
+            customAttr: this.bgpInstance.customAttr,
+            rt: this.bgpInstance.rt,
             routeType: this.routeType,
             rd: this.rd,
             originatingRouterIp: this.originatingRouterIp,

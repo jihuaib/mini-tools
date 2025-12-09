@@ -11,7 +11,7 @@ class BgpInstance {
         // 自定义属性,
         this.customAttr = '';
         // 扩展团体属性
-        this.RT = '';
+        this.rt = '';
     }
 
     static makeKey(vrfIndex, afi, safi) {

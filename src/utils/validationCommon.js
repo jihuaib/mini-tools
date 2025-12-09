@@ -1,4 +1,4 @@
-import { IP_TYPE } from '../const/bgpConst';
+import { IP_TYPE, BGP_MVPN_ROUTE_TYPE } from '../const/bgpConst';
 
 // 通用验证工具和常量
 
@@ -52,6 +52,55 @@ export const isASN = value => {
 
 export const isNumber = value => {
     return REGEX.number.test(value);
+};
+
+export const isValidRd = value => {
+    if (!value || typeof value !== 'string') return false;
+
+    // 分割 AS:nn 或 IP:nn
+    const parts = value.split(':');
+    if (parts.length !== 2) return false;
+
+    const [part1, part2] = parts;
+
+    // 验证第二部分是否为数字
+    if (!REGEX.number.test(part2)) return false;
+    const num2 = Number(part2);
+
+    // 情况 1: IP:nn (Type 1)
+    // part1 是 IPv4 地址
+    if (REGEX.ipv4.test(part1)) {
+        // nn 必须是 0-65535
+        return num2 >= 0 && num2 <= 65535;
+    }
+
+    // 情况 2: AS:nn (Type 0) 或 AS4:nn (Type 2)
+    // part1 必须是数字
+    if (!REGEX.number.test(part1)) return false;
+    const num1 = Number(part1);
+
+    // AS2:nn (Type 0) -> AS (0-65535) : nn (0-4294967295)
+    if (num1 >= 0 && num1 <= 65535) {
+        return num2 >= 0 && num2 <= 4294967295;
+    }
+
+    // AS4:nn (Type 2) -> AS (0-4294967295) : nn (0-65535)
+    if (num1 > 65535 && num1 <= 4294967295) {
+        return num2 >= 0 && num2 <= 65535;
+    }
+
+    return false;
+};
+
+export const isValidRtList = value => {
+    if (!value) return true;
+
+    if (typeof value !== 'string') return false;
+
+    const rts = value.trim().split(/\s+/);
+    if (rts.length === 0) return false;
+
+    return rts.every(rt => isValidRd(rt));
 };
 
 export const validatePacketData = value => {
@@ -507,6 +556,12 @@ export const createBgpIpv4RouteConfigValidationRules = () => {
                 required: true,
                 message: '请输入数量'
             }
+        ],
+        rt: [
+            {
+                validator: value => isValidRtList(value),
+                message: 'RT格式错误(支持空格分隔多个值)'
+            }
         ]
     };
 };
@@ -537,6 +592,163 @@ export const createBgpIpv6RouteConfigValidationRules = () => {
             {
                 required: true,
                 message: '请输入数量'
+            }
+        ],
+        rt: [
+            {
+                validator: value => isValidRtList(value),
+                message: 'RT格式错误(支持空格分隔多个值)'
+            }
+        ]
+    };
+};
+
+export const createBgpMvpnRouteConfigValidationRules = () => {
+    return {
+        rd: [
+            {
+                required: true,
+                message: '请输入RD'
+            },
+            {
+                validator: value => isValidRd(value),
+                message: 'RD格式错误(支持 IP:nn, AS2:nn, AS4:nn)'
+            }
+        ],
+        rt: [
+            {
+                required: true,
+                message: '请输入RT'
+            },
+            {
+                validator: value => isValidRtList(value),
+                message: 'RT格式错误(支持空格分隔多个值, 格式同RD)'
+            }
+        ],
+        count: [
+            {
+                required: true,
+                message: '请输入数量'
+            },
+            {
+                validator: validators.number,
+                message: '请输入有效的数字'
+            }
+        ],
+        originatingRouterIp: [
+            {
+                validator: validators.conditionalRequired(formData =>
+                    [
+                        BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD,
+                        BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                        BGP_MVPN_ROUTE_TYPE.LEAF_AD
+                    ].includes(formData.routeType)
+                ),
+                message: '请输入Originating Router IP'
+            },
+            {
+                validator: (value, formData) => {
+                    if (
+                        value &&
+                        [
+                            BGP_MVPN_ROUTE_TYPE.INTRA_AS_I_PMSI_AD,
+                            BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                            BGP_MVPN_ROUTE_TYPE.LEAF_AD
+                        ].includes(formData.routeType)
+                    ) {
+                        return validators.ipv4(value);
+                    }
+                    return true;
+                },
+                message: '请输入有效的IPv4地址'
+            }
+        ],
+        sourceAs: [
+            {
+                validator: validators.conditionalRequired(formData =>
+                    [
+                        BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD,
+                        BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                        BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                    ].includes(formData.routeType)
+                ),
+                message: '请输入Source AS'
+            },
+            {
+                validator: (value, formData) => {
+                    if (
+                        value &&
+                        [
+                            BGP_MVPN_ROUTE_TYPE.INTER_AS_I_PMSI_AD,
+                            BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                            BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                        ].includes(formData.routeType)
+                    ) {
+                        return validators.asn(value);
+                    }
+                    return true;
+                },
+                message: '请输入有效的ASN'
+            }
+        ],
+        sourceIp: [
+            {
+                validator: validators.conditionalRequired(formData =>
+                    [
+                        BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                        BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD,
+                        BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                        BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                    ].includes(formData.routeType)
+                ),
+                message: '请输入Source IP'
+            },
+            {
+                validator: (value, formData) => {
+                    if (
+                        value &&
+                        [
+                            BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                            BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD,
+                            BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                            BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                        ].includes(formData.routeType)
+                    ) {
+                        return validators.ipv4(value);
+                    }
+                    return true;
+                },
+                message: '请输入有效的IPv4地址'
+            }
+        ],
+        groupIp: [
+            {
+                validator: validators.conditionalRequired(formData =>
+                    [
+                        BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                        BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD,
+                        BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                        BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                    ].includes(formData.routeType)
+                ),
+                message: '请输入Group IP'
+            },
+            {
+                validator: (value, formData) => {
+                    if (
+                        value &&
+                        [
+                            BGP_MVPN_ROUTE_TYPE.S_PMSI_AD,
+                            BGP_MVPN_ROUTE_TYPE.SOURCE_ACTIVE_AD,
+                            BGP_MVPN_ROUTE_TYPE.SHARED_TREE_JOIN,
+                            BGP_MVPN_ROUTE_TYPE.SOURCE_TREE_JOIN
+                        ].includes(formData.routeType)
+                    ) {
+                        return validators.ipv4(value);
+                    }
+                    return true;
+                },
+                message: '请输入有效的IPv4地址'
             }
         ]
     };

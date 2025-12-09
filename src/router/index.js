@@ -8,7 +8,9 @@ import PacketCapture from '../view/tools/PacketCapture.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
-import RouteConfig from '../view/bgp/RouteConfig.vue';
+import RouteIpv4 from '../view/bgp/RouteIpv4.vue';
+import RouteIpv6 from '../view/bgp/RouteIpv6.vue';
+import RouteMvpn from '../view/bgp/RouteMvpn.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
 import BmpPeer from '../view/bmp/BmpPeer.vue';
@@ -90,9 +92,21 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'route-config',
-                        name: 'RouteConfig',
-                        component: RouteConfig,
+                        path: 'route-ipv4',
+                        name: 'RouteIpv4',
+                        component: RouteIpv4,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'route-ipv6',
+                        name: 'RouteIpv6',
+                        component: RouteIpv6,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'route-mvpn',
+                        name: 'RouteMvpn',
+                        component: RouteMvpn,
                         meta: { keepAlive: true }
                     }
                 ]
