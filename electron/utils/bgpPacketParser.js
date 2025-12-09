@@ -527,6 +527,7 @@ function parseMpReachNlri(buffer) {
             position += 1;
 
             let len = buffer[position];
+            prefixLength = len;
             position += 1;
             prefix = buffer.subarray(position, position + len).toString('hex');
             position += len;
@@ -563,8 +564,16 @@ function parseMpReachNlri(buffer) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else {
-            // 不支持，跳过处理
-            position = buffer.length;
+            // 不支持，按照16进制解析存储
+            prefixLength = 0;
+            let _routeType = buffer[position];
+            position += 1;
+
+            let len = buffer[position];
+            prefixLength = len;
+            position += 1;
+            prefix = buffer.subarray(position, position + len).toString('hex');
+            position += len;
         }
 
         nlri.push({
@@ -625,6 +634,7 @@ function parseMpUnreachNlri(buffer) {
             position += 1;
 
             let len = buffer[position];
+            prefixLength = len;
             position += 1;
             prefix = buffer.subarray(position, position + len).toString('hex');
             position += len;
@@ -661,8 +671,15 @@ function parseMpUnreachNlri(buffer) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else {
-            // 不支持，跳过处理
-            position = buffer.length;
+            prefixLength = 0;
+            let _routeType = buffer[position];
+            position += 1;
+
+            let len = buffer[position];
+            prefixLength = len;
+            position += 1;
+            prefix = buffer.subarray(position, position + len).toString('hex');
+            position += len;
         }
 
         withdrawnRoutes.push({

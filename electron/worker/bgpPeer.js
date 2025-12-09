@@ -137,8 +137,13 @@ class BgpPeer {
             this.instance.afType === BgpConst.BGP_AFI_TYPE.AF_TYPE_IPV4 &&
             this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
         ) {
-            while (msgLen + nlriBuf.length < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+            while (routeIndex < routes.length) {
                 const mvpnNlri = this.buildMvpnNlri(route);
+                if (msgLen + nlriBuf.length + mvpnNlri.length > BgpConst.BGP_MAX_PKT_SIZE) {
+                    if (nlriBuf.length > 0) {
+                        break;
+                    }
+                }
                 nlriBuf.push(...mvpnNlri);
 
                 routeIndex++;
@@ -201,8 +206,13 @@ class BgpPeer {
 
         if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN) {
             let nlriBuf = [];
-            while (msgLen + nlriBuf.length < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
+            while (routeIndex < routes.length) {
                 const mvpnNlri = this.buildMvpnNlri(route);
+                if (msgLen + nlriBuf.length + mvpnNlri.length > BgpConst.BGP_MAX_PKT_SIZE) {
+                    if (nlriBuf.length > 0) {
+                        break;
+                    }
+                }
                 nlriBuf.push(...mvpnNlri);
 
                 routeIndex++;
@@ -317,8 +327,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );
@@ -435,8 +445,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );
