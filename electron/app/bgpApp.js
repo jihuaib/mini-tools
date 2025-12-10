@@ -58,7 +58,9 @@ class BgpApp {
         ipc.handle('bgp:generateIpv6Routes', async (event, config) => this.handleGenerateIpv6Routes(event, config));
         ipc.handle('bgp:deleteIpv4Routes', async (event, config) => this.handleDeleteIpv4Routes(event, config));
         ipc.handle('bgp:deleteIpv6Routes', async (event, config) => this.handleDeleteIpv6Routes(event, config));
-        ipc.handle('bgp:getRoutes', async (event, addressFamily) => this.handleGetRoutes(event, addressFamily));
+        ipc.handle('bgp:getRoutes', async (event, addressFamily, page, pageSize) =>
+            this.handleGetRoutes(event, addressFamily, page, pageSize)
+        );
 
         // mvpn route
         ipc.handle('bgp:saveIpv4MvpnRouteConfig', async (event, config) =>
@@ -401,13 +403,19 @@ class BgpApp {
         }
     }
 
-    async handleGetRoutes(event, addressFamily) {
+    async handleGetRoutes(event, addressFamily, page, pageSize) {
         if (null === this.worker) {
             return successResponse({}, 'bgp协议没有运行');
         }
 
+        logger.info(`addressFamily: ${addressFamily}, page: ${page}, pageSize: ${pageSize}`);
+
         try {
-            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GET_ROUTES, addressFamily);
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GET_ROUTES, {
+                addressFamily,
+                page,
+                pageSize
+            });
             logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {

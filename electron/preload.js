@@ -134,7 +134,7 @@ contextBridge.exposeInMainWorld('bgpApi', {
     generateIpv6Routes: config => ipcRenderer.invoke('bgp:generateIpv6Routes', config),
     deleteIpv4Routes: config => ipcRenderer.invoke('bgp:deleteIpv4Routes', config),
     deleteIpv6Routes: config => ipcRenderer.invoke('bgp:deleteIpv6Routes', config),
-    getRoutes: addressFamily => ipcRenderer.invoke('bgp:getRoutes', addressFamily),
+    getRoutes: (addressFamily, page, pageSize) => ipcRenderer.invoke('bgp:getRoutes', addressFamily, page, pageSize),
 
     // MVPN route操作
     saveIpv4MvpnRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4MvpnRouteConfig', config),
@@ -160,7 +160,8 @@ contextBridge.exposeInMainWorld('bmpApi', {
     // 数据获取
     getClientList: () => ipcRenderer.invoke('bmp:getClientList'),
     getPeers: client => ipcRenderer.invoke('bmp:getPeers', client),
-    getRoutes: (client, peer, ribType) => ipcRenderer.invoke('bmp:getRoutes', client, peer, ribType),
+    getRoutes: (client, peer, ribType, page, pageSize) =>
+        ipcRenderer.invoke('bmp:getRoutes', client, peer, ribType, page, pageSize),
     getClient: client => ipcRenderer.invoke('bmp:getClient', client),
     getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
 

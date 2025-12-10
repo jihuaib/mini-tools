@@ -174,7 +174,7 @@
                     <div class="route-list-header">
                         <UnorderedListOutlined />
                         <span class="header-text">已生成MVPN路由列表</span>
-                        <a-tag v-if="sentRoutes.length > 0" color="blue">总计: {{ sentRoutes.length }}</a-tag>
+                        <a-tag v-if="pagination.total > 0" color="blue">总计: {{ pagination.total }}</a-tag>
                     </div>
 
                     <!-- 按路由类型分组显示 -->
@@ -187,13 +187,14 @@
                             <a-table
                                 :data-source="group.routes"
                                 :columns="getRouteColumns(group.type)"
-                                :pagination="false"
+                                :pagination="pagination"
                                 size="small"
                                 :row-key="
                                     record =>
                                         `${record.rd}-${record.routeType}-${record.sourceIp || ''}-${record.groupIp || ''}-${record.originatingRouterIp || ''}`
                                 "
                                 :scroll="{ y: 300 }"
+                                @change="handleTableChange"
                             >
                                 <template #bodyCell="{ column, record }">
                                     <template v-if="column.key === 'action'">
@@ -256,6 +257,15 @@
         addressFamily: BGP_ADDR_FAMILY.IPV4_MVPN
     });
 
+    const pagination = ref({
+        current: 1,
+        pageSize: 10,
+        total: 0,
+        showSizeChanger: false,
+        position: ['bottomCenter'],
+        showTotal: total => `共 ${total} 条`
+    });
+
     const validationErrors = ref({
         rd: '',
         rt: '',
@@ -297,7 +307,7 @@
     ];
 
     const sentRoutes = ref([]);
-    const hasRoutes = computed(() => sentRoutes.value.length > 0);
+    const hasRoutes = computed(() => pagination.value.total > 0);
     const activeMvpnTab = ref(null);
 
     const getRouteColumns = type => {
@@ -388,16 +398,28 @@
         }
 
         // 加载已生成的路由列表
+        pagination.value.current = 1;
         await refreshRoutes();
     });
 
     const refreshRoutes = async () => {
-        const result = await window.bgpApi.getRoutes(BGP_ADDR_FAMILY.IPV4_MVPN);
-        if (result.status === 'success') {
-            sentRoutes.value = Array.isArray(result.data) ? [...result.data] : [];
+        const result = await window.bgpApi.getRoutes(
+            BGP_ADDR_FAMILY.IPV4_MVPN,
+            pagination.value.current,
+            pagination.value.pageSize
+        );
+        if (result.status === 'success' && result.data) {
+            sentRoutes.value = result.data.list;
+            pagination.value.total = result.data.total;
         } else {
             console.error(result.msg);
         }
+    };
+
+    const handleTableChange = (pag, _filters, _sorter) => {
+        pagination.value.current = pag.current;
+        pagination.value.pageSize = pag.pageSize;
+        refreshRoutes();
     };
 
     const generateRoutes = async () => {
@@ -441,6 +463,7 @@
 
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
+                pagination.value.current = 1;
                 await refreshRoutes();
             } else {
                 message.error(`${result.msg}`);
@@ -491,6 +514,7 @@
 
             if (result.status === 'success') {
                 message.success(`${result.msg}`);
+                pagination.value.current = 1;
                 await refreshRoutes();
             } else {
                 message.error(`${result.msg}`);
@@ -545,5 +569,10 @@
     .header-text {
         margin-left: 8px;
         margin-right: 8px;
+    }
+
+    /* 固定表格体高度，防止分页栏跳动 */
+    :deep(.ant-table-body) {
+        min-height: 300px;
     }
 </style>

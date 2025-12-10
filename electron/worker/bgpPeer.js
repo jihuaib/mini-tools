@@ -327,8 +327,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );
@@ -445,8 +445,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );

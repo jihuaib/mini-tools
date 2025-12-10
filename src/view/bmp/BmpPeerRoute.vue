@@ -8,38 +8,19 @@
                 <a-tab-pane key="postLocRib" tab="Post-Loc-RIB" />
             </a-tabs>
 
-            <a-row class="route-filters">
-                <a-col :span="8">
-                    <a-input-search
-                        v-model:value="searchText"
-                        placeholder="搜索前缀"
-                        style="width: 100%"
-                        @search="onSearch"
-                    />
-                </a-col>
-                <a-col :span="6">
-                    <a-select
-                        v-model:value="addrFamilyFilter"
-                        placeholder="地址族"
-                        style="width: 100%"
-                        allow-clear
-                        @change="onFilterChange"
-                    >
-                        <a-select-option v-for="(name, value) in ADDRESS_FAMILY_NAME" :key="value" :value="value">
-                            {{ name }}
-                        </a-select-option>
-                    </a-select>
-                </a-col>
-                <a-col :span="10" class="route-stats">
-                    <a-tag color="blue">总路由数: {{ routeList.length }}</a-tag>
-                </a-col>
-            </a-row>
+            <div class="route-list-header">
+                <UnorderedListOutlined />
+                <span class="header-text">已接受路由列表</span>
+                <a-tag v-if="pagination.total > 0" color="blue">
+                    {{ pagination.total }}
+                </a-tag>
+            </div>
 
             <a-table
                 :columns="routeColumns"
                 :data-source="routeList"
                 :row-key="record => `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`"
-                :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                :pagination="pagination"
                 :scroll="{ y: 400 }"
                 size="small"
             >
@@ -69,6 +50,7 @@
     import { useRoute } from 'vue-router';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
     import { BMP_ROUTE_UPDATE_TYPE } from '../../const/bmpConst';
+    import { UnorderedListOutlined } from '@ant-design/icons-vue';
 
     defineOptions({
         name: 'BmpPeerRoute'
@@ -79,8 +61,6 @@
     const peerId = ref(route.params.peerId);
     const peerName = ref('');
     const routeList = ref([]);
-    const searchText = ref('');
-    const addrFamilyFilter = ref(null);
     const clientInfo = ref(null);
     const peerInfo = ref(null);
     const activeRibType = ref('preRibIn');
@@ -144,6 +124,20 @@
         }
     ];
 
+    const pagination = ref({
+        current: 1,
+        pageSize: 10,
+        total: 0,
+        showSizeChanger: false,
+        position: ['bottomCenter'],
+        showTotal: total => `共 ${total} 条`,
+        onChange: (page, pageSize) => {
+            pagination.value.current = page;
+            pagination.value.pageSize = pageSize;
+            loadPeerRoutes();
+        }
+    });
+
     // Drawer for route details
     const detailsDrawerVisible = ref(false);
     const detailsDrawerTitle = ref('');
@@ -160,17 +154,9 @@
         currentDetails.value = null;
     };
 
-    // Search and filter handlers
-    const onSearch = () => {
-        // Search is handled by the computed property
-    };
-
-    const onFilterChange = () => {
-        // Filter is handled by the computed property
-    };
-
     const onRibTypeChange = newRibType => {
         activeRibType.value = newRibType;
+        pagination.value.current = 1;
         loadPeerRoutes();
     };
 
@@ -265,9 +251,16 @@
                 peerIp: peerIdArray[1],
                 peerRd: peerIdArray[2]
             };
-            const result = await window.bmpApi.getRoutes(client, peer, activeRibType.value);
-            if (result.status === 'success') {
-                routeList.value = result.data;
+            const result = await window.bmpApi.getRoutes(
+                client,
+                peer,
+                activeRibType.value,
+                pagination.value.current,
+                pagination.value.pageSize
+            );
+            if (result.status === 'success' && result.data) {
+                routeList.value = result.data.list;
+                pagination.value.total = result.data.total;
             } else {
                 message.error('获取BGP路由列表失败');
             }
@@ -358,15 +351,18 @@
 </script>
 
 <style scoped>
-    .route-filters {
-        margin-bottom: 16px;
-        margin-top: 16px;
+    .route-list-section {
+        margin-top: 24px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 16px;
     }
 
-    .route-stats {
+    .route-list-header {
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.85);
     }
 
     :deep(.ant-table-body) {

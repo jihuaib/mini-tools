@@ -209,7 +209,7 @@ class BmpWorker {
     }
 
     getRoutes(messageId, data) {
-        const { client, peer, ribType } = data;
+        const { client, peer, ribType, page, pageSize } = data;
         const sessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
         const bmpSession = this.bmpSessionMap.get(sessionKey);
         const routeList = [];
@@ -244,7 +244,10 @@ class BmpWorker {
             });
         }
 
-        this.messageHandler.sendSuccessResponse(messageId, routeList, '获取路由列表成功');
+        const total = routeList.length;
+        const list = routeList.slice((page - 1) * pageSize, page * pageSize);
+
+        this.messageHandler.sendSuccessResponse(messageId, { list, total }, '获取路由列表成功');
     }
 
     getClient(messageId, client) {

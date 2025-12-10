@@ -621,7 +621,8 @@ class BgpWorker {
         this.messageHandler.sendSuccessResponse(messageId, null, 'peer删除成功');
     }
 
-    getRoutes(messageId, addressFamily) {
+    getRoutes(messageId, queryInfo) {
+        const { addressFamily, page, pageSize } = queryInfo;
         const { afi, safi } = getAfiAndSafi(addressFamily);
         const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
         if (!instance) {
@@ -629,13 +630,17 @@ class BgpWorker {
             this.messageHandler.sendErrorResponse(messageId, '实例不存在');
             return;
         }
+
         const routes = [];
         instance.routeMap.forEach((route, _) => {
             const routeInfo = route.getRouteInfo();
             routes.push(routeInfo);
         });
 
-        this.messageHandler.sendSuccessResponse(messageId, routes, '路由查询成功');
+        const total = routes.length;
+        const list = routes.slice((page - 1) * pageSize, page * pageSize);
+
+        this.messageHandler.sendSuccessResponse(messageId, { list, total }, '路由查询成功');
     }
 
     generateMvpnRoutes(messageId, config) {

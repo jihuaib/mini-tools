@@ -178,17 +178,23 @@ class BmpApp {
         }
     }
 
-    async handleGetRoutes(event, client, peer, ribType) {
+    async handleGetRoutes(event, client, peer, ribType, page, pageSize) {
         if (null === this.worker) {
             return successResponse([], 'BMP未启动');
         }
 
-        logger.info(`获取路由列表 client: ${JSON.stringify(client)}`);
-        logger.info(`获取路由列表 peer: ${JSON.stringify(peer)}`);
-        logger.info(`获取路由列表 ribType: ${JSON.stringify(ribType)}`);
+        logger.info(
+            `获取路由列表 client: ${JSON.stringify(client)} peer: ${JSON.stringify(peer)} ribType: ${JSON.stringify(ribType)} page: ${JSON.stringify(page)} pageSize: ${JSON.stringify(pageSize)}`
+        );
 
         try {
-            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_ROUTES, { client, peer, ribType });
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_ROUTES, {
+                client,
+                peer,
+                ribType,
+                page,
+                pageSize
+            });
             logger.info(`获取路由列表成功 result: ${JSON.stringify(result)}`);
             return successResponse(result.data, '获取路由列表成功');
         } catch (error) {
