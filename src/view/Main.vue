@@ -95,7 +95,7 @@
     const route = useRoute();
     const store = useStore();
     const currentComponent = ref(null);
-    const isCollapsed = ref(true);
+    const isCollapsed = ref(false);
     const openKeys = ref([]);
     const settingsDialog = ref(null);
 

@@ -310,7 +310,7 @@
                     if (existingIndex !== -1) {
                         routeList.value[existingIndex] = updateRoute;
                     } else {
-                        routeList.value.push(updateRoute);
+                        // ignore new route on current page
                     }
                 }
             });

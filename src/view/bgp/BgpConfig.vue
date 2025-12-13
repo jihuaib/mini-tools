@@ -308,14 +308,14 @@
     const ipv4OpenCapOptions = [
         { label: 'Addr Family', value: BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS, disabled: true },
         { label: 'Route-Refresh', value: BGP_OPEN_CAP_CODE.ROUTE_REFRESH },
-        { label: 'FOUR_OCTET_AS', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
+        { label: 'AS4', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
         { label: 'Role', value: BGP_OPEN_CAP_CODE.BGP_ROLE }
     ];
 
     const ipv6OpenCapOptions = [
         { label: 'Addr Family', value: BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS, disabled: true },
         { label: 'Route-Refresh', value: BGP_OPEN_CAP_CODE.ROUTE_REFRESH },
-        { label: 'FOUR_OCTET_AS', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
+        { label: 'AS4', value: BGP_OPEN_CAP_CODE.FOUR_OCTET_AS },
         { label: 'Role', value: BGP_OPEN_CAP_CODE.BGP_ROLE },
         { label: 'Extended Next Hop Encoding', value: BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING }
     ];
