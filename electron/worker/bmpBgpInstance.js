@@ -86,6 +86,8 @@ class BmpBgpInstance {
 
     closeInstance() {
         this.bgpRoutes.clear();
+        this.recvAddPathMap.clear();
+        this.sendAddPathMap.clear();
     }
 }
 

@@ -736,41 +736,126 @@ class BmpSession {
         return { marker, length, type };
     }
 
-    processPeerDown(message) {
+    processPeerDownGlobal(message) {
         try {
             let position = 0;
-
-            const _peerType = message[position];
+            const sessionType = message[position];
             position += 1;
-            const peerFlags = message[position];
+            const sessionFlags = message[position];
             position += 1;
             const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
             position += BgpConst.BGP_RD_LEN;
-            const peerRd = rdBufferToString(rdBuffer);
+            const sessionRd = rdBufferToString(rdBuffer);
 
-            let peerAddress;
-            if (peerFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+            let sessionAddress;
+            if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 peer
-                peerAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                sessionAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
                 // IPv4 peer
                 // 12字节保留字段
                 position += 12;
-                peerAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                sessionAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
                 position += 4;
             }
 
-            const _peerAs = message.readUInt32BE(position);
+            const sessionAs = message.readUInt32BE(position);
             position += 4;
-            const _peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const sessionRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const _peerTimestamp = message.readUInt32BE(position);
+            const sessionTimestamp = message.readUInt32BE(position);
             position += 4;
-            const _peerTimestampMs = message.readUInt32BE(position);
+            const sessionTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            const _reason = message[position];
+            const reason = message[position];
+            position += 1;
+
+            const ribTypes = this.getRibTypesByFlags(sessionFlags);
+            if (ribTypes.length === 0) {
+                logger.error(`Received BGP Update message from unknown rib type: ${sessionFlags}`);
+                return;
+            }
+
+            let parsedBgpNotification = null;
+            if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
+                // BGP notification message
+                const bgpNotificationHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
+                const { length: notificationLength, type: _notificationType } =
+                    this.parseBgpHeader(bgpNotificationHeader);
+                const bgpNotification = message.subarray(position, position + notificationLength);
+                parsedBgpNotification = parseBgpPacket(bgpNotification);
+                if (!parsedBgpNotification.valid) {
+                    logger.error(`Received BGP Notification message is invalid: ${parsedBgpNotification.error}`);
+                }
+            }
+
+            const sessKey = BmpBgpSession.makeKey(sessionType, sessionRd, sessionAddress, sessionAs);
+            const bgpSession = this.bgpSessionMap.get(sessKey);
+            if (!bgpSession) {
+                logger.error(`Received BGP Update message from unknown session: ${sessKey}`);
+                return;
+            }
+
+            if (parsedBgpNotification) {
+                // bgp断开
+                bgpSession.closeSession();
+                this.bgpSessionMap.delete(sessKey);
+            }
+            else {
+                bgpSession.ribTypes = bgpSession.ribTypes.filter(rt => !ribTypes.includes(rt));
+                if (bgpSession.ribTypes.length === 0) {
+                    bgpSession.closeSession();
+                    this.bgpSessionMap.delete(sessKey);
+                }
+            }
+
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+                data: {
+                    client: this.getClientInfo(),
+                    isInstance: false
+                }
+            });
+        } catch (err) {
+            logger.error(`Error processing peer down:`, err);
+        }
+    }
+
+    processPeerDownLocalRib(message) {
+        try {
+            let position = 0;
+            const _instanceType = message[position];
+            position += 1;
+            const instanceFlags = message[position];
+            position += 1;
+            const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
+            position += BgpConst.BGP_RD_LEN;
+            const instanceRd = rdBufferToString(rdBuffer);
+
+            let instanceAddress;
+            if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+                // IPv6 peer
+                instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                position += 16;
+            } else {
+                // IPv4 peer
+                // 12字节保留字段
+                position += 12;
+                instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                position += 4;
+            }
+
+            const instanceAs = message.readUInt32BE(position);
+            position += 4;
+            const instanceRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            position += 4;
+            const instanceTimestamp = message.readUInt32BE(position);
+            position += 4;
+            const instanceTimestampMs = message.readUInt32BE(position);
+            position += 4;
+
+            const reason = message[position];
             position += 1;
 
             let parsedBgpNotification = null;
@@ -786,28 +871,27 @@ class BmpSession {
                 }
             }
 
-            // Find all matching peers and store their keys for deletion
-            const keysToDelete = [];
-            this.bgpSessionMap.forEach((peer, key) => {
-                if (peer.peerIp === peerAddress && peer.peerRd === peerRd) {
-                    if (parsedBgpNotification) {
-                        peer.bgpPacket.push({ type: 'notification', packet: parsedBgpNotification });
-                    }
-
-                    peer.peerState = BmpConst.BMP_SESSION_STATE.PEER_DOWN;
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: peer.getPeerInfo() });
-
-                    keysToDelete.push(key);
+            // todo: loc-rib 无法识别down的实例
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+                data: {
+                    client: this.getClientInfo(),
+                    isInstance: true
                 }
             });
-
-            if (keysToDelete.length > 0) {
-                keysToDelete.forEach(key => {
-                    this.bgpSessionMap.delete(key);
-                });
-            }
         } catch (err) {
             logger.error(`Error processing peer down:`, err);
+        }
+    }
+
+    processPeerDown(message) {
+        let position = 0;
+        const peerType = message[position];
+        if (peerType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
+            this.processPeerDownGlobal(message);
+        } else if (peerType === BmpConst.BMP_PEER_TYPE.LOCAL_L3VPN) {
+            this.processPeerDownLocalRib(message);
+        } else {
+            logger.error(`Unknown peer type: ${peerType}`);
         }
     }
 
@@ -1044,7 +1128,12 @@ class BmpSession {
             bgpSession.remotePort = remotePort;
             bgpSession.sessionState = BmpConst.BMP_SESSION_STATE.PEER_UP;
 
-            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: bgpSession.getSessionInfo() });
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+                data: {
+                    client: this.getClientInfo(),
+                    isInstance: false
+                }
+            });
         } catch (err) {
             logger.error(`Error processing session up:`, err);
         }
@@ -1282,7 +1371,12 @@ class BmpSession {
                 }
             });
 
-            // this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: bgpSession.getSessionInfo() });
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+                data: {
+                    client: this.getClientInfo(),
+                    isInstance: true,
+                }
+            });
         } catch (err) {
             logger.error(`Error processing session up:`, err);
         }
@@ -1381,6 +1475,8 @@ class BmpSession {
         });
 
         this.bgpSessionMap.clear();
+        this.instAddPathMap.clear();
+        this.bgpInstanceMap.clear();
     }
 }
 

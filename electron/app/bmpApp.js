@@ -16,7 +16,7 @@ class BmpApp {
         this.eventDispatcher = null;
 
         this.bmpInitiationHandler = null;
-        this.bmpPeerUpdateHandler = null;
+        this.bmpSessionUpdateHandler = null;
         this.bmpRouteUpdateHandler = null;
         this.bmpTerminationHandler = null;
 
@@ -86,8 +86,8 @@ class BmpApp {
                 this.eventDispatcher.emit('bmp:initiation', successResponse(data.data));
             };
 
-            this.bmpPeerUpdateHandler = data => {
-                this.eventDispatcher.emit('bmp:peerUpdate', successResponse(data.data));
+            this.bmpSessionUpdateHandler = data => {
+                this.eventDispatcher.emit('bmp:sessionUpdate', successResponse(data.data));
             };
 
             this.bmpRouteUpdateHandler = data => {
@@ -100,7 +100,7 @@ class BmpApp {
 
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
@@ -111,7 +111,7 @@ class BmpApp {
             return successResponse(null, result.msg);
         } catch (error) {
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
@@ -138,7 +138,7 @@ class BmpApp {
         } finally {
             // 移除事件监听器
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
-            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpPeerUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();

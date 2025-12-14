@@ -88,6 +88,9 @@ class BmpBgpSession {
 
     closeSession() {
         this.bgpRoutes.clear();
+        this.recvAddPathMap.clear();
+        this.sendAddPathMap.clear();
+        this.addPathMap.clear();
     }
 }
 

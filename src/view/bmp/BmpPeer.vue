@@ -367,7 +367,7 @@
 
     onMounted(async () => {
         // 监听对等体更新事件
-        window.bmpApi.onPeerUpdate(onPeerUpdate);
+        window.bmpApi.onSessionUpdate(onSessionUpdate);
 
         // 监听Client列表更新事件
         // 监听Client列表更新事件
@@ -404,35 +404,24 @@
         }
     };
 
-    const onPeerUpdate = result => {
-        if (result.status === 'success') {
-            const peerData = result.data;
-            // 创建唯一标识符
-            const peerKey = `${peerData.addrFamilyType}|${peerData.peerIp}|${peerData.peerRd}`;
+    const onSessionUpdate = result => {
+        if (result.status !== 'success' || !result.data) return;
+        const data = result.data;
 
-            // 查找现有记录
-            const existingIndex = bgpSessionList.value.findIndex(
-                peer => `${peer.addrFamilyType}|${peer.peerIp}|${peer.peerRd}` === peerKey
-            );
+        // Check Client
+        const clientKey = `${data.client.localIp}|${data.client.localPort}|${data.client.remoteIp}|${data.client.remotePort}`;
+        if (clientKey !== activeClientKey.value) return;
 
-            if (existingIndex !== -1) {
-                // 更新现有记录
-                if (peerData.peerState === BMP_SESSION_STATE.PEER_UP) {
-                    bgpSessionList.value[existingIndex] = peerData;
-                } else {
-                    bgpSessionList.value.splice(existingIndex, 1);
-                }
-            } else {
-                // 使用展开运算符创建新数组以确保响应式更新
-                if (bgpSessionList.value.length === 0) {
-                    // 首次添加，直接赋值一个新数组以确保触发响应式更新
-                    bgpSessionList.value = [peerData];
-                } else {
-                    bgpSessionList.value = [...bgpSessionList.value, peerData];
-                }
+        if (data.isInstance) {
+            // Loc-RIB Instance Update
+            if (activeMainTab.value === 'loc-rib') {
+                loadBgpInstances();
             }
         } else {
-            message.error('获取BGP邻居列表失败');
+            // Global Session Update
+            if (activeMainTab.value === 'session') {
+                loadBgpSessionList();
+            }
         }
     };
 
@@ -612,7 +601,7 @@
     });
 
     onBeforeUnmount(() => {
-        window.bmpApi.offPeerUpdate(onPeerUpdate);
+        window.bmpApi.offPeerUpdate(onSessionUpdate);
         window.bmpApi.offInitiation(onClientListUpdate);
         window.bmpApi.offTermination(onTerminationHandler);
         window.bmpApi.offRouteUpdate(onRouteUpdate);

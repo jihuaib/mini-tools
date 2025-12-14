@@ -169,11 +169,11 @@ contextBridge.exposeInMainWorld('bmpApi', {
         ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize),
 
     // 使用统一事件管理
-    onPeerUpdate: callback => eventManager.on('bmp:peerUpdate', callback),
+    onSessionUpdate: callback => eventManager.on('bmp:sessionUpdate', callback),
     onRouteUpdate: callback => eventManager.on('bmp:routeUpdate', callback),
     onInitiation: callback => eventManager.on('bmp:initiation', callback),
     onTermination: callback => eventManager.on('bmp:termination', callback),
-    offPeerUpdate: callback => eventManager.off('bmp:peerUpdate', callback),
+    offSessionUpdate: callback => eventManager.off('bmp:sessionUpdate', callback),
     offRouteUpdate: callback => eventManager.off('bmp:routeUpdate', callback),
     offInitiation: callback => eventManager.off('bmp:initiation', callback),
     offTermination: callback => eventManager.off('bmp:termination', callback)
