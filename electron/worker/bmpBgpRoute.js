@@ -1,8 +1,9 @@
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 
 class BmpBgpRoute {
-    constructor(BmpBgpSession) {
+    constructor(BmpBgpSession, BmpBgpInstance) {
         this.BmpBgpSession = BmpBgpSession;
+        this.BmpBgpInstance = BmpBgpInstance;
 
         // key
         this.pathId = null;
@@ -33,7 +34,12 @@ class BmpBgpRoute {
     }
 
     getRouteInfo() {
-        const addrFamilyType = getAddrFamilyType(this.BmpBgpSession.afi, this.BmpBgpSession.safi);
+        let addrFamilyType = null;
+        if (this.BmpBgpSession) {
+            addrFamilyType = getAddrFamilyType(this.BmpBgpSession.afi, this.BmpBgpSession.safi);
+        } else if (this.BmpBgpInstance) {
+            addrFamilyType = getAddrFamilyType(this.BmpBgpInstance.afi, this.BmpBgpInstance.safi);
+        }
         return {
             addrFamilyType: addrFamilyType,
             ip: this.ip,

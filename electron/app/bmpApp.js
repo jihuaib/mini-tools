@@ -33,6 +33,8 @@ class BmpApp {
         this.ipcMain.handle('bmp:getBgpRoutes', this.handleGetBgpRoutes.bind(this));
         this.ipcMain.handle('bmp:getClient', this.handleGetClient.bind(this));
         this.ipcMain.handle('bmp:getPeer', this.handleGetPeer.bind(this));
+        this.ipcMain.handle('bmp:getBgpInstances', this.handleGetBgpInstances.bind(this));
+        this.ipcMain.handle('bmp:getBgpInstanceRoutes', this.handleGetBgpInstanceRoutes.bind(this));
     }
 
     async handleSaveBmpConfig(event, config) {
@@ -200,6 +202,49 @@ class BmpApp {
             return successResponse(result.data, '获取路由列表成功');
         } catch (error) {
             logger.error('Error getting routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetBgpInstanceRoutes(event, client, instance, page, pageSize) {
+        if (null === this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        logger.info(
+            `获取BGP实例路由列表 client: ${JSON.stringify(client)} instance: ${JSON.stringify(instance)} page: ${JSON.stringify(page)} pageSize: ${JSON.stringify(pageSize)}`
+        );
+
+        try {
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCE_ROUTES, {
+                client,
+                instance,
+                page,
+                pageSize
+            });
+            logger.info(`获取BGP实例路由列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取BGP实例路由列表成功');
+        } catch (error) {
+            logger.error('Error getting routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetBgpInstances(event, client) {
+        if (null === this.worker) {
+            return successResponse([], 'BMP未启动');
+        }
+
+        logger.info(
+            `获取BGP实例列表 client: ${JSON.stringify(client)}`
+        );
+
+        try {
+            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCES, client);
+            logger.info(`获取BGP实例列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取BGP实例列表成功');
+        } catch (error) {
+            logger.error('Error getting BGP instances:', error.message);
             return errorResponse(error.message);
         }
     }

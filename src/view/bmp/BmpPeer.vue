@@ -11,7 +11,7 @@
                                 :tab="`${client.sysDesc}[${client.remoteIp}]`"
                             >
                                 <a-tabs tab-position="left" v-model:active-key="activeMainTab">
-                                    <a-tab-pane key="peer" tab="peer">
+                                    <a-tab-pane key="session" tab="session">
                                         <div v-if="groupedBgpSessions.length > 0">
                                             <a-tabs v-model:active-key="activeBgpSessionKey">
                                                 <a-tab-pane
@@ -48,6 +48,11 @@
                                                                     <a-tag color="green">Yes</a-tag>
                                                                 </a-tooltip>
                                                                 <a-tag v-else color="red">No</a-tag>
+                                                            </template>
+                                                            <template v-else-if="column.key === 'action'">
+                                                                <a-button type="link" size="small" @click="viewSessionDetails(record)">
+                                                                    详情
+                                                                </a-button>
                                                             </template>
                                                         </template>
                                                     </a-table>
@@ -95,41 +100,38 @@
                                         </div>
                                     </a-tab-pane>
                                     <a-tab-pane key="loc-rib" tab="loc-rib">
-                                        <div v-if="bmpInstances.length > 0">
+                                        <div v-if="bgpInstances.length > 0">
                                             <a-tabs v-model:active-key="activeInstanceKey">
                                                 <a-tab-pane
-                                                    v-for="instance in bmpInstances"
-                                                    :key="`${instance.instanceType}|${instance.instanceRd}|${instance.enabledAddrFamilyTypes[0]}`"
-                                                    :tab="`${instance.instanceType} | rd(${instance.instanceRd}) | ${ADDRESS_FAMILY_NAME[instance.enabledAddrFamilyTypes[0]]}`"
+                                                    v-for="instance in bgpInstances"
+                                                    :key="`${instance.instanceType}|${instance.instanceRd}|${instance.addrFamilyType}`"
+                                                    :tab="`${instance.instanceType}|${instance.instanceRd}|${ADDRESS_FAMILY_NAME[instance.addrFamilyType]}`"
                                                 >
-                                                    <a-descriptions bordered size="small" :column="2">
-                                                        <a-descriptions-item label="Instance Type">
-                                                            {{ instance.instanceType }}
-                                                        </a-descriptions-item>
-                                                        <a-descriptions-item label="RD">
-                                                            {{ instance.instanceRd }}
-                                                        </a-descriptions-item>
-                                                        <a-descriptions-item label="Peer IP">
-                                                            {{ instance.instanceIp }}
-                                                        </a-descriptions-item>
-                                                        <a-descriptions-item label="Peer AS">
-                                                            {{ instance.instanceAs }}
-                                                        </a-descriptions-item>
-                                                        <a-descriptions-item label="Local IP">
-                                                            {{ instance.localIp }}
-                                                        </a-descriptions-item>
-                                                        <a-descriptions-item label="Router ID">
-                                                            {{ instance.instanceRouterId }}
-                                                        </a-descriptions-item>
-                                                    </a-descriptions>
+
+                                                    <a-table
+                                                        :columns="bgpInstanceColumns"
+                                                        :data-source="[instance]"
+                                                        :pagination="false"
+                                                        size="small"
+                                                        style="margin-bottom: 8px"
+                                                        row-key="peerIp"
+                                                    >
+                                                        <template #bodyCell="{ column, record }">
+                                                            <template v-if="column.key === 'addPath'">
+                                                                <a-tag v-if="record.isAddPath " color="green">Yes</a-tag>
+                                                                <a-tag v-else color="red">No</a-tag>
+                                                            </template>
+                                                            <template v-else-if="column.key === 'action'">
+                                                                <a-button type="link" size="small" @click="viewInstanceDetails(record)">
+                                                                    详情
+                                                                </a-button>
+                                                            </template>
+                                                        </template>
+                                                    </a-table>
                                                     <a-table
                                                         :columns="bgpRouteColumns"
                                                         :data-source="bgpRouteList"
                                                         :pagination="bgpRoutePagination"
-                                                        :row-key="
-                                                            record =>
-                                                                `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`
-                                                        "
                                                         size="small"
                                                         :scroll="{ y: 400 }"
                                                     />
@@ -167,10 +169,8 @@
 <script setup>
     import { ref, onMounted, onActivated, watch, onBeforeUnmount, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { useRouter } from 'vue-router';
     import {
         BMP_SESSION_TYPE_NAME,
-        BMP_SESSION_FLAGS_NAME,
         BMP_SESSION_STATE_NAME,
         BMP_SESSION_STATE,
         BMP_BGP_RIB_TYPE_NAME
@@ -227,19 +227,6 @@
             ellipsis: true
         },
         {
-            title: 'Session Flags',
-            dataIndex: 'sessionFlags',
-            key: 'sessionFlags',
-            ellipsis: true,
-            width: 80,
-            customRender: ({ text }) => {
-                return Object.keys(BMP_SESSION_FLAGS_NAME)
-                    .filter(key => text & key)
-                    .map(key => BMP_SESSION_FLAGS_NAME[key])
-                    .join(', ');
-            }
-        },
-        {
             title: 'ADD-PATH',
             dataIndex: 'addPathMap',
             key: 'addPathMap',
@@ -264,15 +251,78 @@
         }
     ];
 
+    const bgpInstanceColumns = [
+        {
+            title: 'Instance Type',
+            dataIndex: 'instanceType',
+            key: 'instanceType',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => {
+                return BMP_SESSION_TYPE_NAME[text] || text;
+            }
+        },
+        {
+            title: 'Instance IP',
+            dataIndex: 'instanceIp',
+            key: 'instanceIp',
+            width: 100,
+            ellipsis: true
+        },
+        {
+            title: 'AS',
+            dataIndex: 'instanceAs',
+            key: 'instanceAs',
+            width: 100,
+            ellipsis: true
+        },
+        {
+            title: 'RD',
+            dataIndex: 'instanceRd',
+            key: 'instanceRd',
+            width: 100,
+            ellipsis: true
+        },
+        {
+            title: 'Router ID',
+            dataIndex: 'instanceRouterId',
+            key: 'instanceRouterId',
+            width: 100,
+            ellipsis: true
+        },
+        {
+            title: 'ADD-PATH',
+            key: 'addPath',
+            ellipsis: true,
+            width: 80
+        },
+        {
+            title: 'Instance状态',
+            dataIndex: 'instanceState',
+            key: 'instanceState',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => {
+                return BMP_SESSION_STATE_NAME[text] || text;
+            }
+        },
+        {
+            title: '操作',
+            key: 'action',
+            fixed: 'right',
+            width: 200
+        }
+    ];
+
     // Details drawer
     const detailsDrawerVisible = ref(false);
     const detailsDrawerTitle = ref('');
     const currentDetails = ref(null);
 
     // View peer details
-    const viewPeerDetails = record => {
+    const viewSessionDetails = record => {
         currentDetails.value = record;
-        detailsDrawerTitle.value = `Peer 详情: ${record.peerIp}`;
+        detailsDrawerTitle.value = `Session 详情: ${record.sessionIp}`;
         detailsDrawerVisible.value = true;
     };
 
@@ -320,9 +370,39 @@
         window.bmpApi.onPeerUpdate(onPeerUpdate);
 
         // 监听Client列表更新事件
+        // 监听Client列表更新事件
         window.bmpApi.onInitiation(onClientListUpdate);
         window.bmpApi.onTermination(onTerminationHandler);
+        // 监听路由更新事件
+        window.bmpApi.onRouteUpdate(onRouteUpdate);
     });
+
+    const onRouteUpdate = result => {
+        if (result.status !== 'success' || !result.data) return;
+        const update = result.data;
+
+        const clientKey = `${update.client.localIp}|${update.client.localPort}|${update.client.remoteIp}|${update.client.remotePort}`;
+        if (clientKey !== activeClientKey.value) return;
+
+        if (update.isInstanceRoute) {
+            if (activeMainTab.value === 'loc-rib') {
+                const instKey = `${update.instance.instanceType}|${update.instance.instanceRd}|${update.instance.addrFamilyType}`;
+                
+                if (instKey === activeInstanceKey.value) {
+                    loadInstanceRoutes();
+                }
+            }
+        } else {
+            if (activeMainTab.value === 'session') {
+                const sessKey = `${update.session.sessionType}|${update.session.sessionRd}|${update.session.sessionIp}|${update.session.sessionAs}`;
+                if (sessKey === activeBgpSessionKey.value) {
+                     if (update.af === activeLocRibAf.value && update.ribType === activeLocRibType.value) {
+                         loadBgpRoutes();
+                     }
+                }
+            }
+        }
+    };
 
     const onPeerUpdate = result => {
         if (result.status === 'success') {
@@ -395,11 +475,11 @@
     };
 
     // 加载BGP会话列表
-    const loadBgpSessionList = async clientKey => {
-        if (!clientKey) return;
+    const loadBgpSessionList = async () => {
+        if (!activeClientKey.value) return;
 
         try {
-            const [localIp, localPort, remoteIp, remotePort] = clientKey.split('|');
+            const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
             const clientInfo = {
                 localIp,
                 localPort,
@@ -410,6 +490,7 @@
             const bgpSessionListResult = await window.bmpApi.getBgpSessions(clientInfo);
             if (bgpSessionListResult.status === 'success') {
                 bgpSessionList.value = bgpSessionListResult.data || [];
+                loadBgpRoutes();
             } else {
                 bgpSessionList.value = [];
                 message.error('获取BGP邻居列表失败');
@@ -422,55 +503,96 @@
     };
 
     // Loc-RIB Logic
-    const activeMainTab = ref('peer');
+    const activeMainTab = ref('session');
     const activeBgpSessionKey = ref('');
     const activeLocRibAf = ref(null);
     const activeLocRibType = ref('');
     const bgpRouteList = ref([]);
 
     // Instance Logic
-    const bmpInstances = ref([]);
+    const bgpInstances = ref([]);
     const activeInstanceKey = ref('');
 
-    const loadBmpInstances = async clientKey => {
-        if (!clientKey) return;
+    const loadBgpInstances = async () => {
+        if (!activeClientKey.value) return;
         try {
-            const [localIp, localPort, remoteIp, remotePort] = clientKey.split('|');
+            const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
             const clientInfo = { localIp, localPort, remoteIp, remotePort };
-            const res = await window.bmpApi.getBmpInstances(clientInfo);
+            const res = await window.bmpApi.getBgpInstances(clientInfo);
             if (res.status === 'success') {
-                bmpInstances.value = res.data || [];
-                if (bmpInstances.value.length > 0) {
-                    activeInstanceKey.value = `${bmpInstances.value[0].instanceType}|${bmpInstances.value[0].instanceRd}|${bmpInstances.value[0].enabledAddrFamilyTypes[0]}`;
+                bgpInstances.value = res.data || [];
+                if (bgpInstances.value.length > 0) {
+                    const first = bgpInstances.value[0];
+                    const key = `${first.instanceType}|${first.instanceRd}|${first.addrFamilyType}`;
+                    activeInstanceKey.value = key;
+                    loadInstanceRoutes();
+                } else {
+                    bgpRouteList.value = [];
+                    activeInstanceKey.value = '';
                 }
             } else {
-                bmpInstances.value = [];
+                bgpInstances.value = [];
+                activeInstanceKey.value = '';
             }
         } catch (error) {
             console.error(error);
-            bmpInstances.value = [];
+            bgpInstances.value = [];
             message.error('Load BMP instances failed');
         }
     };
 
+    const loadInstanceRoutes = async () => {
+        if (!activeClientKey.value) return;
+
+        const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
+        const client = { localIp, localPort, remoteIp, remotePort };
+
+        const instance = {
+            instanceType: activeInstanceKey.value.split('|')[0],
+            instanceRd: activeInstanceKey.value.split('|')[1],
+            addrFamilyType: activeInstanceKey.value.split('|')[2],
+        };
+
+        const page = bgpRoutePagination.value.current;
+        const pageSize = bgpRoutePagination.value.pageSize;
+
+        try {
+            const res = await window.bmpApi.getBgpInstanceRoutes(client, instance, page, pageSize);
+            if (res.status === 'success' && res.data) {
+                bgpRouteList.value = res.data.list;
+                bgpRoutePagination.value.total = res.data.total;
+            } else {
+                bgpRouteList.value = [];
+                bgpRoutePagination.value.total = 0;
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('Load instance routes failed');
+        }
+    };
+
+    const viewInstanceDetails = record => {
+        currentDetails.value = record;
+        detailsDrawerTitle.value = `Instance 详情: ${record.instanceRd}`;
+        detailsDrawerVisible.value = true;
+    };
+
     // 监听activeClientKey变化，加载对应的peer列表 AND instances
     watch(activeClientKey, newKey => {
-        loadBgpSessionList(newKey);
-        // Clear instances/routes when client changes
-        bmpInstances.value = [];
+        loadBgpSessionList();
+        bgpInstances.value = [];
         bgpRouteList.value = [];
-        // Only load instances if on loc-rib tab
         if (activeMainTab.value === 'loc-rib') {
-            loadBmpInstances(newKey);
+            loadBgpInstances(newKey);
         }
     });
 
     watch(activeMainTab, newTab => {
-        if (newTab === 'loc-rib' && activeClientKey.value) {
-            // Lazy load instances
-            if (bmpInstances.value.length === 0) {
-                 loadBmpInstances(activeClientKey.value);
-            }
+        if (newTab === 'session') {
+            loadBgpSessionList();
+        }
+        if (newTab === 'loc-rib') {
+            loadBgpInstances();
         }
     });
 
@@ -478,13 +600,13 @@
         clientList.value = [];
         activeClientKey.value = '';
         bgpSessionList.value = [];
-        bmpInstances.value = [];
+        bgpInstances.value = [];
         await loadClientList();
         // 如果有选中的客户端，则加载对应的BGP会话列表
         if (activeClientKey.value) {
-            await loadBgpSessionList(activeClientKey.value);
+            await loadBgpSessionList();
             if (activeMainTab.value === 'loc-rib') {
-                await loadBmpInstances(activeClientKey.value);
+                await loadBgpInstances();
             }
         }
     });
@@ -493,20 +615,12 @@
         window.bmpApi.offPeerUpdate(onPeerUpdate);
         window.bmpApi.offInitiation(onClientListUpdate);
         window.bmpApi.offTermination(onTerminationHandler);
+        window.bmpApi.offRouteUpdate(onRouteUpdate);
     });
 
     const groupedBgpSessions = computed(() => {
-        console.log(bgpSessionList.value);
         return bgpSessionList.value.map(p => {
             const key = `${p.sessionType}|${p.sessionRd}|${p.sessionIp}|${p.sessionAs}`;
-
-            let sessionInfo = {
-                sessionType: p.sessionType,
-                sessionRd: p.sessionRd,
-                sessionIp: p.sessionIp,
-                sessionAs: p.sessionAs,
-                addPathMap: p.addPathMap
-            };
 
             return {
                 key,
@@ -516,7 +630,7 @@
                 sessionAs: p.sessionAs,
                 afs: p.enabledAddrFamilyTypes || [],
                 ribTypes: p.ribTypes,
-                sessionInfo: sessionInfo
+                sessionInfo: p
             };
         });
     });
@@ -530,7 +644,11 @@
         onChange: (page, pageSize) => {
             bgpRoutePagination.value.current = page;
             bgpRoutePagination.value.pageSize = pageSize;
-            loadBgpRoutes();
+            if (activeMainTab.value === 'loc-rib') {
+                loadInstanceRoutes();
+            } else {
+                loadBgpRoutes();
+            }
         }
     });
 
@@ -582,7 +700,6 @@
     };
 
     watch(groupedBgpSessions, newVal => {
-        console.log(newVal);
         if (newVal.length > 0 && !activeBgpSessionKey.value) {
             activeBgpSessionKey.value = newVal[0].key;
             if (newVal[0].afs.length > 0) activeLocRibAf.value = newVal[0].afs[0];
@@ -604,6 +721,13 @@
                 bgpRoutePagination.value.current = 1;
                 loadBgpRoutes();
             }
+        }
+    });
+
+    watch(activeInstanceKey, newKey => {
+        if (newKey) {
+            bgpRoutePagination.value.current = 1;
+            loadInstanceRoutes();
         }
     });
 

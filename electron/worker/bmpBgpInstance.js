@@ -4,6 +4,8 @@ class BmpBgpInstance {
     constructor(bmpSession) {
         this.bmpSession = bmpSession;
 
+        this.afi = null;
+        this.safi = null;
         this.instanceType = null;
         this.instanceFlags = null;
         this.instanceRd = null;
@@ -51,13 +53,14 @@ class BmpBgpInstance {
         };
     }
 
-    getSessionInfo() {
+    getInstanceInfo() {
         let addrFamilyTypes = [];
         this.enabledAddressFamilies.forEach(addrFamily => {
             addrFamilyTypes.push(getAddrFamilyType(addrFamily.afi, addrFamily.safi));
         });
 
         return {
+            addrFamilyType: getAddrFamilyType(this.afi, this.safi),
             instanceType: this.instanceType,
             instanceFlags: this.instanceFlags,
             instanceRd: this.instanceRd,
