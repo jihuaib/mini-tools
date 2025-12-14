@@ -2,10 +2,12 @@ const logger = require('../log/logger');
 const BmpConst = require('../const/bmpConst');
 const { getInitiationTlvName } = require('../utils/bmpUtils');
 const BgpConst = require('../const/bgpConst');
-const BmpBgpPeer = require('./bmpBgpPeer');
+const BmpBgpSession = require('./bmpBgpSession');
 const BmpBgpRoute = require('./bmpBgpRoute');
 const { rdBufferToString, ipv4BufferToString, ipv6BufferToString } = require('../utils/ipUtils');
 const { parseBgpPacket } = require('../utils/bgpPacketParser');
+const { getAddrFamilyType } = require('../utils/bgpUtils');
+const BmpBgpInstance = require('./bmpBgpInstance');
 
 class BmpSession {
     constructor(messageHandler, bmpWorker) {
@@ -21,7 +23,8 @@ class BmpSession {
         this.receivedAt = null;
         this.tlvs = [];
 
-        this.peerMap = new Map();
+        this.bgpSessionMap = new Map();
+        this.bgpInstanceMap = new Map();
         this.messageBuffer = Buffer.alloc(0);
     }
 
@@ -34,69 +37,77 @@ class BmpSession {
         return { localIp, localPort, remoteIp, remotePort };
     }
 
-    getRouteMapsByFlags(peer, peerFlags) {
-        const routeMaps = [];
+    getRibTypesByFlags(sessionFlags) {
+        const ribTypes = [];
 
-        // 默认最基础的 pre-rib-in
-        routeMaps.push({ name: 'preRibIn', map: peer.preRibInMap });
-
-        // 如果有 POST_POLICY 标志
-        if (peerFlags & BmpConst.BMP_PEER_FLAGS.POST_POLICY) {
-            routeMaps.push({ name: 'ribIn', map: peer.ribInMap });
+        if (sessionFlags === 0x00 || sessionFlags === BmpConst.BMP_SESSION_FLAGS.IPV6) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.PRE_ADJ_RIB_IN);
         }
 
-        // 如果有 ADJ_RIB_OUT 标志
-        if (peerFlags & BmpConst.BMP_PEER_FLAGS.ADJ_RIB_OUT) {
-            routeMaps.push({ name: 'postLocRib', map: peer.postLocRibMap });
+        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.POST_POLICY) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_IN);
         }
 
-        // 如果有 LOC_RIB 标志
-        if (peerFlags & BmpConst.BMP_PEER_FLAGS.LOC_RIB) {
-            routeMaps.push({ name: 'locRib', map: peer.locRibMap });
+        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.LOC_RIB) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.LOC_RIB);
         }
 
-        return routeMaps;
+        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_OUT);
+        }
+
+        return ribTypes;
     }
 
     processRouteMonitoring(message) {
         try {
             let position = 0;
 
-            const _peerType = message[position];
+            const sessionType = message[position];
             position += 1;
-            const peerFlags = message[position];
+            const sessionFlags = message[position];
             position += 1;
             const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
             position += BgpConst.BGP_RD_LEN;
-            const peerRd = rdBufferToString(rdBuffer);
+            const sessionRd = rdBufferToString(rdBuffer);
 
-            let peerAddress;
-            if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
+            let sessionAddress;
+            if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 对等体
-                peerAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                sessionAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
                 // IPv4 对等体
                 // 12字节保留字段
                 position += 12;
-                peerAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                sessionAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
                 position += 4;
             }
 
-            const _peerAs = message.readUInt32BE(position);
+            const sessionAs = message.readUInt32BE(position);
             position += 4;
-            const _peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const _sessionRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const _peerTimestamp = message.readUInt32BE(position);
+            const _sessionTimestamp = message.readUInt32BE(position);
             position += 4;
-            const _peerTimestampMs = message.readUInt32BE(position);
+            const _sessionTimestampMs = message.readUInt32BE(position);
             position += 4;
+
+            const bgpSessionKey = BmpBgpSession.makeKey(sessionType, sessionRd, sessionAddress, sessionAs);
+            const bgpSession = this.bgpSessionMap.get(bgpSessionKey);
+            if (!bgpSession) {
+                logger.error(`Received BGP Update message from unknown session: ${bgpSessionKey}`);
+                return;
+            }
 
             // BGP 更新消息
             const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
             const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
             const bgpUpdate = message.subarray(position, position + updateLength);
-            const parsedBgpUpdate = parseBgpPacket(bgpUpdate);
+
+            // Pass bgpSession for ADD-PATH capability check
+            const parsedBgpUpdate = parseBgpPacket(bgpUpdate, bgpSession); // passing bgpSession as second arg
+
             if (!parsedBgpUpdate.valid) {
                 logger.error(`Received BGP Update message is invalid: ${parsedBgpUpdate.error}`);
             }
@@ -104,32 +115,49 @@ class BmpSession {
 
             let routeUpdates = [];
 
+            const ribTypes = this.getRibTypesByFlags(sessionFlags);
+            if (ribTypes.length === 0) {
+                logger.error(`Received BGP Update message from unknown rib type: ${sessionFlags}`);
+                return;
+            }
+
             // 处理withdrawn routes (IPv4)
             if (parsedBgpUpdate.withdrawnRoutes && parsedBgpUpdate.withdrawnRoutes.length > 0) {
-                // 寻找匹配的IPv4 Unicast peer
-                const peer = this.findPeer(
-                    peerAddress,
-                    peerRd,
-                    BgpConst.BGP_AFI_TYPE.AFI_IPV4,
-                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
-                );
-                if (peer) {
-                    // 删除所有撤销的路由
-                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
-                    for (const routeMap of routeMaps) {
-                        for (const withdrawn of parsedBgpUpdate.withdrawnRoutes) {
-                            const key = BmpBgpRoute.makeKey(withdrawn.rd, withdrawn.prefix, withdrawn.length);
-                            const route = routeMap.map.get(key);
-                            if (route) {
-                                routeUpdates.push({
-                                    type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                                    ribType: routeMap.name,
-                                    client: this.getClientInfo(),
-                                    peer: peer.getPeerInfo(),
-                                    route: route.getRouteInfo()
-                                });
-                                routeMap.map.delete(key);
-                            }
+                const afKey = `${BgpConst.BGP_AFI_TYPE.AFI_IPV4}|${BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST}`;
+                const ribTypeRouteMap = bgpSession.bgpRoutes.get(afKey);
+                if (!ribTypeRouteMap) {
+                    logger.error(`Received BGP Update message from unknown address family: ${afKey}`);
+                    return;
+                }
+
+                // 删除所有撤销的路由
+                for (const ribType of ribTypes) {
+                    const routeMap = ribTypeRouteMap.get(ribType);
+                    if (!routeMap) {
+                        logger.error(`Received BGP Update message from unknown rib type: ${ribType}`);
+                        continue;
+                    }
+                    for (const withdrawn of parsedBgpUpdate.withdrawnRoutes) {
+                        const routeKey = BmpBgpRoute.makeKey(
+                            withdrawn.pathId,
+                            withdrawn.rd,
+                            withdrawn.prefix,
+                            withdrawn.length
+                        );
+                        const route = routeMap.get(routeKey);
+                        if (route) {
+                            routeUpdates.push({
+                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
+                                client: this.getClientInfo(),
+                                session: bgpSession.getSessionInfo(),
+                                af: getAddrFamilyType(
+                                    BgpConst.BGP_AFI_TYPE.AFI_IPV4,
+                                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                                ),
+                                ribType: ribType,
+                                route: route.getRouteInfo()
+                            });
+                            routeMap.delete(routeKey);
                         }
                     }
 
@@ -150,25 +178,38 @@ class BmpSession {
             }
 
             if (mpUnreachNlri && mpUnreachNlri.withdrawnRoutes && mpUnreachNlri.withdrawnRoutes.length > 0) {
-                // 寻找匹配的多协议peer
-                const peer = this.findPeer(peerAddress, peerRd, mpUnreachNlri.afi, mpUnreachNlri.safi);
-                if (peer) {
-                    // 删除所有撤销的路由
-                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
-                    for (const routeMap of routeMaps) {
-                        for (const withdrawn of mpUnreachNlri.withdrawnRoutes) {
-                            const key = BmpBgpRoute.makeKey(withdrawn.rd, withdrawn.prefix, withdrawn.length);
-                            const route = routeMap.map.get(key);
-                            if (route) {
-                                routeUpdates.push({
-                                    type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                                    ribType: routeMap.name,
-                                    client: this.getClientInfo(),
-                                    peer: peer.getPeerInfo(),
-                                    route: route.getRouteInfo()
-                                });
-                                routeMap.map.delete(key);
-                            }
+                const afKey = `${mpUnreachNlri.afi}|${mpUnreachNlri.safi}`;
+                const ribTypeRouteMap = bgpSession.bgpRoutes.get(afKey);
+                if (!ribTypeRouteMap) {
+                    logger.error(`Received BGP Update message from unknown address family: ${afKey}`);
+                    return;
+                }
+
+                // 删除所有撤销的路由
+                for (const ribType of ribTypes) {
+                    const routeMap = ribTypeRouteMap.get(ribType);
+                    if (!routeMap) {
+                        logger.error(`Received BGP Update message from unknown rib type: ${ribType}`);
+                        continue;
+                    }
+                    for (const withdrawn of mpUnreachNlri.withdrawnRoutes) {
+                        const routeKey = BmpBgpRoute.makeKey(
+                            withdrawn.pathId,
+                            withdrawn.rd,
+                            withdrawn.prefix,
+                            withdrawn.length
+                        );
+                        const route = routeMap.get(routeKey);
+                        if (route) {
+                            routeUpdates.push({
+                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
+                                client: this.getClientInfo(),
+                                session: bgpSession.getSessionInfo(),
+                                af: getAddrFamilyType(mpUnreachNlri.afi, mpUnreachNlri.safi),
+                                ribType: ribType,
+                                route: route.getRouteInfo()
+                            });
+                            routeMap.delete(routeKey);
                         }
                     }
 
@@ -181,48 +222,52 @@ class BmpSession {
             routeUpdates = [];
             // 处理IPv4 NLRI
             if (parsedBgpUpdate.nlri && parsedBgpUpdate.nlri.length > 0) {
-                // 寻找匹配的IPv4 Unicast peer
-                const peer = this.findPeer(
-                    peerAddress,
-                    peerRd,
-                    BgpConst.BGP_AFI_TYPE.AFI_IPV4,
-                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
-                );
-                if (peer) {
-                    // 处理所有NLRI条目
-                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
-                    for (const routeMap of routeMaps) {
-                        for (const nlri of parsedBgpUpdate.nlri) {
-                            const key = BmpBgpRoute.makeKey(nlri.rd, nlri.prefix, nlri.length);
+                console.log('Received BGP Update message from IPv4 NLRI', parsedBgpUpdate.nlri);
+                const afKey = `${BgpConst.BGP_AFI_TYPE.AFI_IPV4}|${BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST}`;
+                const ribTypeRouteMap = bgpSession.bgpRoutes.get(afKey);
+                if (!ribTypeRouteMap) {
+                    logger.error(`Received BGP Update message from unknown address family: ${afKey}`);
+                    return;
+                }
 
-                            let bmpBgpRoute = routeMap.map.get(key);
-                            if (!bmpBgpRoute) {
-                                bmpBgpRoute = new BmpBgpRoute(peer);
-                                routeMap.map.set(key, bmpBgpRoute);
-                            } else {
-                                bmpBgpRoute.clearAttributes();
-                            }
+                for (const ribType of ribTypes) {
+                    const routeMap = ribTypeRouteMap.get(ribType);
+                    if (!routeMap) {
+                        logger.error(`Received BGP Update message from unknown rib type: ${ribType}`);
+                        continue;
+                    }
+                    for (const nlri of parsedBgpUpdate.nlri) {
+                        const routeKey = BmpBgpRoute.makeKey(nlri.pathId, nlri.rd, nlri.prefix, nlri.length);
 
-                            bmpBgpRoute.rd = nlri.rd;
-                            bmpBgpRoute.ip = nlri.prefix;
-                            bmpBgpRoute.mask = nlri.length;
-
-                            // 设置路由属性
-                            this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
-
-                            routeUpdates.push({
-                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
-                                ribType: routeMap.name,
-                                client: this.getClientInfo(),
-                                peer: peer.getPeerInfo(),
-                                route: bmpBgpRoute.getRouteInfo()
-                            });
+                        let bmpBgpRoute = routeMap.get(routeKey);
+                        if (!bmpBgpRoute) {
+                            bmpBgpRoute = new BmpBgpRoute(bgpSession);
+                            routeMap.set(routeKey, bmpBgpRoute);
+                        } else {
+                            bmpBgpRoute.clearAttributes();
                         }
-                    }
 
-                    if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        bmpBgpRoute.pathId = nlri.pathId;
+                        bmpBgpRoute.rd = nlri.rd;
+                        bmpBgpRoute.ip = nlri.prefix;
+                        bmpBgpRoute.mask = nlri.length;
+
+                        // 设置路由属性
+                        this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
+
+                        routeUpdates.push({
+                            type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
+                            client: this.getClientInfo(),
+                            session: bgpSession.getSessionInfo(),
+                            af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST),
+                            ribType: ribType,
+                            route: bmpBgpRoute.getRouteInfo()
+                        });
                     }
+                }
+
+                if (routeUpdates.length > 0) {
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
                 }
             }
 
@@ -237,62 +282,55 @@ class BmpSession {
 
             if (mpReachNlri && mpReachNlri.nlri && mpReachNlri.nlri.length > 0) {
                 // 寻找匹配的多协议peer
-                const peer = this.findPeer(peerAddress, peerRd, mpReachNlri.afi, mpReachNlri.safi);
-                if (peer) {
-                    // 处理所有MP_REACH_NLRI条目
-                    const routeMaps = this.getRouteMapsByFlags(peer, peerFlags);
-                    for (const routeMap of routeMaps) {
-                        for (const nlri of mpReachNlri.nlri) {
-                            const key = BmpBgpRoute.makeKey(nlri.rd, nlri.prefix, nlri.length);
-
-                            let bmpBgpRoute = routeMap.map.get(key);
-                            if (!bmpBgpRoute) {
-                                bmpBgpRoute = new BmpBgpRoute(peer);
-                                routeMap.map.set(key, bmpBgpRoute);
-                            } else {
-                                bmpBgpRoute.clearAttributes();
-                            }
-
-                            bmpBgpRoute.rd = nlri.rd;
-                            bmpBgpRoute.ip = nlri.prefix;
-                            bmpBgpRoute.mask = nlri.length;
-
-                            // 设置路由属性
-                            this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
-
-                            routeUpdates.push({
-                                type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
-                                ribType: routeMap.name,
-                                client: this.getClientInfo(),
-                                peer: peer.getPeerInfo(),
-                                route: bmpBgpRoute.getRouteInfo()
-                            });
-                        }
+                const afKey = `${mpReachNlri.afi}|${mpReachNlri.safi}`;
+                const ribTypeRouteMap = bgpSession.bgpRoutes.get(afKey);
+                if (!ribTypeRouteMap) {
+                    logger.error(`Received BGP Update message from unknown address family: ${afKey}`);
+                    return;
+                }
+                for (const ribType of ribTypes) {
+                    const routeMap = ribTypeRouteMap.get(ribType);
+                    if (!routeMap) {
+                        logger.error(`Received BGP Update message from unknown rib type: ${ribType}`);
+                        continue;
                     }
+                    for (const nlri of mpReachNlri.nlri) {
+                        const routeKey = BmpBgpRoute.makeKey(nlri.pathId, nlri.rd, nlri.prefix, nlri.length);
 
-                    if (routeUpdates.length > 0) {
-                        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
+                        let bmpBgpRoute = routeMap.get(routeKey);
+                        if (!bmpBgpRoute) {
+                            bmpBgpRoute = new BmpBgpRoute(bgpSession);
+                            routeMap.set(routeKey, bmpBgpRoute);
+                        } else {
+                            bmpBgpRoute.clearAttributes();
+                        }
+
+                        bmpBgpRoute.pathId = nlri.pathId;
+                        bmpBgpRoute.rd = nlri.rd;
+                        bmpBgpRoute.ip = nlri.prefix;
+                        bmpBgpRoute.mask = nlri.length;
+
+                        // 设置路由属性
+                        this.setRouteAttributes(bmpBgpRoute, parsedBgpUpdate);
+
+                        routeUpdates.push({
+                            type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
+                            client: this.getClientInfo(),
+                            session: bgpSession.getSessionInfo(),
+                            af: getAddrFamilyType(mpReachNlri.afi, mpReachNlri.safi),
+                            ribType: ribType,
+                            route: bmpBgpRoute.getRouteInfo()
+                        });
                     }
                 }
+            }
+
+            if (routeUpdates.length > 0) {
+                this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, { data: routeUpdates });
             }
         } catch (err) {
             logger.error(`Error processing route monitoring:`, err);
         }
-    }
-
-    // 辅助方法：根据peerAddress和地址族找到对应的peer
-    findPeer(peerAddress, peerRd, afi, safi) {
-        // 优先尝试查找精确匹配的peer
-        const exactKey = BmpBgpPeer.makeKey(afi, safi, peerAddress, peerRd);
-        let peer = this.peerMap.get(exactKey);
-
-        if (peer) {
-            return peer;
-        }
-
-        // 如果没找到，尝试查找地址族为null的通用peer
-        const genericKey = BmpBgpPeer.makeKey(null, null, peerAddress, peerRd);
-        return this.peerMap.get(genericKey);
     }
 
     // 辅助方法：设置路由属性
@@ -333,6 +371,16 @@ class BmpSession {
                     route.nextHop = attr.mpReach.nextHop;
             }
         }
+    }
+
+    mergeAddressFamilies(target, source) {
+        if (!source || !Array.isArray(source)) return;
+        source.forEach(srcItem => {
+            const exists = target.some(tgtItem => tgtItem.afi === srcItem.afi && tgtItem.safi === srcItem.safi);
+            if (!exists) {
+                target.push(srcItem);
+            }
+        });
     }
 
     getClientInfo() {
@@ -433,7 +481,7 @@ class BmpSession {
             const peerRd = rdBufferToString(rdBuffer);
 
             let peerAddress;
-            if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
+            if (peerFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 peer
                 peerAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
@@ -472,14 +520,14 @@ class BmpSession {
 
             // Find all matching peers and store their keys for deletion
             const keysToDelete = [];
-            this.peerMap.forEach((peer, key) => {
+            this.bgpSessionMap.forEach((peer, key) => {
                 if (peer.peerIp === peerAddress && peer.peerRd === peerRd) {
                     if (parsedBgpNotification) {
                         peer.bgpPacket.push({ type: 'notification', packet: parsedBgpNotification });
                     }
 
-                    peer.peerState = BmpConst.BMP_PEER_STATE.PEER_DOWN;
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: peer.getPeerInfo() });
+                    peer.peerState = BmpConst.BMP_SESSION_STATE.PEER_DOWN;
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: peer.getPeerInfo() });
 
                     keysToDelete.push(key);
                 }
@@ -487,7 +535,7 @@ class BmpSession {
 
             if (keysToDelete.length > 0) {
                 keysToDelete.forEach(key => {
-                    this.peerMap.delete(key);
+                    this.bgpSessionMap.delete(key);
                 });
             }
         } catch (err) {
@@ -495,42 +543,41 @@ class BmpSession {
         }
     }
 
-    processPeerUp(message) {
+    processPeerUpGlobal(message) {
         try {
             let position = 0;
-
-            const peerType = message[position];
+            const sessionType = message[position];
             position += 1;
-            const peerFlags = message[position];
+            const sessionFlags = message[position];
             position += 1;
             const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
             position += BgpConst.BGP_RD_LEN;
-            const peerRd = rdBufferToString(rdBuffer);
+            const sessionRd = rdBufferToString(rdBuffer);
 
-            let peerAddress;
-            if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
+            let sessionAddress;
+            if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 peer
-                peerAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                sessionAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
                 // IPv4 peer
                 // 12字节保留字段
                 position += 12;
-                peerAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                sessionAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
                 position += 4;
             }
 
-            const peerAs = message.readUInt32BE(position);
+            const sessionAs = message.readUInt32BE(position);
             position += 4;
-            const peerRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const sessionRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const peerTimestamp = message.readUInt32BE(position);
+            const sessionTimestamp = message.readUInt32BE(position);
             position += 4;
-            const peerTimestampMs = message.readUInt32BE(position);
+            const sessionTimestampMs = message.readUInt32BE(position);
             position += 4;
 
             let localAddress;
-            if (peerFlags & BmpConst.BMP_PEER_FLAGS.IPV6) {
+            if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 peer
                 localAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
@@ -574,6 +621,31 @@ class BmpSession {
                 position += sendOpenLength;
             }
 
+            // 识别是否需要ADD-PATH
+            const recvAddPaths = new Map(); // afi|safi -> code
+            if (parsedRecvBgpOpen && parsedRecvBgpOpen.capabilities) {
+                parsedRecvBgpOpen.capabilities.forEach(cap => {
+                    if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
+                        cap.addPaths.forEach(ap => {
+                            const key = `${ap.afi}|${ap.safi}`;
+                            recvAddPaths.set(key, ap.sendReceive);
+                        });
+                    }
+                });
+            }
+
+            const sendAddPaths = new Map();
+            if (parsedSendBgpOpen && parsedSendBgpOpen.capabilities) {
+                parsedSendBgpOpen.capabilities.forEach(cap => {
+                    if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
+                        cap.addPaths.forEach(ap => {
+                            const key = `${ap.afi}|${ap.safi}`;
+                            sendAddPaths.set(key, ap.sendReceive);
+                        });
+                    }
+                });
+            }
+
             // Extract enabled address families from capabilities
             const enabledAddressFamilies = [];
             const recvAddressFamilies = [];
@@ -614,75 +686,347 @@ class BmpSession {
                 }
             });
 
-            // Create BmpBgpPeer instances for each enabled address family
-            for (const addressFamily of enabledAddressFamilies) {
-                const key = BmpBgpPeer.makeKey(addressFamily.afi, addressFamily.safi, peerAddress, peerRd);
-                let bmpBgpPeer = this.peerMap.get(key);
-                if (!bmpBgpPeer) {
-                    bmpBgpPeer = new BmpBgpPeer(this);
-                    this.peerMap.set(key, bmpBgpPeer);
-                } else {
-                    bmpBgpPeer.bgpPacket = [];
-                }
-
-                bmpBgpPeer.peerType = peerType;
-                bmpBgpPeer.peerFlags = peerFlags;
-                bmpBgpPeer.peerRd = peerRd;
-                bmpBgpPeer.peerIp = peerAddress;
-                bmpBgpPeer.peerAs = peerAs;
-                bmpBgpPeer.peerRouterId = peerRouterId;
-                bmpBgpPeer.peerTimestamp = peerTimestamp;
-                bmpBgpPeer.peerTimestampMs = peerTimestampMs;
-                bmpBgpPeer.localIp = localAddress;
-                bmpBgpPeer.localPort = localPort;
-                bmpBgpPeer.remotePort = remotePort;
-                if (parsedRecvBgpOpen) {
-                    bmpBgpPeer.bgpPacket.push({ type: 'recv Open', packet: parsedRecvBgpOpen });
-                }
-                if (parsedSendBgpOpen) {
-                    bmpBgpPeer.bgpPacket.push({ type: 'send Open', packet: parsedSendBgpOpen });
-                }
-                bmpBgpPeer.peerState = BmpConst.BMP_PEER_STATE.PEER_UP;
-                bmpBgpPeer.afi = addressFamily.afi;
-                bmpBgpPeer.safi = addressFamily.safi;
-
-                this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
+            const bgpSessionKey = BmpBgpSession.makeKey(sessionType, sessionRd, sessionAddress, sessionAs);
+            let bgpSession = this.bgpSessionMap.get(bgpSessionKey);
+            if (!bgpSession) {
+                bgpSession = new BmpBgpSession(this);
+                this.bgpSessionMap.set(bgpSessionKey, bgpSession);
             }
 
-            // If no address families were found in capabilities, create a default peer (for legacy support)
-            if (enabledAddressFamilies.length === 0) {
-                const key = BmpBgpPeer.makeKey(null, null, peerAddress, peerRd);
-                let bmpBgpPeer = this.peerMap.get(key);
-                if (!bmpBgpPeer) {
-                    bmpBgpPeer = new BmpBgpPeer(this);
-                    this.peerMap.set(key, bmpBgpPeer);
+            this.mergeAddressFamilies(bgpSession.enabledAddressFamilies, enabledAddressFamilies);
+            this.mergeAddressFamilies(bgpSession.recvAddressFamilies, recvAddressFamilies);
+            this.mergeAddressFamilies(bgpSession.sendAddressFamilies, sentAddressFamilies);
+
+            const allKeys = new Set([...recvAddPaths.keys(), ...sendAddPaths.keys()]);
+            allKeys.forEach(key => {
+                const recvMode = recvAddPaths.get(key); // Remote Peer's mode
+                const sendMode = sendAddPaths.get(key); // Monitored Router's mode
+
+                let receive = false; // Does Router receive Path IDs? (Peer Send)
+                let send = false; // Does Router send Path IDs? (Peer Recv)
+
+                // Peer Sends if mode is 1(Both) or 2(Send)
+                // Router Receives if mode is 1(Both) or 3(Receive)
+                // BGP_ADD_PATH_TYPE: SEND_RECEIVE=1, SEND_ONLY=2, RECEIVE_ONLY=3
+                if (
+                    (recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_ONLY) &&
+                    (sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        sendMode === BgpConst.BGP_ADD_PATH_TYPE.RECEIVE_ONLY)
+                ) {
+                    receive = true;
+                }
+
+                // Router Sends if mode is 1(Both) or 2(Send)
+                // Peer Receives if mode is 1(Both) or 3(Receive)
+                if (
+                    (sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_ONLY) &&
+                    (recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        recvMode === BgpConst.BGP_ADD_PATH_TYPE.RECEIVE_ONLY)
+                ) {
+                    send = true;
+                }
+
+                if (receive && send) {
+                    bgpSession.addPathMap.set(key, true);
                 } else {
-                    bmpBgpPeer.bgpPacket = [];
+                    bgpSession.addPathMap.set(key, false);
                 }
+            });
 
-                bmpBgpPeer.peerType = peerType;
-                bmpBgpPeer.peerFlags = peerFlags;
-                bmpBgpPeer.peerRd = peerRd;
-                bmpBgpPeer.peerIp = peerAddress;
-                bmpBgpPeer.peerAs = peerAs;
-                bmpBgpPeer.peerRouterId = peerRouterId;
-                bmpBgpPeer.peerTimestamp = peerTimestamp;
-                bmpBgpPeer.peerTimestampMs = peerTimestampMs;
-                bmpBgpPeer.localIp = localAddress;
-                bmpBgpPeer.localPort = localPort;
-                bmpBgpPeer.remotePort = remotePort;
-                if (parsedRecvBgpOpen) {
-                    bmpBgpPeer.bgpPacket.push({ type: 'recv Open', packet: parsedRecvBgpOpen });
-                }
-                if (parsedSendBgpOpen) {
-                    bmpBgpPeer.bgpPacket.push({ type: 'send Open', packet: parsedSendBgpOpen });
-                }
-                bmpBgpPeer.peerState = BmpConst.BMP_PEER_STATE.PEER_UP;
+            bgpSession.recvAddPathMap = recvAddPaths;
+            bgpSession.sendAddPathMap = sendAddPaths;
 
-                this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.PEER_UPDATE, { data: bmpBgpPeer.getPeerInfo() });
-            }
+            bgpSession.enabledAddressFamilies.forEach(addrFamily => {
+                const afKey = `${addrFamily.afi}|${addrFamily.safi}`;
+                if (!bgpSession.bgpRoutes.has(afKey)) {
+                    bgpSession.bgpRoutes.set(afKey, new Map());
+                }
+            });
+
+            bgpSession.sessionFlags = (bgpSession.sessionFlags || 0) | sessionFlags;
+
+            const ribTypes = this.getRibTypesByFlags(sessionFlags);
+            ribTypes.forEach(ribType => {
+                if (!bgpSession.ribTypes.includes(ribType)) {
+                    bgpSession.ribTypes.push(ribType);
+                }
+            });
+
+            bgpSession.ribTypes.forEach(ribType => {
+                bgpSession.bgpRoutes.forEach((routeMap, _afKey) => {
+                    if (!routeMap.has(ribType)) {
+                        routeMap.set(ribType, new Map());
+                    }
+                });
+            });
+
+            // 正常相同bgp Session这些字段一样
+            bgpSession.sessionType = sessionType;
+            bgpSession.sessionFlags = sessionFlags;
+            bgpSession.sessionRd = sessionRd;
+            bgpSession.sessionIp = sessionAddress;
+            bgpSession.sessionAs = sessionAs;
+            bgpSession.sessionRouterId = sessionRouterId;
+            bgpSession.sessionTimestamp = sessionTimestamp;
+            bgpSession.sessionTimestampMs = sessionTimestampMs;
+            bgpSession.localIp = localAddress;
+            bgpSession.localPort = localPort;
+            bgpSession.remotePort = remotePort;
+            bgpSession.sessionState = BmpConst.BMP_SESSION_STATE.PEER_UP;
+
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: bgpSession.getSessionInfo() });
         } catch (err) {
-            logger.error(`Error processing peer up:`, err);
+            logger.error(`Error processing session up:`, err);
+        }
+    }
+
+    processPeerUpLocalRib(message) {
+        try {
+            let position = 0;
+            const instanceType = message[position];
+            position += 1;
+            const instanceFlags = message[position];
+            position += 1;
+            const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
+            position += BgpConst.BGP_RD_LEN;
+            const instanceRd = rdBufferToString(rdBuffer);
+
+            let instanceAddress;
+            if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+                // IPv6 peer
+                instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                position += 16;
+            } else {
+                // IPv4 peer
+                // 12字节保留字段
+                position += 12;
+                instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                position += 4;
+            }
+
+            const instanceAs = message.readUInt32BE(position);
+            position += 4;
+            const instanceRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            position += 4;
+            const instanceTimestamp = message.readUInt32BE(position);
+            position += 4;
+            const instanceTimestampMs = message.readUInt32BE(position);
+            position += 4;
+
+            let localAddress;
+            if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+                // IPv6 peer
+                localAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                position += 16;
+            } else {
+                // IPv4 peer
+                // 12字节保留字段
+                position += 12;
+                localAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                position += 4;
+            }
+
+            const localPort = message.readUInt16BE(position);
+            position += 2;
+            const remotePort = message.readUInt16BE(position);
+            position += 2;
+
+            let parsedRecvBgpOpen = null;
+            let parsedSendBgpOpen = null;
+
+            if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
+                // BGP recv Open message
+                const bgpRecvOpenHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
+                const { length: recvOpenLength, type: _recvOpenType } = this.parseBgpHeader(bgpRecvOpenHeader);
+                const bgpRecvOpen = message.subarray(position, position + recvOpenLength);
+                parsedRecvBgpOpen = parseBgpPacket(bgpRecvOpen);
+                if (!parsedRecvBgpOpen.valid) {
+                    logger.error(`Received BGP Open message is invalid: ${parsedRecvBgpOpen.error}`);
+                }
+                position += recvOpenLength;
+            }
+
+            if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
+                // BGP send Open message
+                const bgpSendOpenHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
+                const { length: sendOpenLength, type: _sendOpenType } = this.parseBgpHeader(bgpSendOpenHeader);
+                const bgpSendOpen = message.subarray(position, position + sendOpenLength);
+                parsedSendBgpOpen = parseBgpPacket(bgpSendOpen);
+                if (!parsedSendBgpOpen.valid) {
+                    logger.error(`Sent BGP Open message is invalid: ${parsedSendBgpOpen.error}`);
+                }
+                position += sendOpenLength;
+            }
+
+            // 识别是否需要ADD-PATH
+            const recvAddPaths = new Map(); // afi|safi -> code
+            if (parsedRecvBgpOpen && parsedRecvBgpOpen.capabilities) {
+                parsedRecvBgpOpen.capabilities.forEach(cap => {
+                    if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
+                        cap.addPaths.forEach(ap => {
+                            const key = `${ap.afi}|${ap.safi}`;
+                            recvAddPaths.set(key, ap.sendReceive);
+                        });
+                    }
+                });
+            }
+
+            const sendAddPaths = new Map();
+            if (parsedSendBgpOpen && parsedSendBgpOpen.capabilities) {
+                parsedSendBgpOpen.capabilities.forEach(cap => {
+                    if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
+                        cap.addPaths.forEach(ap => {
+                            const key = `${ap.afi}|${ap.safi}`;
+                            sendAddPaths.set(key, ap.sendReceive);
+                        });
+                    }
+                });
+            }
+
+            // Extract enabled address families from capabilities
+            const enabledAddressFamilies = [];
+            const recvAddressFamilies = [];
+            const sentAddressFamilies = [];
+
+            // Process received BGP OPEN message capabilities
+            if (parsedRecvBgpOpen && parsedRecvBgpOpen.capabilities) {
+                parsedRecvBgpOpen.capabilities.forEach(capability => {
+                    if (capability.code === BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS) {
+                        recvAddressFamilies.push({
+                            afi: capability.afi,
+                            safi: capability.safi
+                        });
+                    }
+                });
+            }
+
+            // Process sent BGP OPEN message capabilities
+            if (parsedSendBgpOpen && parsedSendBgpOpen.capabilities) {
+                parsedSendBgpOpen.capabilities.forEach(capability => {
+                    if (capability.code === BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS) {
+                        sentAddressFamilies.push({
+                            afi: capability.afi,
+                            safi: capability.safi
+                        });
+                    }
+                });
+            }
+
+            // Only include address families that appear in both received and sent capabilities
+            recvAddressFamilies.forEach(recvAF => {
+                const matchingSentAF = sentAddressFamilies.find(
+                    sentAF => sentAF.afi === recvAF.afi && sentAF.safi === recvAF.safi
+                );
+
+                if (matchingSentAF) {
+                    enabledAddressFamilies.push(recvAF);
+                }
+            });
+
+            enabledAddressFamilies.forEach(enabledAF => {
+                const instanceKey = BmpBgpInstance.makeKey(instanceType, instanceRd, enabledAF.afi, enabledAF.safi);
+                let bgpInstance = this.bgpInstanceMap.get(instanceKey);
+                if (!bgpInstance) {
+                    bgpInstance = new BmpBgpInstance(this);
+                    this.bgpInstanceMap.set(instanceKey, bgpInstance);
+                }
+
+                this.mergeAddressFamilies(bgpInstance.enabledAddressFamilies, enabledAddressFamilies);
+                this.mergeAddressFamilies(bgpInstance.recvAddressFamilies, recvAddressFamilies);
+                this.mergeAddressFamilies(bgpInstance.sendAddressFamilies, sentAddressFamilies);
+
+                bgpInstance.recvAddPathMap = recvAddPaths;
+                bgpInstance.sendAddPathMap = sendAddPaths;
+
+                bgpInstance.instanceFlags = (bgpInstance.instanceFlags || 0) | instanceFlags;
+
+                const ribTypes = this.getRibTypesByFlags(instanceFlags);
+                ribTypes.forEach(ribType => {
+                    if (!bgpInstance.ribTypes.includes(ribType)) {
+                        bgpInstance.ribTypes.push(ribType);
+                    }
+                });
+
+                // 正常相同bgp Session这些字段一样
+                bgpInstance.instanceType = instanceType;
+                bgpInstance.instanceFlags = instanceFlags;
+                bgpInstance.instanceRd = instanceRd;
+                bgpInstance.instanceIp = instanceAddress;
+                bgpInstance.instanceAs = instanceAs;
+                bgpInstance.instanceRouterId = instanceRouterId;
+                bgpInstance.instanceTimestamp = instanceTimestamp;
+                bgpInstance.instanceTimestampMs = instanceTimestampMs;
+                bgpInstance.localIp = localAddress;
+                bgpInstance.localPort = localPort;
+                bgpInstance.remotePort = remotePort;
+                bgpInstance.instanceState = BmpConst.BMP_SESSION_STATE.PEER_UP;
+            });
+
+            const allKeys = new Set([...recvAddPaths.keys(), ...sendAddPaths.keys()]);
+            allKeys.forEach(key => {
+                const recvMode = recvAddPaths.get(key); // Remote Peer's mode
+                const sendMode = sendAddPaths.get(key); // Monitored Router's mode
+
+                let receive = false; // Does Router receive Path IDs? (Peer Send)
+                let send = false; // Does Router send Path IDs? (Peer Recv)
+
+                // Peer Sends if mode is 1(Both) or 2(Send)
+                // Router Receives if mode is 1(Both) or 3(Receive)
+                // BGP_ADD_PATH_TYPE: SEND_RECEIVE=1, SEND_ONLY=2, RECEIVE_ONLY=3
+                if (
+                    (recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_ONLY) &&
+                    (sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        sendMode === BgpConst.BGP_ADD_PATH_TYPE.RECEIVE_ONLY)
+                ) {
+                    receive = true;
+                }
+
+                // Router Sends if mode is 1(Both) or 2(Send)
+                // Peer Receives if mode is 1(Both) or 3(Receive)
+                if (
+                    (sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        sendMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_ONLY) &&
+                    (recvMode === BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE ||
+                        recvMode === BgpConst.BGP_ADD_PATH_TYPE.RECEIVE_ONLY)
+                ) {
+                    send = true;
+                }
+
+                const [afi, safi] = key.split('|');
+                const instanceKey = BmpBgpInstance.makeKey(instanceType, instanceRd, afi, safi);
+                const bgpInstance = this.bgpInstanceMap.get(instanceKey);
+                if (!bgpInstance) {
+                    logger.error(`Instance not found for key: ${instanceKey}`);
+                    return;
+                }
+
+                if (receive && send) {
+                    bgpInstance.isAddPath = true;
+                } else {
+                    bgpInstance.isAddPath = false;
+                }
+            });
+
+            // this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, { data: bgpSession.getSessionInfo() });
+        } catch (err) {
+            logger.error(`Error processing session up:`, err);
+        }
+    }
+
+    processPeerUp(message) {
+        let position = 0;
+
+        const sessionType = message[position];
+
+        if (sessionType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
+            this.processPeerUpGlobal(message);
+        } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_L3VPN) {
+            this.processPeerUpLocalRib(message);
+        } else {
+            logger.error(`Unknown session type: ${sessionType}`);
         }
     }
 
@@ -760,11 +1104,11 @@ class BmpSession {
             this.socket = null;
         }
 
-        this.peerMap.forEach((peer, _) => {
-            peer.closePeer();
+        this.bgpSessionMap.forEach((peer, _) => {
+            peer.closeSession();
         });
 
-        this.peerMap.clear();
+        this.bgpSessionMap.clear();
     }
 }
 

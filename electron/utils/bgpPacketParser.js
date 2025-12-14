@@ -23,14 +23,17 @@ const {
     getBgpPathAttrTypeName,
     getBgpOriginType,
     getBgpAsPathTypeName,
-    getBgpNotificationErrorName
+    getBgpNotificationErrorName,
+    getBgpAddPathTypeName
 } = require('../utils/bgpUtils');
+
 /**
  * Parse a BGP packet from a buffer
  * @param {Buffer} buffer - The raw BGP packet buffer
+ * @param {Object} context - Context object (e.g. bgpSession)
  * @returns {Object} Parsed BGP packet data
  */
-function parseBgpPacket(buffer) {
+function parseBgpPacket(buffer, context) {
     try {
         // Check if buffer is valid
         if (!Buffer.isBuffer(buffer) || buffer.length < BgpConst.BGP_HEAD_LEN) {
@@ -74,9 +77,10 @@ function parseBgpPacket(buffer) {
                 packet = { ...packet, ...parseOpenMessage(buffer) };
                 break;
             case BgpConst.BGP_PACKET_TYPE.UPDATE:
-                packet = { ...packet, ...parseUpdateMessage(buffer) };
+                packet = { ...packet, ...parseUpdateMessage(buffer, context) };
                 break;
             case BgpConst.BGP_PACKET_TYPE.NOTIFICATION:
+                // ...
                 packet = { ...packet, ...parseNotificationMessage(buffer) };
                 break;
             case BgpConst.BGP_PACKET_TYPE.KEEPALIVE:
@@ -187,6 +191,28 @@ function parseOpenMessage(buffer) {
                                 tempPosition += 2;
                             }
                             break;
+                        case BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH: // ADD-PATH
+                            capability.addPaths = [];
+                            // Capability value contains one or more tuples of (AFI, SAFI, Send/Receive)
+                            // Each tuple is 4 bytes: AFI(2) + SAFI(1) + Send/Receive(1)
+                            while (tempPosition < capPosition + capLen) {
+                                if (tempPosition + 4 <= capPosition + capLen) {
+                                    const afi = buffer.readUInt16BE(tempPosition);
+                                    tempPosition += 2;
+                                    const safi = buffer[tempPosition];
+                                    tempPosition += 1;
+                                    const sendReceive = buffer[tempPosition];
+                                    tempPosition += 1;
+                                    capability.addPaths.push({
+                                        afi,
+                                        safi,
+                                        sendReceive
+                                    });
+                                } else {
+                                    break;
+                                }
+                            }
+                            break;
                         // Other capabilities could be added here
                     }
                     result.capabilities.push(capability);
@@ -204,18 +230,38 @@ function parseOpenMessage(buffer) {
 
 /**
  * Parse BGP UPDATE message
- * @param {Buffer} buffer - Raw BGP packet buffer
+ * @param {Object} context - Context object
  * @returns {Object} Parsed UPDATE message data
  */
-function parseUpdateMessage(buffer) {
+function parseUpdateMessage(buffer, context) {
     let position = BgpConst.BGP_HEAD_LEN;
     const withdrawnRoutesLength = buffer.readUInt16BE(position);
     position += 2;
     const withdrawnRoutes = [];
 
+    // Check if ADD-PATH is enabled for IPv4 Unicast
+    let addPathEnabled = false;
+    if (context && typeof context.isAddPathReceiveEnabled === 'function') {
+        addPathEnabled = context.isAddPathReceiveEnabled(
+            BgpConst.BGP_AFI_TYPE.AFI_IPV4,
+            BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+        );
+    }
+    // Backward compatibility or if context is map
+    else if (context && context.addPathMap) {
+        // If context is just the object we constructed (though we pass the class instance usually)
+        // Not implementing this branch since we pass the instance.
+    }
+
     // Parse withdrawn routes
     const withdrawnRoutesEnd = position + withdrawnRoutesLength;
     while (position < withdrawnRoutesEnd) {
+        let pathId = 0;
+        if (addPathEnabled) {
+            pathId = buffer.readUInt32BE(position);
+            position += 4;
+        }
+
         const prefixLength = buffer[position];
         position += 1;
 
@@ -230,6 +276,7 @@ function parseUpdateMessage(buffer) {
         const prefix = ipv4BufferToString(prefixBuffer, prefixLength);
 
         withdrawnRoutes.push({
+            pathId,
             prefix,
             length: prefixLength
         });
@@ -298,11 +345,12 @@ function parseUpdateMessage(buffer) {
             case BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES: // EXTENDED_COMMUNITIES
                 attribute.extCommunities = parseExtCommunities(attributeValue);
                 break;
+
             case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: // MP_REACH_NLRI
-                attribute.mpReach = parseMpReachNlri(attributeValue);
+                attribute.mpReach = parseMpReachNlri(attributeValue, context);
                 break;
             case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: // MP_UNREACH_NLRI
-                attribute.mpUnreach = parseMpUnreachNlri(attributeValue);
+                attribute.mpUnreach = parseMpUnreachNlri(attributeValue, context);
                 break;
             case BgpConst.BGP_PATH_ATTR.PATH_OTC: // OTC
                 attribute.otc = attributeValue.readUInt32BE(0);
@@ -315,6 +363,12 @@ function parseUpdateMessage(buffer) {
     // Parse NLRI
     const nlri = [];
     while (position < buffer.length) {
+        let pathId = 0;
+        if (addPathEnabled) {
+            pathId = buffer.readUInt32BE(position);
+            position += 4;
+        }
+
         const prefixLength = buffer[position];
         position += 1;
 
@@ -329,6 +383,7 @@ function parseUpdateMessage(buffer) {
         const prefix = ipv4BufferToString(prefixBuffer, prefixLength);
 
         nlri.push({
+            pathId,
             prefix,
             length: prefixLength
         });
@@ -452,9 +507,10 @@ function parseExtCommunities(buffer) {
 /**
  * Parse MP_REACH_NLRI attribute
  * @param {Buffer} buffer - MP_REACH_NLRI attribute value
+ * @param {Object} context - Context object
  * @returns {Object} Parsed MP_REACH_NLRI data
  */
-function parseMpReachNlri(buffer) {
+function parseMpReachNlri(buffer, context) {
     let position = 0;
     const afi = buffer.readUInt16BE(position);
     position += 2;
@@ -497,9 +553,23 @@ function parseMpReachNlri(buffer) {
     // Skip the reserved byte
     position += 1;
 
+    // Check if ADD-PATH is enabled for this AFI/SAFI
+    let addPathEnabled = false;
+    if (context && typeof context.isAddPathReceiveEnabled === 'function') {
+        addPathEnabled = context.isAddPathReceiveEnabled(afi, safi);
+    } else if (context && context.addPathMap) {
+        // Backwards compatibility map check omitted for brevity in this specific patch
+    }
+
     // Parse NLRI
     const nlri = [];
     while (position < buffer.length) {
+        let pathId = 0;
+        if (addPathEnabled) {
+            pathId = buffer.readUInt32BE(position);
+            position += 4;
+        }
+
         let prefixLength = 0;
         let prefix = null;
         let rd = null;
@@ -577,6 +647,7 @@ function parseMpReachNlri(buffer) {
         }
 
         nlri.push({
+            pathId,
             prefix,
             rd,
             length: prefixLength
@@ -595,18 +666,33 @@ function parseMpReachNlri(buffer) {
 /**
  * Parse MP_UNREACH_NLRI attribute
  * @param {Buffer} buffer - MP_UNREACH_NLRI attribute value
+ * @param {Object} context - Context object
  * @returns {Object} Parsed MP_UNREACH_NLRI data
  */
-function parseMpUnreachNlri(buffer) {
+function parseMpUnreachNlri(buffer, context) {
     let position = 0;
     const afi = buffer.readUInt16BE(position);
     position += 2;
     const safi = buffer[position];
     position += 1;
 
+    // Check if ADD-PATH is enabled for this AFI/SAFI
+    let addPathEnabled = false;
+    if (context && typeof context.isAddPathReceiveEnabled === 'function') {
+        addPathEnabled = context.isAddPathReceiveEnabled(afi, safi);
+    } else if (context && context.addPathMap) {
+        // Backwards compatibility map check omitted for brevity in this specific patch
+    }
+
     // Parse withdrawn routes
     const withdrawnRoutes = [];
     while (position < buffer.length) {
+        let pathId = 0;
+        if (addPathEnabled) {
+            pathId = buffer.readUInt32BE(position);
+            position += 4;
+        }
+
         let prefixLength = 0;
         let prefix = null;
         let rd = null;
@@ -683,6 +769,7 @@ function parseMpUnreachNlri(buffer) {
         }
 
         withdrawnRoutes.push({
+            pathId,
             prefix,
             rd,
             length: prefixLength
@@ -740,6 +827,16 @@ function getBgpPacketSummary(parsedPacket) {
                         const safiName = getBgpSafiName(cap.safi);
                         const ipTypeName = getIpTypeName(cap.ipType);
                         summary += ` (${afiName}/${safiName}/${ipTypeName})`;
+                    } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
+                        // ADD-PATH
+                        if (cap.addPaths && cap.addPaths.length > 0) {
+                            cap.addPaths.forEach(path => {
+                                const afiName = getBgpAfiName(path.afi);
+                                const safiName = getBgpSafiName(path.safi);
+                                const direction = getBgpAddPathTypeName(path.sendReceive);
+                                summary += `\n    - ${afiName}/${safiName}: ${direction}`;
+                            });
+                        }
                     }
                 });
             }
@@ -793,7 +890,7 @@ function getBgpPacketSummary(parsedPacket) {
                         if (attr.mpReach.nlri && attr.mpReach.nlri.length > 0) {
                             summary += '\n    - Routes:';
                             attr.mpReach.nlri.forEach(route => {
-                                summary += `\n      - ${route.prefix}/${route.length}`;
+                                summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
                             });
                         }
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI) {
@@ -803,7 +900,7 @@ function getBgpPacketSummary(parsedPacket) {
                         if (attr.mpUnreach.withdrawnRoutes && attr.mpUnreach.withdrawnRoutes.length > 0) {
                             summary += '\n    - Routes:';
                             attr.mpUnreach.withdrawnRoutes.forEach(route => {
-                                summary += `\n      - ${route.prefix}/${route.length}`;
+                                summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
                             });
                         }
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.PATH_OTC) {
@@ -815,7 +912,7 @@ function getBgpPacketSummary(parsedPacket) {
             if (parsedPacket.nlri && parsedPacket.nlri.length > 0) {
                 summary += '\nRoutes:';
                 parsedPacket.nlri.forEach(route => {
-                    summary += `\n  - ${route.prefix}/${route.length}`;
+                    summary += `\n  - ${route.pathId} ${route.prefix}/${route.length}`;
                 });
             }
             break;

@@ -53,6 +53,7 @@ const BGP_OPEN_CAP_CODE = {
     ROUTE_REFRESH: 0x02,
     EXTENDED_NEXT_HOP_ENCODING: 0x05,
     FOUR_OCTET_AS: 0x41,
+    ADD_PATH: 0x45,
     BGP_ROLE: 0x09
 };
 
@@ -97,14 +98,20 @@ const BGP_ROLE_TYPE = {
     ROLE_INVALID: 255
 };
 
+const BGP_ADD_PATH_TYPE = {
+    SEND_ONLY: 1,
+    RECEIVE_ONLY: 2,
+    SEND_RECEIVE: 3
+};
+
 // 定义能力标志位掩码
 const BGP_CAP_FLAGS = {
     MULTIPROTOCOL_EXTENSIONS: 0x00000001, // 1 << 0
     ROUTE_REFRESH: 0x00000002, // 1 << 1
     FOUR_OCTET_AS: 0x00000004, // 1 << 2
     BGP_ROLE: 0x00000008, // 1 << 3
-    EXTENDED_NEXT_HOP_ENCODING: 0x00000010 // 1 << 4
-    // 可以继续添加更多的能力标志
+    EXTENDED_NEXT_HOP_ENCODING: 0x00000010, // 1 << 4
+    ADD_PATH: 0x00000020 // 1 << 5
 };
 
 // 定义能力标志位掩码
@@ -308,5 +315,6 @@ module.exports = {
     BGP_MVPN_ROUTE_TYPE,
     EXT_COMMUNITY_SUB_TYPE,
     EXT_COMMUNITY_TYPE,
-    RD_TYPE
+    RD_TYPE,
+    BGP_ADD_PATH_TYPE
 };

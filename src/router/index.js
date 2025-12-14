@@ -14,7 +14,6 @@ import RouteMvpn from '../view/bgp/RouteMvpn.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
 import BmpPeer from '../view/bmp/BmpPeer.vue';
-import BmpPeerRoute from '../view/bmp/BmpPeerRoute.vue';
 import RpkiMain from '../view/rpki/RpkiMain.vue';
 import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
@@ -131,13 +130,6 @@ const routes = [
                         path: 'bmp-peer',
                         name: 'BmpPeer',
                         component: BmpPeer,
-                        meta: { keepAlive: true }
-                    },
-                    {
-                        path: 'peer/:clientId/:peerId',
-                        name: 'BmpPeerRoute',
-                        component: BmpPeerRoute,
-                        props: true,
                         meta: { keepAlive: true }
                     }
                 ]

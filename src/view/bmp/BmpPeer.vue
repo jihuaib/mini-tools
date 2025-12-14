@@ -10,36 +10,137 @@
                                 :key="`${client.localIp}|${client.localPort}|${client.remoteIp}|${client.remotePort}`"
                                 :tab="`${client.sysDesc}[${client.remoteIp}]`"
                             >
-                                <div class="bgp-peer-info-header">
-                                    <UnorderedListOutlined />
-                                    <span class="bgp-peer-info-header-text">BGP邻居列表</span>
-                                    <a-tag v-if="peerList.length > 0" color="blue">
-                                        {{ peerList.length }}
-                                    </a-tag>
-                                </div>
-                                <a-table
-                                    :columns="peerColumns"
-                                    :data-source="peerList"
-                                    :row-key="record => `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`"
-                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                                    :scroll="{ y: 400, x: 900 }"
-                                    size="small"
-                                >
-                                    <template #bodyCell="{ column, record }">
-                                        <template v-if="column.key === 'action'">
-                                            <a-space size="small">
-                                                <a-button type="primary" size="small" @click="viewPeerDetails(record)">
-                                                    <template #icon><InfoCircleOutlined /></template>
-                                                    详情
-                                                </a-button>
-                                                <a-button type="primary" size="small" @click="viewPeerRoutes(record)">
-                                                    <template #icon><ZoomInOutlined /></template>
-                                                    查看路由
-                                                </a-button>
-                                            </a-space>
-                                        </template>
-                                    </template>
-                                </a-table>
+                                <a-tabs tab-position="left" v-model:active-key="activeMainTab">
+                                    <a-tab-pane key="peer" tab="peer">
+                                        <div v-if="groupedBgpSessions.length > 0">
+                                            <a-tabs v-model:active-key="activeBgpSessionKey">
+                                                <a-tab-pane
+                                                    v-for="group in groupedBgpSessions"
+                                                    :key="group.key"
+                                                    :tab="`${group.sessionType} | rd(${group.sessionRd}) | ip(${group.sessionIp}) | as(${group.sessionAs})`"
+                                                >
+                                                    <a-table
+                                                        :columns="bgpSessionColumns"
+                                                        :data-source="[group.sessionInfo]"
+                                                        :pagination="false"
+                                                        size="small"
+                                                        style="margin-bottom: 8px"
+                                                        row-key="peerIp"
+                                                    >
+                                                        <template #bodyCell="{ column, record }">
+                                                            <template v-if="column.key === 'addPathMap'">
+                                                                <a-tooltip
+                                                                    v-if="
+                                                                        record.addPathMap &&
+                                                                        Object.values(record.addPathMap).some(v => v)
+                                                                    "
+                                                                >
+                                                                    <template #title>
+                                                                        <div
+                                                                            v-for="(enabled, key) in record.addPathMap"
+                                                                            :key="key"
+                                                                        >
+                                                                            <span v-if="enabled">
+                                                                                {{ ADDRESS_FAMILY_NAME[key] }}: Yes
+                                                                            </span>
+                                                                        </div>
+                                                                    </template>
+                                                                    <a-tag color="green">Yes</a-tag>
+                                                                </a-tooltip>
+                                                                <a-tag v-else color="red">No</a-tag>
+                                                            </template>
+                                                        </template>
+                                                    </a-table>
+                                                    <div
+                                                        style="
+                                                            margin-bottom: 8px;
+                                                            display: flex;
+                                                            gap: 16px;
+                                                            align-items: center;
+                                                        "
+                                                    >
+                                                        <a-select v-model:value="activeLocRibAf" style="width: 200px">
+                                                            <a-select-option
+                                                                v-for="af in group.afs"
+                                                                :key="af"
+                                                                :value="af"
+                                                            >
+                                                                {{ ADDRESS_FAMILY_NAME[af] || af }}
+                                                            </a-select-option>
+                                                        </a-select>
+                                                        <a-select v-model:value="activeLocRibType" style="width: 200px">
+                                                            <a-select-option
+                                                                v-for="rt in group.ribTypes"
+                                                                :key="rt"
+                                                                :value="rt"
+                                                            >
+                                                                {{ BMP_BGP_RIB_TYPE_NAME[rt] }}
+                                                            </a-select-option>
+                                                        </a-select>
+                                                        <a-button type="primary" @click="loadBgpRoutes">查询</a-button>
+                                                    </div>
+                                                    <a-table
+                                                        :columns="bgpRouteColumns"
+                                                        :data-source="bgpRouteList"
+                                                        :pagination="bgpRoutePagination"
+                                                        :row-key="
+                                                            record =>
+                                                                `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`
+                                                        "
+                                                        size="small"
+                                                        :scroll="{ y: 400 }"
+                                                    />
+                                                </a-tab-pane>
+                                            </a-tabs>
+                                        </div>
+                                    </a-tab-pane>
+                                    <a-tab-pane key="loc-rib" tab="loc-rib">
+                                        <div v-if="bmpInstances.length > 0">
+                                            <a-tabs v-model:active-key="activeInstanceKey">
+                                                <a-tab-pane
+                                                    v-for="instance in bmpInstances"
+                                                    :key="`${instance.instanceType}|${instance.instanceRd}|${instance.enabledAddrFamilyTypes[0]}`"
+                                                    :tab="`${instance.instanceType} | rd(${instance.instanceRd}) | ${ADDRESS_FAMILY_NAME[instance.enabledAddrFamilyTypes[0]]}`"
+                                                >
+                                                    <a-descriptions bordered size="small" :column="2">
+                                                        <a-descriptions-item label="Instance Type">
+                                                            {{ instance.instanceType }}
+                                                        </a-descriptions-item>
+                                                        <a-descriptions-item label="RD">
+                                                            {{ instance.instanceRd }}
+                                                        </a-descriptions-item>
+                                                        <a-descriptions-item label="Peer IP">
+                                                            {{ instance.instanceIp }}
+                                                        </a-descriptions-item>
+                                                        <a-descriptions-item label="Peer AS">
+                                                            {{ instance.instanceAs }}
+                                                        </a-descriptions-item>
+                                                        <a-descriptions-item label="Local IP">
+                                                            {{ instance.localIp }}
+                                                        </a-descriptions-item>
+                                                        <a-descriptions-item label="Router ID">
+                                                            {{ instance.instanceRouterId }}
+                                                        </a-descriptions-item>
+                                                    </a-descriptions>
+                                                    <a-table
+                                                        :columns="bgpRouteColumns"
+                                                        :data-source="bgpRouteList"
+                                                        :pagination="bgpRoutePagination"
+                                                        :row-key="
+                                                            record =>
+                                                                `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`
+                                                        "
+                                                        size="small"
+                                                        :scroll="{ y: 400 }"
+                                                    />
+                                                </a-tab-pane>
+                                            </a-tabs>
+                                        </div>
+                                    </a-tab-pane>
+                                    <a-tab-pane key="route-statis" tab="route-statis">
+                                        <a-empty description="Route Statistics 暂无数据" />
+                                    </a-tab-pane>
+                                </a-tabs>
                             </a-tab-pane>
                         </a-tabs>
                     </div>
@@ -64,11 +165,16 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onActivated, watch, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, watch, onBeforeUnmount, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import { UnorderedListOutlined, InfoCircleOutlined, ZoomInOutlined } from '@ant-design/icons-vue';
     import { useRouter } from 'vue-router';
-    import { BMP_PEER_TYPE_NAME, BMP_PEER_FLAGS_NAME, BMP_PEER_STATE_NAME, BMP_PEER_STATE } from '../../const/bmpConst';
+    import {
+        BMP_SESSION_TYPE_NAME,
+        BMP_SESSION_FLAGS_NAME,
+        BMP_SESSION_STATE_NAME,
+        BMP_SESSION_STATE,
+        BMP_BGP_RIB_TYPE_NAME
+    } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
     defineOptions({
         name: 'BmpPeer'
@@ -78,79 +184,76 @@
     const clientList = ref([]);
     const activeClientKey = ref('');
 
-    const peerList = ref([]);
+    const bgpSessionList = ref([]);
 
     // 对等体列表
-    const peerColumns = [
+    const bgpSessionColumns = [
         {
-            title: '地址族',
-            dataIndex: 'addrFamilyType',
-            key: 'addrFamilyType',
+            title: 'Session Type',
+            dataIndex: 'sessionType',
+            key: 'sessionType',
             ellipsis: true,
             width: 100,
             customRender: ({ text }) => {
-                return ADDRESS_FAMILY_NAME[text] || text;
+                return BMP_SESSION_TYPE_NAME[text] || text;
             }
         },
         {
-            title: 'Peer Type',
-            dataIndex: 'peerType',
-            key: 'peerType',
-            ellipsis: true,
-            width: 100,
-            customRender: ({ text }) => {
-                return BMP_PEER_TYPE_NAME[text] || text;
-            }
-        },
-        {
-            title: 'Peer IP',
-            dataIndex: 'peerIp',
-            key: 'peerIp',
+            title: 'Session IP',
+            dataIndex: 'sessionIp',
+            key: 'sessionIp',
             width: 100,
             ellipsis: true
         },
         {
             title: 'AS',
-            dataIndex: 'peerAs',
-            key: 'peerAs',
+            dataIndex: 'sessionAs',
+            key: 'sessionAs',
             width: 100,
             ellipsis: true
         },
         {
             title: 'RD',
-            dataIndex: 'peerRd',
-            key: 'peerRd',
+            dataIndex: 'sessionRd',
+            key: 'sessionRd',
             width: 100,
             ellipsis: true
         },
         {
             title: 'Router ID',
-            dataIndex: 'peerRouterId',
-            key: 'peerRouterId',
+            dataIndex: 'sessionRouterId',
+            key: 'sessionRouterId',
             width: 100,
             ellipsis: true
         },
         {
-            title: 'Peer Flags',
-            dataIndex: 'peerFlags',
-            key: 'peerFlags',
+            title: 'Session Flags',
+            dataIndex: 'sessionFlags',
+            key: 'sessionFlags',
             ellipsis: true,
             width: 80,
             customRender: ({ text }) => {
-                return Object.keys(BMP_PEER_FLAGS_NAME)
+                return Object.keys(BMP_SESSION_FLAGS_NAME)
                     .filter(key => text & key)
-                    .map(key => BMP_PEER_FLAGS_NAME[key])
+                    .map(key => BMP_SESSION_FLAGS_NAME[key])
                     .join(', ');
             }
         },
         {
-            title: 'Peer状态',
-            dataIndex: 'peerState',
-            key: 'peerState',
+            title: 'ADD-PATH',
+            dataIndex: 'addPathMap',
+            key: 'addPathMap',
+            ellipsis: true,
+            width: 80
+        },
+        {
+            title: 'Session状态',
+            dataIndex: 'sessionState',
+            key: 'sessionState',
             ellipsis: true,
             width: 100,
             customRender: ({ text }) => {
-                return BMP_PEER_STATE_NAME[text] || text;
+                return BMP_SESSION_STATE_NAME[text] || text;
             }
         },
         {
@@ -179,22 +282,6 @@
         currentDetails.value = null;
     };
 
-    const router = useRouter();
-
-    const viewPeerRoutes = record => {
-        const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
-        const clientKey = `${localIp}|${localPort}|${remoteIp}|${remotePort}`;
-        const peerKey = `${record.addrFamilyType}|${record.peerIp}|${record.peerRd}`;
-
-        router.push({
-            name: 'BmpPeerRoute',
-            params: {
-                clientId: encodeURIComponent(clientKey),
-                peerId: encodeURIComponent(peerKey)
-            }
-        });
-    };
-
     const onTerminationHandler = result => {
         if (result.status === 'success') {
             const data = result.data;
@@ -216,12 +303,12 @@
                 // BMP 服务停止，清空所有数据
                 clientList.value = [];
                 activeClientKey.value = '';
-                peerList.value = [];
+                bgpSessionList.value = [];
             }
 
             if (clientList.value.length === 0) {
                 activeClientKey.value = '';
-                peerList.value = [];
+                bgpSessionList.value = [];
             }
         } else {
             console.error('termination handler error', result.msg);
@@ -244,24 +331,24 @@
             const peerKey = `${peerData.addrFamilyType}|${peerData.peerIp}|${peerData.peerRd}`;
 
             // 查找现有记录
-            const existingIndex = peerList.value.findIndex(
+            const existingIndex = bgpSessionList.value.findIndex(
                 peer => `${peer.addrFamilyType}|${peer.peerIp}|${peer.peerRd}` === peerKey
             );
 
             if (existingIndex !== -1) {
                 // 更新现有记录
-                if (peerData.peerState === BMP_PEER_STATE.PEER_UP) {
-                    peerList.value[existingIndex] = peerData;
+                if (peerData.peerState === BMP_SESSION_STATE.PEER_UP) {
+                    bgpSessionList.value[existingIndex] = peerData;
                 } else {
-                    peerList.value.splice(existingIndex, 1);
+                    bgpSessionList.value.splice(existingIndex, 1);
                 }
             } else {
                 // 使用展开运算符创建新数组以确保响应式更新
-                if (peerList.value.length === 0) {
+                if (bgpSessionList.value.length === 0) {
                     // 首次添加，直接赋值一个新数组以确保触发响应式更新
-                    peerList.value = [peerData];
+                    bgpSessionList.value = [peerData];
                 } else {
-                    peerList.value = [...peerList.value, peerData];
+                    bgpSessionList.value = [...bgpSessionList.value, peerData];
                 }
             }
         } else {
@@ -307,8 +394,8 @@
         }
     };
 
-    // 加载对等体列表
-    const loadPeerList = async clientKey => {
+    // 加载BGP会话列表
+    const loadBgpSessionList = async clientKey => {
         if (!clientKey) return;
 
         try {
@@ -320,33 +407,85 @@
                 remotePort
             };
 
-            const peerListResult = await window.bmpApi.getPeers(clientInfo);
-            if (peerListResult.status === 'success') {
-                peerList.value = peerListResult.data || [];
+            const bgpSessionListResult = await window.bmpApi.getBgpSessions(clientInfo);
+            if (bgpSessionListResult.status === 'success') {
+                bgpSessionList.value = bgpSessionListResult.data || [];
             } else {
-                peerList.value = [];
+                bgpSessionList.value = [];
                 message.error('获取BGP邻居列表失败');
             }
         } catch (error) {
             console.error(error);
-            peerList.value = [];
+            bgpSessionList.value = [];
             message.error('获取BGP邻居列表失败');
         }
     };
 
-    // 监听activeClientKey变化，加载对应的peer列表
+    // Loc-RIB Logic
+    const activeMainTab = ref('peer');
+    const activeBgpSessionKey = ref('');
+    const activeLocRibAf = ref(null);
+    const activeLocRibType = ref('');
+    const bgpRouteList = ref([]);
+
+    // Instance Logic
+    const bmpInstances = ref([]);
+    const activeInstanceKey = ref('');
+
+    const loadBmpInstances = async clientKey => {
+        if (!clientKey) return;
+        try {
+            const [localIp, localPort, remoteIp, remotePort] = clientKey.split('|');
+            const clientInfo = { localIp, localPort, remoteIp, remotePort };
+            const res = await window.bmpApi.getBmpInstances(clientInfo);
+            if (res.status === 'success') {
+                bmpInstances.value = res.data || [];
+                if (bmpInstances.value.length > 0) {
+                    activeInstanceKey.value = `${bmpInstances.value[0].instanceType}|${bmpInstances.value[0].instanceRd}|${bmpInstances.value[0].enabledAddrFamilyTypes[0]}`;
+                }
+            } else {
+                bmpInstances.value = [];
+            }
+        } catch (error) {
+            console.error(error);
+            bmpInstances.value = [];
+            message.error('Load BMP instances failed');
+        }
+    };
+
+    // 监听activeClientKey变化，加载对应的peer列表 AND instances
     watch(activeClientKey, newKey => {
-        loadPeerList(newKey);
+        loadBgpSessionList(newKey);
+        // Clear instances/routes when client changes
+        bmpInstances.value = [];
+        bgpRouteList.value = [];
+        // Only load instances if on loc-rib tab
+        if (activeMainTab.value === 'loc-rib') {
+            loadBmpInstances(newKey);
+        }
+    });
+
+    watch(activeMainTab, newTab => {
+        if (newTab === 'loc-rib' && activeClientKey.value) {
+            // Lazy load instances
+            if (bmpInstances.value.length === 0) {
+                 loadBmpInstances(activeClientKey.value);
+            }
+        }
     });
 
     onActivated(async () => {
         clientList.value = [];
         activeClientKey.value = '';
-        peerList.value = [];
+        bgpSessionList.value = [];
+        bmpInstances.value = [];
         await loadClientList();
-        // 如果有选中的客户端，则加载对应的peer列表
+        // 如果有选中的客户端，则加载对应的BGP会话列表
         if (activeClientKey.value) {
-            await loadPeerList(activeClientKey.value);
+            await loadBgpSessionList(activeClientKey.value);
+            if (activeMainTab.value === 'loc-rib') {
+                await loadBmpInstances(activeClientKey.value);
+            }
         }
     });
 
@@ -354,6 +493,125 @@
         window.bmpApi.offPeerUpdate(onPeerUpdate);
         window.bmpApi.offInitiation(onClientListUpdate);
         window.bmpApi.offTermination(onTerminationHandler);
+    });
+
+    const groupedBgpSessions = computed(() => {
+        console.log(bgpSessionList.value);
+        return bgpSessionList.value.map(p => {
+            const key = `${p.sessionType}|${p.sessionRd}|${p.sessionIp}|${p.sessionAs}`;
+
+            let sessionInfo = {
+                sessionType: p.sessionType,
+                sessionRd: p.sessionRd,
+                sessionIp: p.sessionIp,
+                sessionAs: p.sessionAs,
+                addPathMap: p.addPathMap
+            };
+
+            return {
+                key,
+                sessionType: p.sessionType,
+                sessionRd: p.sessionRd,
+                sessionIp: p.sessionIp,
+                sessionAs: p.sessionAs,
+                afs: p.enabledAddrFamilyTypes || [],
+                ribTypes: p.ribTypes,
+                sessionInfo: sessionInfo
+            };
+        });
+    });
+
+    const bgpRoutePagination = ref({
+        current: 1,
+        pageSize: 10,
+        total: 0,
+        showSizeChanger: false,
+        position: ['bottomCenter'],
+        onChange: (page, pageSize) => {
+            bgpRoutePagination.value.current = page;
+            bgpRoutePagination.value.pageSize = pageSize;
+            loadBgpRoutes();
+        }
+    });
+
+    const bgpRouteColumns = [
+        {
+            title: 'Addr Family',
+            dataIndex: 'addrFamilyType',
+            key: 'addrFamilyType',
+            ellipsis: true,
+            width: 100,
+            customRender: ({ text }) => ADDRESS_FAMILY_NAME[text] || text
+        },
+        { title: 'Path ID', dataIndex: 'pathId', key: 'pathId', ellipsis: true, width: 100 },
+        { title: 'RD', dataIndex: 'rd', key: 'rd', ellipsis: true, width: 100 },
+        { title: 'Prefix', dataIndex: 'ip', key: 'ip', ellipsis: true, width: 120 },
+        { title: 'Mask', dataIndex: 'mask', key: 'mask', ellipsis: true, width: 60 },
+        { title: 'Origin', dataIndex: 'origin', key: 'origin', ellipsis: true, width: 80 },
+        { title: 'AS Path', dataIndex: 'asPath', key: 'asPath', ellipsis: true },
+        { title: 'Next Hop', dataIndex: 'nextHop', key: 'nextHop', ellipsis: true, width: 120 },
+        { title: 'MED', dataIndex: 'med', key: 'med', ellipsis: true, width: 80 }
+    ];
+
+    const loadBgpRoutes = async () => {
+        if (!activeClientKey.value || !activeBgpSessionKey.value || !activeLocRibAf.value || !activeLocRibType.value)
+            return;
+        const [localIp, localPort, remoteIp, remotePort] = activeClientKey.value.split('|');
+        const [sessionType, sessionRd, sessionIp, sessionAs] = activeBgpSessionKey.value.split('|');
+
+        const client = { localIp, localPort, remoteIp, remotePort };
+        const sessionInfo = { sessionType, sessionRd, sessionIp, sessionAs };
+        const af = activeLocRibAf.value;
+        const ribType = activeLocRibType.value;
+        const page = bgpRoutePagination.value.current;
+        const pageSize = bgpRoutePagination.value.pageSize;
+
+        try {
+            const res = await window.bmpApi.getBgpRoutes(client, sessionInfo, af, ribType, page, pageSize);
+            if (res.status === 'success' && res.data) {
+                bgpRouteList.value = res.data.list;
+                bgpRoutePagination.value.total = res.data.total;
+            } else {
+                bgpRouteList.value = [];
+                bgpRoutePagination.value.total = 0;
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('Load routes failed');
+        }
+    };
+
+    watch(groupedBgpSessions, newVal => {
+        console.log(newVal);
+        if (newVal.length > 0 && !activeBgpSessionKey.value) {
+            activeBgpSessionKey.value = newVal[0].key;
+            if (newVal[0].afs.length > 0) activeLocRibAf.value = newVal[0].afs[0];
+            if (newVal[0].ribTypes.length > 0) activeLocRibType.value = newVal[0].ribTypes[0].value;
+            loadBgpRoutes();
+        }
+    });
+
+    watch(activeBgpSessionKey, newKey => {
+        if (newKey) {
+            const group = groupedBgpSessions.value.find(g => g.key === newKey);
+            if (group) {
+                if (!activeLocRibAf.value || !group.afs.includes(activeLocRibAf.value)) {
+                    activeLocRibAf.value = group.afs[0];
+                }
+                if (!activeLocRibType.value || !group.ribTypes.includes(activeLocRibType.value)) {
+                    activeLocRibType.value = group.ribTypes[0];
+                }
+                bgpRoutePagination.value.current = 1;
+                loadBgpRoutes();
+            }
+        }
+    });
+
+    watch([activeLocRibAf, activeLocRibType], () => {
+        if (activeBgpSessionKey.value) {
+            bgpRoutePagination.value.current = 1;
+            loadBgpRoutes();
+        }
     });
 </script>
 

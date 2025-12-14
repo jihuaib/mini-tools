@@ -13,14 +13,14 @@ const BMP_PEER_TYPE = {
     LOCAL_L3VPN: 3
 };
 
-const BMP_PEER_FLAGS = {
+const BMP_SESSION_FLAGS = {
     IPV6: 0x80, // V 位: 使用 IPv6 地址
-    LOC_RIB: 0x40, // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
-    POST_POLICY: 0x20, // A 位: Adj-RIB-In 是策略后导出的（post-policy）
+    POST_POLICY: 0x40, // P 位: Adj-RIB-In 是策略后导出的（post-policy）
+    LOC_RIB: 0x20, // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
     ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out 正在被传输
 };
 
-const BMP_PEER_STATE = {
+const BMP_SESSION_STATE = {
     PEER_UP: 0,
     PEER_DOWN: 1
 };
@@ -54,7 +54,7 @@ const BMP_MSG_TYPE_NAME = {
 // 事件类型
 const BMP_EVT_TYPES = {
     INITIATION: 1,
-    PEER_UPDATE: 2,
+    SESSION_UPDATE: 2,
     ROUTE_UPDATE: 3,
     TERMINATION: 4
 };
@@ -64,21 +64,30 @@ const BMP_REQ_TYPES = {
     START_BMP: 1,
     STOP_BMP: 2,
     GET_CLIENT_LIST: 3,
-    GET_PEERS: 4,
-    GET_ROUTES: 5,
+    GET_BGP_SESSIONS: 4,
+    GET_BGP_ROUTES: 5,
     GET_CLIENT: 6,
-    GET_PEER: 7
+    GET_PEER: 7,
+    GET_BMP_INSTANCES: 8
+};
+
+const BMP_BGP_RIB_TYPE = {
+    PRE_ADJ_RIB_IN: 1,
+    ADJ_RIB_IN: 2,
+    LOC_RIB: 3,
+    ADJ_RIB_OUT: 4
 };
 
 module.exports = {
     BMP_HEADER_LENGTH,
     BMP_MSG_TYPE,
     BMP_PEER_TYPE,
-    BMP_PEER_FLAGS,
+    BMP_SESSION_FLAGS,
     BMP_MSG_TYPE_NAME,
     BMP_INITIATION_TLV_TYPE,
-    BMP_PEER_STATE,
+    BMP_SESSION_STATE,
     BMP_ROUTE_UPDATE_TYPE,
     BMP_EVT_TYPES,
-    BMP_REQ_TYPES
+    BMP_REQ_TYPES,
+    BMP_BGP_RIB_TYPE
 };

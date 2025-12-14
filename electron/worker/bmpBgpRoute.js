@@ -1,10 +1,11 @@
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 
 class BmpBgpRoute {
-    constructor(bmpBgpPeer) {
-        this.bmpBgpPeer = bmpBgpPeer;
+    constructor(BmpBgpSession) {
+        this.BmpBgpSession = BmpBgpSession;
 
         // key
+        this.pathId = null;
         this.rd = null;
         this.ip = null;
         this.mask = null;
@@ -22,17 +23,17 @@ class BmpBgpRoute {
         this.bgpPacket = [];
     }
 
-    static makeKey(rd, ip, mask) {
-        return `${rd}|${ip}|${mask}`;
+    static makeKey(pathId, rd, ip, mask) {
+        return `${pathId}|${rd}|${ip}|${mask}`;
     }
 
     static parseKey(key) {
-        const [rd, ip, mask] = key.split('|');
-        return { rd, ip, mask };
+        const [pathId, rd, ip, mask] = key.split('|');
+        return { pathId, rd, ip, mask };
     }
 
     getRouteInfo() {
-        const addrFamilyType = getAddrFamilyType(this.bmpBgpPeer.afi, this.bmpBgpPeer.safi);
+        const addrFamilyType = getAddrFamilyType(this.BmpBgpSession.afi, this.BmpBgpSession.safi);
         return {
             addrFamilyType: addrFamilyType,
             ip: this.ip,
@@ -44,7 +45,8 @@ class BmpBgpRoute {
             nextHop: this.nextHop,
             localPref: this.localPref,
             communities: this.communities,
-            otc: this.otc
+            otc: this.otc,
+            pathId: this.pathId
         };
     }
 

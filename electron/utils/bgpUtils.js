@@ -185,6 +185,19 @@ function getBgpAsPathTypeName(segmentType) {
     }
 }
 
+function getBgpAddPathTypeName(type) {
+    switch (type) {
+        case BgpConst.BGP_ADD_PATH_TYPE.SEND_RECEIVE:
+            return 'Send/Receive';
+        case BgpConst.BGP_ADD_PATH_TYPE.SEND_ONLY:
+            return 'Send Only';
+        case BgpConst.BGP_ADD_PATH_TYPE.RECEIVE_ONLY:
+            return 'Receive Only';
+        default:
+            return `Unknown (${type})`;
+    }
+}
+
 /**
  * Get readable Error name based on code and subcode
  * @param {Number} errorCode - Error Code
@@ -371,5 +384,6 @@ module.exports = {
     getBgpAsPathTypeName,
     getBgpNotificationErrorName,
     getAddrFamilyType,
-    getAfiAndSafi
+    getAfiAndSafi,
+    getBgpAddPathTypeName
 };

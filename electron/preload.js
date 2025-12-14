@@ -159,11 +159,12 @@ contextBridge.exposeInMainWorld('bmpApi', {
 
     // 数据获取
     getClientList: () => ipcRenderer.invoke('bmp:getClientList'),
-    getPeers: client => ipcRenderer.invoke('bmp:getPeers', client),
-    getRoutes: (client, peer, ribType, page, pageSize) =>
-        ipcRenderer.invoke('bmp:getRoutes', client, peer, ribType, page, pageSize),
+    getBgpSessions: client => ipcRenderer.invoke('bmp:getBgpSessions', client),
+    getBgpRoutes: (client, session, af, ribType, page, pageSize) =>
+        ipcRenderer.invoke('bmp:getBgpRoutes', client, session, af, ribType, page, pageSize),
     getClient: client => ipcRenderer.invoke('bmp:getClient', client),
     getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
+    getBmpInstances: client => ipcRenderer.invoke('bmp:getBmpInstances', client),
 
     // 使用统一事件管理
     onPeerUpdate: callback => eventManager.on('bmp:peerUpdate', callback),
