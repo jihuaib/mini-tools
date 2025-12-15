@@ -235,9 +235,7 @@ class BmpApp {
             return successResponse([], 'BMP未启动');
         }
 
-        logger.info(
-            `获取BGP实例列表 client: ${JSON.stringify(client)}`
-        );
+        logger.info(`获取BGP实例列表 client: ${JSON.stringify(client)}`);
 
         try {
             const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCES, client);

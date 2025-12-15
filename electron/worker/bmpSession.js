@@ -208,7 +208,7 @@ class BmpSession {
                                     BgpConst.BGP_AFI_TYPE.AFI_IPV4,
                                     BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
                                 ),
-                                ribType: ribType,
+                                ribType: ribType
                             }
                         });
                     }
@@ -261,7 +261,7 @@ class BmpSession {
                                 client: this.getClientInfo(),
                                 session: bgpSession.getSessionInfo(),
                                 af: getAddrFamilyType(mpUnreachNlri.afi, mpUnreachNlri.safi),
-                                ribType: ribType,
+                                ribType: ribType
                             }
                         });
                     }
@@ -311,8 +311,11 @@ class BmpSession {
                                 type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
                                 client: this.getClientInfo(),
                                 session: bgpSession.getSessionInfo(),
-                                af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST),
-                                ribType: ribType,
+                                af: getAddrFamilyType(
+                                    BgpConst.BGP_AFI_TYPE.AFI_IPV4,
+                                    BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                                ),
+                                ribType: ribType
                             }
                         });
                     }
@@ -372,7 +375,7 @@ class BmpSession {
                                 client: this.getClientInfo(),
                                 session: bgpSession.getSessionInfo(),
                                 af: getAddrFamilyType(mpReachNlri.afi, mpReachNlri.safi),
-                                ribType: ribType,
+                                ribType: ribType
                             }
                         });
                     }
@@ -394,20 +397,20 @@ class BmpSession {
             position += BgpConst.BGP_RD_LEN;
             const instanceRd = rdBufferToString(rdBuffer);
 
-            let instanceAddress;
+            let _instanceAddress;
             if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 对等体
-                instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                _instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
                 // IPv4 对等体
                 // 12字节保留字段
                 position += 12;
-                instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                _instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
                 position += 4;
             }
 
-            const instanceAs = message.readUInt32BE(position);
+            const _instanceAs = message.readUInt32BE(position);
             position += 4;
             const _instanceRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
@@ -461,10 +464,7 @@ class BmpSession {
                             isInstanceRoute: true,
                             client: this.getClientInfo(),
                             instance: bgpInstance.getInstanceInfo(),
-                            af: getAddrFamilyType(
-                                BgpConst.BGP_AFI_TYPE.AFI_IPV4,
-                                BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
-                            ),
+                            af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
                         }
                     });
                 }
@@ -498,14 +498,6 @@ class BmpSession {
                     );
                     const route = bgpInstance.bgpRoutes.get(routeKey);
                     if (route) {
-                        routeUpdates.push({
-                            type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                            client: this.getClientInfo(),
-                            isInstanceRoute: true,
-                            instance: bgpInstance.getInstanceInfo(),
-                            af: getAddrFamilyType(mpUnreachNlri.afi, mpUnreachNlri.safi),
-                            route: route.getRouteInfo()
-                        });
                         isNotify = true;
                         bgpInstance.bgpRoutes.delete(routeKey);
                     }
@@ -563,7 +555,7 @@ class BmpSession {
                             client: this.getClientInfo(),
                             isInstanceRoute: true,
                             instance: bgpInstance.getInstanceInfo(),
-                            af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST),
+                            af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
                         }
                     });
                 }
@@ -762,14 +754,14 @@ class BmpSession {
 
             const sessionAs = message.readUInt32BE(position);
             position += 4;
-            const sessionRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const _sessionRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const sessionTimestamp = message.readUInt32BE(position);
+            const _sessionTimestamp = message.readUInt32BE(position);
             position += 4;
-            const sessionTimestampMs = message.readUInt32BE(position);
+            const _sessionTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            const reason = message[position];
+            const _reason = message[position];
             position += 1;
 
             const ribTypes = this.getRibTypesByFlags(sessionFlags);
@@ -802,8 +794,7 @@ class BmpSession {
                 // bgp断开
                 bgpSession.closeSession();
                 this.bgpSessionMap.delete(sessKey);
-            }
-            else {
+            } else {
                 bgpSession.ribTypes = bgpSession.ribTypes.filter(rt => !ribTypes.includes(rt));
                 if (bgpSession.ribTypes.length === 0) {
                     bgpSession.closeSession();
@@ -831,31 +822,31 @@ class BmpSession {
             position += 1;
             const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
             position += BgpConst.BGP_RD_LEN;
-            const instanceRd = rdBufferToString(rdBuffer);
+            const _instanceRd = rdBufferToString(rdBuffer);
 
-            let instanceAddress;
+            let _instanceAddress;
             if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
                 // IPv6 peer
-                instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                _instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
                 // IPv4 peer
                 // 12字节保留字段
                 position += 12;
-                instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                _instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
                 position += 4;
             }
 
-            const instanceAs = message.readUInt32BE(position);
+            const _instanceAs = message.readUInt32BE(position);
             position += 4;
-            const instanceRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
+            const _instanceRouterId = ipv4BufferToString(message.subarray(position, position + 4), 32);
             position += 4;
-            const instanceTimestamp = message.readUInt32BE(position);
+            const _instanceTimestamp = message.readUInt32BE(position);
             position += 4;
-            const instanceTimestampMs = message.readUInt32BE(position);
+            const _instanceTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            const reason = message[position];
+            const _reason = message[position];
             position += 1;
 
             let parsedBgpNotification = null;
@@ -1374,7 +1365,7 @@ class BmpSession {
             this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
                 data: {
                     client: this.getClientInfo(),
-                    isInstance: true,
+                    isInstance: true
                 }
             });
         } catch (err) {

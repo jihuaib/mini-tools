@@ -10,7 +10,7 @@
                                 :key="`${client.localIp}|${client.localPort}|${client.remoteIp}|${client.remotePort}`"
                                 :tab="`${client.sysDesc}[${client.remoteIp}]`"
                             >
-                                <a-tabs tab-position="left" v-model:active-key="activeMainTab">
+                                <a-tabs v-model:active-key="activeMainTab" tab-position="left">
                                     <a-tab-pane key="session" tab="session">
                                         <div v-if="groupedBgpSessions.length > 0">
                                             <a-tabs v-model:active-key="activeBgpSessionKey">
@@ -50,7 +50,11 @@
                                                                 <a-tag v-else color="red">No</a-tag>
                                                             </template>
                                                             <template v-else-if="column.key === 'action'">
-                                                                <a-button type="link" size="small" @click="viewSessionDetails(record)">
+                                                                <a-button
+                                                                    type="link"
+                                                                    size="small"
+                                                                    @click="viewSessionDetails(record)"
+                                                                >
                                                                     详情
                                                                 </a-button>
                                                             </template>
@@ -108,7 +112,6 @@
                                                     :key="`${instance.instanceType}|${instance.instanceRd}|${instance.addrFamilyType}`"
                                                     :tab="`${instance.instanceType}|${instance.instanceRd}|${ADDRESS_FAMILY_NAME[instance.addrFamilyType]}`"
                                                 >
-
                                                     <a-table
                                                         :columns="bgpInstanceColumns"
                                                         :data-source="[instance]"
@@ -119,11 +122,15 @@
                                                     >
                                                         <template #bodyCell="{ column, record }">
                                                             <template v-if="column.key === 'addPath'">
-                                                                <a-tag v-if="record.isAddPath " color="green">Yes</a-tag>
+                                                                <a-tag v-if="record.isAddPath" color="green">Yes</a-tag>
                                                                 <a-tag v-else color="red">No</a-tag>
                                                             </template>
                                                             <template v-else-if="column.key === 'action'">
-                                                                <a-button type="link" size="small" @click="viewInstanceDetails(record)">
+                                                                <a-button
+                                                                    type="link"
+                                                                    size="small"
+                                                                    @click="viewInstanceDetails(record)"
+                                                                >
                                                                     详情
                                                                 </a-button>
                                                             </template>
@@ -174,7 +181,6 @@
     import {
         BMP_SESSION_TYPE_NAME,
         BMP_SESSION_STATE_NAME,
-        BMP_SESSION_STATE,
         BMP_BGP_RIB_TYPE_NAME
     } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
@@ -398,9 +404,9 @@
             if (activeMainTab.value === 'session') {
                 const sessKey = `${update.session.sessionType}|${update.session.sessionRd}|${update.session.sessionIp}|${update.session.sessionAs}`;
                 if (sessKey === activeBgpSessionKey.value) {
-                     if (update.af === activeLocRibAf.value && update.ribType === activeLocRibType.value) {
-                         loadBgpRoutes();
-                     }
+                    if (update.af === activeLocRibAf.value && update.ribType === activeLocRibType.value) {
+                        loadBgpRoutes();
+                    }
                 }
             }
         }
@@ -541,7 +547,7 @@
         const instance = {
             instanceType: activeInstanceKey.value.split('|')[0],
             instanceRd: activeInstanceKey.value.split('|')[1],
-            addrFamilyType: activeInstanceKey.value.split('|')[2],
+            addrFamilyType: activeInstanceKey.value.split('|')[2]
         };
 
         const page = bgpRoutePagination.value.current;

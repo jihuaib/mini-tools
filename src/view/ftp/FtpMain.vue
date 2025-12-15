@@ -37,7 +37,7 @@
             if (currentTab.value?.clearValidationErrors) {
                 currentTab.value.clearValidationErrors();
             }
-        },
+        }
     });
 
     onActivated(() => {
@@ -46,5 +46,4 @@
     });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -30,7 +30,10 @@ class BmpWorker {
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_CLIENT, this.getClient.bind(this));
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_PEER, this.getPeer.bind(this));
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCES, this.getBgpInstances.bind(this));
-        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCE_ROUTES, this.getBgpInstanceRoutes.bind(this));
+        this.messageHandler.registerHandler(
+            BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCE_ROUTES,
+            this.getBgpInstanceRoutes.bind(this)
+        );
     }
 
     async startTcpServer(messageId) {
@@ -223,12 +226,7 @@ class BmpWorker {
 
         const { afi, safi } = getAfiAndSafi(instance.addrFamilyType);
 
-        const bgpInstKey = BmpBgpSession.makeKey(
-            instance.instanceType,
-            instance.instanceRd,
-            afi,
-            safi
-        );
+        const bgpInstKey = BmpBgpSession.makeKey(instance.instanceType, instance.instanceRd, afi, safi);
         const bgpInstance = bmpSession.bgpInstanceMap.get(bgpInstKey);
         if (!bgpInstance) {
             logger.error(`BMP会话 ${bmpSessionKey} 不存在BGP实例 ${bgpInstKey}`);
