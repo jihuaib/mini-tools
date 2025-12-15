@@ -806,6 +806,15 @@ class BmpSession {
                 // bgp断开
                 bgpSession.closeSession();
                 this.bgpSessionMap.delete(sessKey);
+            } else {
+                // 遍历rib类型
+                for (const ribType of ribTypes) {
+                    bgpSession.bgpRoutes.forEach(routeMap => {
+                        if (routeMap.has(ribType)) {
+                            routeMap.get(ribType).clear();
+                        }
+                    });
+                }
             }
 
             this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
@@ -1408,6 +1417,11 @@ class BmpSession {
         this.bmpWorker.bmpSessionMap.delete(key);
     }
 
+    processStatisticsReport(_message) {
+        const clientInfo = this.getClientInfo();
+        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, { data: clientInfo });
+    }
+
     processMessage(message) {
         try {
             const clientAddress = `${this.remoteIp}:${this.remotePort}`;
@@ -1437,6 +1451,9 @@ class BmpSession {
                     break;
                 case BmpConst.BMP_MSG_TYPE.TERMINATION:
                     this.processTermination(msg);
+                    break;
+                case BmpConst.BMP_MSG_TYPE.STATISTICS_REPORT:
+                    this.processStatisticsReport(msg);
                     break;
                 default:
                     logger.warn(`Unknown message type: ${type}`);
