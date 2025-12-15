@@ -53,14 +53,16 @@ export const BMP_BGP_RIB_TYPE = {
     PRE_ADJ_RIB_IN: 1,
     ADJ_RIB_IN: 2,
     AS_PATH: 3,
-    ADJ_RIB_OUT: 4
+    ADJ_RIB_OUT: 4,
+    POST_ADJ_RIB_OUT: 5
 };
 
 export const BMP_BGP_RIB_TYPE_NAME = {
     [BMP_BGP_RIB_TYPE.PRE_ADJ_RIB_IN]: 'Pre Adj RIB In',
     [BMP_BGP_RIB_TYPE.ADJ_RIB_IN]: 'Adj RIB In',
     [BMP_BGP_RIB_TYPE.AS_PATH]: 'AS Path',
-    [BMP_BGP_RIB_TYPE.ADJ_RIB_OUT]: 'Adj RIB Out'
+    [BMP_BGP_RIB_TYPE.ADJ_RIB_OUT]: 'Adj RIB Out',
+    [BMP_BGP_RIB_TYPE.POST_ADJ_RIB_OUT]: 'Post Adj RIB Out'
 };
 
 // Default Values

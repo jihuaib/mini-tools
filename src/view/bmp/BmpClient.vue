@@ -178,11 +178,7 @@
 <script setup>
     import { ref, onMounted, onActivated, watch, onBeforeUnmount, computed } from 'vue';
     import { message } from 'ant-design-vue';
-    import {
-        BMP_SESSION_TYPE_NAME,
-        BMP_SESSION_STATE_NAME,
-        BMP_BGP_RIB_TYPE_NAME
-    } from '../../const/bmpConst';
+    import { BMP_SESSION_TYPE_NAME, BMP_SESSION_STATE_NAME, BMP_BGP_RIB_TYPE_NAME } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
     defineOptions({
         name: 'BmpClient'
@@ -576,6 +572,9 @@
 
     // 监听activeClientKey变化，加载对应的peer列表 AND instances
     watch(activeClientKey, newKey => {
+        activeMainTab.value = 'session';
+        activeBgpSessionKey.value = '';
+
         loadBgpSessionList();
         bgpInstances.value = [];
         bgpRouteList.value = [];

@@ -93,16 +93,28 @@ class BmpSession {
             ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.PRE_ADJ_RIB_IN);
         }
 
-        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.POST_POLICY) {
+        if (
+            sessionFlags === (0x00 | BmpConst.BMP_SESSION_FLAGS.POST_POLICY) ||
+            sessionFlags === (BmpConst.BMP_SESSION_FLAGS.IPV6 | BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
+        ) {
             ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_IN);
         }
 
-        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.AS_PATH) {
-            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.AS_PATH);
+        if (
+            sessionFlags === (0x00 | BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT) ||
+            sessionFlags === (BmpConst.BMP_SESSION_FLAGS.IPV6 | BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT)
+        ) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_OUT);
         }
 
-        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT) {
-            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_OUT);
+        if (
+            sessionFlags === (0x00 | BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT | BmpConst.BMP_SESSION_FLAGS.POST_POLICY) ||
+            sessionFlags ===
+                (BmpConst.BMP_SESSION_FLAGS.IPV6 |
+                    BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT |
+                    BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
+        ) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.POST_ADJ_RIB_OUT);
         }
 
         return ribTypes;
@@ -794,12 +806,6 @@ class BmpSession {
                 // bgp断开
                 bgpSession.closeSession();
                 this.bgpSessionMap.delete(sessKey);
-            } else {
-                bgpSession.ribTypes = bgpSession.ribTypes.filter(rt => !ribTypes.includes(rt));
-                if (bgpSession.ribTypes.length === 0) {
-                    bgpSession.closeSession();
-                    this.bgpSessionMap.delete(sessKey);
-                }
             }
 
             this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
@@ -1090,7 +1096,13 @@ class BmpSession {
 
             bgpSession.sessionFlags = (bgpSession.sessionFlags || 0) | sessionFlags;
 
-            const ribTypes = this.getRibTypesByFlags(sessionFlags);
+            // 考虑到不同厂商实现不同，此处不从报文中获取ribType，改为一次性全部创建出来
+            const ribTypes = [
+                BmpConst.BMP_BGP_RIB_TYPE.PRE_ADJ_RIB_IN,
+                BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_IN,
+                BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_OUT,
+                BmpConst.BMP_BGP_RIB_TYPE.POST_ADJ_RIB_OUT
+            ];
             ribTypes.forEach(ribType => {
                 if (!bgpSession.ribTypes.includes(ribType)) {
                     bgpSession.ribTypes.push(ribType);

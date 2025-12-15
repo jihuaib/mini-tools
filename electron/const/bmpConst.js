@@ -76,7 +76,8 @@ const BMP_BGP_RIB_TYPE = {
     PRE_ADJ_RIB_IN: 1,
     ADJ_RIB_IN: 2,
     AS_PATH: 3,
-    ADJ_RIB_OUT: 4
+    ADJ_RIB_OUT: 4,
+    POST_ADJ_RIB_OUT: 5
 };
 
 module.exports = {
