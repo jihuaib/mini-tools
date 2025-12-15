@@ -10,14 +10,14 @@ const BMP_PEER_TYPE = {
     GLOBAL: 0,
     L3VPN: 1,
     LOCAL: 2,
-    LOCAL_L3VPN: 3
+    LOCAL_RIB: 3
 };
 
 const BMP_SESSION_FLAGS = {
     IPV6: 0x80, // V 位: 使用 IPv6 地址
     POST_POLICY: 0x40, // P 位: Adj-RIB-In 是策略后导出的（post-policy）
-    LOC_RIB: 0x20, // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
-    ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out 正在被传输
+    AS_PATH: 0x20, // L 位: 表示 AS_PATH
+    ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out
 };
 
 const BMP_SESSION_STATE = {
@@ -75,7 +75,7 @@ const BMP_REQ_TYPES = {
 const BMP_BGP_RIB_TYPE = {
     PRE_ADJ_RIB_IN: 1,
     ADJ_RIB_IN: 2,
-    LOC_RIB: 3,
+    AS_PATH: 3,
     ADJ_RIB_OUT: 4
 };
 

@@ -4,7 +4,7 @@
         <div class="fixed-tabs">
             <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="bmp-config" tab="BMP配置" />
-                <a-tab-pane key="bmp-peer" tab="BMP邻居" />
+                <a-tab-pane key="bmp-client" tab="BMP客户端" />
             </a-tabs>
         </div>
 

@@ -4,16 +4,16 @@ export const BMP_PEER_TYPE = {
     GLOBAL: 0,
     L3VPN: 1,
     LOCAL: 2,
-    LOCAL_L3VPN: 3
+    LOCAL_RIB: 3
 };
 
 // BMP peer flags, 需要和后台定义保持一致, 后台会
 // 直接使用这个值处理
 export const BMP_SESSION_FLAGS = {
     IPV6: 0x80, // V 位: 使用 IPv6 地址
-    LOC_RIB: 0x40, // L 位: 表示 Loc-RIB（而不是 Adj-RIB-In）
-    POST_POLICY: 0x20, // A 位: Adj-RIB-In 是策略后导出的（post-policy）
-    ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out 正在被传输
+    POST_POLICY: 0x40, // P 位: Adj-RIB-In 是策略后导出的（post-policy）
+    AS_PATH: 0x20, // L 位: 表示 AS_PATH
+    ADJ_RIB_OUT: 0x10 // O 位: Adj-RIB-Out
 };
 
 // 需要和后台定义保持一致, 后台会
@@ -34,7 +34,7 @@ export const BMP_SESSION_TYPE_NAME = {
     [BMP_PEER_TYPE.GLOBAL]: 'Global',
     [BMP_PEER_TYPE.L3VPN]: 'L3VPN',
     [BMP_PEER_TYPE.LOCAL]: 'Local',
-    [BMP_PEER_TYPE.LOCAL_L3VPN]: 'Local L3VPN'
+    [BMP_PEER_TYPE.LOCAL_RIB]: 'Local RIB'
 };
 
 export const BMP_SESSION_FLAGS_NAME = {
@@ -52,14 +52,14 @@ export const BMP_SESSION_STATE_NAME = {
 export const BMP_BGP_RIB_TYPE = {
     PRE_ADJ_RIB_IN: 1,
     ADJ_RIB_IN: 2,
-    LOC_RIB: 3,
+    AS_PATH: 3,
     ADJ_RIB_OUT: 4
 };
 
 export const BMP_BGP_RIB_TYPE_NAME = {
     [BMP_BGP_RIB_TYPE.PRE_ADJ_RIB_IN]: 'Pre Adj RIB In',
     [BMP_BGP_RIB_TYPE.ADJ_RIB_IN]: 'Adj RIB In',
-    [BMP_BGP_RIB_TYPE.LOC_RIB]: 'Loc RIB',
+    [BMP_BGP_RIB_TYPE.AS_PATH]: 'AS Path',
     [BMP_BGP_RIB_TYPE.ADJ_RIB_OUT]: 'Adj RIB Out'
 };
 

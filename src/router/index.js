@@ -13,7 +13,7 @@ import RouteIpv6 from '../view/bgp/RouteIpv6.vue';
 import RouteMvpn from '../view/bgp/RouteMvpn.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
-import BmpPeer from '../view/bmp/BmpPeer.vue';
+import BmpClient from '../view/bmp/BmpClient.vue';
 import RpkiMain from '../view/rpki/RpkiMain.vue';
 import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
@@ -127,9 +127,9 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bmp-peer',
-                        name: 'BmpPeer',
-                        component: BmpPeer,
+                        path: 'bmp-client',
+                        name: 'BmpClient',
+                        component: BmpClient,
                         meta: { keepAlive: true }
                     }
                 ]

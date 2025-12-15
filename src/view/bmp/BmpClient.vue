@@ -98,6 +98,7 @@
                                                 </a-tab-pane>
                                             </a-tabs>
                                         </div>
+                                        <a-empty v-else description="Session 暂无数据" />
                                     </a-tab-pane>
                                     <a-tab-pane key="loc-rib" tab="loc-rib">
                                         <div v-if="bgpInstances.length > 0">
@@ -138,6 +139,7 @@
                                                 </a-tab-pane>
                                             </a-tabs>
                                         </div>
+                                        <a-empty v-else description="Loc-RIB 暂无数据" />
                                     </a-tab-pane>
                                     <a-tab-pane key="route-statis" tab="route-statis">
                                         <a-empty description="Route Statistics 暂无数据" />
@@ -177,7 +179,7 @@
     } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
     defineOptions({
-        name: 'BmpPeer'
+        name: 'BmpClient'
     });
 
     // 客户端
@@ -387,7 +389,7 @@
         if (update.isInstanceRoute) {
             if (activeMainTab.value === 'loc-rib') {
                 const instKey = `${update.instance.instanceType}|${update.instance.instanceRd}|${update.instance.addrFamilyType}`;
-                
+
                 if (instKey === activeInstanceKey.value) {
                     loadInstanceRoutes();
                 }

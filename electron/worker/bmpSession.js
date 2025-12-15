@@ -97,8 +97,8 @@ class BmpSession {
             ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.ADJ_RIB_IN);
         }
 
-        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.LOC_RIB) {
-            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.LOC_RIB);
+        if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.AS_PATH) {
+            ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.AS_PATH);
         }
 
         if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT) {
@@ -633,7 +633,7 @@ class BmpSession {
 
         if (sessionType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
             this.processRouteMonitoringGlobal(message);
-        } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_L3VPN) {
+        } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_RIB) {
             this.processRouteMonitoringLocalRib(message);
         } else {
             logger.error(`Received BGP Update message from unknown session type: ${sessionType}`);
@@ -888,7 +888,7 @@ class BmpSession {
         const peerType = message[position];
         if (peerType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
             this.processPeerDownGlobal(message);
-        } else if (peerType === BmpConst.BMP_PEER_TYPE.LOCAL_L3VPN) {
+        } else if (peerType === BmpConst.BMP_PEER_TYPE.LOCAL_RIB) {
             this.processPeerDownLocalRib(message);
         } else {
             logger.error(`Unknown peer type: ${peerType}`);
@@ -1389,7 +1389,7 @@ class BmpSession {
 
         if (sessionType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
             this.processPeerUpGlobal(message);
-        } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_L3VPN) {
+        } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_RIB) {
             this.processPeerUpLocalRib(message);
         } else {
             logger.error(`Unknown session type: ${sessionType}`);
