@@ -470,10 +470,9 @@ class BmpSession {
                 }
 
                 if (isNotify) {
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, {
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE, {
                         data: {
                             type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
-                            isInstanceRoute: true,
                             client: this.getClientInfo(),
                             instance: bgpInstance.getInstanceInfo(),
                             af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
@@ -516,11 +515,10 @@ class BmpSession {
                 }
 
                 if (isNotify) {
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, {
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE, {
                         data: {
                             type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_DELETE,
                             client: this.getClientInfo(),
-                            isInstanceRoute: true,
                             instance: bgpInstance.getInstanceInfo(),
                             af: getAddrFamilyType(mpUnreachNlri.afi, mpUnreachNlri.safi)
                         }
@@ -561,11 +559,10 @@ class BmpSession {
                 }
 
                 if (isNotify) {
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, {
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE, {
                         data: {
                             type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
                             client: this.getClientInfo(),
-                            isInstanceRoute: true,
                             instance: bgpInstance.getInstanceInfo(),
                             af: getAddrFamilyType(BgpConst.BGP_AFI_TYPE.AFI_IPV4, BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST)
                         }
@@ -615,11 +612,10 @@ class BmpSession {
                 }
 
                 if (isNotify) {
-                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, {
+                    this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE, {
                         data: {
                             type: BmpConst.BMP_ROUTE_UPDATE_TYPE.ROUTE_UPDATE,
                             client: this.getClientInfo(),
-                            isInstanceRoute: true,
                             instance: bgpInstance.getInstanceInfo(),
                             af: getAddrFamilyType(mpReachNlri.afi, mpReachNlri.safi)
                         }
@@ -819,8 +815,7 @@ class BmpSession {
 
             this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
                 data: {
-                    client: this.getClientInfo(),
-                    isInstance: false
+                    client: this.getClientInfo()
                 }
             });
         } catch (err) {
@@ -878,10 +873,9 @@ class BmpSession {
             }
 
             // todo: loc-rib 无法识别down的实例
-            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_UPDATE, {
                 data: {
-                    client: this.getClientInfo(),
-                    isInstance: true
+                    client: this.getClientInfo()
                 }
             });
         } catch (err) {
@@ -1142,8 +1136,7 @@ class BmpSession {
 
             this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
                 data: {
-                    client: this.getClientInfo(),
-                    isInstance: false
+                    client: this.getClientInfo()
                 }
             });
         } catch (err) {
@@ -1383,10 +1376,9 @@ class BmpSession {
                 }
             });
 
-            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, {
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.INSTANCE_UPDATE, {
                 data: {
-                    client: this.getClientInfo(),
-                    isInstance: true
+                    client: this.getClientInfo()
                 }
             });
         } catch (err) {

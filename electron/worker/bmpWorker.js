@@ -27,8 +27,6 @@ class BmpWorker {
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_CLIENT_LIST, this.getClientList.bind(this));
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_BGP_SESSIONS, this.getBgpSessions.bind(this));
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_BGP_ROUTES, this.getBgpRoutes.bind(this));
-        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_CLIENT, this.getClient.bind(this));
-        this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_PEER, this.getPeer.bind(this));
         this.messageHandler.registerHandler(BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCES, this.getBgpInstances.bind(this));
         this.messageHandler.registerHandler(
             BmpConst.BMP_REQ_TYPES.GET_BGP_INSTANCE_ROUTES,
@@ -292,37 +290,6 @@ class BmpWorker {
         const list = routeList.slice((page - 1) * pageSize, page * pageSize);
 
         this.messageHandler.sendSuccessResponse(messageId, { list, total }, '获取路由列表成功');
-    }
-
-    getClient(messageId, client) {
-        const bmpSessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
-        const bmpSession = this.bmpSessionMap.get(bmpSessionKey);
-        if (!bmpSession) {
-            logger.error(`BMP会话 ${bmpSessionKey} 不存在`);
-            this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
-            return;
-        }
-        this.messageHandler.sendSuccessResponse(messageId, bmpSession.getClientInfo(), '获取客户端信息成功');
-    }
-
-    getPeer(messageId, data) {
-        const { client, peer } = data;
-        const bmpSessionKey = BmpSession.makeKey(client.localIp, client.localPort, client.remoteIp, client.remotePort);
-        const bmpSession = this.bmpSessionMap.get(bmpSessionKey);
-        if (!bmpSession) {
-            logger.error(`BMP会话 ${bmpSessionKey} 不存在`);
-            this.messageHandler.sendErrorResponse(messageId, 'BMP会话不存在');
-            return;
-        }
-        const { afi, safi } = getAfiAndSafi(peer.addrFamilyType);
-        const peerKey = BmpBgpSession.makeKey(afi, safi, peer.peerIp, peer.peerRd);
-        const bgpPeer = bmpSession.bgpSessionMap.get(peerKey);
-        if (!bgpPeer) {
-            logger.error(`BMP会话 ${bmpSessionKey} 不存在对等体 ${peerKey}`);
-            this.messageHandler.sendErrorResponse(messageId, '对等体信息不存在');
-            return;
-        }
-        this.messageHandler.sendSuccessResponse(messageId, bgpPeer.getPeerInfo(), '获取对等体信息成功');
     }
 
     getBgpInstances(messageId, client) {

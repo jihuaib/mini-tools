@@ -31,8 +31,6 @@ class BmpApp {
         this.ipcMain.handle('bmp:getClientList', this.handleGetClientList.bind(this));
         this.ipcMain.handle('bmp:getBgpSessions', this.handleGetBgpSessions.bind(this));
         this.ipcMain.handle('bmp:getBgpRoutes', this.handleGetBgpRoutes.bind(this));
-        this.ipcMain.handle('bmp:getClient', this.handleGetClient.bind(this));
-        this.ipcMain.handle('bmp:getPeer', this.handleGetPeer.bind(this));
         this.ipcMain.handle('bmp:getBgpInstances', this.handleGetBgpInstances.bind(this));
         this.ipcMain.handle('bmp:getBgpInstanceRoutes', this.handleGetBgpInstanceRoutes.bind(this));
     }
@@ -90,8 +88,16 @@ class BmpApp {
                 this.eventDispatcher.emit('bmp:sessionUpdate', successResponse(data.data));
             };
 
+            this.bmpInstanceUpdateHandler = data => {
+                this.eventDispatcher.emit('bmp:instanceUpdate', successResponse(data.data));
+            };
+
             this.bmpRouteUpdateHandler = data => {
                 this.eventDispatcher.emit('bmp:routeUpdate', successResponse(data.data));
+            };
+
+            this.bmpInstanceRouteUpdateHandler = data => {
+                this.eventDispatcher.emit('bmp:instanceRouteUpdate', successResponse(data.data));
             };
 
             this.bmpTerminationHandler = data => {
@@ -101,7 +107,12 @@ class BmpApp {
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.INSTANCE_UPDATE, this.bmpInstanceUpdateHandler);
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.addEventListener(
+                BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE,
+                this.bmpInstanceRouteUpdateHandler
+            );
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
             const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.START_BMP, bmpConfigData);
@@ -112,7 +123,12 @@ class BmpApp {
         } catch (error) {
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INSTANCE_UPDATE, this.bmpInstanceUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(
+                BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE,
+                this.bmpInstanceRouteUpdateHandler
+            );
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
@@ -139,7 +155,12 @@ class BmpApp {
             // 移除事件监听器
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.INSTANCE_UPDATE, this.bmpInstanceUpdateHandler);
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.ROUTE_UPDATE, this.bmpRouteUpdateHandler);
+            this.worker.removeEventListener(
+                BmpConst.BMP_EVT_TYPES.INSTANCE_ROUTE_UPDATE,
+                this.bmpInstanceRouteUpdateHandler
+            );
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
             await this.worker.terminate();
             this.worker = null;
@@ -243,41 +264,6 @@ class BmpApp {
             return successResponse(result.data, '获取BGP实例列表成功');
         } catch (error) {
             logger.error('Error getting BGP instances:', error.message);
-            return errorResponse(error.message);
-        }
-    }
-
-    async handleGetClient(event, client) {
-        if (null === this.worker) {
-            return successResponse([], 'BMP未启动');
-        }
-
-        logger.info(`获取客户端信息 client: ${JSON.stringify(client)}`);
-
-        try {
-            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_CLIENT, client);
-            logger.info(`获取客户端信息成功 result: ${JSON.stringify(result)}`);
-            return successResponse(result.data, '获取客户端信息成功');
-        } catch (error) {
-            logger.error('Error getting client:', error.message);
-            return errorResponse(error.message);
-        }
-    }
-
-    async handleGetPeer(event, client, peer) {
-        if (null === this.worker) {
-            return successResponse([], 'BMP未启动');
-        }
-
-        logger.info(`获取对等体信息 client: ${JSON.stringify(client)}`);
-        logger.info(`获取对等体信息 peer: ${JSON.stringify(peer)}`);
-
-        try {
-            const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.GET_PEER, { client, peer });
-            logger.info(`获取对等体信息成功 result: ${JSON.stringify(result)}`);
-            return successResponse(result.data, '获取对等体信息成功');
-        } catch (error) {
-            logger.error('Error getting peer:', error.message);
             return errorResponse(error.message);
         }
     }

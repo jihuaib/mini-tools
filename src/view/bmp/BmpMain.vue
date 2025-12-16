@@ -4,7 +4,10 @@
         <div class="fixed-tabs">
             <a-tabs v-model:active-key="activeTabKey" @change="handleTabChange">
                 <a-tab-pane key="bmp-config" tab="BMP配置" />
-                <a-tab-pane key="bmp-client" tab="BMP客户端" />
+                <a-tab-pane key="bgp-session" tab="BGP会话" />
+                <a-tab-pane key="bgp-loc-rib" tab="BGP Loc-RIB" />
+                <a-tab-pane key="bgp-session-statis-report" tab="BGP会话统计" />
+                <a-tab-pane key="bgp-loc-rib-statis-report" tab="BGP Loc-RIB统计" />
             </a-tabs>
         </div>
 

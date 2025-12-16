@@ -16,10 +16,12 @@ class AppUpdater {
 
         // 保存事件监听器引用，便于后续清理
         this.eventListeners = {};
-        this.eventDispatcher = null;
+        this.eventDispatcher = new EventDispatcher();
+        this.eventDispatcher.setWebContents(this.mainWindow.webContents);
 
         this.setupAutoUpdater();
         this.registerHandlers();
+        this.setupUpdateEvents();
     }
 
     registerHandlers() {
@@ -135,34 +137,6 @@ class AppUpdater {
         autoUpdater.on('update-downloaded', this.eventListeners.updateDownloaded);
     }
 
-    // 清理事件监听器
-    cleanup() {
-        logger.info('清理更新器事件监听器');
-
-        // 移除所有事件监听器
-        if (this.eventListeners.checkingForUpdate) {
-            autoUpdater.removeListener('checking-for-update', this.eventListeners.checkingForUpdate);
-        }
-        if (this.eventListeners.updateAvailable) {
-            autoUpdater.removeListener('update-available', this.eventListeners.updateAvailable);
-        }
-        if (this.eventListeners.updateNotAvailable) {
-            autoUpdater.removeListener('update-not-available', this.eventListeners.updateNotAvailable);
-        }
-        if (this.eventListeners.error) {
-            autoUpdater.removeListener('error', this.eventListeners.error);
-        }
-        if (this.eventListeners.downloadProgress) {
-            autoUpdater.removeListener('download-progress', this.eventListeners.downloadProgress);
-        }
-        if (this.eventListeners.updateDownloaded) {
-            autoUpdater.removeListener('update-downloaded', this.eventListeners.updateDownloaded);
-        }
-
-        // 清空引用
-        this.eventListeners = {};
-    }
-
     // 发送更新状态到渲染进程
     sendUpdateStatus(type, data = {}) {
         this.eventDispatcher.emit('updater:update-status', successResponse({ type, data }));
@@ -172,10 +146,6 @@ class AppUpdater {
     async checkForUpdates() {
         try {
             logger.info('手动检查更新');
-            // 设置更新事件监听器
-            this.eventDispatcher = new EventDispatcher();
-            this.eventDispatcher.setWebContents(this.mainWindow.webContents);
-            this.setupUpdateEvents();
             const result = await autoUpdater.checkForUpdates();
             // 返回简化的结果，避免 IPC 序列化问题
             return {
@@ -194,10 +164,6 @@ class AppUpdater {
                 success: false,
                 error: error.message
             };
-        } finally {
-            this.eventDispatcher.cleanup();
-            this.eventDispatcher = null;
-            this.cleanup();
         }
     }
 

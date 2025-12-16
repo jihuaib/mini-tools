@@ -13,7 +13,10 @@ import RouteIpv6 from '../view/bgp/RouteIpv6.vue';
 import RouteMvpn from '../view/bgp/RouteMvpn.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
-import BmpClient from '../view/bmp/BmpClient.vue';
+import BgpSession from '../view/bmp/BgpSession.vue';
+import BgpLocRib from '../view/bmp/BgpLocRib.vue';
+import BgpSessionStatisReport from '../view/bmp/BgpSessionStatisReport.vue';
+import BgpLocRibStatisReport from '../view/bmp/BgpLocRibStatisReport.vue';
 import RpkiMain from '../view/rpki/RpkiMain.vue';
 import RpkiConfig from '../view/rpki/RpkiConfig.vue';
 import RpkiRoaConfig from '../view/rpki/RpkiRoaConfig.vue';
@@ -127,9 +130,27 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bmp-client',
-                        name: 'BmpClient',
-                        component: BmpClient,
+                        path: 'bgp-session',
+                        name: 'BgpSession',
+                        component: BgpSession,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bgp-loc-rib',
+                        name: 'BgpLocRib',
+                        component: BgpLocRib,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bgp-session-statis-report',
+                        name: 'BgpSessionStatisReport',
+                        component: BgpSessionStatisReport,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'bgp-loc-rib-statis-report',
+                        name: 'BgpLocRibStatisReport',
+                        component: BgpLocRibStatisReport,
                         meta: { keepAlive: true }
                     }
                 ]

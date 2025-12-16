@@ -162,19 +162,21 @@ contextBridge.exposeInMainWorld('bmpApi', {
     getBgpSessions: client => ipcRenderer.invoke('bmp:getBgpSessions', client),
     getBgpRoutes: (client, session, af, ribType, page, pageSize) =>
         ipcRenderer.invoke('bmp:getBgpRoutes', client, session, af, ribType, page, pageSize),
-    getClient: client => ipcRenderer.invoke('bmp:getClient', client),
-    getPeer: (client, peer) => ipcRenderer.invoke('bmp:getPeer', client, peer),
     getBgpInstances: client => ipcRenderer.invoke('bmp:getBgpInstances', client),
     getBgpInstanceRoutes: (client, instance, page, pageSize) =>
         ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize),
 
     // 使用统一事件管理
     onSessionUpdate: callback => eventManager.on('bmp:sessionUpdate', callback),
+    onInstanceUpdate: callback => eventManager.on('bmp:instanceUpdate', callback),
     onRouteUpdate: callback => eventManager.on('bmp:routeUpdate', callback),
+    onInstanceRouteUpdate: callback => eventManager.on('bmp:instanceRouteUpdate', callback),
     onInitiation: callback => eventManager.on('bmp:initiation', callback),
     onTermination: callback => eventManager.on('bmp:termination', callback),
     offSessionUpdate: callback => eventManager.off('bmp:sessionUpdate', callback),
+    offInstanceUpdate: callback => eventManager.off('bmp:instanceUpdate', callback),
     offRouteUpdate: callback => eventManager.off('bmp:routeUpdate', callback),
+    offInstanceRouteUpdate: callback => eventManager.off('bmp:instanceRouteUpdate', callback),
     offInitiation: callback => eventManager.off('bmp:initiation', callback),
     offTermination: callback => eventManager.off('bmp:termination', callback)
 });
