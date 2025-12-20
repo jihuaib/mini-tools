@@ -1,4 +1,4 @@
-# Mini-Tools
+# NetNexus
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=flat-square&logo=vue.js)](https://vuejs.org/)
 [![Electron](https://img.shields.io/badge/Electron-15+-47848F?style=flat-square&logo=electron)](https://electronjs.org/)
