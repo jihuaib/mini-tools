@@ -95,3 +95,7 @@ export const BGP_MVPN_ROUTE_TYPE = {
     SHARED_TREE_JOIN: 6,
     SOURCE_TREE_JOIN: 7
 };
+
+export const BGP_EVENT_PAGE_ID = {
+    PAGE_ID_BGP_PEER_INFO: 1
+};

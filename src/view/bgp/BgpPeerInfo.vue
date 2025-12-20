@@ -130,10 +130,11 @@
 </template>
 
 <script setup>
-    import { onMounted, onActivated, ref, onBeforeUnmount } from 'vue';
+    import { onActivated, onMounted, onBeforeUnmount, ref } from 'vue';
     import { message } from 'ant-design-vue';
-    import { BGP_ADDR_FAMILY, BGP_PEER_TYPE } from '../../const/bgpConst';
+    import { BGP_ADDR_FAMILY, BGP_PEER_TYPE, BGP_EVENT_PAGE_ID } from '../../const/bgpConst';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+    import EventBus from '../../utils/eventBus';
 
     defineOptions({
         name: 'BgpPeerInfo'
@@ -242,10 +243,6 @@
         }
     };
 
-    onMounted(async () => {
-        window.bgpApi.onPeerChange(onPeerChange);
-    });
-
     const refreshPeerInfo = async () => {
         const peerInfo = await window.bgpApi.getPeerInfo();
         if (peerInfo.status === 'success') {
@@ -288,12 +285,16 @@
         }
     };
 
-    onActivated(async () => {
-        await refreshPeerInfo();
+    onMounted(() => {
+        EventBus.on('bgp:peerChange', BGP_EVENT_PAGE_ID.PAGE_ID_BGP_PEER_INFO, onPeerChange);
     });
 
     onBeforeUnmount(() => {
-        window.bgpApi.offPeerChange(onPeerChange);
+        EventBus.off('bgp:peerChange', BGP_EVENT_PAGE_ID.PAGE_ID_BGP_PEER_INFO);
+    });
+
+    onActivated(async () => {
+        await refreshPeerInfo();
     });
 </script>
 

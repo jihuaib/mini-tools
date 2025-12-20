@@ -29,3 +29,7 @@ export const FTP_STATUS = {
 export const DEFAULT_FTP_SETTINGS = {
     maxFtpUser: 10
 };
+
+export const FTP_EVENT_PAGE_ID = {
+    PAGE_ID_FTP_CONFIG: 1
+};

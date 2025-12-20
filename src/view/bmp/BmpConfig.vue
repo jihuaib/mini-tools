@@ -79,7 +79,8 @@
     import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { FormValidator, createBmpConfigValidationRules } from '../../utils/validationCommon';
-    import { DEFAULT_VALUES } from '../../const/bmpConst';
+    import { DEFAULT_VALUES, BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
+    import EventBus from '../../utils/eventBus';
     defineOptions({
         name: 'BmpConfig'
     });
@@ -258,6 +259,10 @@
     };
 
     onMounted(async () => {
+        // 注册事件监听 (必须同步注册以防 async 竞争导致泄露)
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onInitiationHandler);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onTerminationHandler);
+
         // 加载保存的配置
         const savedConfig = await window.bmpApi.loadBmpConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
@@ -265,15 +270,11 @@
         } else {
             console.error('配置文件加载失败', savedConfig.msg);
         }
-
-        // 注册事件监听
-        window.bmpApi.onInitiation(onInitiationHandler);
-        window.bmpApi.onTermination(onTerminationHandler);
     });
 
     onBeforeUnmount(() => {
-        window.bmpApi.offInitiation(onInitiationHandler);
-        window.bmpApi.offTermination(onTerminationHandler);
+        EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
+        EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
     });
 </script>
 

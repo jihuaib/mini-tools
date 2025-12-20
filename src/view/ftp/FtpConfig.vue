@@ -175,7 +175,8 @@
         createFtpConfigValidationRules,
         createFtpUserValidationRules
     } from '../../utils/validationCommon';
-    import { DEFAULT_VALUES, FTP_SUB_EVT_TYPES } from '../../const/ftpConst';
+    import { DEFAULT_VALUES, FTP_SUB_EVT_TYPES, FTP_EVENT_PAGE_ID } from '../../const/ftpConst';
+    import EventBus from '../../utils/eventBus';
 
     defineOptions({
         name: 'FtpConfig'
@@ -363,6 +364,9 @@
     };
 
     onMounted(async () => {
+        // 注册客户端连接事件监听 (必须同步注册以防 async 竞争导致泄露)
+        EventBus.on('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG, onFtpEvt);
+
         try {
             // 加载配置
             const result = await window.ftpApi.getFtpConfig();
@@ -374,9 +378,6 @@
             if (userListResult.status === 'success' && userListResult.data && userListResult.data.length > 0) {
                 ftpUserConfig.value = userListResult.data[0];
             }
-
-            // 注册客户端连接事件监听
-            window.ftpApi.onFtpEvt(onFtpEvt);
         } catch (error) {
             console.error('初始化FTP配置出错:', error);
         }
@@ -384,7 +385,7 @@
 
     onBeforeUnmount(() => {
         // 移除事件监听
-        window.ftpApi.onFtpEvt(onFtpEvt);
+        EventBus.off('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG);
     });
 
     const addUser = async () => {

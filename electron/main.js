@@ -50,6 +50,10 @@ function createWindow() {
     new Tray(path.join(__dirname, './assets/icon.ico'));
 
     mainWindow = win;
+
+    if (isDev) {
+        win.webContents.openDevTools();
+    }
 }
 
 app.whenReady().then(() => {

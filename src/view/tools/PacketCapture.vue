@@ -80,10 +80,11 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onUnmounted, toRaw } from 'vue';
+    import { ref, onMounted, toRaw, onBeforeUnmount } from 'vue';
     import { message, Modal } from 'ant-design-vue';
     import PacketResultViewer from '../../components/PacketResultViewer.vue';
-    import { PROTOCOL_TYPE, START_LAYER } from '../../const/toolsConst';
+    import { PROTOCOL_TYPE, START_LAYER, TOOLS_EVENT_PAGE_ID } from '../../const/toolsConst';
+    import EventBus from '../../utils/eventBus';
 
     const resultViewerVisible = ref(false);
 
@@ -137,25 +138,12 @@
     // 生命周期钩子
     onMounted(() => {
         loadInterfaces();
-        setupPacketListener();
+        EventBus.on('native:packetEvent', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_PACKET_CAPTURE, handlePacketCaptured);
     });
 
-    onUnmounted(() => {
-        cleanupPacketListener();
+    onBeforeUnmount(() => {
+        EventBus.off('native:packetEvent', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_PACKET_CAPTURE);
     });
-
-    // 方法
-    function setupPacketListener() {
-        if (window.nativeApi) {
-            window.nativeApi.onPacketEvent(handlePacketCaptured);
-        }
-    }
-
-    function cleanupPacketListener() {
-        if (window.nativeApi) {
-            window.nativeApi.offPacketEvent(handlePacketCaptured);
-        }
-    }
 
     function handlePacketCaptured(data) {
         if (data.status === 'success' && data.data) {

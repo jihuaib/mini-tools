@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-    import { ref, computed, onMounted, onUnmounted } from 'vue';
+    import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import {
         LoadingOutlined,
@@ -48,6 +48,8 @@
         CheckCircleOutlined,
         ExclamationCircleOutlined
     } from '@ant-design/icons-vue';
+    import EventBus from '../utils/eventBus';
+    import { TOOLS_EVENT_PAGE_ID } from '../const/toolsConst';
 
     defineOptions({
         name: 'UpdateNotification'
@@ -179,16 +181,12 @@
 
     // 组件挂载时监听更新状态
     onMounted(() => {
-        if (window.updaterApi) {
-            window.updaterApi.onUpdateStatus(handleUpdateStatus);
-        }
+        EventBus.on('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_NOTIFICATION, handleUpdateStatus);
     });
 
     // 组件卸载时移除监听
-    onUnmounted(() => {
-        if (window.updaterApi) {
-            window.updaterApi.offUpdateStatus(handleUpdateStatus);
-        }
+    onBeforeUnmount(() => {
+        EventBus.off('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_NOTIFICATION);
     });
 </script>
 

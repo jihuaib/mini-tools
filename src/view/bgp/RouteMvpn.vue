@@ -368,6 +368,9 @@
 
     // 计算属性：按路由类型分组MVPN路由
     const groupedMvpnRoutes = computed(() => {
+        if (!sentRoutes.value) {
+            return [];
+        }
         // 遍历所有定义的路由类型选项
         return mvpnRouteTypeOptions.map(option => {
             const routes = sentRoutes.value.filter(route => route.routeType === option.value);

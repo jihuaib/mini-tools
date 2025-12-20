@@ -73,3 +73,8 @@ export const SNMP_PRIV_PROTOCOL = {
     AES192: 'AES192',
     AES256: 'AES256'
 };
+
+export const SNMP_EVENT_PAGE_ID = {
+    PAGE_ID_SNMP_CONFIG: 1,
+    PAGE_ID_SNMP_TRAP: 2
+};

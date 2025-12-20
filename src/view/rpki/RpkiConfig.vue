@@ -79,7 +79,8 @@
     import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { FormValidator, createRpkiConfigValidationRules } from '../../utils/validationCommon';
-    import { DEFAULT_VALUES } from '../../const/rpkiConst';
+    import { DEFAULT_VALUES, RPKI_EVENT_PAGE_ID } from '../../const/rpkiConst';
+    import EventBus from '../../utils/eventBus';
 
     defineOptions({
         name: 'RpkiConfig'
@@ -232,6 +233,9 @@
     };
 
     onMounted(async () => {
+        // 注册事件监听 (必须同步注册以防 async 竞争导致泄露)
+        EventBus.on('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG, onClientConnection);
+
         try {
             // 加载配置
             const result = await window.rpkiApi.loadRpkiConfig();
@@ -241,12 +245,10 @@
         } catch (error) {
             console.error('初始化RPKI配置出错:', error);
         }
-
-        window.rpkiApi.onClientConnection(onClientConnection);
     });
 
     onBeforeUnmount(() => {
-        window.rpkiApi.offClientConnection(onClientConnection);
+        EventBus.off('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG);
     });
 </script>
 

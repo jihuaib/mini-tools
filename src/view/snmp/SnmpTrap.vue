@@ -166,8 +166,9 @@
     import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
     import { DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue';
-    import { SNMP_TRAP_STATUS, SNMP_SUB_EVT_TYPES } from '../../const/snmpConst';
+    import { SNMP_TRAP_STATUS, SNMP_SUB_EVT_TYPES, SNMP_EVENT_PAGE_ID } from '../../const/snmpConst';
     import dayjs from 'dayjs';
+    import EventBus from '../../utils/eventBus';
 
     defineOptions({ name: 'SnmpTrap' });
 
@@ -397,11 +398,11 @@
     };
 
     onMounted(() => {
-        window.snmpApi.onSnmpEvent(handleSnmpEvent);
+        EventBus.on('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_TRAP, handleSnmpEvent);
     });
 
     onBeforeUnmount(() => {
-        window.snmpApi.offSnmpEvent(handleSnmpEvent);
+        EventBus.off('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_TRAP);
     });
 </script>
 

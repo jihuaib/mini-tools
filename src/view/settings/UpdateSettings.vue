@@ -46,8 +46,10 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onUnmounted } from 'vue';
+    import { ref, onMounted, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
+    import EventBus from '../../utils/eventBus';
+    import { TOOLS_EVENT_PAGE_ID } from '../../const/toolsConst';
 
     defineOptions({
         name: 'UpdateSettings'
@@ -221,16 +223,12 @@
         loadAutoUpdateSettings();
 
         // 监听更新状态
-        if (window.updaterApi) {
-            window.updaterApi.onUpdateStatus(handleUpdateStatus);
-        }
+        EventBus.on('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_SETTINGS, handleUpdateStatus);
     });
 
     // 组件卸载时清理
-    onUnmounted(() => {
-        if (window.updaterApi) {
-            window.updaterApi.offUpdateStatus(handleUpdateStatus);
-        }
+    onBeforeUnmount(() => {
+        EventBus.off('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_SETTINGS);
     });
 </script>
 

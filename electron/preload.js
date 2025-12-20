@@ -1,70 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 // ================================
-// 统一事件管理器
-// ================================
-class EventManager {
-    constructor() {
-        this.eventHandlers = new Map(); // 存储事件处理器
-        this.setupUnifiedListener();
-    }
-
-    // 设置统一的事件监听器
-    setupUnifiedListener() {
-        // 监听所有来自主进程的事件
-        ipcRenderer.on('unified-event', (event, { type, data }) => {
-            this.dispatchEvent(type, data);
-        });
-    }
-
-    // 注册事件处理器
-    on(eventType, handler) {
-        if (!this.eventHandlers.has(eventType)) {
-            this.eventHandlers.set(eventType, new Set());
-        }
-        this.eventHandlers.get(eventType).add(handler);
-    }
-
-    // 移除事件处理器
-    off(eventType, handler) {
-        if (this.eventHandlers.has(eventType)) {
-            this.eventHandlers.get(eventType).delete(handler);
-            // 如果没有处理器了，清理这个事件类型
-            if (this.eventHandlers.get(eventType).size === 0) {
-                this.eventHandlers.delete(eventType);
-            }
-        }
-    }
-
-    // 分发事件
-    dispatchEvent(eventType, data) {
-        if (this.eventHandlers.has(eventType)) {
-            this.eventHandlers.get(eventType).forEach(handler => {
-                try {
-                    handler(data);
-                } catch (error) {
-                    console.error(`Event handler error for ${eventType}:`, error);
-                }
-            });
-        }
-    }
-
-    // 获取当前注册的事件类型
-    getRegisteredEvents() {
-        return Array.from(this.eventHandlers.keys());
-    }
-
-    // 清理所有事件处理器
-    cleanup() {
-        this.eventHandlers.clear();
-    }
-}
-
-// 创建全局事件管理器实例
-const eventManager = new EventManager();
-
-// ================================
-// 统一的API暴露方法
+// 统一事件监听分配器 (仅用于单级转发)
 // ================================
 
 // 通用模块
@@ -79,7 +16,14 @@ contextBridge.exposeInMainWorld('commonApi', {
     getFtpSettings: () => ipcRenderer.invoke('common:getFtpSettings'),
     selectDirectory: () => ipcRenderer.invoke('common:selectDirectory'),
     saveUpdateSettings: settings => ipcRenderer.invoke('common:saveUpdateSettings', settings),
-    getUpdateSettings: () => ipcRenderer.invoke('common:getUpdateSettings')
+    getUpdateSettings: () => ipcRenderer.invoke('common:getUpdateSettings'),
+
+    // 提供一个统一的事件监听接口给渲染进程，由渲染进程的 EventBus 负责分发
+    onUnifiedEvent: callback => {
+        const subscription = (event, { type, data }) => callback({ type, data });
+        ipcRenderer.on('unified-event', subscription);
+        return () => ipcRenderer.removeListener('unified-event', subscription);
+    }
 });
 
 // 更新模块
@@ -87,11 +31,7 @@ contextBridge.exposeInMainWorld('updaterApi', {
     checkForUpdates: () => ipcRenderer.invoke('updater:checkForUpdates'),
     downloadUpdate: () => ipcRenderer.invoke('updater:downloadUpdate'),
     quitAndInstall: () => ipcRenderer.invoke('updater:quitAndInstall'),
-    getCurrentVersion: () => ipcRenderer.invoke('updater:getCurrentVersion'),
-
-    // 使用统一事件管理
-    onUpdateStatus: callback => eventManager.on('updater:update-status', callback),
-    offUpdateStatus: callback => eventManager.off('updater:update-status', callback)
+    getCurrentVersion: () => ipcRenderer.invoke('updater:getCurrentVersion')
 });
 
 // 工具模块
@@ -140,11 +80,7 @@ contextBridge.exposeInMainWorld('bgpApi', {
     saveIpv4MvpnRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4MvpnRouteConfig', config),
     loadIpv4MvpnRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv4MvpnRouteConfig'),
     generateIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:generateIpv4MvpnRoutes', config),
-    deleteIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4MvpnRoutes', config),
-
-    // 使用统一事件管理
-    onPeerChange: callback => eventManager.on('bgp:peerChange', callback),
-    offPeerChange: callback => eventManager.off('bgp:peerChange', callback)
+    deleteIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4MvpnRoutes', config)
 });
 
 // bmp模块
@@ -164,21 +100,7 @@ contextBridge.exposeInMainWorld('bmpApi', {
         ipcRenderer.invoke('bmp:getBgpRoutes', client, session, af, ribType, page, pageSize),
     getBgpInstances: client => ipcRenderer.invoke('bmp:getBgpInstances', client),
     getBgpInstanceRoutes: (client, instance, page, pageSize) =>
-        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize),
-
-    // 使用统一事件管理
-    onSessionUpdate: callback => eventManager.on('bmp:sessionUpdate', callback),
-    onInstanceUpdate: callback => eventManager.on('bmp:instanceUpdate', callback),
-    onRouteUpdate: callback => eventManager.on('bmp:routeUpdate', callback),
-    onInstanceRouteUpdate: callback => eventManager.on('bmp:instanceRouteUpdate', callback),
-    onInitiation: callback => eventManager.on('bmp:initiation', callback),
-    onTermination: callback => eventManager.on('bmp:termination', callback),
-    offSessionUpdate: callback => eventManager.off('bmp:sessionUpdate', callback),
-    offInstanceUpdate: callback => eventManager.off('bmp:instanceUpdate', callback),
-    offRouteUpdate: callback => eventManager.off('bmp:routeUpdate', callback),
-    offInstanceRouteUpdate: callback => eventManager.off('bmp:instanceRouteUpdate', callback),
-    offInitiation: callback => eventManager.off('bmp:initiation', callback),
-    offTermination: callback => eventManager.off('bmp:termination', callback)
+        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize)
 });
 
 // rpki模块
@@ -194,11 +116,7 @@ contextBridge.exposeInMainWorld('rpkiApi', {
     // roa操作
     addRoa: roa => ipcRenderer.invoke('rpki:addRoa', roa),
     deleteRoa: roa => ipcRenderer.invoke('rpki:deleteRoa', roa),
-    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList'),
-
-    // 使用统一事件管理
-    onClientConnection: callback => eventManager.on('rpki:clientConnection', callback),
-    offClientConnection: callback => eventManager.off('rpki:clientConnection', callback)
+    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList')
 });
 
 // ftp模块
@@ -213,11 +131,7 @@ contextBridge.exposeInMainWorld('ftpApi', {
     // ftp操作
     startFtp: (config, user) => ipcRenderer.invoke('ftp:startFtp', config, user),
     stopFtp: () => ipcRenderer.invoke('ftp:stopFtp'),
-    getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus'),
-
-    // 使用统一事件管理
-    onFtpEvt: callback => eventManager.on('ftp:event', callback),
-    offFtpEvt: callback => eventManager.off('ftp:event', callback)
+    getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus')
 });
 
 // snmp模块
@@ -228,11 +142,7 @@ contextBridge.exposeInMainWorld('snmpApi', {
 
     // snmp服务
     startSnmp: config => ipcRenderer.invoke('snmp:startSnmp', config),
-    stopSnmp: () => ipcRenderer.invoke('snmp:stopSnmp'),
-
-    // 使用统一事件管理
-    onSnmpEvent: callback => eventManager.on('snmp:event', callback),
-    offSnmpEvent: callback => eventManager.off('snmp:event', callback)
+    stopSnmp: () => ipcRenderer.invoke('snmp:stopSnmp')
 });
 
 // 依赖本地工具模块
@@ -243,22 +153,8 @@ contextBridge.exposeInMainWorld('nativeApi', {
     stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
     exportPacketsToPcap: packets => ipcRenderer.invoke('native:exportPacketsToPcap', packets),
 
-    // 使用统一事件管理
-    onPacketEvent: callback => eventManager.on('native:packetEvent', callback),
-    offPacketEvent: callback => eventManager.off('native:packetEvent', callback),
-
     // 格式化工具模块
     formatData: formatterData => ipcRenderer.invoke('native:formatData', formatterData),
     getFormatterHistory: () => ipcRenderer.invoke('native:getFormatterHistory'),
     clearFormatterHistory: () => ipcRenderer.invoke('native:clearFormatterHistory')
-});
-
-// ================================
-// 开发者调试API（可选）
-// ================================
-contextBridge.exposeInMainWorld('eventManagerApi', {
-    // 获取当前注册的事件类型（用于调试）
-    getRegisteredEvents: () => eventManager.getRegisteredEvents(),
-    // 清理所有事件处理器（用于热重载或调试）
-    cleanup: () => eventManager.cleanup()
 });

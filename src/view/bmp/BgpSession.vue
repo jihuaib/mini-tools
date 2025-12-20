@@ -124,10 +124,16 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onActivated, watch, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onBeforeUnmount, watch, onActivated } from 'vue';
     import { message } from 'ant-design-vue';
-    import { BMP_SESSION_TYPE_NAME, BMP_SESSION_STATE_NAME, BMP_BGP_RIB_TYPE_NAME } from '../../const/bmpConst';
+    import {
+        BMP_SESSION_TYPE_NAME,
+        BMP_SESSION_STATE_NAME,
+        BMP_BGP_RIB_TYPE_NAME,
+        BMP_EVENT_PAGE_ID
+    } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
+    import EventBus from '../../utils/eventBus';
     defineOptions({
         name: 'BgpSession'
     });
@@ -254,17 +260,6 @@
         }
     };
 
-    onMounted(async () => {
-        // 监听对等体更新事件
-        window.bmpApi.onSessionUpdate(onSessionUpdate);
-
-        // 监听Client列表更新事件
-        window.bmpApi.onInitiation(onClientListUpdate);
-        window.bmpApi.onTermination(onTerminationHandler);
-        // 监听路由更新事件
-        window.bmpApi.onRouteUpdate(onRouteUpdate);
-    });
-
     const onRouteUpdate = result => {
         if (result.status !== 'success' || !result.data) return;
         const update = result.data;
@@ -382,6 +377,13 @@
         loadBgpSessionList();
     });
 
+    onMounted(async () => {
+        EventBus.on('bmp:sessionUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onSessionUpdate);
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onClientListUpdate);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onTerminationHandler);
+        EventBus.on('bmp:routeUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onRouteUpdate);
+    });
+
     onActivated(async () => {
         clientList.value = [];
         activeClientKey.value = '';
@@ -394,10 +396,10 @@
     });
 
     onBeforeUnmount(() => {
-        window.bmpApi.offSessionUpdate(onSessionUpdate);
-        window.bmpApi.offInitiation(onClientListUpdate);
-        window.bmpApi.offTermination(onTerminationHandler);
-        window.bmpApi.offRouteUpdate(onRouteUpdate);
+        EventBus.off('bmp:sessionUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
+        EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
+        EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
+        EventBus.off('bmp:routeUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
     });
 
     const bgpRoutePagination = ref({

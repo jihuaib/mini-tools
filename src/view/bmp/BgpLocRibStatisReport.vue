@@ -25,6 +25,8 @@
 <script setup>
     import { ref, onMounted, onActivated, onBeforeUnmount } from 'vue';
     import { message } from 'ant-design-vue';
+    import EventBus from '../../utils/eventBus';
+    import { BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
 
     defineOptions({
         name: 'BgpLocRibStatisReport'
@@ -110,13 +112,13 @@
     });
 
     onMounted(() => {
-        window.bmpApi.onInitiation(onClientListUpdate);
-        window.bmpApi.onTermination(onTerminationHandler);
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onClientListUpdate);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onTerminationHandler);
     });
 
     onBeforeUnmount(() => {
-        window.bmpApi.offInitiation(onClientListUpdate);
-        window.bmpApi.offTermination(onTerminationHandler);
+        EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT);
+        EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT);
     });
 </script>
 

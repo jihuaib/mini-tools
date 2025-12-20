@@ -155,9 +155,9 @@ class AppUpdater {
                 success: true,
                 updateInfo: result?.updateInfo
                     ? {
-                        version: result.updateInfo.version,
-                        releaseDate: result.updateInfo.releaseDate
-                    }
+                          version: result.updateInfo.version,
+                          releaseDate: result.updateInfo.releaseDate
+                      }
                     : null
             };
         } catch (error) {
