@@ -78,18 +78,18 @@
     import {
         MenuFoldOutlined,
         MenuUnfoldOutlined,
-        CodeOutlined,
-        CloudOutlined,
-        RadarChartOutlined,
         SettingOutlined,
         ToolOutlined,
-        InfoCircleOutlined,
-        SafetyCertificateOutlined,
-        DownloadOutlined,
-        ApiOutlined
+        InfoCircleOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
+    import BgpIcon from '../assets/bgp.svg';
+    import ToolsIcon from '../assets/tools.svg';
+    import BmpIcon from '../assets/bmp.svg';
+    import RpkiIcon from '../assets/rpki.svg';
+    import FtpIcon from '../assets/ftp.svg';
+    import SnmpIcon from '../assets/snmp.svg';
 
     const router = useRouter();
     const route = useRoute();
@@ -103,42 +103,42 @@
     const items = ref([
         {
             key: 'tools',
-            icon: () => h(CodeOutlined),
+            icon: () => h('img', { src: ToolsIcon, style: { width: '16px', height: '16px' } }),
             label: 'tools',
             title: 'tools',
             route: '/tools'
         },
         {
             key: 'bgp',
-            icon: () => h(CloudOutlined),
+            icon: () => h('img', { src: BgpIcon, style: { width: '16px', height: '16px' } }),
             label: 'bgp',
             title: 'bgp',
             route: '/bgp'
         },
         {
             key: 'bmp',
-            icon: () => h(RadarChartOutlined),
+            icon: () => h('img', { src: BmpIcon, style: { width: '16px', height: '16px' } }),
             label: 'bmp',
             title: 'bmp',
             route: '/bmp'
         },
         {
             key: 'rpki',
-            icon: () => h(SafetyCertificateOutlined),
+            icon: () => h('img', { src: RpkiIcon, style: { width: '16px', height: '16px' } }),
             label: 'rpki',
             title: 'rpki',
             route: '/rpki'
         },
         {
             key: 'ftp',
-            icon: () => h(DownloadOutlined),
+            icon: () => h('img', { src: FtpIcon, style: { width: '16px', height: '16px' } }),
             label: 'ftp',
             title: 'ftp',
             route: '/ftp'
         },
         {
             key: 'snmp',
-            icon: () => h(ApiOutlined),
+            icon: () => h('img', { src: SnmpIcon, style: { width: '16px', height: '16px' } }),
             label: 'snmp',
             title: 'snmp',
             route: '/snmp'

@@ -4,10 +4,10 @@
 [![Electron](https://img.shields.io/badge/Electron-15+-47848F?style=flat-square&logo=electron)](https://electronjs.org/)
 [![Ant Design Vue](https://img.shields.io/badge/Ant%20Design%20Vue-4.x-1890FF?style=flat-square&logo=ant-design)](https://antdv.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/jihuaib/mini-tools?style=flat-square)](https://github.com/jihuaib/mini-tools/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/jihuaib/mini-tools?style=flat-square)](https://github.com/jihuaib/mini-tools/issues)
+[![GitHub stars](https://img.shields.io/github/stars/jihuaib/NetNexus?style=flat-square)](https://github.com/jihuaib/NetNexus/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/jihuaib/NetNexus?style=flat-square)](https://github.com/jihuaib/NetNexus/issues)
 
-**MiniTools** - 一个基于 **Vue3** + **Ant Design Vue** + **Electron** 开发的专业**网络和开发辅助工具集**。
+**NetNexus** - 一个基于 **Vue3** + **Ant Design Vue** + **Electron** 开发的专业**网络和开发辅助工具集**。
 
 > 🚀 **专业的网络协议工具** | 🛠️ **开发者必备工具** | 🌐 **BGP/BMP/RPKI 全方位支持** | 📦 **跨平台桌面应用**
 
@@ -70,8 +70,8 @@ BGP 监控协议工具，提供实时路由监控、数据分析和统计报告�
 1. 克隆项目
 
 ```bash
-git clone https://github.com/jihuaib/mini-tools.git
-cd mini-tools
+git clone https://github.com/jihuaib/NetNexus.git
+cd NetNexus
 ```
 
 2. 安装依赖
@@ -99,7 +99,7 @@ npm run release
 
 ## 使用指南
 
-MiniTools 提供直观的图形界面和简单的操作流程，每个功能模块都有详细的使用指南：
+NetNexus 提供直观的图形界面和简单的操作流程，每个功能模块都有详细的使用指南：
 
 - **[BGP 模拟器使用指南](docs/BGP_SIMULATOR.md#使用指南)** - 详细的 BGP 配置和使用说明
 - **[BMP 监控器使用指南](docs/BMP_MONITOR.md#使用指南)** - BMP 监控配置和数据分析方法
@@ -110,7 +110,7 @@ MiniTools 提供直观的图形界面和简单的操作流程，每个功能模�
 
 ### 快速开始
 
-1. **下载安装** - 从 [Releases](https://github.com/jihuaib/mini-tools/releases) 页面下载最新版本
+1. **下载安装** - 从 [Releases](https://github.com/jihuaib/NetNexus/releases) 页面下载最新版本
 2. **选择功能** - 在主界面选择需要使用的功能模块
 3. **查看文档** - 点击上述链接查看对应功能的详细使用指南
 4. **开始使用** - 按照指南进行配置和操作
@@ -118,7 +118,7 @@ MiniTools 提供直观的图形界面和简单的操作流程，每个功能模�
 ## 项目结构
 
 ```
-mini-tools/
+NetNexus/
 ├── docs/              # 项目文档
 │   ├── BGP_SIMULATOR.md    # BGP 模拟器详细文档
 │   ├── BMP_MONITOR.md      # BMP 监控器详细文档
@@ -208,7 +208,7 @@ mini-tools/
 
 ### 📋 更新日志
 
-查看 [Releases](https://github.com/jihuaib/mini-tools/releases) 页面了解最新版本更新内容。
+查看 [Releases](https://github.com/jihuaib/NetNexus/releases) 页面了解最新版本更新内容。
 
 ### 🤝 贡献者
 
@@ -240,8 +240,8 @@ MIT © 2025 huaibin ji
 
 ⭐ 如果这个项目对你有帮助，请给我们一个 Star！
 
-🐛 发现问题？[提交 Issue](https://github.com/jihuaib/mini-tools/issues/new/choose)
+🐛 发现问题？[提交 Issue](https://github.com/jihuaib/NetNexus/issues/new/choose)
 
-💡 有新想法？[提交功能请求](https://github.com/jihuaib/mini-tools/issues/new/choose)
+💡 有新想法？[提交功能请求](https://github.com/jihuaib/NetNexus/issues/new/choose)
 
 🚀 想要贡献代码？[查看贡献指南](#贡献指南)

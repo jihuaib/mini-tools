@@ -3,8 +3,8 @@
         <div class="container footer-content">
             <div class="copyright">© 2025 Mini Tools. All Rights Reserved.</div>
             <div class="links">
-                <a href="https://github.com/jihuaib/mini-tools" target="_blank" rel="noopener">GitHub</a>
-                <a href="https://github.com/jihuaib/mini-tools/issues" target="_blank" rel="noopener">Support</a>
+                <a href="https://github.com/jihuaib/NetNexus" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/jihuaib/NetNexus/issues" target="_blank" rel="noopener">Support</a>
             </div>
         </div>
     </footer>

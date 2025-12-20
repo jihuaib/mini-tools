@@ -1,18 +1,18 @@
 # 贡献指南
 
-感谢你对 MiniTools 项目的兴趣！我们欢迎任何形式的贡献。
+感谢你对 NetNexus 项目的兴趣！我们欢迎任何形式的贡献。
 
 ## 如何贡献
 
 ### 🐛 报告 Bug
 
-1. 在 [Issues](https://github.com/jihuaib/mini-tools/issues) 页面搜索是否已存在相似问题
+1. 在 [Issues](https://github.com/jihuaib/NetNexus/issues) 页面搜索是否已存在相似问题
 2. 如果没有，请创建新的 Issue，使用 Bug 报告模板
 3. 提供详细的问题描述、重现步骤和环境信息
 
 ### 💡 提出新功能
 
-1. 在 [Issues](https://github.com/jihuaib/mini-tools/issues) 页面搜索是否已有相似建议
+1. 在 [Issues](https://github.com/jihuaib/NetNexus/issues) 页面搜索是否已有相似建议
 2. 创建新的 Issue，使用功能请求模板
 3. 详细描述功能需求和使用场景
 
@@ -36,8 +36,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/jihuaib/mini-tools.git
-cd mini-tools
+git clone https://github.com/jihuaib/NetNexus.git
+cd NetNexus
 
 # 安装依赖
 npm install

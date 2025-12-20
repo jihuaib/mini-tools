@@ -284,7 +284,7 @@ class SystemApp {
 
         dialog.showMessageBox({
             type: 'info',
-            title: 'About MiniTools',
+            title: 'About NetNexus',
             message: aboutMessage,
             buttons: ['OK']
         });
@@ -358,14 +358,14 @@ class SystemApp {
             const { response } = await dialog.showMessageBox(this.win, {
                 type: 'warning',
                 title: '确认关闭',
-                message: 'MiniTools 正在运行，确定要关闭吗？',
+                message: 'NetNexus 正在运行，确定要关闭吗？',
                 buttons: ['确定', '取消'],
                 defaultId: 1,
                 cancelId: 1
             });
 
             if (response === 0) {
-                // 用户点击确定，先停止 MiniTools 然后关闭窗口
+                // 用户点击确定，先停止 NetNexus 然后关闭窗口
                 if (isBgpRunning) {
                     await this.bgpApp.handleStopBgp();
                 }

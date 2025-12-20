@@ -24,7 +24,7 @@
 
 <script setup>
     const download = () => {
-        window.open('https://github.com/jihuaib/mini-tools/releases', '_blank');
+        window.open('https://github.com/jihuaib/NetNexus/releases', '_blank');
     };
 
     const learnMore = () => {

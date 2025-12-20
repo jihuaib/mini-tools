@@ -1,7 +1,7 @@
 {
-    "name": "mini-tools",
+    "name": "NetNexus",
     "private": true,
-    "version": "3.0.10",
+    "version": "4.0.0",
     "main": "electron/main.js",
     "description": "一个基于 Vue3 + Ant Design Vue + Electron 开发的网络和开发辅助工具集，包含BGP模拟器、BMP监控器、RPKI验证器、报文解析器、字符串生成器等多种网络工具",
     "keywords": [
@@ -29,9 +29,9 @@
         "字符串生成器",
         "报文解析"
     ],
-    "homepage": "https://github.com/jihuaib/mini-tools#readme",
+    "homepage": "https://github.com/jihuaib/NetNexus#readme",
     "bugs": {
-        "url": "https://github.com/jihuaib/mini-tools/issues"
+        "url": "https://github.com/jihuaib/NetNexus/issues"
     },
     "license": "MIT",
     "author": {
@@ -41,7 +41,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/jihuaib/mini-tools.git"
+        "url": "https://github.com/jihuaib/NetNexus.git"
     },
     "scripts": {
         "install-x64": "electron-builder install-app-deps --arch x64",
@@ -61,8 +61,8 @@
         "install-deps": "npm run install-x64"
     },
     "build": {
-        "appId": "MiniTools",
-        "productName": "MiniTools",
+        "appId": "NetNexus",
+        "productName": "NetNexus",
         "copyright": "Copyright © 2025 ${author}",
         "files": [
             "dist/**/*",
@@ -73,7 +73,7 @@
         "publish": {
             "provider": "github",
             "owner": "jihuaib",
-            "repo": "mini-tools",
+            "repo": "NetNexus",
             "releaseType": "release"
         },
         "directories": {
