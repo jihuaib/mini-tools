@@ -42,7 +42,7 @@ class AppUpdater {
 
             // 设置开发环境的更新配置
             Object.assign(autoUpdater, {
-                // 允许降级
+                // 允许降级（开发环境便于测试）
                 allowDowngrade: true
             });
 
@@ -54,6 +54,12 @@ class AppUpdater {
             }
 
             logger.info('开发环境：已启用更新检查，forceDevUpdateConfig = true');
+        } else {
+            // 生产环境配置
+            Object.assign(autoUpdater, {
+                // 不允许降级（生产环境，防止重命名品牌后旧版本被识别为新版本）
+                allowDowngrade: false
+            });
         }
     }
 
@@ -62,9 +68,6 @@ class AppUpdater {
         // 自动下载更新
         autoUpdater.autoDownload = this.updateSettingsConfig.autoDownload;
         autoUpdater.autoInstallOnAppQuit = true;
-
-        // 允许降级
-        autoUpdater.allowDowngrade = true;
 
         // 启动时检查更新
         if (this.updateSettingsConfig.autoCheckOnStartup) {
@@ -152,9 +155,9 @@ class AppUpdater {
                 success: true,
                 updateInfo: result?.updateInfo
                     ? {
-                          version: result.updateInfo.version,
-                          releaseDate: result.updateInfo.releaseDate
-                      }
+                        version: result.updateInfo.version,
+                        releaseDate: result.updateInfo.releaseDate
+                    }
                     : null
             };
         } catch (error) {
