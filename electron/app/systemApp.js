@@ -19,9 +19,10 @@ const FtpConst = require('../const/ftpConst');
  * 用于系统菜单处理
  */
 class SystemApp {
-    constructor(ipc, win) {
+    constructor(ipc, win, progressCallback = null) {
         this.win = win;
         this.isDev = !app.isPackaged;
+        this.progressCallback = progressCallback;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
         this.generalSettingsFileKey = 'GeneralSettings';

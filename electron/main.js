@@ -5,7 +5,28 @@ const logger = require('./log/logger');
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
+let splashWindow = null;
 let systemApp = null;
+
+function createSplashWindow() {
+    const splash = new BrowserWindow({
+        width: 500,
+        height: 500,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        resizable: false,
+        center: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    splash.loadFile(path.join(__dirname, 'splash.html'));
+    splashWindow = splash;
+    return splash;
+}
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -18,7 +39,7 @@ function createWindow() {
         frame: true, // 保持原生边框
         center: true, // 窗口居中显示
         backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
-        show: false, // 先隐藏窗口，避免最大化过程中的闪烁
+        show: false, // 先隐藏窗口，等待启动完成
         icon: path.join(__dirname, './assets/icon.ico'),
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
@@ -27,9 +48,8 @@ function createWindow() {
         }
     });
 
-    // 最大化窗口并显示，避免黑边闪烁
+    // 先不显示主窗口，等待启动完成
     win.maximize();
-    win.show();
 
     logger.info(`Dev ${isDev} __dirname ${__dirname}`);
     const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
@@ -56,23 +76,69 @@ function createWindow() {
     }
 }
 
-app.whenReady().then(() => {
+// 更新启动进度
+function updateSplashProgress(progress, text) {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.webContents.executeJavaScript(`window.updateProgress(${progress}, '${text}')`);
+    }
+}
+
+// 完成启动，显示主窗口
+function finishStartup() {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+
+        // 延迟关闭启动窗口，确保主窗口已完全显示
+        setTimeout(() => {
+            if (splashWindow && !splashWindow.isDestroyed()) {
+                splashWindow.close();
+                splashWindow = null;
+            }
+        }, 500);
+    }
+}
+
+app.whenReady().then(async () => {
+    // 创建启动窗口
+    createSplashWindow();
+    updateSplashProgress(10, '正在初始化应用...');
+
+    // 延迟创建主窗口，让启动窗口先显示
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     createWindow();
+    updateSplashProgress(20, '正在加载主窗口...');
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
 
     // 启动应用
-    systemApp = new SystemApp(ipcMain, mainWindow);
+    systemApp = new SystemApp(ipcMain, mainWindow, updateSplashProgress);
+    updateSplashProgress(30, '正在检查版本兼容性...');
+
     // 兼容性检查
     const checkVersionOk = systemApp.checkVersionCompatibility();
     if (!checkVersionOk) {
+        if (splashWindow) splashWindow.close();
         app.quit();
         return;
     }
+
+    updateSplashProgress(50, '正在加载设置...');
     // 加载设置
     systemApp.loadSettings();
+
+    updateSplashProgress(80, '正在初始化服务...');
+    // 等待主窗口内容加载完成
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    updateSplashProgress(100, '启动完成');
+    // 延迟一下让用户看到100%
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // 完成启动
+    finishStartup();
 });
 
 app.on('window-all-closed', () => {

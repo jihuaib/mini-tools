@@ -2,12 +2,14 @@
 .mt-main-container {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* 确保撑满屏幕 */
+    height: 100vh;
+    /* 确保撑满屏幕 */
     overflow: hidden;
 }
 
 .mt-main-container .fixed-tabs {
-    height: 48px; /* 你实际 Tab 高度 */
+    height: 48px;
+    /* 你实际 Tab 高度 */
     flex-shrink: 0;
     background-color: #fff;
     z-index: 10;
@@ -123,7 +125,6 @@
 
 .ant-divider {
     font-size: 12px !important;
-    color: #125798 !important;
     margin: 5px 0 !important;
 }
 
