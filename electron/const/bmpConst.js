@@ -1,5 +1,21 @@
 const BMP_HEADER_LENGTH = 6;
 
+// BMP Version
+const BMP_VERSION = {
+    V3: 3,
+    V4: 4
+};
+
+// BMP v4 TLV Types
+const BMP_TLV_TYPE = {
+    STRING: 0,
+    SYSNAME: 1,
+    GROUP: 2,
+    VRF_TABLE_NAME: 3,
+    BGP_MESSAGE: 4,
+    STATELESS_PARSING: 5
+};
+
 const BMP_INITIATION_TLV_TYPE = {
     SYS_NAME: 1,
     SYS_DESC: 2
@@ -82,6 +98,8 @@ const BMP_BGP_RIB_TYPE = {
 
 module.exports = {
     BMP_HEADER_LENGTH,
+    BMP_VERSION,
+    BMP_TLV_TYPE,
     BMP_MSG_TYPE,
     BMP_PEER_TYPE,
     BMP_SESSION_FLAGS,

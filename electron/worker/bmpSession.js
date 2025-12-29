@@ -8,6 +8,7 @@ const { rdBufferToString, ipv4BufferToString, ipv6BufferToString } = require('..
 const { parseBgpPacket } = require('../utils/bgpPacketParser');
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 const BmpBgpInstance = require('./bmpBgpInstance');
+const BmpTlvParser = require('../utils/bmpTlvParser');
 
 class BmpSession {
     constructor(messageHandler, bmpWorker) {
@@ -110,9 +111,9 @@ class BmpSession {
         if (
             sessionFlags === (0x00 | BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT | BmpConst.BMP_SESSION_FLAGS.POST_POLICY) ||
             sessionFlags ===
-                (BmpConst.BMP_SESSION_FLAGS.IPV6 |
-                    BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT |
-                    BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
+            (BmpConst.BMP_SESSION_FLAGS.IPV6 |
+                BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT |
+                BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
         ) {
             ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.POST_ADJ_RIB_OUT);
         }
@@ -120,7 +121,38 @@ class BmpSession {
         return ribTypes;
     }
 
-    processRouteMonitoringGlobal(message) {
+    // Process optional TLVs for BMP v4
+    processOptionalTlvs(tlvs, _bgpSession) {
+        for (const tlv of tlvs) {
+            // Skip BGP Message TLV as it's already processed
+            if (tlv.type === BmpConst.BMP_TLV_TYPE.BGP_MESSAGE) {
+                continue;
+            }
+
+            switch (tlv.type) {
+                case BmpConst.BMP_TLV_TYPE.VRF_TABLE_NAME: {
+                    const vrfName = BmpTlvParser.parseVrfTableNameTlv(tlv);
+                    logger.info(`VRF/Table Name: ${vrfName}`);
+                    break;
+                }
+                case BmpConst.BMP_TLV_TYPE.GROUP: {
+                    const groupData = BmpTlvParser.parseGroupTlv(tlv);
+                    logger.info(
+                        `Group TLV: groupIndex=${groupData.groupIndex}, nlriIndexes=${groupData.nlriIndexes.join(',')}`
+                    );
+                    break;
+                }
+                default:
+                    if (tlv.isEnterprise) {
+                        logger.info(`Enterprise TLV: ${tlv.enterpriseNumber}:${tlv.type}, length=${tlv.length}`);
+                    } else {
+                        logger.warn(`Unknown TLV type: ${tlv.type}`);
+                    }
+            }
+        }
+    }
+
+    processRouteMonitoringGlobal(message, version = BmpConst.BMP_VERSION.V3) {
         try {
             let position = 0;
             const sessionType = message[position];
@@ -160,18 +192,38 @@ class BmpSession {
                 return;
             }
 
-            // BGP 更新消息
-            const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-            const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
-            const bgpUpdate = message.subarray(position, position + updateLength);
+            // Parse BGP Update PDU based on BMP version
+            let bgpUpdate;
+            let parsedBgpUpdate;
 
-            // Pass bgpSession for ADD-PATH capability check
-            const parsedBgpUpdate = parseBgpPacket(bgpUpdate, bgpSession); // passing bgpSession as second arg
+            if (version === BmpConst.BMP_VERSION.V4) {
+                // BMP v4: Parse TLVs
+                const tlvs = BmpTlvParser.parseTlvs(message, position);
+
+                // Find BGP Message TLV (mandatory)
+                const bgpMessageTlv = tlvs.find(t => t.type === BmpConst.BMP_TLV_TYPE.BGP_MESSAGE && t.index === 0);
+                if (!bgpMessageTlv) {
+                    logger.error('BMP v4 Route Monitoring missing BGP Message TLV');
+                    return;
+                }
+
+                bgpUpdate = BmpTlvParser.parseBgpMessageTlv(bgpMessageTlv);
+                parsedBgpUpdate = parseBgpPacket(bgpUpdate, bgpSession);
+
+                // Process optional TLVs
+                this.processOptionalTlvs(tlvs, bgpSession);
+            } else {
+                // BMP v3: Direct BGP Update PDU
+                const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
+                const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
+                bgpUpdate = message.subarray(position, position + updateLength);
+                parsedBgpUpdate = parseBgpPacket(bgpUpdate, bgpSession);
+                position += updateLength;
+            }
 
             if (!parsedBgpUpdate.valid) {
                 logger.error(`Received BGP Update message is invalid: ${parsedBgpUpdate.error}`);
             }
-            position += updateLength;
 
             let isNotify = false;
             const ribTypes = this.getRibTypesByFlags(sessionFlags);
@@ -398,7 +450,7 @@ class BmpSession {
         }
     }
 
-    processRouteMonitoringLocalRib(message) {
+    processRouteMonitoringLocalRib(message, version = BmpConst.BMP_VERSION.V3) {
         try {
             let position = 0;
             const instanceType = message[position];
@@ -431,18 +483,38 @@ class BmpSession {
             const _instanceTimestampMs = message.readUInt32BE(position);
             position += 4;
 
-            // BGP 更新消息
-            const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
-            const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
-            const bgpUpdate = message.subarray(position, position + updateLength);
+            // Parse BGP Update PDU based on BMP version
+            let bgpUpdate;
+            let parsedBgpUpdate;
 
-            // Pass bgpSession for ADD-PATH capability check
-            const parsedBgpUpdate = parseBgpPacket(bgpUpdate, this); // passing bgpSession as second arg
+            if (version === BmpConst.BMP_VERSION.V4) {
+                // BMP v4: Parse TLVs
+                const tlvs = BmpTlvParser.parseTlvs(message, position);
+
+                // Find BGP Message TLV (mandatory)
+                const bgpMessageTlv = tlvs.find(t => t.type === BmpConst.BMP_TLV_TYPE.BGP_MESSAGE);
+                if (!bgpMessageTlv) {
+                    logger.error('BMP v4 Route Monitoring (Local RIB) missing BGP Message TLV');
+                    return;
+                }
+
+                bgpUpdate = BmpTlvParser.parseBgpMessageTlv(bgpMessageTlv);
+                parsedBgpUpdate = parseBgpPacket(bgpUpdate, this);
+
+                // Process optional TLVs
+                this.processOptionalTlvs(tlvs, null);
+            } else {
+                // BMP v3: Direct BGP Update PDU
+                const bgpUpdateHeader = message.subarray(position, position + BgpConst.BGP_HEAD_LEN);
+                const { length: updateLength, type: _updateType } = this.parseBgpHeader(bgpUpdateHeader);
+                bgpUpdate = message.subarray(position, position + updateLength);
+                parsedBgpUpdate = parseBgpPacket(bgpUpdate, this);
+                position += updateLength;
+            }
 
             if (!parsedBgpUpdate.valid) {
                 logger.error(`Received BGP Update message is invalid: ${parsedBgpUpdate.error}`);
             }
-            position += updateLength;
 
             let isNotify = false;
             // 处理withdrawn routes (IPv4)
@@ -627,14 +699,14 @@ class BmpSession {
         }
     }
 
-    processRouteMonitoring(message) {
+    processRouteMonitoring(message, version) {
         let position = 0;
         const sessionType = message[position];
 
         if (sessionType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
-            this.processRouteMonitoringGlobal(message);
+            this.processRouteMonitoringGlobal(message, version);
         } else if (sessionType === BmpConst.BMP_PEER_TYPE.LOCAL_RIB) {
-            this.processRouteMonitoringLocalRib(message);
+            this.processRouteMonitoringLocalRib(message, version);
         } else {
             logger.error(`Received BGP Update message from unknown session type: ${sessionType}`);
             return;
@@ -736,7 +808,7 @@ class BmpSession {
         return { marker, length, type };
     }
 
-    processPeerDownGlobal(message) {
+    processPeerDownGlobal(message, version = BmpConst.BMP_VERSION.V3) {
         try {
             let position = 0;
             const sessionType = message[position];
@@ -789,6 +861,13 @@ class BmpSession {
                 if (!parsedBgpNotification.valid) {
                     logger.error(`Received BGP Notification message is invalid: ${parsedBgpNotification.error}`);
                 }
+                position += notificationLength;
+            }
+
+            // BMP v4: Process optional TLVs
+            if (version === BmpConst.BMP_VERSION.V4 && position < message.length) {
+                const tlvs = BmpTlvParser.parseTlvs(message, position);
+                this.processOptionalTlvs(tlvs, null);
             }
 
             const sessKey = BmpBgpSession.makeKey(sessionType, sessionRd, sessionAddress, sessionAs);
@@ -823,7 +902,7 @@ class BmpSession {
         }
     }
 
-    processPeerDownLocalRib(message) {
+    processPeerDownLocalRib(message, version = BmpConst.BMP_VERSION.V3) {
         try {
             let position = 0;
             const _instanceType = message[position];
@@ -836,11 +915,11 @@ class BmpSession {
 
             let _instanceAddress;
             if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
-                // IPv6 peer
+                // IPv6 instance
                 _instanceAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
                 position += 16;
             } else {
-                // IPv4 peer
+                // IPv4 instance
                 // 12字节保留字段
                 position += 12;
                 _instanceAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
@@ -858,6 +937,12 @@ class BmpSession {
 
             const _reason = message[position];
             position += 1;
+
+            // BMP v4: Process optional TLVs
+            if (version === BmpConst.BMP_VERSION.V4 && position < message.length) {
+                const tlvs = BmpTlvParser.parseTlvs(message, position);
+                this.processOptionalTlvs(tlvs, null);
+            }
 
             let parsedBgpNotification = null;
             if (position + BgpConst.BGP_HEAD_LEN <= message.length) {
@@ -1418,34 +1503,41 @@ class BmpSession {
         try {
             const clientAddress = `${this.remoteIp}:${this.remotePort}`;
 
-            const _version = message[0];
+            const version = message[0];
             const length = message.readUInt32BE(1);
             const type = message[5];
 
+            // Version validation
+            if (version !== BmpConst.BMP_VERSION.V3 && version !== BmpConst.BMP_VERSION.V4) {
+                logger.error(`Unsupported BMP version ${version} from ${clientAddress}`);
+                this.closeSession();
+                return;
+            }
+
             logger.info(
-                `Received message type ${BmpConst.BMP_MSG_TYPE_NAME[type]} from ${clientAddress}, length ${length}`
+                `Received BMP v${version} message type ${BmpConst.BMP_MSG_TYPE_NAME[type]} from ${clientAddress}, length ${length}`
             );
 
             const msg = message.slice(BmpConst.BMP_HEADER_LENGTH, length);
 
             switch (type) {
                 case BmpConst.BMP_MSG_TYPE.ROUTE_MONITORING:
-                    this.processRouteMonitoring(msg);
+                    this.processRouteMonitoring(msg, version);
                     break;
                 case BmpConst.BMP_MSG_TYPE.PEER_DOWN_NOTIFICATION:
-                    this.processPeerDown(msg);
+                    this.processPeerDown(msg, version);
                     break;
                 case BmpConst.BMP_MSG_TYPE.PEER_UP_NOTIFICATION:
-                    this.processPeerUp(msg);
+                    this.processPeerUp(msg, version);
                     break;
                 case BmpConst.BMP_MSG_TYPE.INITIATION:
-                    this.processInitiation(msg);
+                    this.processInitiation(msg, version);
                     break;
                 case BmpConst.BMP_MSG_TYPE.TERMINATION:
-                    this.processTermination(msg);
+                    this.processTermination(msg, version);
                     break;
                 case BmpConst.BMP_MSG_TYPE.STATISTICS_REPORT:
-                    this.processStatisticsReport(msg);
+                    this.processStatisticsReport(msg, version);
                     break;
                 default:
                     logger.warn(`Unknown message type: ${type}`);
