@@ -1,5 +1,5 @@
 {
-    "name": "NetNexus",
+    "name": "net-nexus",
     "private": true,
     "version": "4.0.0",
     "main": "electron/main.js",
@@ -69,6 +69,9 @@
             "electron/**/*",
             "package.json"
         ],
+        "electronLanguages": [
+            "zh-CN"
+        ],
         "asar": false,
         "publish": {
             "provider": "github",
@@ -83,12 +86,6 @@
             "target": [
                 {
                     "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                },
-                {
-                    "target": "msi",
                     "arch": [
                         "x64"
                     ]
@@ -114,7 +111,7 @@
         "concurrently": "^7.6.0",
         "cross-env": "^7.0.3",
         "electron": "^15.5.7",
-        "electron-builder": "^22.14.13",
+        "electron-builder": "^24.6.0",
         "electron-rebuild": "^3.2.9",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",

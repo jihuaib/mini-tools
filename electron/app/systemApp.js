@@ -86,7 +86,8 @@ class SystemApp {
                     detail: '将删除程序数据和设置数据，点击确定继续。',
                     buttons: ['确定', '取消'],
                     defaultId: 0,
-                    cancelId: 1
+                    cancelId: 1,
+                    icon: path.join(__dirname, '../assets/icon.ico')
                 });
 
                 if (result === 0) {
@@ -150,7 +151,8 @@ class SystemApp {
                 title: '错误',
                 message: '清除数据时出错',
                 detail: error.message,
-                buttons: ['确定']
+                buttons: ['确定'],
+                icon: path.join(__dirname, '../assets/icon.ico')
             });
         }
     }
@@ -287,7 +289,8 @@ class SystemApp {
             type: 'info',
             title: 'About NetNexus',
             message: aboutMessage,
-            buttons: ['OK']
+            buttons: ['OK'],
+            icon: path.join(__dirname, '../assets/icon.ico')
         });
     }
 
@@ -362,7 +365,8 @@ class SystemApp {
                 message: 'NetNexus 正在运行，确定要关闭吗？',
                 buttons: ['确定', '取消'],
                 defaultId: 1,
-                cancelId: 1
+                cancelId: 1,
+                icon: path.join(__dirname, '../assets/icon.ico')
             });
 
             if (response === 0) {
@@ -398,7 +402,8 @@ class SystemApp {
         try {
             const win = BrowserWindow.getFocusedWindow(); // 获取当前窗口
             const result = await dialog.showOpenDialog(win, {
-                properties: ['openDirectory']
+                properties: ['openDirectory'],
+                icon: path.join(__dirname, '../assets/icon.ico')
             });
             return successResponse(result);
         } catch (error) {

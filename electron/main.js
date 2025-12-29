@@ -8,13 +8,14 @@ let mainWindow = null;
 let splashWindow = null;
 let systemApp = null;
 
+app.commandLine.appendSwitch('lang', 'zh-CN');
+
 function createSplashWindow() {
     const splash = new BrowserWindow({
-        width: 500,
+        width: 600,
         height: 500,
         transparent: true,
         frame: false,
-        alwaysOnTop: true,
         resizable: false,
         center: true,
         webPreferences: {
@@ -47,9 +48,6 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     });
-
-    // 先不显示主窗口，等待启动完成
-    win.maximize();
 
     logger.info(`Dev ${isDev} __dirname ${__dirname}`);
     const urlLocation = isDev ? 'http://127.0.0.1:3000' : `file://${path.join(__dirname, '../dist/index.html')}`;
@@ -86,6 +84,7 @@ function updateSplashProgress(progress, text) {
 // 完成启动，显示主窗口
 function finishStartup() {
     if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.maximize();
         mainWindow.show();
 
         // 延迟关闭启动窗口，确保主窗口已完全显示
@@ -104,7 +103,7 @@ app.whenReady().then(async () => {
     updateSplashProgress(10, '正在初始化应用...');
 
     // 延迟创建主窗口，让启动窗口先显示
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     createWindow();
     updateSplashProgress(20, '正在加载主窗口...');

@@ -14,12 +14,10 @@ class EventBus {
      * @param {Function} handler 事件处理函数
      */
     on(eventType, id, handler) {
-        console.log(`EventBus on, eventType: ${eventType}, id: ${id}`);
         if (!this.handlers.has(eventType)) {
             this.handlers.set(eventType, new Map());
         }
         this.handlers.get(eventType).set(id, handler);
-        console.log(`EventBus on ${eventType}, id: ${id}, cnt: ${this.handlers.get(eventType).get(id).length}`);
     }
 
     /**
@@ -28,7 +26,6 @@ class EventBus {
      * @param {string} id 事件ID, 每个页面的事件ID必须唯一
      */
     off(eventType, id) {
-        console.log(`EventBus off, eventType: ${eventType}, id: ${id}`);
         if (this.handlers.has(eventType)) {
             this.handlers.get(eventType).delete(id);
         }
@@ -43,7 +40,6 @@ class EventBus {
         if (this.handlers.has(eventType)) {
             this.handlers.get(eventType).forEach((handler, id) => {
                 try {
-                    console.log(`emit ${eventType} ${id}`, data);
                     handler(data);
                 } catch (error) {
                     console.error(`EventBus error for ${eventType}:`, error);
@@ -56,7 +52,6 @@ class EventBus {
      * 清理所有监听器
      */
     clear() {
-        this.singleHandlers.clear();
         this.handlers.clear();
     }
 }
