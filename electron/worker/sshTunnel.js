@@ -117,32 +117,43 @@ class SshTunnel extends EventEmitter {
     /**
      * Start TCP MD5 proxy on remote server
      */
-    async startProxy(peerIp, md5Password, listenPort, forwardAddr) {
-        logger.info(`Starting TCP MD5 proxy for peer ${peerIp} on port ${listenPort}`);
+    async startProxy(protocol, peerIp, md5Password, listenPort, forwardAddr) {
+        logger.info(`Starting ${protocol.toUpperCase()} TCP MD5 proxy for peer ${peerIp} on port ${listenPort}`);
 
-        // Start the proxy script with new parameters
-        const command = `/opt/bmp-md5-proxy/bmp-md5-proxy.sh "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" start`;
-        logger.info(`Executing: ${command}`);
-        const result = await this.execCommand(command);
+        // Start the proxy script with protocol parameter
+        const startCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" start`;
 
-        logger.info(`Proxy started: ${result}`);
-        return result;
+        const result = await this.execCommand(startCmd);
+        logger.info(`Proxy start result: ${result}`);
+
+        // Wait a bit for proxy to start
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Verify proxy is running
+        const statusCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" status`;
+        const status = await this.execCommand(statusCmd);
+
+        if (!status.includes('running')) {
+            throw new Error(`${protocol.toUpperCase()} proxy failed to start`);
+        }
+
+        logger.info(`${protocol.toUpperCase()} proxy started successfully`);
     }
-
     /**
      * Stop TCP MD5 proxy on remote server
      */
-    async stopProxy() {
+    async stopProxy(protocol, peerIp, md5Password, listenPort, forwardAddr) {
         if (!this.conn) {
             return;
         }
+        logger.info(`Stopping ${protocol.toUpperCase()} TCP MD5 proxy...`);
 
         try {
-            logger.info('Stopping TCP MD5 proxy...');
-            await this.execCommand('/opt/bmp-md5-proxy/bmp-md5-proxy.sh "" "" "" "" stop');
-            logger.info('Proxy stopped');
+            const stopCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" stop`;
+            const result = await this.execCommand(stopCmd);
+            logger.info(`Proxy stop result: ${result}`);
         } catch (error) {
-            logger.warn(`Error stopping proxy: ${error.message}`);
+            logger.error(`Error stopping proxy: ${error.message}`);
         }
     }
 

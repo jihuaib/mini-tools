@@ -769,17 +769,24 @@ export const createBmpConfigValidationRules = () => {
                 message: '请输入1024-65535之间的数字'
             }
         ],
-        serverAddress: [
+        localPort: [
             {
                 validator: validators.conditionalRequired(formData => formData.enableAuth),
-                message: '请输入Linux服务器地址'
+                message: '请输入本地端口号'
             },
             {
-                validator: (value, formData) => {
-                    if (!formData.enableAuth || !value) return true;
-                    return validators.ipv4(value) || validators.ipv6(value);
-                },
-                message: '请输入有效的服务器地址'
+                validator: validators.port,
+                message: '请输入1024-65535之间的数字'
+            }
+        ],
+        tunnelPort: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入隧道端口号'
+            },
+            {
+                validator: validators.port,
+                message: '请输入1024-65535之间的数字'
             }
         ],
         peerIP: [
@@ -803,26 +810,6 @@ export const createBmpConfigValidationRules = () => {
             {
                 validator: validators.minLength(1),
                 message: 'MD5密钥不能为空'
-            }
-        ],
-        sshUsername: [
-            {
-                validator: validators.conditionalRequired(formData => formData.enableAuth),
-                message: '请输入SSH用户名'
-            },
-            {
-                validator: validators.minLength(1),
-                message: 'SSH用户名不能为空'
-            }
-        ],
-        sshPassword: [
-            {
-                validator: validators.conditionalRequired(formData => formData.enableAuth),
-                message: '请输入SSH密码'
-            },
-            {
-                validator: validators.minLength(1),
-                message: 'SSH密码不能为空'
             }
         ]
     };

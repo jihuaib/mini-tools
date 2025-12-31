@@ -162,7 +162,7 @@ class BmpWorker {
         this.bmpConfigData = bmpConfigData;
 
         // 如果启用了MD5认证，使用SSH隧道
-        if (bmpConfigData.enableAuth && bmpConfigData.serverAddress && bmpConfigData.md5Password) {
+        if (bmpConfigData.enableAuth && bmpConfigData.md5Password) {
             try {
                 logger.info('MD5 authentication enabled, creating SSH tunnel...');
 
@@ -189,6 +189,7 @@ class BmpWorker {
                 // 代理监听 bmpConfigData.port (路由器连接这个端口)
                 // 然后转发到 localhost:tunnelPort（通过SSH反向隧道回到Windows的localPort）
                 await this.sshTunnel.startProxy(
+                    'bmp', // 协议类型
                     bmpConfigData.peerIP, // BMP路由器IP（peer IP）
                     bmpConfigData.md5Password, // MD5密码
                     bmpConfigData.port, // Linux监听端口（路由器连接）
@@ -222,11 +223,27 @@ class BmpWorker {
     }
 
     async stopBmp(messageId) {
-        // 清理SSH隧道
+        logger.info('Stopping BMP server...');
+
+        // 停止SSH隧道和代理
         if (this.sshTunnel) {
-            await this.sshTunnel.disconnect().catch(err => {
-                logger.error(`Error disconnecting SSH tunnel: ${err.message}`);
-            });
+            try {
+                // 停止远程代理
+                if (this.bmpConfigData) {
+                    const tunnelPort = this.bmpConfigData.tunnelPort || '11020';
+                    await this.sshTunnel.stopProxy(
+                        'bmp',
+                        this.bmpConfigData.peerIP,
+                        this.bmpConfigData.md5Password,
+                        this.bmpConfigData.port,
+                        `localhost:${tunnelPort}`
+                    );
+                }
+                // 断开SSH连接
+                await this.sshTunnel.disconnect();
+            } catch (error) {
+                logger.error(`Error stopping SSH tunnel: ${error.message}`);
+            }
             this.sshTunnel = null;
         }
 

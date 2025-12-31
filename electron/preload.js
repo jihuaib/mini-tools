@@ -18,6 +18,13 @@ contextBridge.exposeInMainWorld('commonApi', {
     saveUpdateSettings: settings => ipcRenderer.invoke('common:saveUpdateSettings', settings),
     getUpdateSettings: () => ipcRenderer.invoke('common:getUpdateSettings'),
 
+    // 服务器部署
+    deployServer: deployConfig => ipcRenderer.invoke('common:deployServer', deployConfig),
+    saveDeploymentConfig: config => ipcRenderer.invoke('common:saveDeploymentConfig', config),
+    loadDeploymentConfig: () => ipcRenderer.invoke('common:loadDeploymentConfig'),
+    testSSHConnection: config => ipcRenderer.invoke('common:testSSHConnection', config),
+    getServerDeploymentStatus: () => ipcRenderer.invoke('common:getServerDeploymentStatus'),
+
     // 提供一个统一的事件监听接口给渲染进程，由渲染进程的 EventBus 负责分发
     onUnifiedEvent: callback => {
         const subscription = (event, { type, data }) => callback({ type, data });
@@ -100,10 +107,7 @@ contextBridge.exposeInMainWorld('bmpApi', {
         ipcRenderer.invoke('bmp:getBgpRoutes', client, session, af, ribType, page, pageSize),
     getBgpInstances: client => ipcRenderer.invoke('bmp:getBgpInstances', client),
     getBgpInstanceRoutes: (client, instance, page, pageSize) =>
-        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize),
-
-    // 服务器部署
-    deployServer: deployConfig => ipcRenderer.invoke('bmp:deployServer', deployConfig)
+        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize)
 });
 
 // rpki模块

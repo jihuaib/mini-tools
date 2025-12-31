@@ -94,58 +94,56 @@ class SshDeployer {
     }
 
     /**
-     * Deploy BMP MD5 proxy
+     * Deploy BMP MD5 proxy to remote server
      */
     async deploy() {
+        logger.info('Starting TCP MD5 proxy deployment...');
+
         try {
-            logger.info('Starting BMP MD5 proxy deployment...');
+            // Create proxy directory
+            const proxyDir = '/opt/tcp-md5-proxy';
+            await this.execCommand(`mkdir -p ${proxyDir}`);
+            logger.info(`Created directory: ${proxyDir}`);
 
-            // 1. Create directory
-            logger.info('Creating proxy directory...');
-            await this.execCommand('mkdir -p /opt/bmp-md5-proxy');
+            // Upload C helper source
+            const helperSource = path.join(__dirname, '../../scripts/tcp-md5-helper.c');
+            await this.uploadFile(helperSource, `${proxyDir}/tcp-md5-helper.c`);
+            logger.info('Uploaded tcp-md5-helper.c');
 
-            // 2. Install dependencies (gcc for compiling helper)
-            logger.info('Installing dependencies...');
+            // Upload proxy script
+            const proxyScript = path.join(__dirname, '../../scripts/tcp-md5-proxy.sh');
+            await this.uploadFile(proxyScript, `${proxyDir}/tcp-md5-proxy.sh`);
+            logger.info('Uploaded tcp-md5-proxy.sh');
+
+            // Make script executable
+            await this.execCommand(`chmod +x ${proxyDir}/tcp-md5-proxy.sh`);
+            logger.info('Made proxy script executable');
+
+            // Install gcc if not present
+            logger.info('Checking for gcc...');
             try {
-                await this.execCommand('yum install -y gcc 2>/dev/null || apt-get update && apt-get install -y gcc');
+                await this.execCommand('which gcc');
+                logger.info('gcc is already installed');
             } catch (error) {
-                logger.warn(`gcc installation warning: ${error.message}`);
+                logger.info('Installing gcc...');
+                await this.execCommand('yum install -y gcc || apt-get install -y gcc');
+                logger.info('gcc installed successfully');
             }
 
-            // 3. Upload C helper source
-            logger.info('Uploading TCP MD5 helper source...');
-            const helperPath = path.join(__dirname, '../../scripts/tcp-md5-helper.c');
-            await this.uploadFile(helperPath, '/opt/bmp-md5-proxy/tcp-md5-helper.c');
-
-            // 4. Upload proxy script
-            logger.info('Uploading proxy script...');
-            const scriptPath = path.join(__dirname, '../../scripts/bmp-md5-proxy.sh');
-            await this.uploadFile(scriptPath, '/opt/bmp-md5-proxy/bmp-md5-proxy.sh');
-
-            // 5. Make script executable
-            logger.info('Setting permissions...');
-            await this.execCommand('chmod +x /opt/bmp-md5-proxy/bmp-md5-proxy.sh');
-
-            // 6. Compile helper (will be done on first start, but we can try now)
+            // Compile the helper
             logger.info('Compiling TCP MD5 helper...');
-            try {
-                await this.execCommand(
-                    'gcc -g -o /opt/bmp-md5-proxy/tcp-md5-helper /opt/bmp-md5-proxy/tcp-md5-helper.c'
-                );
-                logger.info('Helper compiled successfully');
-            } catch (error) {
-                logger.warn('Helper compilation will be done on first start');
-            }
+            await this.execCommand(`gcc -g -o ${proxyDir}/tcp-md5-helper ${proxyDir}/tcp-md5-helper.c`);
+            logger.info('Helper compiled successfully');
 
-            // 7. Disable firewall
-            logger.info('Disabling firewall...');
+            // Disable firewall
             await this.disableFirewall();
 
-            // 8. Create log directory
-            await this.execCommand('mkdir -p /var/log && touch /var/log/bmp-md5-proxy.log');
-
-            logger.info('BMP MD5 proxy deployment completed successfully!');
-            return { success: true, message: 'Deployment successful' };
+            logger.info('TCP MD5 proxy deployment completed successfully');
+            return {
+                proxyDir,
+                helperPath: `${proxyDir}/tcp-md5-helper`,
+                scriptPath: `${proxyDir}/tcp-md5-proxy.sh`
+            };
         } catch (error) {
             logger.error(`Deployment failed: ${error.message}`);
             throw error;

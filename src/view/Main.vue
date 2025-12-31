@@ -57,7 +57,7 @@
             <div class="content-area">
                 <router-view v-slot="{ Component }">
                     <keep-alive :include="$store.state.cachedViews">
-                        <component :is="Component" ref="currentComponent" />
+                        <component :is="Component" ref="currentComponent" @open-settings="handleOpenSettings" />
                     </keep-alive>
                 </router-view>
             </div>
@@ -167,6 +167,11 @@
         } else if (key === 'settings') {
             settingsDialog.value.open();
         }
+    };
+
+    // Handle opening settings from child components
+    const handleOpenSettings = category => {
+        settingsDialog.value.open(category);
     };
 
     // 切换菜单收缩状态

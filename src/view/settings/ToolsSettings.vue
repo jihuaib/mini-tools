@@ -1,39 +1,40 @@
 <template>
     <div class="tools-settings">
-        <h2>Tools设置</h2>
-        <a-form :model="settingsForm" layout="vertical">
-            <a-divider>字符串生成</a-divider>
-            <a-form-item label="字符串生成历史记录最大存储条数" name="maxStringHistory">
-                <a-input-number
-                    v-model:value="settingsForm.stringGenerator.maxStringHistory"
-                    :min="10"
-                    :max="1000"
-                    style="width: 100%"
-                />
-            </a-form-item>
+        <a-card title="Tools设置">
+            <a-form :model="settingsForm" layout="vertical">
+                <a-divider>字符串生成</a-divider>
+                <a-form-item label="字符串生成历史记录最大存储条数" name="maxStringHistory">
+                    <a-input-number
+                        v-model:value="settingsForm.stringGenerator.maxStringHistory"
+                        :min="10"
+                        :max="1000"
+                        style="width: 100%"
+                    />
+                </a-form-item>
 
-            <a-divider>报文解析</a-divider>
-            <a-form-item label="报文解析历史记录最大存储条数" name="maxMessageHistory">
-                <a-input-number
-                    v-model:value="settingsForm.packetParser.maxMessageHistory"
-                    :min="10"
-                    :max="1000"
-                    style="width: 100%"
-                />
-            </a-form-item>
-            <a-divider>格式化工具</a-divider>
-            <a-form-item label="格式化历史记录最大存储条数" name="maxFormatterHistory">
-                <a-input-number
-                    v-model:value="settingsForm.formatter.maxFormatterHistory"
-                    :min="10"
-                    :max="1000"
-                    style="width: 100%"
-                />
-            </a-form-item>
-            <a-form-item>
-                <a-button type="primary" @click="saveSettings">保存设置</a-button>
-            </a-form-item>
-        </a-form>
+                <a-divider>报文解析</a-divider>
+                <a-form-item label="报文解析历史记录最大存储条数" name="maxMessageHistory">
+                    <a-input-number
+                        v-model:value="settingsForm.packetParser.maxMessageHistory"
+                        :min="10"
+                        :max="1000"
+                        style="width: 100%"
+                    />
+                </a-form-item>
+                <a-divider>格式化工具</a-divider>
+                <a-form-item label="格式化历史记录最大存储条数" name="maxFormatterHistory">
+                    <a-input-number
+                        v-model:value="settingsForm.formatter.maxFormatterHistory"
+                        :min="10"
+                        :max="1000"
+                        style="width: 100%"
+                    />
+                </a-form-item>
+                <a-form-item>
+                    <a-button type="primary" @click="saveSettings">保存设置</a-button>
+                </a-form-item>
+            </a-form>
+        </a-card>
     </div>
 </template>
 
@@ -95,12 +96,6 @@
 <style scoped>
     .tools-settings {
         max-width: 100%;
-    }
-
-    h2 {
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: 500;
     }
 
     :deep(.ant-form-item-label > label) {

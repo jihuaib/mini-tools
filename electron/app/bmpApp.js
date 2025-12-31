@@ -20,6 +20,8 @@ class BmpApp {
         this.bmpRouteUpdateHandler = null;
         this.bmpTerminationHandler = null;
 
+        this.serverDeploymentConfig = null;
+
         this.registerHandlers();
     }
 
@@ -33,7 +35,6 @@ class BmpApp {
         this.ipcMain.handle('bmp:getBgpRoutes', this.handleGetBgpRoutes.bind(this));
         this.ipcMain.handle('bmp:getBgpInstances', this.handleGetBgpInstances.bind(this));
         this.ipcMain.handle('bmp:getBgpInstanceRoutes', this.handleGetBgpInstanceRoutes.bind(this));
-        this.ipcMain.handle('bmp:deployServer', this.handleDeployServer.bind(this));
     }
 
     async handleSaveBmpConfig(event, config) {
@@ -44,6 +45,10 @@ class BmpApp {
             logger.error('Error saving BMP config:', error.message);
             return errorResponse(error.message);
         }
+    }
+
+    setServerDeploymentConfig(config) {
+        this.serverDeploymentConfig = config;
     }
 
     async handleLoadBmpConfig() {
@@ -115,6 +120,10 @@ class BmpApp {
                 this.bmpInstanceRouteUpdateHandler
             );
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+
+            bmpConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
+            bmpConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
+            bmpConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;
 
             const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.START_BMP, bmpConfigData);
 
@@ -266,29 +275,6 @@ class BmpApp {
         } catch (error) {
             logger.error('Error getting BGP instances:', error.message);
             return errorResponse(error.message);
-        }
-    }
-
-    async handleDeployServer(event, deployConfig) {
-        const SshDeployer = require('./sshDeployer');
-        const deployer = new SshDeployer();
-
-        try {
-            logger.info(`Starting BMP MD5 proxy deployment to ${deployConfig.serverAddress}...`);
-
-            // Connect to SSH server
-            await deployer.connect(deployConfig.serverAddress, deployConfig.sshUsername, deployConfig.sshPassword);
-
-            // Deploy proxy
-            const result = await deployer.deploy();
-
-            logger.info('BMP MD5 proxy deployment completed successfully');
-            return successResponse(result, 'BMP MD5代理部署成功');
-        } catch (error) {
-            logger.error(`BMP MD5 proxy deployment failed: ${error.message}`);
-            return errorResponse(`部署失败: ${error.message}`);
-        } finally {
-            deployer.disconnect();
         }
     }
 

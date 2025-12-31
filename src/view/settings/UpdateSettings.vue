@@ -1,47 +1,51 @@
 <template>
     <div class="update-settings">
-        <h2>应用更新</h2>
-        <!-- 当前版本信息 -->
-        <a-row class="version-info">
-            <a-col :span="12">
-                <a-statistic title="当前版本" :value="currentVersion" />
-            </a-col>
-            <a-col :span="12">
-                <a-statistic title="更新状态" :value="updateStatusText" />
-            </a-col>
-        </a-row>
+        <a-card title="应用更新">
+            <!-- 当前版本信息 -->
+            <a-row class="version-info">
+                <a-col :span="12">
+                    <a-statistic title="当前版本" :value="currentVersion" />
+                </a-col>
+                <a-col :span="12">
+                    <a-statistic title="更新状态" :value="updateStatusText" />
+                </a-col>
+            </a-row>
 
-        <!-- 更新检查按钮 -->
-        <div class="update-actions">
-            <a-space>
-                <a-button type="primary" :loading="isChecking" :disabled="isDownloading" @click="checkForUpdates">
-                    检查更新
-                </a-button>
-                <a-button
-                    v-if="updateAvailable && !isDownloading && !updateDownloaded"
-                    type="default"
-                    @click="downloadUpdate"
-                >
-                    下载更新
-                </a-button>
-                <a-button v-if="updateDownloaded" type="danger" @click="installUpdate">重启并安装</a-button>
-            </a-space>
-        </div>
+            <!-- 更新检查按钮 -->
+            <div class="update-actions">
+                <a-space>
+                    <a-button type="primary" :loading="isChecking" :disabled="isDownloading" @click="checkForUpdates">
+                        检查更新
+                    </a-button>
+                    <a-button
+                        v-if="updateAvailable && !isDownloading && !updateDownloaded"
+                        type="default"
+                        @click="downloadUpdate"
+                    >
+                        下载更新
+                    </a-button>
+                    <a-button v-if="updateDownloaded" type="danger" @click="installUpdate">重启并安装</a-button>
+                </a-space>
+            </div>
 
-        <!-- 自动更新设置 -->
-        <a-divider>自动更新设置</a-divider>
-        <div class="auto-update-settings">
-            <a-form layout="vertical">
-                <a-form-item label="启动时检查更新">
-                    <a-switch v-model:checked="updateSettings.autoCheckOnStartup" @change="saveAutoUpdateSettings" />
-                    <div class="setting-description">启用后，应用启动时会自动检查更新</div>
-                </a-form-item>
-                <a-form-item label="自动下载更新">
-                    <a-switch v-model:checked="updateSettings.autoDownload" @change="saveAutoUpdateSettings" />
-                    <div class="setting-description">启用后，发现更新时会自动下载（仍需手动安装）</div>
-                </a-form-item>
-            </a-form>
-        </div>
+            <!-- 自动更新设置 -->
+            <a-divider>自动更新设置</a-divider>
+            <div class="auto-update-settings">
+                <a-form layout="vertical">
+                    <a-form-item label="启动时检查更新">
+                        <a-switch
+                            v-model:checked="updateSettings.autoCheckOnStartup"
+                            @change="saveAutoUpdateSettings"
+                        />
+                        <div class="setting-description">启用后，应用启动时会自动检查更新</div>
+                    </a-form-item>
+                    <a-form-item label="自动下载更新">
+                        <a-switch v-model:checked="updateSettings.autoDownload" @change="saveAutoUpdateSettings" />
+                        <div class="setting-description">启用后，发现更新时会自动下载（仍需手动安装）</div>
+                    </a-form-item>
+                </a-form>
+            </div>
+        </a-card>
     </div>
 </template>
 
@@ -236,11 +240,7 @@
     .update-settings {
         max-width: 100%;
     }
-    h2 {
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: 500;
-    }
+
     .version-info {
         margin-bottom: 24px;
     }

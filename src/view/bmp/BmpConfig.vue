@@ -23,108 +23,79 @@
                                 </a-form-item>
                             </a-col>
                         </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="8">
-                                <a-form-item label="服务器地址" name="serverAddress">
-                                    <a-tooltip
-                                        :title="validationErrors.serverAddress"
-                                        :open="!!validationErrors.serverAddress"
-                                    >
-                                        <a-input
-                                            v-model:value="bmpConfig.serverAddress"
-                                            :status="validationErrors.serverAddress ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="8">
-                                <a-form-item label="SSH用户名" name="sshUsername">
-                                    <a-tooltip
-                                        :title="validationErrors.sshUsername"
-                                        :open="!!validationErrors.sshUsername"
-                                    >
-                                        <a-input
-                                            v-model:value="bmpConfig.sshUsername"
-                                            :status="validationErrors.sshUsername ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="8">
-                                <a-form-item label="SSH密码" name="sshPassword">
-                                    <a-tooltip
-                                        :title="validationErrors.sshPassword"
-                                        :open="!!validationErrors.sshPassword"
-                                    >
-                                        <a-input-password
-                                            v-model:value="bmpConfig.sshPassword"
-                                            :status="validationErrors.sshPassword ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="12">
-                                <a-form-item label="本地监听端口" name="localPort">
-                                    <a-tooltip :title="validationErrors.localPort" :open="!!validationErrors.localPort">
-                                        <a-input
-                                            v-model:value="bmpConfig.localPort"
-                                            :status="validationErrors.localPort ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="12">
-                                <a-form-item label="隧道端口" name="tunnelPort">
-                                    <a-tooltip
-                                        :title="validationErrors.tunnelPort"
-                                        :open="!!validationErrors.tunnelPort"
-                                    >
-                                        <a-input
-                                            v-model:value="bmpConfig.tunnelPort"
-                                            :status="validationErrors.tunnelPort ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="12">
-                                <a-form-item label="路由器IP" name="peerIP">
-                                    <a-tooltip :title="validationErrors.peerIP" :open="!!validationErrors.peerIP">
-                                        <a-input
-                                            v-model:value="bmpConfig.peerIP"
-                                            :status="validationErrors.peerIP ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="12">
-                                <a-form-item label="MD5密钥" name="md5Password">
-                                    <a-tooltip
-                                        :title="validationErrors.md5Password"
-                                        :open="!!validationErrors.md5Password"
-                                    >
-                                        <a-input-password
-                                            v-model:value="bmpConfig.md5Password"
-                                            :status="validationErrors.md5Password ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
+
+                        <!-- MD5认证配置 -->
+                        <template v-if="bmpConfig.enableAuth">
+                            <a-alert
+                                v-if="!serverDeploymentStatus"
+                                type="info"
+                                message="MD5认证需要服务器部署"
+                                show-icon
+                                style="margin-bottom: 16px"
+                            >
+                                <template #description>
+                                    使用 MD5 认证需要先在 Linux 服务器上部署代理程序。
+                                    <a style="margin-left: 8px" @click="openDeploymentSettings">前往服务器部署设置 →</a>
+                                </template>
+                            </a-alert>
+
+                            <a-row>
+                                <a-col :span="12">
+                                    <a-form-item label="本地监听端口" name="localPort">
+                                        <a-tooltip
+                                            :title="validationErrors.localPort"
+                                            :open="!!validationErrors.localPort"
+                                        >
+                                            <a-input
+                                                v-model:value="bmpConfig.localPort"
+                                                :status="validationErrors.localPort ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :span="12">
+                                    <a-form-item label="隧道端口" name="tunnelPort">
+                                        <a-tooltip
+                                            :title="validationErrors.tunnelPort"
+                                            :open="!!validationErrors.tunnelPort"
+                                        >
+                                            <a-input
+                                                v-model:value="bmpConfig.tunnelPort"
+                                                :status="validationErrors.tunnelPort ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                            <a-row>
+                                <a-col :span="12">
+                                    <a-form-item label="路由器IP" name="peerIP">
+                                        <a-tooltip :title="validationErrors.peerIP" :open="!!validationErrors.peerIP">
+                                            <a-input
+                                                v-model:value="bmpConfig.peerIP"
+                                                :status="validationErrors.peerIP ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :span="12">
+                                    <a-form-item label="MD5密钥" name="md5Password">
+                                        <a-tooltip
+                                            :title="validationErrors.md5Password"
+                                            :open="!!validationErrors.md5Password"
+                                        >
+                                            <a-input-password
+                                                v-model:value="bmpConfig.md5Password"
+                                                :status="validationErrors.md5Password ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                        </template>
 
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
-                                <a-button
-                                    v-if="bmpConfig.enableAuth"
-                                    type="default"
-                                    :loading="deployLoading"
-                                    @click="deployToServer"
-                                >
-                                    部署服务器
-                                </a-button>
                                 <a-button
                                     type="primary"
                                     html-type="submit"
@@ -188,9 +159,12 @@
     import { FormValidator, createBmpConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES, BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
     import EventBus from '../../utils/eventBus';
+
     defineOptions({
         name: 'BmpConfig'
     });
+
+    const emit = defineEmits(['openSettings']);
 
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
@@ -199,17 +173,14 @@
         port: DEFAULT_VALUES.DEFAULT_BMP_PORT,
         localPort: '11019',
         enableAuth: false,
-        serverAddress: '',
         peerIP: '',
         md5Password: '',
-        sshUsername: '',
-        sshPassword: '',
         tunnelPort: '11020'
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
-    const deployLoading = ref(false);
+    const serverDeploymentStatus = ref(false);
 
     // Initiation messages list
     const clientList = ref([]);
@@ -257,11 +228,10 @@
 
     const validationErrors = ref({
         port: '',
-        serverAddress: '',
+        localPort: '',
+        tunnelPort: '',
         peerIP: '',
-        md5Password: '',
-        sshUsername: '',
-        sshPassword: ''
+        md5Password: ''
     });
 
     let validator = new FormValidator(validationErrors);
@@ -281,10 +251,20 @@
     const detailsDrawerTitle = ref('');
     const currentDetails = ref(null);
 
+    // Open deployment settings
+    const openDeploymentSettings = () => {
+        emit('openSettings', 'server-deployment');
+    };
+
     const startBmp = async () => {
         const hasErrors = validator.validate(bmpConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
+            return;
+        }
+
+        if (!serverDeploymentStatus.value && bmpConfig.value.enableAuth) {
+            message.error('请先部署服务器');
             return;
         }
 
@@ -326,38 +306,6 @@
             }
         } catch (error) {
             message.error(`BMP服务器停止出错: ${error.message}`);
-        }
-    };
-
-    const deployToServer = async () => {
-        // 验证SSH凭据
-        const hasErrors = validator.validate(bmpConfig.value);
-        if (hasErrors) {
-            message.error('请检查配置信息是否正确');
-            return;
-        }
-
-        try {
-            deployLoading.value = true;
-            message.info('正在连接到Linux服务器...');
-
-            const deployConfig = {
-                serverAddress: bmpConfig.value.serverAddress,
-                sshUsername: bmpConfig.value.sshUsername,
-                sshPassword: bmpConfig.value.sshPassword
-            };
-
-            const result = await window.bmpApi.deployServer(deployConfig);
-
-            if (result.status === 'success') {
-                message.success('服务器部署成功！');
-            } else {
-                message.error(result.msg || '服务器部署失败');
-            }
-        } catch (error) {
-            message.error(`部署出错: ${error.message}`);
-        } finally {
-            deployLoading.value = false;
         }
     };
 
@@ -421,13 +369,16 @@
         if (savedConfig.status === 'success' && savedConfig.data) {
             bmpConfig.value.port = savedConfig.data.port || DEFAULT_VALUES.DEFAULT_BMP_PORT;
             bmpConfig.value.enableAuth = savedConfig.data.enableAuth || false;
-            bmpConfig.value.serverAddress = savedConfig.data.serverAddress || '';
             bmpConfig.value.peerIP = savedConfig.data.peerIP || '';
             bmpConfig.value.md5Password = savedConfig.data.md5Password || '';
-            bmpConfig.value.sshUsername = savedConfig.data.sshUsername || '';
-            bmpConfig.value.sshPassword = savedConfig.data.sshPassword || '';
         } else {
             console.error('配置文件加载失败', savedConfig.msg);
+        }
+
+        // 检查服务器部署状态
+        const deploymentStatus = await window.commonApi.getServerDeploymentStatus();
+        if (deploymentStatus.status === 'success' && deploymentStatus.data.success) {
+            serverDeploymentStatus.value = true;
         }
     });
 

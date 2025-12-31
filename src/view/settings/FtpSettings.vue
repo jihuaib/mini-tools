@@ -1,15 +1,16 @@
 <template>
     <div class="ftp-settings">
-        <h2>FTP设置</h2>
-        <a-form :model="settingsForm" layout="vertical">
-            <a-form-item label="FTP用户最大存储条数" name="maxFtpUser">
-                <a-input-number v-model:value="settingsForm.maxFtpUser" :min="10" :max="1000" style="width: 100%" />
-            </a-form-item>
+        <a-card title="FTP设置">
+            <a-form :model="settingsForm" layout="vertical">
+                <a-form-item label="FTP用户最大存储条数" name="maxFtpUser">
+                    <a-input-number v-model:value="settingsForm.maxFtpUser" :min="10" :max="1000" style="width: 100%" />
+                </a-form-item>
 
-            <a-form-item>
-                <a-button type="primary" @click="saveSettings">保存设置</a-button>
-            </a-form-item>
-        </a-form>
+                <a-form-item>
+                    <a-button type="primary" @click="saveSettings">保存设置</a-button>
+                </a-form-item>
+            </a-form>
+        </a-card>
     </div>
 </template>
 
@@ -57,12 +58,6 @@
 <style scoped>
     .ftp-settings {
         max-width: 100%;
-    }
-
-    h2 {
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: 500;
     }
 
     :deep(.ant-form-item-label > label) {

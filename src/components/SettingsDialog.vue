@@ -23,6 +23,10 @@
                         <template #icon><DownloadOutlined /></template>
                         <span>ftp设置</span>
                     </a-menu-item>
+                    <a-menu-item key="server-deployment">
+                        <template #icon><CloudServerOutlined /></template>
+                        <span>服务器部署</span>
+                    </a-menu-item>
                     <a-menu-item key="update">
                         <template #icon><CloudDownloadOutlined /></template>
                         <span>应用更新</span>
@@ -42,11 +46,18 @@
 
 <script setup>
     import { ref, computed, watch } from 'vue';
-    import { SettingOutlined, CodeOutlined, CloudDownloadOutlined, DownloadOutlined } from '@ant-design/icons-vue';
+    import {
+        SettingOutlined,
+        CodeOutlined,
+        CloudDownloadOutlined,
+        DownloadOutlined,
+        CloudServerOutlined
+    } from '@ant-design/icons-vue';
     import GeneralSettings from '../view/settings/GeneralSettings.vue';
     import ToolsSettings from '../view/settings/ToolsSettings.vue';
     import UpdateSettings from '../view/settings/UpdateSettings.vue';
     import FtpSettings from '../view/settings/FtpSettings.vue';
+    import ServerDeployment from '../view/settings/ServerDeployment.vue';
 
     const props = defineProps({
         visible: {
@@ -87,6 +98,8 @@
                 return ToolsSettings;
             case 'ftp':
                 return FtpSettings;
+            case 'server-deployment':
+                return ServerDeployment;
             case 'update':
                 return UpdateSettings;
             default:
