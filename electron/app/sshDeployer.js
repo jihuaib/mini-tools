@@ -41,6 +41,7 @@ class SshDeployer {
      * Execute command on remote server
      */
     async execCommand(command) {
+        logger.info(`Executing command: ${command}`);
         return new Promise((resolve, reject) => {
             this.conn.exec(command, (err, stream) => {
                 if (err) {
@@ -100,23 +101,31 @@ class SshDeployer {
         logger.info('Starting TCP MD5 proxy deployment...');
 
         try {
-            // Create proxy directory
+            // 使用临时目录上传文件，然后用 sudo 移动到 /opt
+            const tempDir = '/tmp/tcp-md5-proxy';
             const proxyDir = '/opt/tcp-md5-proxy';
-            await this.execCommand(`mkdir -p ${proxyDir}`);
-            logger.info(`Created directory: ${proxyDir}`);
 
-            // Upload C helper source
+            // 创建临时目录
+            await this.execCommand(`mkdir -p ${tempDir}`);
+            logger.info(`Created temp directory: ${tempDir}`);
+
+            // Upload C helper source to temp
             const helperSource = path.join(__dirname, '../../scripts/tcp-md5-helper.c');
-            await this.uploadFile(helperSource, `${proxyDir}/tcp-md5-helper.c`);
-            logger.info('Uploaded tcp-md5-helper.c');
+            await this.uploadFile(helperSource, `${tempDir}/tcp-md5-helper.c`);
+            logger.info('Uploaded tcp-md5-helper.c to temp');
 
-            // Upload proxy script
+            // Upload proxy script to temp
             const proxyScript = path.join(__dirname, '../../scripts/tcp-md5-proxy.sh');
-            await this.uploadFile(proxyScript, `${proxyDir}/tcp-md5-proxy.sh`);
-            logger.info('Uploaded tcp-md5-proxy.sh');
+            await this.uploadFile(proxyScript, `${tempDir}/tcp-md5-proxy.sh`);
+            logger.info('Uploaded tcp-md5-proxy.sh to temp');
+
+            // 创建目标目录并移动文件
+            await this.execCommand(`sudo mkdir -p ${proxyDir}`);
+            await this.execCommand(`sudo cp -r ${tempDir}/* ${proxyDir}/`);
+            logger.info(`Moved files to ${proxyDir}`);
 
             // Make script executable
-            await this.execCommand(`chmod +x ${proxyDir}/tcp-md5-proxy.sh`);
+            await this.execCommand(`sudo chmod +x ${proxyDir}/tcp-md5-proxy.sh`);
             logger.info('Made proxy script executable');
 
             // Install gcc if not present
@@ -126,23 +135,72 @@ class SshDeployer {
                 logger.info('gcc is already installed');
             } catch (error) {
                 logger.info('Installing gcc...');
-                await this.execCommand('yum install -y gcc || apt-get install -y gcc');
+                await this.execCommand('sudo yum install -y gcc || sudo apt-get install -y gcc');
                 logger.info('gcc installed successfully');
             }
 
             // Compile the helper
             logger.info('Compiling TCP MD5 helper...');
-            await this.execCommand(`gcc -g -o ${proxyDir}/tcp-md5-helper ${proxyDir}/tcp-md5-helper.c`);
+            await this.execCommand(`sudo gcc -g -o ${proxyDir}/tcp-md5-helper ${proxyDir}/tcp-md5-helper.c`);
             logger.info('Helper compiled successfully');
 
             // Disable firewall
             await this.disableFirewall();
 
             logger.info('TCP MD5 proxy deployment completed successfully');
+
+            // Deploy TCP-AO files
+            logger.info('Deploying TCP-AO proxy files...');
+
+            const aoTempDir = '/tmp/tcp-ao-proxy';
+            const aoProxyDir = '/opt/tcp-ao-proxy';
+
+            // 创建临时目录
+            await this.execCommand(`mkdir -p ${aoTempDir}`);
+            logger.info(`Created temp directory: ${aoTempDir}`);
+
+            // Upload TCP-AO C helper source to temp
+            const aoHelperSource = path.join(__dirname, '../../scripts/tcp-ao-helper.c');
+            await this.uploadFile(aoHelperSource, `${aoTempDir}/tcp-ao-helper.c`);
+            logger.info('Uploaded tcp-ao-helper.c to temp');
+
+            // Upload JSON parser source to temp
+            const jsonParserSource = path.join(__dirname, '../../scripts/json-parser.c');
+            await this.uploadFile(jsonParserSource, `${aoTempDir}/json-parser.c`);
+            logger.info('Uploaded json-parser.c to temp');
+
+            // Upload TCP-AO proxy script to temp
+            const aoProxyScript = path.join(__dirname, '../../scripts/tcp-ao-proxy.sh');
+            await this.uploadFile(aoProxyScript, `${aoTempDir}/tcp-ao-proxy.sh`);
+            logger.info('Uploaded tcp-ao-proxy.sh to temp');
+
+            // 创建目标目录并移动文件
+            await this.execCommand(`sudo mkdir -p ${aoProxyDir}`);
+            await this.execCommand(`sudo cp -r ${aoTempDir}/* ${aoProxyDir}/`);
+            logger.info(`Moved files to ${aoProxyDir}`);
+
+            // Make TCP-AO script executable
+            await this.execCommand(`sudo chmod +x ${aoProxyDir}/tcp-ao-proxy.sh`);
+            logger.info('Made TCP-AO proxy script executable');
+
+            // Try to compile TCP-AO helper (will fail if kernel doesn't support TCP-AO)
+            logger.info('Attempting to compile TCP-AO helper...');
+            const aoCompileResult = await this.execCommand(
+                `cd ${aoProxyDir} && sudo gcc -o tcp-ao-helper tcp-ao-helper.c json-parser.c -std=c99`
+            );
+            logger.info(`TCP-AO compile result: ${aoCompileResult}`);
+            logger.info('TCP-AO helper compiled successfully');
+            logger.info('✅ TCP-AO is available on this system');
+
+            logger.info('All proxy files deployment completed successfully');
+
             return {
                 proxyDir,
                 helperPath: `${proxyDir}/tcp-md5-helper`,
-                scriptPath: `${proxyDir}/tcp-md5-proxy.sh`
+                scriptPath: `${proxyDir}/tcp-md5-proxy.sh`,
+                aoProxyDir,
+                aoHelperPath: `${aoProxyDir}/tcp-ao-helper`,
+                aoScriptPath: `${aoProxyDir}/tcp-ao-proxy.sh`
             };
         } catch (error) {
             logger.error(`Deployment failed: ${error.message}`);
@@ -175,12 +233,12 @@ class SshDeployer {
 
             logger.info('Firewall disabled successfully');
         } catch (error) {
-            logger.warn(`Firewall disable warning: ${error.message}`);
+            logger.warn(`Could not disable firewall: ${error.message}`);
         }
     }
 
     /**
-     * Disconnect SSH connection
+     * Disconnect from SSH server
      */
     disconnect() {
         if (this.conn) {

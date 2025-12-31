@@ -7,7 +7,7 @@ const BmpConst = require('../const/bmpConst');
 const EventDispatcher = require('../utils/eventDispatcher');
 
 class BmpApp {
-    constructor(ipcMain, store) {
+    constructor(ipcMain, store, keychainManager) {
         this.ipcMain = ipcMain;
         this.store = store;
         this.bmpConfigFileKey = 'bmp-config';
@@ -21,6 +21,7 @@ class BmpApp {
         this.bmpTerminationHandler = null;
 
         this.serverDeploymentConfig = null;
+        this.keychainManager = keychainManager;
 
         this.registerHandlers();
     }
@@ -121,6 +122,28 @@ class BmpApp {
             );
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
+            // 如果启用认证且使用 keychain 模式，解析当前有效密钥
+            if (bmpConfigData.enableAuth && bmpConfigData.authMode === 'keychain' && bmpConfigData.keychainId) {
+                if (!this.keychainManager) {
+                    throw new Error('KeychainManager not initialized');
+                }
+
+                logger.info(`Using TCP-AO for keychain: ${bmpConfigData.keychainId}`);
+
+                const tcpAoKeysJson = this.keychainManager.generateTcpAoKeysJson(bmpConfigData.keychainId);
+
+                if (!tcpAoKeysJson) {
+                    throw new Error('当前时间段没有有效的密钥');
+                }
+
+                // 设置 TCP-AO 配置
+                bmpConfigData.useTcpAo = true;
+                bmpConfigData.tcpAoKeysJson = tcpAoKeysJson;
+
+                logger.info(`TCP-AO enabled with ${JSON.parse(tcpAoKeysJson).length} keys`);
+            }
+
+            // 设置 SSH 部署配置
             bmpConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
             bmpConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
             bmpConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;

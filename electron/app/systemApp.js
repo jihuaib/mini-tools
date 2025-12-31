@@ -15,6 +15,7 @@ const SnmpApp = require('./snmpApp');
 const AppUpdater = require('./updater');
 const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
+const KeychainManager = require('./keychainManager');
 /**
  * 用于系统菜单处理
  */
@@ -30,6 +31,7 @@ class SystemApp {
         this.ftpSettingsFileKey = 'FtpSettings';
         this.updateSettingsFileKey = 'UpdateSettings';
         this.deploymentConfigFileKey = 'DeploymentConfig';
+        this.keychainsFileKey = 'keychains';
         this.appVersionFileKey = 'appVersion';
 
         this.store = new Store({
@@ -44,8 +46,11 @@ class SystemApp {
             cwd: app.getPath('userData')
         });
 
+        // 初始化 KeychainManager
+        this.keychainManager = new KeychainManager(this.store, this.keychainsFileKey);
+
         this.bgpApp = new BgpApp(ipc, this.programStore);
-        this.bmpApp = new BmpApp(ipc, this.programStore);
+        this.bmpApp = new BmpApp(ipc, this.programStore, this.keychainManager);
         this.rpkiApp = new RpkiApp(ipc, this.programStore);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.snmpApp = new SnmpApp(ipc, this.programStore);
@@ -177,6 +182,12 @@ class SystemApp {
         ipc.handle('common:loadDeploymentConfig', () => this.handleLoadDeploymentConfig());
         ipc.handle('common:testSSHConnection', (event, config) => this.handleTestSSHConnection(config));
         ipc.handle('common:getServerDeploymentStatus', () => this.handleGetServerDeploymentStatus());
+
+        // Keychain 管理
+        ipc.handle('common:saveKeychain', (event, keychain) => this.handleSaveKeychain(keychain));
+        ipc.handle('common:loadKeychains', () => this.handleLoadKeychains());
+        ipc.handle('common:deleteKeychain', (event, id) => this.handleDeleteKeychain(id));
+        ipc.handle('common:getActiveKey', (event, keychainId, time) => this.handleGetActiveKey(keychainId, time));
     }
 
     async handleDeployServer(deployConfig) {
@@ -253,6 +264,52 @@ class SystemApp {
         } catch (error) {
             logger.error('Error getting server deployment status:', error.message);
             return successResponse({ success: false }, '');
+        }
+    }
+
+    // Keychain 管理
+    async handleSaveKeychain(keychain) {
+        try {
+            this.keychainManager.saveKeychain(keychain);
+            return successResponse(null, 'Keychain 保存成功');
+        } catch (error) {
+            logger.error('Error saving keychain:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadKeychains() {
+        try {
+            const keychains = this.keychainManager.loadKeychains();
+            return successResponse(keychains);
+        } catch (error) {
+            logger.error('Error loading keychains:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteKeychain(id) {
+        try {
+            this.keychainManager.deleteKeychain(id);
+            return successResponse(null, 'Keychain 删除成功');
+        } catch (error) {
+            logger.error('Error deleting keychain:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetActiveKey(keychainId, time) {
+        try {
+            const activeKey = this.keychainManager.getActiveKey(keychainId, time);
+
+            if (!activeKey) {
+                return errorResponse('当前时间段没有有效的密钥');
+            }
+
+            return successResponse(activeKey);
+        } catch (error) {
+            logger.error('Error getting active key:', error.message);
+            return errorResponse(error.message);
         }
     }
 

@@ -161,10 +161,11 @@ class BmpWorker {
     async startBmp(messageId, bmpConfigData) {
         this.bmpConfigData = bmpConfigData;
 
-        // 如果启用了MD5认证，使用SSH隧道
-        if (bmpConfigData.enableAuth && bmpConfigData.md5Password) {
+        // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
+        if (bmpConfigData.enableAuth && (bmpConfigData.md5Password || bmpConfigData.useTcpAo)) {
             try {
-                logger.info('MD5 authentication enabled, creating SSH tunnel...');
+                const authType = bmpConfigData.useTcpAo ? 'TCP-AO' : 'TCP MD5';
+                logger.info(`${authType} authentication enabled, creating SSH tunnel...`);
 
                 // 提取SSH服务器地址
                 const sshHost = bmpConfigData.serverAddress;
@@ -177,42 +178,52 @@ class BmpWorker {
                     password: bmpConfigData.sshPassword
                 });
 
-                // 设置SSH反向隧道 - 让Linux代理能连接回Windows
-                logger.info('Setting up SSH reverse tunnel...');
-                const tunnelPort = parseInt(bmpConfigData.tunnelPort) || 11020;
-                const localPort = parseInt(bmpConfigData.localPort) || 11019;
+                // 准备代理配置
+                let proxyConfig;
+                if (bmpConfigData.useTcpAo) {
+                    // TCP-AO 模式
+                    logger.info('Using TCP-AO proxy with keychain');
+                    proxyConfig = {
+                        useTcpAo: true,
+                        tcpAoKeysJson: bmpConfigData.tcpAoKeysJson
+                    };
+                } else {
+                    // TCP MD5 模式
+                    logger.info('Using TCP MD5 proxy');
+                    const md5Password = bmpConfigData.md5Password;
+                    proxyConfig = md5Password;
+                }
 
-                // 反向隧道: Linux的tunnelPort -> Windows的localPort
-                await this.sshTunnel.setupReverseForward(tunnelPort, localPort);
-
-                // 启动远程TCP MD5代理
+                // 启动远程代理
                 // 代理监听 bmpConfigData.port (路由器连接这个端口)
-                // 然后转发到 localhost:tunnelPort（通过SSH反向隧道回到Windows的localPort）
+                // 然后转发到本地 Windows BMP 服务器
+                const localPort = parseInt(bmpConfigData.localPort);
+
                 await this.sshTunnel.startProxy(
                     'bmp', // 协议类型
                     bmpConfigData.peerIP, // BMP路由器IP（peer IP）
-                    bmpConfigData.md5Password, // MD5密码
+                    proxyConfig, // 代理配置（MD5密码 或 TCP-AO配置）
                     bmpConfigData.port, // Linux监听端口（路由器连接）
-                    `localhost:${tunnelPort}` // 转发地址（SSH反向隧道）
+                    `localhost:${localPort}` // 转发到本地 Windows 的 localPort
                 );
 
-                logger.info('SSH tunnel and TCP MD5 proxy started successfully');
+                logger.info('SSH tunnel and proxy started successfully');
                 logger.info(`BMP router should connect to: ${sshHost}:${bmpConfigData.port}`);
-                logger.info(`Local BMP server will listen on: ${localPort}`);
+                logger.info(`Proxy will forward to localhost:${localPort}`);
 
-                // 临时修改配置，让本地服务器监听localPort而不是port
+                // 启动本地TCP服务器 - 直接监听 localPort
                 const originalPort = this.bmpConfigData.port;
                 this.bmpConfigData.port = localPort;
 
-                // 启动本地TCP服务器 - 接收来自SSH反向隧道的数据
+                // 启动本地TCP服务器
                 await this.startTcpServer(messageId);
 
                 // 恢复原始端口配置
                 this.bmpConfigData.port = originalPort;
 
-                logger.info('Local BMP server started, waiting for data from reverse tunnel');
+                logger.info('Local BMP server started, waiting for connections from proxy');
             } catch (error) {
-                logger.error(`SSH tunnel initialization failed: ${error.message}`);
+                logger.error(`Failed to setup SSH tunnel: ${error.message}`);
                 this.messageHandler.sendErrorResponse(messageId, `SSH隧道连接失败: ${error.message}`);
                 return;
             }
@@ -230,13 +241,26 @@ class BmpWorker {
             try {
                 // 停止远程代理
                 if (this.bmpConfigData) {
-                    const tunnelPort = this.bmpConfigData.tunnelPort || '11020';
+                    const localPort = this.bmpConfigData.localPort;
+                    const _sshHost = this.bmpConfigData.serverAddress;
+
+                    // 准备代理配置
+                    let proxyConfig;
+                    if (this.bmpConfigData.useTcpAo) {
+                        proxyConfig = {
+                            useTcpAo: true,
+                            tcpAoKeysJson: this.bmpConfigData.tcpAoKeysJson
+                        };
+                    } else {
+                        proxyConfig = this.bmpConfigData.md5Password;
+                    }
+
                     await this.sshTunnel.stopProxy(
                         'bmp',
                         this.bmpConfigData.peerIP,
-                        this.bmpConfigData.md5Password,
+                        proxyConfig,
                         this.bmpConfigData.port,
-                        `localhost:${tunnelPort}`
+                        `localhost:${localPort}`
                     );
                 }
                 // 断开SSH连接

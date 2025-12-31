@@ -18,23 +18,23 @@
                         </a-row>
                         <a-row>
                             <a-col :span="24">
-                                <a-form-item label="启用MD5认证" name="enableAuth">
+                                <a-form-item label="启用认证" name="enableAuth">
                                     <a-checkbox v-model:checked="bmpConfig.enableAuth" />
                                 </a-form-item>
                             </a-col>
                         </a-row>
 
-                        <!-- MD5认证配置 -->
+                        <!-- 认证配置 -->
                         <template v-if="bmpConfig.enableAuth">
                             <a-alert
                                 v-if="!serverDeploymentStatus"
                                 type="info"
-                                message="MD5认证需要服务器部署"
+                                message="认证需要服务器部署"
                                 show-icon
                                 style="margin-bottom: 16px"
                             >
                                 <template #description>
-                                    使用 MD5 认证需要先在 Linux 服务器上部署代理程序。
+                                    使用 认证需要先在 Linux 服务器上部署代理程序。
                                     <a style="margin-left: 8px" @click="openDeploymentSettings">前往服务器部署设置 →</a>
                                 </template>
                             </a-alert>
@@ -79,6 +79,18 @@
                                     </a-form-item>
                                 </a-col>
                                 <a-col :span="12">
+                                    <a-form-item label="认证模式" name="authMode">
+                                        <a-radio-group v-model:value="bmpConfig.authMode">
+                                            <a-radio value="md5">MD5 密钥</a-radio>
+                                            <a-radio value="keychain">Keychain</a-radio>
+                                        </a-radio-group>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- MD5 模式 -->
+                            <a-row v-if="bmpConfig.authMode === 'md5'">
+                                <a-col :span="24">
                                     <a-form-item label="MD5密钥" name="md5Password">
                                         <a-tooltip
                                             :title="validationErrors.md5Password"
@@ -89,6 +101,19 @@
                                                 :status="validationErrors.md5Password ? 'error' : ''"
                                             />
                                         </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- Keychain 模式 -->
+                            <a-row v-if="bmpConfig.authMode === 'keychain'">
+                                <a-col :span="24">
+                                    <a-form-item label="选择 Keychain" name="keychainId">
+                                        <a-select v-model:value="bmpConfig.keychainId" placeholder="请选择 Keychain">
+                                            <a-select-option v-for="kc in keychains" :key="kc.id" :value="kc.id">
+                                                {{ kc.name }} ({{ kc.keys.length }} 个密钥)
+                                            </a-select-option>
+                                        </a-select>
                                     </a-form-item>
                                 </a-col>
                             </a-row>
@@ -173,14 +198,17 @@
         port: DEFAULT_VALUES.DEFAULT_BMP_PORT,
         localPort: '11019',
         enableAuth: false,
+        authMode: 'md5', // 'md5' or 'keychain'
         peerIP: '',
         md5Password: '',
+        keychainId: '',
         tunnelPort: '11020'
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
     const serverDeploymentStatus = ref(false);
+    const keychains = ref([]);
 
     // Initiation messages list
     const clientList = ref([]);
@@ -364,15 +392,23 @@
         EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onInitiationHandler);
         EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onTerminationHandler);
 
-        // 加载保存的配置
+        // 加载BMP配置
         const savedConfig = await window.bmpApi.loadBmpConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
             bmpConfig.value.port = savedConfig.data.port || DEFAULT_VALUES.DEFAULT_BMP_PORT;
             bmpConfig.value.enableAuth = savedConfig.data.enableAuth || false;
+            bmpConfig.value.authMode = savedConfig.data.authMode || 'md5';
             bmpConfig.value.peerIP = savedConfig.data.peerIP || '';
             bmpConfig.value.md5Password = savedConfig.data.md5Password || '';
+            bmpConfig.value.keychainId = savedConfig.data.keychainId || '';
         } else {
             console.error('配置文件加载失败', savedConfig.msg);
+        }
+
+        // 加载 Keychains
+        const keychainsResult = await window.commonApi.loadKeychains();
+        if (keychainsResult.status === 'success') {
+            keychains.value = keychainsResult.data || [];
         }
 
         // 检查服务器部署状态

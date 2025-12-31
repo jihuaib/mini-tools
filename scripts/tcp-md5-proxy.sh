@@ -9,8 +9,8 @@ LISTEN_PORT=$4
 FORWARD_ADDR=$5
 
 PROXY_DIR="/opt/tcp-md5-proxy"
-PID_FILE="/var/run/tcp-md5-proxy-${PROTOCOL}.pid"
-LOG_FILE="/var/log/tcp-md5-proxy-${PROTOCOL}.log"
+PID_FILE="/tmp/tcp-md5-proxy-${PROTOCOL}.pid"
+LOG_FILE="/tmp/tcp-md5-proxy-${PROTOCOL}.log"
 HELPER_BIN="$PROXY_DIR/tcp-md5-helper"
 
 # Function to log with timestamp
