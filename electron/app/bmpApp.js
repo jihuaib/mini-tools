@@ -33,7 +33,7 @@ class BmpApp {
         this.ipcMain.handle('bmp:getBgpRoutes', this.handleGetBgpRoutes.bind(this));
         this.ipcMain.handle('bmp:getBgpInstances', this.handleGetBgpInstances.bind(this));
         this.ipcMain.handle('bmp:getBgpInstanceRoutes', this.handleGetBgpInstanceRoutes.bind(this));
-        this.ipcMain.handle('bmp:deployGrpcServer', this.handleDeployGrpcServer.bind(this));
+        this.ipcMain.handle('bmp:deployServer', this.handleDeployServer.bind(this));
     }
 
     async handleSaveBmpConfig(event, config) {
@@ -269,7 +269,7 @@ class BmpApp {
         }
     }
 
-    async handleDeployGrpcServer(event, deployConfig) {
+    async handleDeployServer(event, deployConfig) {
         const SshDeployer = require('./sshDeployer');
         const deployer = new SshDeployer();
 

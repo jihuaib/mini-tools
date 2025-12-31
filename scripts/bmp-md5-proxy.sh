@@ -5,13 +5,7 @@
 PEER_IP=$1
 MD5_PASSWORD=$2
 LISTEN_PORT=$3
-FORWARD_ADDR=${4:-"localhost:11020"}
-
-if [ -z "$PEER_IP" ] || [ -z "$MD5_PASSWORD" ] || [ -z "$LISTEN_PORT" ]; then
-    echo "Usage: $0 <peer_ip> <md5_password> <listen_port> [forward_addr]"
-    echo "Example: $0 192.168.1.1 mypassword 11019 localhost:11020"
-    exit 1
-fi
+FORWARD_ADDR=$4
 
 PROXY_DIR="/opt/bmp-md5-proxy"
 PID_FILE="/var/run/bmp-md5-proxy.pid"
@@ -52,7 +46,7 @@ start_proxy() {
     log_msg "Listen port: $LISTEN_PORT"
     log_msg "Forward to: $FORWARD_ADDR"
     log_msg "MD5 password: ***"
-    
+
     # Compile helper if needed
     compile_helper || return 1
 
@@ -60,10 +54,10 @@ start_proxy() {
     log_msg "Launching helper process..."
     nohup "$HELPER_BIN" "$PEER_IP" "$MD5_PASSWORD" "$LISTEN_PORT" "$FORWARD_ADDR" \
         >> "$LOG_FILE" 2>&1 &
-    
+
     PID=$!
     echo $PID > "$PID_FILE"
-    
+
     echo "Proxy started with PID $PID"
     log_msg "Proxy started with PID $PID"
     log_msg "Log file: $LOG_FILE"

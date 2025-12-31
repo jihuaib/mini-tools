@@ -24,29 +24,15 @@
                             </a-col>
                         </a-row>
                         <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="24">
-                                <a-form-item label="本地监听端口" name="localPort">
-                                    <a-tooltip :title="validationErrors.localPort" :open="!!validationErrors.localPort">
-                                        <a-input
-                                            v-model:value="bmpConfig.localPort"
-                                            placeholder="Windows本地BMP服务器端口 (默认: 11019)"
-                                            :status="validationErrors.localPort ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
                             <a-col :span="8">
-                                <a-form-item label="Linux服务器地址" name="grpcServerAddress">
+                                <a-form-item label="服务器地址" name="serverAddress">
                                     <a-tooltip
-                                        :title="validationErrors.grpcServerAddress"
-                                        :open="!!validationErrors.grpcServerAddress"
+                                        :title="validationErrors.serverAddress"
+                                        :open="!!validationErrors.serverAddress"
                                     >
                                         <a-input
-                                            v-model:value="bmpConfig.grpcServerAddress"
-                                            placeholder="例如: 192.168.1.100:50051"
-                                            :status="validationErrors.grpcServerAddress ? 'error' : ''"
+                                            v-model:value="bmpConfig.serverAddress"
+                                            :status="validationErrors.serverAddress ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
@@ -59,7 +45,6 @@
                                     >
                                         <a-input
                                             v-model:value="bmpConfig.sshUsername"
-                                            placeholder="Linux服务器SSH用户名"
                                             :status="validationErrors.sshUsername ? 'error' : ''"
                                         />
                                     </a-tooltip>
@@ -73,7 +58,6 @@
                                     >
                                         <a-input-password
                                             v-model:value="bmpConfig.sshPassword"
-                                            placeholder="Linux服务器SSH密码"
                                             :status="validationErrors.sshPassword ? 'error' : ''"
                                         />
                                     </a-tooltip>
@@ -81,38 +65,16 @@
                             </a-col>
                         </a-row>
                         <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="24">
-                                <a-form-item label="目标BMP主机" name="targetHost">
-                                    <a-tooltip
-                                        :title="validationErrors.targetHost"
-                                        :open="!!validationErrors.targetHost"
-                                    >
+                            <a-col :span="12">
+                                <a-form-item label="本地监听端口" name="localPort">
+                                    <a-tooltip :title="validationErrors.localPort" :open="!!validationErrors.localPort">
                                         <a-input
-                                            v-model:value="bmpConfig.targetHost"
-                                            placeholder="BMP路由器IP地址"
-                                            :status="validationErrors.targetHost ? 'error' : ''"
+                                            v-model:value="bmpConfig.localPort"
+                                            :status="validationErrors.localPort ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
                             </a-col>
-                        </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="24">
-                                <a-form-item label="MD5密钥" name="md5Password">
-                                    <a-tooltip
-                                        :title="validationErrors.md5Password"
-                                        :open="!!validationErrors.md5Password"
-                                    >
-                                        <a-input-password
-                                            v-model:value="bmpConfig.md5Password"
-                                            placeholder="MD5认证密钥"
-                                            :status="validationErrors.md5Password ? 'error' : ''"
-                                        />
-                                    </a-tooltip>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
                             <a-col :span="12">
                                 <a-form-item label="隧道端口" name="tunnelPort">
                                     <a-tooltip
@@ -121,7 +83,6 @@
                                     >
                                         <a-input
                                             v-model:value="bmpConfig.tunnelPort"
-                                            placeholder="SSH反向隧道端口 (默认: 11020)"
                                             :status="validationErrors.tunnelPort ? 'error' : ''"
                                         />
                                     </a-tooltip>
@@ -129,32 +90,41 @@
                             </a-col>
                         </a-row>
                         <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="24">
-                                <a-form-item label="隧道端口" name="tunnelPort">
-                                    <a-tooltip
-                                        :title="validationErrors.tunnelPort"
-                                        :open="!!validationErrors.tunnelPort"
-                                    >
+                            <a-col :span="12">
+                                <a-form-item label="路由器IP" name="peerIP">
+                                    <a-tooltip :title="validationErrors.peerIP" :open="!!validationErrors.peerIP">
                                         <a-input
-                                            v-model:value="bmpConfig.tunnelPort"
-                                            placeholder="SSH反向隧道端口 (默认: 11020)"
-                                            :status="validationErrors.tunnelPort ? 'error' : ''"
+                                            v-model:value="bmpConfig.peerIP"
+                                            :status="validationErrors.peerIP ? 'error' : ''"
+                                        />
+                                    </a-tooltip>
+                                </a-form-item>
+                            </a-col>
+                            <a-col :span="12">
+                                <a-form-item label="MD5密钥" name="md5Password">
+                                    <a-tooltip
+                                        :title="validationErrors.md5Password"
+                                        :open="!!validationErrors.md5Password"
+                                    >
+                                        <a-input-password
+                                            v-model:value="bmpConfig.md5Password"
+                                            :status="validationErrors.md5Password ? 'error' : ''"
                                         />
                                     </a-tooltip>
                                 </a-form-item>
                             </a-col>
                         </a-row>
-                        <a-row v-if="bmpConfig.enableAuth">
-                            <a-col :span="24">
-                                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                                    <a-button type="default" :loading="deployLoading" @click="deployToServer">
-                                        部署到Linux服务器
-                                    </a-button>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
+
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
+                                <a-button
+                                    v-if="bmpConfig.enableAuth"
+                                    type="default"
+                                    :loading="deployLoading"
+                                    @click="deployToServer"
+                                >
+                                    部署服务器
+                                </a-button>
                                 <a-button
                                     type="primary"
                                     html-type="submit"
@@ -229,8 +199,8 @@
         port: DEFAULT_VALUES.DEFAULT_BMP_PORT,
         localPort: '11019',
         enableAuth: false,
-        grpcServerAddress: '',
-        targetHost: '',
+        serverAddress: '',
+        peerIP: '',
         md5Password: '',
         sshUsername: '',
         sshPassword: '',
@@ -287,8 +257,8 @@
 
     const validationErrors = ref({
         port: '',
-        grpcServerAddress: '',
-        targetHost: '',
+        serverAddress: '',
+        peerIP: '',
         md5Password: '',
         sshUsername: '',
         sshPassword: ''
@@ -361,13 +331,9 @@
 
     const deployToServer = async () => {
         // 验证SSH凭据
-        if (!bmpConfig.value.sshUsername || !bmpConfig.value.sshPassword) {
-            message.error('请输入SSH用户名和密码');
-            return;
-        }
-
-        if (!bmpConfig.value.grpcServerAddress) {
-            message.error('请输入Linux服务器地址');
+        const hasErrors = validator.validate(bmpConfig.value);
+        if (hasErrors) {
+            message.error('请检查配置信息是否正确');
             return;
         }
 
@@ -376,17 +342,17 @@
             message.info('正在连接到Linux服务器...');
 
             const deployConfig = {
-                serverAddress: bmpConfig.value.grpcServerAddress.split(':')[0], // 提取主机地址
+                serverAddress: bmpConfig.value.serverAddress,
                 sshUsername: bmpConfig.value.sshUsername,
                 sshPassword: bmpConfig.value.sshPassword
             };
 
-            const result = await window.bmpApi.deployGrpcServer(deployConfig);
+            const result = await window.bmpApi.deployServer(deployConfig);
 
             if (result.status === 'success') {
-                message.success('gRPC服务器部署成功！');
+                message.success('服务器部署成功！');
             } else {
-                message.error(result.msg || 'gRPC服务器部署失败');
+                message.error(result.msg || '服务器部署失败');
             }
         } catch (error) {
             message.error(`部署出错: ${error.message}`);
@@ -455,8 +421,8 @@
         if (savedConfig.status === 'success' && savedConfig.data) {
             bmpConfig.value.port = savedConfig.data.port || DEFAULT_VALUES.DEFAULT_BMP_PORT;
             bmpConfig.value.enableAuth = savedConfig.data.enableAuth || false;
-            bmpConfig.value.grpcServerAddress = savedConfig.data.grpcServerAddress || '';
-            bmpConfig.value.targetHost = savedConfig.data.targetHost || '';
+            bmpConfig.value.serverAddress = savedConfig.data.serverAddress || '';
+            bmpConfig.value.peerIP = savedConfig.data.peerIP || '';
             bmpConfig.value.md5Password = savedConfig.data.md5Password || '';
             bmpConfig.value.sshUsername = savedConfig.data.sshUsername || '';
             bmpConfig.value.sshPassword = savedConfig.data.sshPassword || '';

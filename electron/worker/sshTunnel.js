@@ -117,7 +117,7 @@ class SshTunnel extends EventEmitter {
     /**
      * Start TCP MD5 proxy on remote server
      */
-    async startProxy(peerIp, md5Password, listenPort, forwardAddr = 'localhost:11020') {
+    async startProxy(peerIp, md5Password, listenPort, forwardAddr) {
         logger.info(`Starting TCP MD5 proxy for peer ${peerIp} on port ${listenPort}`);
 
         // Start the proxy script with new parameters
@@ -213,53 +213,6 @@ class SshTunnel extends EventEmitter {
      */
     isActive() {
         return this.tunnelActive && this.conn !== null;
-    }
-
-    /**
-     * Run diagnostics on remote server
-     */
-    async diagnose() {
-        if (!this.conn) {
-            throw new Error('SSH not connected');
-        }
-
-        logger.info('Running diagnostics on remote server...');
-
-        try {
-            // Check if proxy is running
-            const psResult = await this.execCommand(
-                'ps aux | grep tcp-md5-helper | grep -v grep || echo "not running"'
-            );
-            logger.info(`Process status: ${psResult}`);
-
-            // Check listening ports
-            const portResult = await this.execCommand(
-                'netstat -tlnp 2>/dev/null | grep tcp-md5-helper || ss -tlnp 2>/dev/null | grep tcp-md5-helper || echo "no ports"'
-            );
-            logger.info(`Listening ports: ${portResult}`);
-
-            // Check firewall
-            const fwResult = await this.execCommand(
-                'systemctl is-active firewalld 2>/dev/null || systemctl is-active iptables 2>/dev/null || echo "inactive"'
-            );
-            logger.info(`Firewall status: ${fwResult}`);
-
-            // Get recent logs
-            const logResult = await this.execCommand(
-                'tail -n 30 /var/log/bmp-md5-proxy.log 2>/dev/null || echo "no logs"'
-            );
-            logger.info(`Recent logs:\n${logResult}`);
-
-            return {
-                process: psResult,
-                ports: portResult,
-                firewall: fwResult,
-                logs: logResult
-            };
-        } catch (error) {
-            logger.error(`Diagnostic failed: ${error.message}`);
-            throw error;
-        }
     }
 
     /**
