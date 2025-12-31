@@ -67,7 +67,8 @@ export const BMP_BGP_RIB_TYPE_NAME = {
 
 // Default Values
 export const DEFAULT_VALUES = {
-    DEFAULT_BMP_PORT: '1790'
+    DEFAULT_BMP_PORT: '1790',
+    DEFAULT_GRPC_PORT: 50051
 };
 
 export const BMP_EVENT_PAGE_ID = {

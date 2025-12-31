@@ -38,7 +38,7 @@ class EventBus {
      */
     emit(eventType, data) {
         if (this.handlers.has(eventType)) {
-            this.handlers.get(eventType).forEach((handler, id) => {
+            this.handlers.get(eventType).forEach((handler, _id) => {
                 try {
                     handler(data);
                 } catch (error) {

@@ -100,7 +100,10 @@ contextBridge.exposeInMainWorld('bmpApi', {
         ipcRenderer.invoke('bmp:getBgpRoutes', client, session, af, ribType, page, pageSize),
     getBgpInstances: client => ipcRenderer.invoke('bmp:getBgpInstances', client),
     getBgpInstanceRoutes: (client, instance, page, pageSize) =>
-        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize)
+        ipcRenderer.invoke('bmp:getBgpInstanceRoutes', client, instance, page, pageSize),
+
+    // gRPC服务器部署
+    deployGrpcServer: deployConfig => ipcRenderer.invoke('bmp:deployGrpcServer', deployConfig)
 });
 
 // rpki模块

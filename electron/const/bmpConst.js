@@ -80,6 +80,12 @@ const BMP_BGP_RIB_TYPE = {
     POST_ADJ_RIB_OUT: 5
 };
 
+// Authentication configuration
+const BMP_AUTH_CONFIG = {
+    DEFAULT_GRPC_PORT: 50051,
+    DEFAULT_GRPC_HOST: 'localhost'
+};
+
 module.exports = {
     BMP_HEADER_LENGTH,
     BMP_MSG_TYPE,
@@ -91,5 +97,6 @@ module.exports = {
     BMP_ROUTE_UPDATE_TYPE,
     BMP_EVT_TYPES,
     BMP_REQ_TYPES,
-    BMP_BGP_RIB_TYPE
+    BMP_BGP_RIB_TYPE,
+    BMP_AUTH_CONFIG
 };

@@ -33,6 +33,7 @@ class BmpApp {
         this.ipcMain.handle('bmp:getBgpRoutes', this.handleGetBgpRoutes.bind(this));
         this.ipcMain.handle('bmp:getBgpInstances', this.handleGetBgpInstances.bind(this));
         this.ipcMain.handle('bmp:getBgpInstanceRoutes', this.handleGetBgpInstanceRoutes.bind(this));
+        this.ipcMain.handle('bmp:deployGrpcServer', this.handleDeployGrpcServer.bind(this));
     }
 
     async handleSaveBmpConfig(event, config) {
@@ -265,6 +266,29 @@ class BmpApp {
         } catch (error) {
             logger.error('Error getting BGP instances:', error.message);
             return errorResponse(error.message);
+        }
+    }
+
+    async handleDeployGrpcServer(event, deployConfig) {
+        const SshDeployer = require('./sshDeployer');
+        const deployer = new SshDeployer();
+
+        try {
+            logger.info(`Starting BMP MD5 proxy deployment to ${deployConfig.serverAddress}...`);
+
+            // Connect to SSH server
+            await deployer.connect(deployConfig.serverAddress, deployConfig.sshUsername, deployConfig.sshPassword);
+
+            // Deploy proxy
+            const result = await deployer.deploy();
+
+            logger.info('BMP MD5 proxy deployment completed successfully');
+            return successResponse(result, 'BMP MD5代理部署成功');
+        } catch (error) {
+            logger.error(`BMP MD5 proxy deployment failed: ${error.message}`);
+            return errorResponse(`部署失败: ${error.message}`);
+        } finally {
+            deployer.disconnect();
         }
     }
 

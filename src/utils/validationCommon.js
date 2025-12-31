@@ -768,6 +768,66 @@ export const createBmpConfigValidationRules = () => {
                 validator: validators.port,
                 message: '请输入1024-65535之间的数字'
             }
+        ],
+        grpcServerAddress: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入Linux服务器地址'
+            },
+            {
+                validator: (value, formData) => {
+                    if (!formData.enableAuth || !value) return true;
+                    // 验证格式: host:port
+                    const parts = value.split(':');
+                    if (parts.length !== 2) return false;
+                    const port = parseInt(parts[1]);
+                    return port >= 1 && port <= 65535;
+                },
+                message: '请输入有效的服务器地址 (格式: host:port)'
+            }
+        ],
+        targetHost: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入目标BMP主机地址'
+            },
+            {
+                validator: (value, formData) => {
+                    if (!formData.enableAuth || !value) return true;
+                    return validators.ipv4(value) || validators.ipv6(value);
+                },
+                message: '请输入有效的IP地址'
+            }
+        ],
+        md5Password: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入MD5密钥'
+            },
+            {
+                validator: validators.minLength(1),
+                message: 'MD5密钥不能为空'
+            }
+        ],
+        sshUsername: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入SSH用户名'
+            },
+            {
+                validator: validators.minLength(1),
+                message: 'SSH用户名不能为空'
+            }
+        ],
+        sshPassword: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入SSH密码'
+            },
+            {
+                validator: validators.minLength(1),
+                message: 'SSH密码不能为空'
+            }
         ]
     };
 };

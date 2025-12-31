@@ -1477,6 +1477,7 @@ class BmpSession {
     }
 
     closeSession() {
+        // Close direct socket if exists
         if (this.socket) {
             this.socket.destroy();
             this.socket = null;
