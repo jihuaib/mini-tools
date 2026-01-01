@@ -196,15 +196,28 @@ class BmpWorker {
 
                 // 启动远程代理
                 // 代理监听 bmpConfigData.port (路由器连接这个端口)
-                // 然后转发到本地 Windows BMP 服务器
+                // 然后转发到 Windows BMP 服务器
                 const localPort = parseInt(bmpConfigData.localPort);
+
+                // 获取 Windows 客户端 IP（从 SSH 连接）
+                let windowsIp = 'localhost';
+                try {
+                    const whoamiOutput = await this.sshTunnel.execCommand('echo $SSH_CLIENT');
+                    const sshClientInfo = whoamiOutput.trim().split(' ');
+                    if (sshClientInfo.length > 0) {
+                        windowsIp = sshClientInfo[0]; // SSH 客户端 IP
+                        logger.info(`Detected Windows client IP: ${windowsIp}`);
+                    }
+                } catch (error) {
+                    logger.warn(`Could not detect Windows IP, using localhost: ${error.message}`);
+                }
 
                 await this.sshTunnel.startProxy(
                     'bmp', // 协议类型
                     bmpConfigData.peerIP, // BMP路由器IP（peer IP）
                     proxyConfig, // 代理配置（MD5密码 或 TCP-AO配置）
                     bmpConfigData.port, // Linux监听端口（路由器连接）
-                    `localhost:${localPort}` // 转发到本地 Windows 的 localPort
+                    `${windowsIp}:${localPort}` // 转发到 Windows 的 localPort
                 );
 
                 logger.info('SSH tunnel and proxy started successfully');
@@ -255,12 +268,24 @@ class BmpWorker {
                         proxyConfig = this.bmpConfigData.md5Password;
                     }
 
+                    // 获取 Windows 客户端 IP（与 startProxy 保持一致）
+                    let windowsIp = 'localhost';
+                    try {
+                        const whoamiOutput = await this.sshTunnel.execCommand('echo $SSH_CLIENT');
+                        const sshClientInfo = whoamiOutput.trim().split(' ');
+                        if (sshClientInfo.length > 0) {
+                            windowsIp = sshClientInfo[0];
+                        }
+                    } catch (error) {
+                        // Ignore error, use localhost as fallback
+                    }
+
                     await this.sshTunnel.stopProxy(
                         'bmp',
                         this.bmpConfigData.peerIP,
                         proxyConfig,
                         this.bmpConfigData.port,
-                        `localhost:${localPort}`
+                        `${windowsIp}:${localPort}`
                     );
                 }
                 // 断开SSH连接

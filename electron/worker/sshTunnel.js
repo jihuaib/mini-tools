@@ -180,6 +180,12 @@ class SshTunnel extends EventEmitter {
             return;
         }
 
+        // Validate protocol parameter
+        if (!protocol) {
+            logger.warn('stopProxy called without protocol, skipping');
+            return;
+        }
+
         logger.info(`Stopping ${protocol.toUpperCase()} proxy...`);
 
         try {

@@ -40,7 +40,7 @@
                             </a-alert>
 
                             <a-row>
-                                <a-col :span="12">
+                                <a-col :span="24">
                                     <a-form-item label="本地监听端口" name="localPort">
                                         <a-tooltip
                                             :title="validationErrors.localPort"
@@ -49,19 +49,6 @@
                                             <a-input
                                                 v-model:value="bmpConfig.localPort"
                                                 :status="validationErrors.localPort ? 'error' : ''"
-                                            />
-                                        </a-tooltip>
-                                    </a-form-item>
-                                </a-col>
-                                <a-col :span="12">
-                                    <a-form-item label="隧道端口" name="tunnelPort">
-                                        <a-tooltip
-                                            :title="validationErrors.tunnelPort"
-                                            :open="!!validationErrors.tunnelPort"
-                                        >
-                                            <a-input
-                                                v-model:value="bmpConfig.tunnelPort"
-                                                :status="validationErrors.tunnelPort ? 'error' : ''"
                                             />
                                         </a-tooltip>
                                     </a-form-item>
@@ -201,8 +188,7 @@
         authMode: 'md5', // 'md5' or 'keychain'
         peerIP: '',
         md5Password: '',
-        keychainId: '',
-        tunnelPort: '11020'
+        keychainId: ''
     });
 
     const serverLoading = ref(false);
@@ -257,7 +243,6 @@
     const validationErrors = ref({
         port: '',
         localPort: '',
-        tunnelPort: '',
         peerIP: '',
         md5Password: ''
     });
@@ -398,6 +383,7 @@
             bmpConfig.value.port = savedConfig.data.port || DEFAULT_VALUES.DEFAULT_BMP_PORT;
             bmpConfig.value.enableAuth = savedConfig.data.enableAuth || false;
             bmpConfig.value.authMode = savedConfig.data.authMode || 'md5';
+            bmpConfig.value.localPort = savedConfig.data.localPort;
             bmpConfig.value.peerIP = savedConfig.data.peerIP || '';
             bmpConfig.value.md5Password = savedConfig.data.md5Password || '';
             bmpConfig.value.keychainId = savedConfig.data.keychainId || '';

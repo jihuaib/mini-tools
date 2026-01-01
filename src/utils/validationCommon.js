@@ -779,16 +779,6 @@ export const createBmpConfigValidationRules = () => {
                 message: '请输入1024-65535之间的数字'
             }
         ],
-        tunnelPort: [
-            {
-                validator: validators.conditionalRequired(formData => formData.enableAuth),
-                message: '请输入隧道端口号'
-            },
-            {
-                validator: validators.port,
-                message: '请输入1024-65535之间的数字'
-            }
-        ],
         peerIP: [
             {
                 validator: validators.conditionalRequired(formData => formData.enableAuth),

@@ -18,18 +18,6 @@ log_msg() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$PROTOCOL] $1" >> "$LOG_FILE"
 }
 
-# Function to compile helper if needed
-compile_helper() {
-    if [ ! -f "$HELPER_BIN" ]; then
-        log_msg "Compiling TCP MD5 helper..."
-        gcc -g -o "$HELPER_BIN" "$PROXY_DIR/tcp-md5-helper.c" >> "$LOG_FILE" 2>&1 || {
-            log_msg "ERROR: Failed to compile helper"
-            return 1
-        }
-        log_msg "Helper compiled successfully"
-    fi
-}
-
 # Function to start proxy
 start_proxy() {
     if [ -f "$PID_FILE" ]; then
@@ -47,9 +35,6 @@ start_proxy() {
     log_msg "Listen port: $LISTEN_PORT"
     log_msg "Forward to: $FORWARD_ADDR"
     log_msg "MD5 password: ***"
-
-    # Compile helper if needed
-    compile_helper || return 1
 
     # Start the TCP MD5 proxy helper
     log_msg "Launching helper process..."

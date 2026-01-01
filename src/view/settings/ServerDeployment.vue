@@ -97,7 +97,7 @@
 │                         │
 │  tcp-md5-helper         │
 └────────┬────────────────┘
-         │ SSH 反向隧道（加密）
+         │ SSH 加密转发
          ↓
 ┌─────────────────────────┐
 │  Windows App            │  接收并处理数据
@@ -110,7 +110,7 @@
                         BMP 路由器连接到 Linux 服务器的指定端口（带 MD5 签名）
                     </a-descriptions-item>
                     <a-descriptions-item label="步骤 2">Linux 代理验证 MD5 签名，接受连接</a-descriptions-item>
-                    <a-descriptions-item label="步骤 3">数据通过 SSH 反向隧道加密传输到 Windows</a-descriptions-item>
+                    <a-descriptions-item label="步骤 3">数据通过 SSH 转发加密传输到 Windows</a-descriptions-item>
                     <a-descriptions-item label="步骤 4">Windows BMP 应用接收并处理 BMP 数据</a-descriptions-item>
                 </a-descriptions>
             </a-card>

@@ -69,13 +69,34 @@ int set_tcp_md5_peer(int sockfd, const char *peer_ip, const char *password) {
     memcpy(md5sig.tcpm_key, password, md5sig.tcpm_keylen);
     
     log_msg("Setting TCP MD5 signature for peer %s (key length: %d)", peer_ip, md5sig.tcpm_keylen);
+    log_msg("DEBUG: MD5 password first 4 bytes: %02x %02x %02x %02x", 
+            (unsigned char)password[0], (unsigned char)password[1], 
+            (unsigned char)password[2], (unsigned char)password[3]);
     
+    // Try to set TCP MD5 signature
     if (setsockopt(sockfd, IPPROTO_TCP, TCP_MD5SIG, &md5sig, sizeof(md5sig)) < 0) {
-        log_msg("ERROR: setsockopt TCP_MD5SIG failed: %s", strerror(errno));
+        log_msg("ERROR: setsockopt TCP_MD5SIG failed: %s (errno=%d)", strerror(errno), errno);
+        log_msg("       This may indicate:");
+        log_msg("       1. Kernel doesn't support TCP_MD5SIG");
+        log_msg("       2. Insufficient permissions (need root/CAP_NET_ADMIN)");
+        log_msg("       3. Socket state doesn't allow MD5 setup");
         return -1;
     }
     
     log_msg("TCP MD5 signature set successfully for peer %s", peer_ip);
+    
+    // Verify the setting (read it back)
+    struct tcp_md5sig verify_md5sig;
+    socklen_t optlen = sizeof(verify_md5sig);
+    memset(&verify_md5sig, 0, sizeof(verify_md5sig));
+    memcpy(&verify_md5sig.tcpm_addr, &addr, sizeof(struct sockaddr_in));
+    
+    if (getsockopt(sockfd, IPPROTO_TCP, TCP_MD5SIG, &verify_md5sig, &optlen) == 0) {
+        log_msg("DEBUG: MD5 signature verified, key length: %d", verify_md5sig.tcpm_keylen);
+    } else {
+        log_msg("WARNING: Could not verify MD5 signature: %s", strerror(errno));
+    }
+    
     return 0;
 }
 

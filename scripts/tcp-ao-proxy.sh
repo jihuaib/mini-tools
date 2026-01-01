@@ -18,34 +18,6 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# 编译 helper
-compile_helper() {
-    log "Compiling TCP-AO helper..."
-    
-    # 检查是否已编译
-    if [ -f "$HELPER_BIN" ]; then
-        log "Helper binary already exists"
-        return 0
-    fi
-    
-    # 检查 gcc
-    if ! command -v gcc &> /dev/null; then
-        log "ERROR: gcc not found, installing..."
-        yum install -y gcc || apt-get install -y gcc
-    fi
-    
-    # 编译（包含 JSON 解析器）
-    gcc -o "$HELPER_BIN" "$PROXY_DIR/tcp-ao-helper.c" "$PROXY_DIR/json-parser.c" -std=c99
-    
-    if [ $? -eq 0 ]; then
-        log "Helper compiled successfully"
-        chmod +x "$HELPER_BIN"
-        return 0
-    else
-        log "ERROR: Failed to compile helper"
-        return 1
-    fi
-}
 
 # 启动代理
 start_proxy() {
@@ -62,9 +34,6 @@ start_proxy() {
             rm -f "$PID_FILE"
         fi
     fi
-    
-    # 编译 helper
-    compile_helper || return 1
     
     # 启动 helper
     log "Starting helper: $HELPER_BIN $PEER_IP '$KEYS_JSON' $LISTEN_PORT $FORWARD_ADDR"

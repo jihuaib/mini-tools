@@ -9,7 +9,7 @@
  * - 支持多种算法 (HMAC-SHA-1, HMAC-SHA-256)
  * - 定时检查并更新密钥配置
  * 
- * 编译: gcc -o tcp-ao-helper tcp-ao-helper.c json-parser.c
+ * 编译: gcc -o tcp-ao-helper tcp-ao-helper.c tcp-ao-json-parser.c
  * 使用: ./tcp-ao-helper <peer_ip> <keys_json> <listen_port> <forward_addr> [key_rotation_interval]
  * 
  * keys_json 格式:

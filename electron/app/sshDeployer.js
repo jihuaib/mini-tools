@@ -98,35 +98,61 @@ class SshDeployer {
      * Deploy BMP MD5 proxy to remote server
      */
     async deploy() {
-        logger.info('Starting TCP MD5 proxy deployment...');
+        logger.info('Starting proxy deployment...');
 
         try {
+            const fs = require('fs');
+            const scriptsDir = path.join(__dirname, '../../scripts');
+
             // 使用临时目录上传文件，然后用 sudo 移动到 /opt
-            const tempDir = '/tmp/tcp-md5-proxy';
-            const proxyDir = '/opt/tcp-md5-proxy';
+            const tempMd5Dir = '/tmp/tcp-md5-proxy';
+            const tempAoDir = '/tmp/tcp-ao-proxy';
+            const md5ProxyDir = '/opt/tcp-md5-proxy';
+            const aoProxyDir = '/opt/tcp-ao-proxy';
 
             // 创建临时目录
-            await this.execCommand(`mkdir -p ${tempDir}`);
-            logger.info(`Created temp directory: ${tempDir}`);
+            await this.execCommand(`mkdir -p ${tempMd5Dir} ${tempAoDir}`);
+            logger.info('Created temp directories');
 
-            // Upload C helper source to temp
-            const helperSource = path.join(__dirname, '../../scripts/tcp-md5-helper.c');
-            await this.uploadFile(helperSource, `${tempDir}/tcp-md5-helper.c`);
-            logger.info('Uploaded tcp-md5-helper.c to temp');
+            // 读取 scripts 目录中的所有文件
+            const scriptFiles = fs.readdirSync(scriptsDir);
+            logger.info(`Found ${scriptFiles.length} files in scripts directory`);
 
-            // Upload proxy script to temp
-            const proxyScript = path.join(__dirname, '../../scripts/tcp-md5-proxy.sh');
-            await this.uploadFile(proxyScript, `${tempDir}/tcp-md5-proxy.sh`);
-            logger.info('Uploaded tcp-md5-proxy.sh to temp');
+            // 分类并上传文件
+            for (const file of scriptFiles) {
+                const localPath = path.join(scriptsDir, file);
+                const stats = fs.statSync(localPath);
+
+                // 跳过目录
+                if (stats.isDirectory()) {
+                    continue;
+                }
+
+                // 根据文件名决定上传到哪个目录
+                let targetDir;
+                if (file.includes('tcp-ao')) {
+                    targetDir = tempAoDir;
+                } else if (file.includes('tcp-md5')) {
+                    targetDir = tempMd5Dir;
+                } else {
+                    // 默认上传到两个目录（如通用工具脚本）
+                    targetDir = tempMd5Dir;
+                }
+
+                await this.uploadFile(localPath, `${targetDir}/${file}`);
+                logger.info(`Uploaded ${file} to ${targetDir}`);
+            }
 
             // 创建目标目录并移动文件
-            await this.execCommand(`sudo mkdir -p ${proxyDir}`);
-            await this.execCommand(`sudo cp -r ${tempDir}/* ${proxyDir}/`);
-            logger.info(`Moved files to ${proxyDir}`);
+            await this.execCommand(`sudo mkdir -p ${md5ProxyDir} ${aoProxyDir}`);
+            await this.execCommand(`sudo cp -r ${tempMd5Dir}/* ${md5ProxyDir}/`);
+            await this.execCommand(`sudo cp -r ${tempAoDir}/* ${aoProxyDir}/`);
+            logger.info('Moved files to target directories');
 
-            // Make script executable
-            await this.execCommand(`sudo chmod +x ${proxyDir}/tcp-md5-proxy.sh`);
-            logger.info('Made proxy script executable');
+            // Make scripts executable
+            await this.execCommand(`sudo chmod +x ${md5ProxyDir}/*.sh`);
+            await this.execCommand(`sudo chmod +x ${aoProxyDir}/*.sh`);
+            logger.info('Made scripts executable');
 
             // Install gcc if not present
             logger.info('Checking for gcc...');
@@ -139,67 +165,34 @@ class SshDeployer {
                 logger.info('gcc installed successfully');
             }
 
-            // Compile the helper
+            // Compile TCP MD5 helper
             logger.info('Compiling TCP MD5 helper...');
-            await this.execCommand(`sudo gcc -g -o ${proxyDir}/tcp-md5-helper ${proxyDir}/tcp-md5-helper.c`);
-            logger.info('Helper compiled successfully');
+            await this.execCommand(`sudo gcc -g -o ${md5ProxyDir}/tcp-md5-helper ${md5ProxyDir}/tcp-md5-helper.c`);
+            logger.info('TCP MD5 helper compiled successfully');
+
+            // Try to compile TCP-AO helper
+            logger.info('Attempting to compile TCP-AO helper...');
+            try {
+                await this.execCommand(
+                    `cd ${aoProxyDir} && sudo gcc -o tcp-ao-helper tcp-ao-helper.c tcp-ao-json-parser.c -std=c99`
+                );
+                logger.info('TCP-AO helper compiled successfully');
+                logger.info('✅ TCP-AO is available on this system');
+            } catch (error) {
+                logger.warn('TCP-AO compilation failed (kernel may not support TCP-AO)');
+            }
 
             // Disable firewall
             await this.disableFirewall();
 
-            logger.info('TCP MD5 proxy deployment completed successfully');
-
-            // Deploy TCP-AO files
-            logger.info('Deploying TCP-AO proxy files...');
-
-            const aoTempDir = '/tmp/tcp-ao-proxy';
-            const aoProxyDir = '/opt/tcp-ao-proxy';
-
-            // 创建临时目录
-            await this.execCommand(`mkdir -p ${aoTempDir}`);
-            logger.info(`Created temp directory: ${aoTempDir}`);
-
-            // Upload TCP-AO C helper source to temp
-            const aoHelperSource = path.join(__dirname, '../../scripts/tcp-ao-helper.c');
-            await this.uploadFile(aoHelperSource, `${aoTempDir}/tcp-ao-helper.c`);
-            logger.info('Uploaded tcp-ao-helper.c to temp');
-
-            // Upload JSON parser source to temp
-            const jsonParserSource = path.join(__dirname, '../../scripts/json-parser.c');
-            await this.uploadFile(jsonParserSource, `${aoTempDir}/json-parser.c`);
-            logger.info('Uploaded json-parser.c to temp');
-
-            // Upload TCP-AO proxy script to temp
-            const aoProxyScript = path.join(__dirname, '../../scripts/tcp-ao-proxy.sh');
-            await this.uploadFile(aoProxyScript, `${aoTempDir}/tcp-ao-proxy.sh`);
-            logger.info('Uploaded tcp-ao-proxy.sh to temp');
-
-            // 创建目标目录并移动文件
-            await this.execCommand(`sudo mkdir -p ${aoProxyDir}`);
-            await this.execCommand(`sudo cp -r ${aoTempDir}/* ${aoProxyDir}/`);
-            logger.info(`Moved files to ${aoProxyDir}`);
-
-            // Make TCP-AO script executable
-            await this.execCommand(`sudo chmod +x ${aoProxyDir}/tcp-ao-proxy.sh`);
-            logger.info('Made TCP-AO proxy script executable');
-
-            // Try to compile TCP-AO helper (will fail if kernel doesn't support TCP-AO)
-            logger.info('Attempting to compile TCP-AO helper...');
-            const aoCompileResult = await this.execCommand(
-                `cd ${aoProxyDir} && sudo gcc -o tcp-ao-helper tcp-ao-helper.c json-parser.c -std=c99`
-            );
-            logger.info(`TCP-AO compile result: ${aoCompileResult}`);
-            logger.info('TCP-AO helper compiled successfully');
-            logger.info('✅ TCP-AO is available on this system');
-
             logger.info('All proxy files deployment completed successfully');
 
             return {
-                proxyDir,
-                helperPath: `${proxyDir}/tcp-md5-helper`,
-                scriptPath: `${proxyDir}/tcp-md5-proxy.sh`,
+                md5ProxyDir,
                 aoProxyDir,
+                md5HelperPath: `${md5ProxyDir}/tcp-md5-helper`,
                 aoHelperPath: `${aoProxyDir}/tcp-ao-helper`,
+                md5ScriptPath: `${md5ProxyDir}/tcp-md5-proxy.sh`,
                 aoScriptPath: `${aoProxyDir}/tcp-ao-proxy.sh`
             };
         } catch (error) {
@@ -213,13 +206,48 @@ class SshDeployer {
      */
     async disableFirewall() {
         try {
-            // Try to stop and disable firewalld (CentOS 7/8)
+            // Try to disable ufw (Ubuntu/Debian)
+            try {
+                // Check if system is Ubuntu/Debian
+                const osRelease = await this.execCommand('cat /etc/os-release 2>/dev/null || echo ""');
+                const isUbuntuDebian = osRelease.includes('Ubuntu') || osRelease.includes('Debian');
+
+                if (isUbuntuDebian) {
+                    // Check if ufw is installed
+                    let ufwInstalled = false;
+                    try {
+                        await this.execCommand('which ufw 2>/dev/null');
+                        ufwInstalled = true;
+                    } catch (e) {
+                        // ufw not installed, try to install it
+                        logger.info('UFW not found on Ubuntu/Debian, installing...');
+                        try {
+                            await this.execCommand('sudo apt-get update -qq 2>/dev/null');
+                            await this.execCommand('sudo apt-get install -y ufw 2>/dev/null');
+                            ufwInstalled = true;
+                            logger.info('UFW installed successfully');
+                        } catch (installError) {
+                            logger.warn('Failed to install UFW, skipping firewall disable');
+                        }
+                    }
+
+                    // Disable ufw if installed
+                    if (ufwInstalled) {
+                        await this.execCommand('sudo ufw disable 2>/dev/null');
+                        logger.info('UFW (Ubuntu firewall) disabled');
+                    }
+                }
+            } catch (e) {
+                // Not Ubuntu/Debian or ufw operations failed
+            }
+
+            // Try to stop and disable firewalld (CentOS 7/8, RHEL)
             try {
                 await this.execCommand('systemctl stop firewalld 2>/dev/null');
                 await this.execCommand('systemctl disable firewalld 2>/dev/null');
                 logger.info('Firewalld stopped and disabled');
             } catch (e) {
-                // Firewalld not present, try iptables
+                // Firewalld not present
             }
 
             // Try to stop and disable iptables (CentOS 6)
