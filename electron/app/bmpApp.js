@@ -122,8 +122,15 @@ class BmpApp {
             );
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
 
+            if (bmpConfigData.enableAuth) {
+                // 设置 SSH 部署配置
+                bmpConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
+                bmpConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
+                bmpConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;
+            }
+
             // 如果启用认证且使用 keychain 模式，解析当前有效密钥
-            if (bmpConfigData.enableAuth && bmpConfigData.authMode === 'keychain' && bmpConfigData.keychainId) {
+            if (bmpConfigData.authMode === 'keychain' && bmpConfigData.keychainId) {
                 if (!this.keychainManager) {
                     throw new Error('KeychainManager not initialized');
                 }
@@ -142,11 +149,6 @@ class BmpApp {
 
                 logger.info(`TCP-AO enabled with ${JSON.parse(tcpAoKeysJson).length} keys`);
             }
-
-            // 设置 SSH 部署配置
-            bmpConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
-            bmpConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
-            bmpConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;
 
             const result = await this.worker.sendRequest(BmpConst.BMP_REQ_TYPES.START_BMP, bmpConfigData);
 
