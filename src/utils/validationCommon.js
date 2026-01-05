@@ -775,7 +775,10 @@ export const createBmpConfigValidationRules = () => {
                 message: '请输入本地端口号'
             },
             {
-                validator: validators.port,
+                validator: (value, formData) => {
+                    if (!formData.enableAuth || !value) return true;
+                    return validators.port(value);
+                },
                 message: '请输入1024-65535之间的数字'
             }
         ],
@@ -796,10 +799,6 @@ export const createBmpConfigValidationRules = () => {
             {
                 validator: validators.conditionalRequired(formData => formData.enableAuth),
                 message: '请输入MD5密钥'
-            },
-            {
-                validator: validators.minLength(1),
-                message: 'MD5密钥不能为空'
             }
         ]
     };
@@ -818,6 +817,38 @@ export const createRpkiConfigValidationRules = () => {
             {
                 validator: validators.port,
                 message: '请输入1024-65535之间的数字'
+            }
+        ],
+        localPort: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入本地端口号'
+            },
+            {
+                validator: (value, formData) => {
+                    if (!formData.enableAuth || !value) return true;
+                    return validators.port(value);
+                },
+                message: '请输入1024-65535之间的数字'
+            }
+        ],
+        peerIP: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入目标BMP主机地址'
+            },
+            {
+                validator: (value, formData) => {
+                    if (!formData.enableAuth || !value) return true;
+                    return validators.ipv4(value) || validators.ipv6(value);
+                },
+                message: '请输入有效的IP地址'
+            }
+        ],
+        md5Password: [
+            {
+                validator: validators.conditionalRequired(formData => formData.enableAuth),
+                message: '请输入MD5密钥'
             }
         ]
     };

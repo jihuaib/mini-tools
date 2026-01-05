@@ -51,7 +51,7 @@ class SystemApp {
 
         this.bgpApp = new BgpApp(ipc, this.programStore);
         this.bmpApp = new BmpApp(ipc, this.programStore, this.keychainManager);
-        this.rpkiApp = new RpkiApp(ipc, this.programStore);
+        this.rpkiApp = new RpkiApp(ipc, this.programStore, this.keychainManager);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.snmpApp = new SnmpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
@@ -495,6 +495,7 @@ class SystemApp {
         const deploymentConfig = this.store.get(this.deploymentConfigFileKey);
         if (deploymentConfig) {
             this.bmpApp.setServerDeploymentConfig(deploymentConfig);
+            this.rpkiApp.setServerDeploymentConfig(deploymentConfig);
         }
     }
 

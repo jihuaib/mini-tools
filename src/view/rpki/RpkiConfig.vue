@@ -16,6 +16,94 @@
                                 </a-form-item>
                             </a-col>
                         </a-row>
+                        <a-row>
+                            <a-col :span="24">
+                                <a-form-item label="启用认证" name="enableAuth">
+                                    <a-checkbox v-model:checked="rpkiConfig.enableAuth" />
+                                </a-form-item>
+                            </a-col>
+                        </a-row>
+                        <!-- 认证配置 -->
+                        <template v-if="rpkiConfig.enableAuth">
+                            <a-alert
+                                v-if="!serverDeploymentStatus"
+                                type="info"
+                                message="认证需要服务器部署"
+                                show-icon
+                                style="margin-bottom: 16px"
+                            >
+                                <template #description>
+                                    使用 认证需要先在 Linux 服务器上部署代理程序。
+                                    <a style="margin-left: 8px" @click="openDeploymentSettings">前往服务器部署设置 →</a>
+                                </template>
+                            </a-alert>
+
+                            <a-row>
+                                <a-col :span="24">
+                                    <a-form-item label="本地监听端口" name="localPort">
+                                        <a-tooltip
+                                            :title="validationErrors.localPort"
+                                            :open="!!validationErrors.localPort"
+                                        >
+                                            <a-input
+                                                v-model:value="rpkiConfig.localPort"
+                                                :status="validationErrors.localPort ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                            <a-row>
+                                <a-col :span="12">
+                                    <a-form-item label="路由器IP" name="peerIP">
+                                        <a-tooltip :title="validationErrors.peerIP" :open="!!validationErrors.peerIP">
+                                            <a-input
+                                                v-model:value="rpkiConfig.peerIP"
+                                                :status="validationErrors.peerIP ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :span="12">
+                                    <a-form-item label="认证模式" name="authMode">
+                                        <a-radio-group v-model:value="rpkiConfig.authMode">
+                                            <a-radio value="md5">MD5 密钥</a-radio>
+                                            <a-radio value="keychain">Keychain</a-radio>
+                                        </a-radio-group>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- MD5 模式 -->
+                            <a-row v-if="rpkiConfig.authMode === 'md5'">
+                                <a-col :span="24">
+                                    <a-form-item label="MD5密钥" name="md5Password">
+                                        <a-tooltip
+                                            :title="validationErrors.md5Password"
+                                            :open="!!validationErrors.md5Password"
+                                        >
+                                            <a-input-password
+                                                v-model:value="rpkiConfig.md5Password"
+                                                :status="validationErrors.md5Password ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- Keychain 模式 -->
+                            <a-row v-if="rpkiConfig.authMode === 'keychain'">
+                                <a-col :span="24">
+                                    <a-form-item label="选择 Keychain" name="keychainId">
+                                        <a-select v-model:value="rpkiConfig.keychainId" placeholder="请选择 Keychain">
+                                            <a-select-option v-for="kc in keychains" :key="kc.id" :value="kc.id">
+                                                {{ kc.name }} ({{ kc.keys.length }} 个密钥)
+                                            </a-select-option>
+                                        </a-select>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                        </template>
                         <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
                             <a-space>
                                 <a-button
@@ -86,15 +174,25 @@
         name: 'RpkiConfig'
     });
 
+    const emit = defineEmits(['openSettings']);
+
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
 
     const rpkiConfig = ref({
-        port: DEFAULT_VALUES.DEFAULT_RPKI_PORT
+        port: DEFAULT_VALUES.DEFAULT_RPKI_PORT,
+        localPort: '11019',
+        enableAuth: false,
+        authMode: 'md5', // 'md5' or 'keychain'
+        peerIP: '',
+        md5Password: '',
+        keychainId: ''
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
+    const serverDeploymentStatus = ref(false);
+    const keychains = ref([]);
 
     // 客户端列表
     const clientList = ref([]);
@@ -130,7 +228,10 @@
     ];
 
     const validationErrors = ref({
-        port: ''
+        port: '',
+        localPort: '',
+        peerIP: '',
+        md5Password: ''
     });
 
     let validator = new FormValidator(validationErrors);
@@ -145,6 +246,11 @@
         }
     });
 
+    // Open deployment settings
+    const openDeploymentSettings = () => {
+        emit('openSettings', 'server-deployment');
+    };
+
     // Details drawer
     const detailsDrawerVisible = ref(false);
     const detailsDrawerTitle = ref('');
@@ -154,6 +260,11 @@
         const hasErrors = validator.validate(rpkiConfig.value);
         if (hasErrors) {
             message.error('请检查配置信息是否正确');
+            return;
+        }
+
+        if (!serverDeploymentStatus.value && rpkiConfig.value.enableAuth) {
+            message.error('请先部署服务器');
             return;
         }
 
@@ -240,7 +351,28 @@
             // 加载配置
             const result = await window.rpkiApi.loadRpkiConfig();
             if (result.status === 'success' && result.data) {
-                rpkiConfig.value = result.data;
+                console.log(result.data);
+                rpkiConfig.value.port = result.data.port;
+                rpkiConfig.value.enableAuth = result.data.enableAuth || false;
+                rpkiConfig.value.authMode = result.data.authMode || 'md5';
+                rpkiConfig.value.localPort = result.data.localPort;
+                rpkiConfig.value.peerIP = result.data.peerIP || '';
+                rpkiConfig.value.md5Password = result.data.md5Password || '';
+                rpkiConfig.value.keychainId = result.data.keychainId || '';
+            } else {
+                console.error('配置文件加载失败', result.msg);
+            }
+
+            // 加载 Keychains
+            const keychainsResult = await window.commonApi.loadKeychains();
+            if (keychainsResult.status === 'success') {
+                keychains.value = keychainsResult.data || [];
+            }
+
+            // 检查服务器部署状态
+            const deploymentStatus = await window.commonApi.getServerDeploymentStatus();
+            if (deploymentStatus.status === 'success' && deploymentStatus.data.success) {
+                serverDeploymentStatus.value = true;
             }
         } catch (error) {
             console.error('初始化RPKI配置出错:', error);

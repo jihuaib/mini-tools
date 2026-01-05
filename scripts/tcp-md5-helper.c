@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
     log_msg("MD5 password length: %d bytes", (int)strlen(md5_password));
     log_msg("Forwarding to %s:%d", forward_host, forward_port);
     log_msg("========================================");
-    log_msg("Waiting for BMP router connection...");
+    log_msg("Waiting for router connection...");
     log_msg("If connection fails, check:");
     log_msg("  1. Router is configured with correct MD5 password");
     log_msg("  2. Router IP matches: %s", peer_ip);

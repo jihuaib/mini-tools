@@ -12,7 +12,7 @@
         <div class="content-container">
             <router-view v-slot="{ Component }">
                 <keep-alive :include="$store.state.cachedViews">
-                    <component :is="Component" ref="currentTab" />
+                    <component :is="Component" ref="currentTab" @open-settings="handleOpenSettings" />
                 </keep-alive>
             </router-view>
         </div>
@@ -25,6 +25,8 @@
 
     defineOptions({ name: 'RpkiMain' });
 
+    const emit = defineEmits(['openSettings']);
+
     const router = useRouter();
     const activeTabKey = ref('rpki-config');
     const currentTab = ref(null);
@@ -36,6 +38,10 @@
             }
         }
     });
+
+    const handleOpenSettings = category => {
+        emit('openSettings', category);
+    };
 
     const handleTabChange = key => {
         router.push(`/rpki/${key}`);

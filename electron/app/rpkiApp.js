@@ -8,7 +8,7 @@ const RpkiConst = require('../const/rpkiConst');
 const EventDispatcher = require('../utils/eventDispatcher');
 
 class RpkiApp {
-    constructor(ipcMain, store) {
+    constructor(ipcMain, store, keychainManager) {
         this.ipcMain = ipcMain;
         this.store = store;
         this.rpkiConfigFileKey = 'rpki-config';
@@ -16,6 +16,9 @@ class RpkiApp {
         this.isDev = !app.isPackaged;
         this.worker = null;
         this.eventDispatcher = null; // 添加事件发送器
+
+        this.serverDeploymentConfig = null;
+        this.keychainManager = keychainManager;
 
         this.rpkiClientConnectionHandler = null;
 
@@ -55,6 +58,9 @@ class RpkiApp {
             logger.error('Error loading RPKI config:', error.message);
             return errorResponse(error.message);
         }
+    }
+    setServerDeploymentConfig(config) {
+        this.serverDeploymentConfig = config;
     }
 
     async handleStartRpki(event, rpkiConfigData) {
@@ -99,6 +105,34 @@ class RpkiApp {
                 }
             } else {
                 logger.error(`RPKI ROA配置加载失败: ${roaList.msg}`);
+            }
+
+            if (rpkiConfigData.enableAuth) {
+                // 设置 SSH 部署配置
+                rpkiConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
+                rpkiConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
+                rpkiConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;
+            }
+
+            // 如果启用认证且使用 keychain 模式，解析当前有效密钥
+            if (rpkiConfigData.authMode === 'keychain' && rpkiConfigData.keychainId) {
+                if (!this.keychainManager) {
+                    throw new Error('KeychainManager not initialized');
+                }
+
+                logger.info(`Using TCP-AO for keychain: ${rpkiConfigData.keychainId}`);
+
+                const tcpAoKeysJson = this.keychainManager.generateTcpAoKeysJson(rpkiConfigData.keychainId);
+
+                if (!tcpAoKeysJson) {
+                    throw new Error('当前时间段没有有效的密钥');
+                }
+
+                // 设置 TCP-AO 配置
+                rpkiConfigData.useTcpAo = true;
+                rpkiConfigData.tcpAoKeysJson = tcpAoKeysJson;
+
+                logger.info(`TCP-AO enabled with ${JSON.parse(tcpAoKeysJson).length} keys`);
             }
 
             const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.START_RPKI, rpkiConfigData);

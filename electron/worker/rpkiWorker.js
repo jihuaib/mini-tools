@@ -5,6 +5,7 @@ const WorkerMessageHandler = require('./workerMessageHandler');
 const RpkiSession = require('./rpkiSession');
 const RpkiRoa = require('./rpkiRoa');
 const RpkiConst = require('../const/rpkiConst');
+const SshTunnel = require('./sshTunnel');
 
 class RpkiWorker {
     constructor() {
@@ -260,13 +261,140 @@ class RpkiWorker {
         }
     }
 
-    startRpki(messageId, rpkiConfigData) {
+    async startRpki(messageId, rpkiConfigData) {
         this.rpkiConfigData = rpkiConfigData;
-        // 启动tcp服务器
-        this.startTcpServer(messageId);
+        // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
+        if (rpkiConfigData.enableAuth && (rpkiConfigData.md5Password || rpkiConfigData.useTcpAo)) {
+            try {
+                const authType = rpkiConfigData.useTcpAo ? 'TCP-AO' : 'TCP MD5';
+                logger.info(`${authType} authentication enabled, creating SSH tunnel...`);
+
+                // 提取SSH服务器地址
+                const sshHost = rpkiConfigData.serverAddress;
+
+                // 创建SSH隧道
+                this.sshTunnel = new SshTunnel();
+                await this.sshTunnel.connect({
+                    host: sshHost,
+                    username: rpkiConfigData.sshUsername,
+                    password: rpkiConfigData.sshPassword
+                });
+
+                // 准备代理配置
+                let proxyConfig;
+                if (rpkiConfigData.useTcpAo) {
+                    // TCP-AO 模式
+                    logger.info('Using TCP-AO proxy with keychain');
+                    proxyConfig = {
+                        useTcpAo: true,
+                        tcpAoKeysJson: rpkiConfigData.tcpAoKeysJson
+                    };
+                } else {
+                    // TCP MD5 模式
+                    logger.info('Using TCP MD5 proxy');
+                    const md5Password = rpkiConfigData.md5Password;
+                    proxyConfig = md5Password;
+                }
+
+                // 启动远程代理
+                // 代理监听 rpkiConfigData.port (路由器连接这个端口)
+                // 然后转发到 Windows RPKI 服务器
+                const localPort = parseInt(rpkiConfigData.localPort);
+
+                // 获取 Windows 客户端 IP（从 SSH 连接）
+                let windowsIp = 'localhost';
+                try {
+                    const whoamiOutput = await this.sshTunnel.execCommand('echo $SSH_CLIENT');
+                    const sshClientInfo = whoamiOutput.trim().split(' ');
+                    if (sshClientInfo.length > 0) {
+                        windowsIp = sshClientInfo[0]; // SSH 客户端 IP
+                        logger.info(`Detected Windows client IP: ${windowsIp}`);
+                    }
+                } catch (error) {
+                    logger.warn(`Could not detect Windows IP, using localhost: ${error.message}`);
+                }
+
+                await this.sshTunnel.startProxy(
+                    'rpki', // 协议类型
+                    rpkiConfigData.peerIP, // BMP路由器IP（peer IP）
+                    proxyConfig, // 代理配置（MD5密码 或 TCP-AO配置）
+                    rpkiConfigData.port, // Linux监听端口（路由器连接）
+                    `${windowsIp}:${localPort}` // 转发到 Windows 的 localPort
+                );
+
+                logger.info('SSH tunnel and proxy started successfully');
+                logger.info(`RPKI router should connect to: ${sshHost}:${rpkiConfigData.port}`);
+                logger.info(`Proxy will forward to localhost:${localPort}`);
+
+                // 启动本地TCP服务器 - 直接监听 localPort
+                const originalPort = this.rpkiConfigData.port;
+                this.rpkiConfigData.port = localPort;
+
+                // 启动本地TCP服务器
+                await this.startTcpServer(messageId);
+
+                // 恢复原始端口配置
+                this.rpkiConfigData.port = originalPort;
+
+                logger.info('Local RPKI server started, waiting for connections from proxy');
+            } catch (error) {
+                logger.error(`Failed to setup SSH tunnel: ${error.message}`);
+                this.messageHandler.sendErrorResponse(messageId, `SSH隧道连接失败: ${error.message}`);
+                return;
+            }
+        } else {
+            // 启动tcp服务器
+            this.startTcpServer(messageId);
+        }
     }
 
-    stopRpki(messageId) {
+    async stopRpki(messageId) {
+        // 停止SSH隧道和代理
+        if (this.sshTunnel) {
+            try {
+                // 停止远程代理
+                if (this.rpkiConfigData) {
+                    const localPort = this.rpkiConfigData.localPort;
+                    const _sshHost = this.rpkiConfigData.serverAddress;
+
+                    // 准备代理配置
+                    let proxyConfig;
+                    if (this.rpkiConfigData.useTcpAo) {
+                        proxyConfig = {
+                            useTcpAo: true,
+                            tcpAoKeysJson: this.rpkiConfigData.tcpAoKeysJson
+                        };
+                    } else {
+                        proxyConfig = this.rpkiConfigData.md5Password;
+                    }
+
+                    // 获取 Windows 客户端 IP（与 startProxy 保持一致）
+                    let windowsIp = 'localhost';
+                    try {
+                        const whoamiOutput = await this.sshTunnel.execCommand('echo $SSH_CLIENT');
+                        const sshClientInfo = whoamiOutput.trim().split(' ');
+                        if (sshClientInfo.length > 0) {
+                            windowsIp = sshClientInfo[0];
+                        }
+                    } catch (error) {
+                        // Ignore error, use localhost as fallback
+                    }
+
+                    await this.sshTunnel.stopProxy(
+                        'rpki',
+                        this.rpkiConfigData.peerIP,
+                        proxyConfig,
+                        this.rpkiConfigData.port,
+                        `${windowsIp}:${localPort}`
+                    );
+                }
+                // 断开SSH连接
+                await this.sshTunnel.disconnect();
+            } catch (error) {
+                logger.error(`Error stopping SSH tunnel: ${error.message}`);
+            }
+            this.sshTunnel = null;
+        }
         if (this.server) {
             this.server.close();
             this.server = null;
