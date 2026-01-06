@@ -154,6 +154,12 @@ class BgpWorker {
     startBgp(messageId, bgpConfigData) {
         this.bgpConfigData = bgpConfigData;
 
+        // 设置日志级别
+        if (this.bgpConfigData.logLevel) {
+            logger.raw().transports.file.level = this.bgpConfigData.logLevel;
+            logger.info(`Worker log level set to: ${this.bgpConfigData.logLevel}`);
+        }
+
         this.bgpConfigData.addressFamily.forEach(addressFamily => {
             const { afi, safi } = getAfiAndSafi(addressFamily);
             // 创建bgp实例

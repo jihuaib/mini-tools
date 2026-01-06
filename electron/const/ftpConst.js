@@ -11,7 +11,8 @@ const FTP_SUB_EVT_TYPES = {
 // FTP请求-响应类型
 const FTP_REQ_TYPES = {
     START_FTP: 1,
-    STOP_FTP: 2
+    STOP_FTP: 2,
+    GET_CLIENT_LIST: 3
 };
 
 const DEFAULT_FTP_SETTINGS = {

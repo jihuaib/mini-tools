@@ -69,7 +69,8 @@ const RPKI_REQ_TYPES = {
     START_RPKI: 1,
     STOP_RPKI: 2,
     ADD_ROA: 3,
-    DELETE_ROA: 4
+    DELETE_ROA: 4,
+    GET_CLIENT_LIST: 5
 };
 
 module.exports = {

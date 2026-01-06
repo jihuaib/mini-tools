@@ -23,6 +23,8 @@ class BmpApp {
         this.serverDeploymentConfig = null;
         this.keychainManager = keychainManager;
 
+        this.logLevel = null;
+
         this.registerHandlers();
     }
 
@@ -74,6 +76,11 @@ class BmpApp {
             }
 
             logger.info(`${JSON.stringify(bmpConfigData)}`);
+
+            // 获取日志级别配置
+            if (this.logLevel) {
+                bmpConfigData.logLevel = this.logLevel;
+            }
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/bmpWorker.js')

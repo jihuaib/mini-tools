@@ -20,6 +20,8 @@ class RpkiApp {
         this.serverDeploymentConfig = null;
         this.keychainManager = keychainManager;
 
+        this.logLevel = null;
+
         this.rpkiClientConnectionHandler = null;
 
         this.registerHandlers();
@@ -30,6 +32,7 @@ class RpkiApp {
         this.ipcMain.handle('rpki:loadRpkiConfig', this.handleLoadRpkiConfig.bind(this));
         this.ipcMain.handle('rpki:startRpki', this.handleStartRpki.bind(this));
         this.ipcMain.handle('rpki:stopRpki', this.handleStopRpki.bind(this));
+        this.ipcMain.handle('rpki:getClientList', this.handleGetClientList.bind(this));
 
         // roa
         this.ipcMain.handle('rpki:addRoa', this.handleAddRoa.bind(this));
@@ -72,6 +75,11 @@ class RpkiApp {
             }
 
             logger.info(`${JSON.stringify(rpkiConfigData)}`);
+
+            // 获取日志级别配置
+            if (this.logLevel) {
+                rpkiConfigData.logLevel = this.logLevel;
+            }
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/rpkiWorker.js')
@@ -291,6 +299,21 @@ class RpkiApp {
             return successResponse(currentRoaList, 'RPKI ROA配置文件加载成功');
         } catch (error) {
             logger.error('Error getting ROA list:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetClientList() {
+        if (null === this.worker) {
+            return successResponse([], 'RPKI未启动');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.GET_CLIENT_LIST, null);
+            logger.info(`获取客户端列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取客户端列表成功');
+        } catch (error) {
+            logger.error('Error getting client list:', error.message);
             return errorResponse(error.message);
         }
     }

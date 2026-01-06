@@ -103,6 +103,8 @@
         name: 'StringGenerator'
     });
 
+    const _emit = defineEmits(['openSettings']);
+
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
 

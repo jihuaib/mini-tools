@@ -129,7 +129,8 @@ contextBridge.exposeInMainWorld('rpkiApi', {
     // roa操作
     addRoa: roa => ipcRenderer.invoke('rpki:addRoa', roa),
     deleteRoa: roa => ipcRenderer.invoke('rpki:deleteRoa', roa),
-    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList')
+    getRoaList: () => ipcRenderer.invoke('rpki:getRoaList'),
+    getClientList: () => ipcRenderer.invoke('rpki:getClientList')
 });
 
 // ftp模块
@@ -144,7 +145,8 @@ contextBridge.exposeInMainWorld('ftpApi', {
     // ftp操作
     startFtp: (config, user) => ipcRenderer.invoke('ftp:startFtp', config, user),
     stopFtp: () => ipcRenderer.invoke('ftp:stopFtp'),
-    getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus')
+    getFtpStatus: () => ipcRenderer.invoke('ftp:getFtpStatus'),
+    getClientList: () => ipcRenderer.invoke('ftp:getClientList')
 });
 
 // snmp模块
@@ -164,6 +166,7 @@ contextBridge.exposeInMainWorld('nativeApi', {
     getNetworkInterfaces: () => ipcRenderer.invoke('native:getNetworkInterfaces'),
     startPacketCapture: config => ipcRenderer.invoke('native:startPacketCapture', config),
     stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
+    getPacketHistory: () => ipcRenderer.invoke('native:getPacketHistory'),
     exportPacketsToPcap: packets => ipcRenderer.invoke('native:exportPacketsToPcap', packets),
 
     // 格式化工具模块

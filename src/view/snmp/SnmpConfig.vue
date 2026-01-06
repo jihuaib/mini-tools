@@ -219,7 +219,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { DEFAULT_VALUES, SNMP_SECURITY_LEVEL, SNMP_SUB_EVT_TYPES, SNMP_EVENT_PAGE_ID } from '../../const/snmpConst';
     import { FormValidator, createSnmpConfigValidationRules } from '../../utils/validationCommon';
@@ -334,13 +334,16 @@
         }
     };
 
-    onMounted(() => {
-        loadConfig();
+    onActivated(() => {
         EventBus.on('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_CONFIG, handleSnmpEvent);
     });
 
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_CONFIG);
+    });
+
+    onMounted(() => {
+        loadConfig();
     });
 </script>
 

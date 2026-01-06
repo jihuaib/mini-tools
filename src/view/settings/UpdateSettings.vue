@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import EventBus from '../../utils/eventBus';
     import { TOOLS_EVENT_PAGE_ID } from '../../const/toolsConst';
@@ -221,18 +221,19 @@
         }
     };
 
-    // 组件挂载时初始化
-    onMounted(() => {
-        getCurrentVersion();
-        loadAutoUpdateSettings();
-
+    onActivated(() => {
         // 监听更新状态
         EventBus.on('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_SETTINGS, handleUpdateStatus);
     });
 
-    // 组件卸载时清理
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_SETTINGS);
+    });
+
+    // 组件挂载时初始化
+    onMounted(() => {
+        getCurrentVersion();
+        loadAutoUpdateSettings();
     });
 </script>
 

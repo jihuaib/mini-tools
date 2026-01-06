@@ -161,6 +161,12 @@ class BmpWorker {
     async startBmp(messageId, bmpConfigData) {
         this.bmpConfigData = bmpConfigData;
 
+        // 设置日志级别
+        if (this.bmpConfigData.logLevel) {
+            logger.raw().transports.file.level = this.bmpConfigData.logLevel;
+            logger.info(`Worker log level set to: ${this.bmpConfigData.logLevel}`);
+        }
+
         // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
         if (bmpConfigData.enableAuth && (bmpConfigData.md5Password || bmpConfigData.useTcpAo)) {
             try {

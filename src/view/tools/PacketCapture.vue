@@ -55,6 +55,7 @@
                 :scroll="{ y: 300 }"
                 :pagination="{ pageSize: 20, showSizeChanger: false, position: ['bottomCenter'] }"
                 size="small"
+                row-key="id"
                 :custom-row="
                     record => ({
                         onClick: () => onRowClick(record)
@@ -80,7 +81,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, toRaw, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, toRaw, onActivated, onDeactivated } from 'vue';
     import { message, Modal } from 'ant-design-vue';
     import PacketResultViewer from '../../components/PacketResultViewer.vue';
     import { PROTOCOL_TYPE, START_LAYER, TOOLS_EVENT_PAGE_ID } from '../../const/toolsConst';
@@ -91,6 +92,8 @@
     defineOptions({
         name: 'PacketCapture'
     });
+
+    const _emit = defineEmits(['openSettings']);
 
     const labelCol = { style: { width: '100px' } };
     const wrapperCol = { span: 40 };
@@ -138,36 +141,60 @@
     // 生命周期钩子
     onMounted(() => {
         loadInterfaces();
-        EventBus.on('native:packetEvent', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_PACKET_CAPTURE, handlePacketCaptured);
     });
 
-    onBeforeUnmount(() => {
+    onActivated(async () => {
+        EventBus.on('native:packetEvent', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_PACKET_CAPTURE, handlePacketCaptured);
+        await syncPackets();
+    });
+
+    onDeactivated(() => {
         EventBus.off('native:packetEvent', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_PACKET_CAPTURE);
     });
+
+    async function syncPackets() {
+        if (window.nativeApi && window.nativeApi.getPacketHistory) {
+            try {
+                const res = await window.nativeApi.getPacketHistory();
+                if (res.status === 'success') {
+                    packets.value = res.data || [];
+                }
+            } catch (e) {
+                console.error('Sync Packets Error', e);
+            }
+        }
+    }
 
     function handlePacketCaptured(data) {
         if (data.status === 'success' && data.data) {
             switch (data.data.type) {
                 case 'PACKET_CAPTURE_START':
                     message.success(`抓包已开始 - 设备: ${data.data.device}`);
+                    isCapturing.value = true;
                     break;
 
                 case 'PACKET_CAPTURED':
                     if (data.data.packet) {
-                        packets.value.push(data.data.packet);
-                        // 限制包数量，避免内存过多占用
-                        if (packets.value.length > 10000) {
-                            packets.value = packets.value.slice(0, 5000);
+                        try {
+                            packets.value.push(data.data.packet);
+                            // 限制包数量，避免内存过多占用，保留最新的 5000 个包
+                            if (packets.value.length > 5000) {
+                                packets.value = packets.value.slice(-5000);
+                            }
+                        } catch (e) {
+                            console.error('Push Error', e);
                         }
                     }
                     break;
 
                 case 'PACKET_ERROR':
                     message.error(`抓包错误: ${data.msg || '未知错误'}`);
+                    isCapturing.value = false;
                     break;
             }
         } else if (data.status === 'error') {
             message.error(`抓包错误: ${data.msg || '未知错误'}`);
+            isCapturing.value = false;
         }
     }
 
@@ -214,6 +241,9 @@
         }
 
         isStarting.value = true;
+
+        // 开始新抓包时清空旧数据，防止ID冲突
+        packets.value = [];
 
         try {
             const response = await window.nativeApi.startPacketCapture({

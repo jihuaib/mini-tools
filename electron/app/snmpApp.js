@@ -16,6 +16,8 @@ class SnmpApp {
         this.snmpTrapEventHandler = null;
         this.eventDispatcher = null;
 
+        this.logLevel = null;
+
         // 注册IPC处理程序
         this.registerIpcHandlers();
     }
@@ -72,6 +74,11 @@ class SnmpApp {
             }
 
             logger.info(`启动SNMP服务器: ${JSON.stringify(config)}`);
+
+            // 获取日志级别配置
+            if (this.logLevel) {
+                config.logLevel = this.logLevel;
+            }
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/snmpWorker.js')

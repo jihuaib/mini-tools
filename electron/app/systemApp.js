@@ -319,6 +319,11 @@ class SystemApp {
 
             if (settings.logLevel) {
                 logger.raw().transports.file.level = settings.logLevel;
+                this.bgpApp.logLevel = settings.logLevel;
+                this.bmpApp.logLevel = settings.logLevel;
+                this.rpkiApp.logLevel = settings.logLevel;
+                this.ftpApp.logLevel = settings.logLevel;
+                this.snmpApp.logLevel = settings.logLevel;
             }
             return successResponse(null, 'Settings saved successfully');
         } catch (error) {
@@ -451,6 +456,11 @@ class SystemApp {
             }
         }
         logger.raw().transports.file.level = logLevel;
+        this.bgpApp.logLevel = logLevel;
+        this.bmpApp.logLevel = logLevel;
+        this.rpkiApp.logLevel = logLevel;
+        this.ftpApp.logLevel = logLevel;
+        this.snmpApp.logLevel = logLevel;
 
         // 加载工具设置
         let maxMessageHistory = DEFAULT_TOOLS_SETTINGS.packetParser.maxMessageHistory;

@@ -18,6 +18,7 @@ class BgpApp {
         this.peerChangeHandler = null;
         this.store = store;
         this.eventDispatcher = null;
+        this.logLevel = null;
         // 注册IPC处理程序
         this.registerHandlers(ipc);
     }
@@ -262,6 +263,11 @@ class BgpApp {
             }
 
             logger.info(`${JSON.stringify(bgpConfigData)}`);
+
+            // 获取日志级别配置
+            if (this.logLevel) {
+                bgpConfigData.logLevel = this.logLevel;
+            }
 
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/bgpWorker.js')

@@ -27,6 +27,7 @@ class RpkiWorker {
         this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.STOP_RPKI, this.stopRpki.bind(this));
         this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.ADD_ROA, this.addRoa.bind(this));
         this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.DELETE_ROA, this.deleteRoa.bind(this));
+        this.messageHandler.registerHandler(RpkiConst.RPKI_REQ_TYPES.GET_CLIENT_LIST, this.getClientList.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -263,6 +264,12 @@ class RpkiWorker {
 
     async startRpki(messageId, rpkiConfigData) {
         this.rpkiConfigData = rpkiConfigData;
+
+        // 设置日志级别
+        if (this.rpkiConfigData.logLevel) {
+            logger.raw().transports.file.level = this.rpkiConfigData.logLevel;
+            logger.info(`Worker log level set to: ${this.rpkiConfigData.logLevel}`);
+        }
         // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
         if (rpkiConfigData.enableAuth && (rpkiConfigData.md5Password || rpkiConfigData.useTcpAo)) {
             try {
@@ -462,6 +469,14 @@ class RpkiWorker {
 
         this.rpkiRoaMap.delete(key);
         this.messageHandler.sendSuccessResponse(messageId, null, 'RPKI ROA配置删除成功');
+    }
+
+    getClientList(messageId) {
+        const clientList = [];
+        this.rpkiSessionMap.forEach((session, _) => {
+            clientList.push(session.getClientInfo());
+        });
+        this.messageHandler.sendSuccessResponse(messageId, clientList, '获取客户端列表成功');
     }
 }
 

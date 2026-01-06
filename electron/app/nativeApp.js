@@ -15,8 +15,10 @@ class NativeApp {
         // 抓包相关变量初始化 - 移到主进程
         this.capSession = null;
         this.isCapturing = false;
+        this.packetHistory = []; // 存储抓包历史
 
         this.formatterConfigFileKey = 'formatter';
+
         this.maxFormatterHistory = DEFAULT_TOOLS_SETTINGS.formatter.maxFormatterHistory;
 
         this.store = store;
@@ -61,11 +63,16 @@ class NativeApp {
         ipc.handle('native:exportPacketsToPcap', async (event, packets) =>
             this.handleExportPacketsToPcap(event, packets)
         );
+        ipc.handle('native:getPacketHistory', async () => this.handleGetPacketHistory());
 
         // 格式化工具
         ipc.handle('native:formatData', async (event, data) => this.handleFormatData(event, data));
         ipc.handle('native:getFormatterHistory', async () => this.handleGetFormatterHistory());
         ipc.handle('native:clearFormatterHistory', async () => this.handleClearFormatterHistory());
+    }
+
+    async handleGetPacketHistory() {
+        return successResponse(this.packetHistory || [], '获取抓包历史成功');
     }
 
     async handleGetFormatterHistory() {
@@ -290,6 +297,7 @@ class NativeApp {
 
             this.isCapturing = true;
             let packetCount = 0;
+            this.packetHistory = []; // 清空历史
 
             this.eventDispatcher = new EventDispatcher();
             this.eventDispatcher.setWebContents(webContents);
@@ -320,6 +328,12 @@ class NativeApp {
                         truncated: trunc,
                         raw: buffer.toString('hex', 0, nbytes)
                     };
+
+                    // 保存到历史记录
+                    this.packetHistory.push(packetInfo);
+                    if (this.packetHistory.length > 5000) {
+                        this.packetHistory.shift();
+                    }
 
                     this.eventDispatcher.emit(
                         'native:packetEvent',

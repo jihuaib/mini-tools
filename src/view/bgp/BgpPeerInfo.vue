@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-    import { onActivated, onMounted, onBeforeUnmount, ref } from 'vue';
+    import { onActivated, ref, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { BGP_ADDR_FAMILY, BGP_PEER_TYPE, BGP_EVENT_PAGE_ID } from '../../const/bgpConst';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
@@ -285,15 +285,12 @@
         }
     };
 
-    onMounted(() => {
-        EventBus.on('bgp:peerChange', BGP_EVENT_PAGE_ID.PAGE_ID_BGP_PEER_INFO, onPeerChange);
-    });
-
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('bgp:peerChange', BGP_EVENT_PAGE_ID.PAGE_ID_BGP_PEER_INFO);
     });
 
     onActivated(async () => {
+        EventBus.on('bgp:peerChange', BGP_EVENT_PAGE_ID.PAGE_ID_BGP_PEER_INFO, onPeerChange);
         await refreshPeerInfo();
     });
 </script>

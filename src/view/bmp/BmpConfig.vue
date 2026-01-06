@@ -166,7 +166,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { FormValidator, createBmpConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES, BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
@@ -372,11 +372,30 @@
         }
     };
 
-    onMounted(async () => {
-        // 注册事件监听 (必须同步注册以防 async 竞争导致泄露)
+    const loadClientList = async () => {
+        try {
+            const clientListResult = await window.bmpApi.getClientList();
+            if (clientListResult.status === 'success') {
+                clientList.value = clientListResult.data;
+            }
+        } catch (error) {
+            console.error(error);
+            message.error('加载数据失败');
+        }
+    };
+
+    onActivated(async () => {
         EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onInitiationHandler);
         EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG, onTerminationHandler);
+        await loadClientList();
+    });
 
+    onDeactivated(() => {
+        EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
+        EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
+    });
+
+    onMounted(async () => {
         // 加载BMP配置
         const savedConfig = await window.bmpApi.loadBmpConfig();
         if (savedConfig.status === 'success' && savedConfig.data) {
@@ -402,11 +421,6 @@
         if (deploymentStatus.status === 'success' && deploymentStatus.data.success) {
             serverDeploymentStatus.value = true;
         }
-    });
-
-    onBeforeUnmount(() => {
-        EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
-        EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_CONFIG);
     });
 </script>
 

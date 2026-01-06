@@ -22,6 +22,7 @@ class FtpWorker {
         // 注册消息处理器
         this.messageHandler.registerHandler(FtpConst.FTP_REQ_TYPES.START_FTP, this.startFtp.bind(this));
         this.messageHandler.registerHandler(FtpConst.FTP_REQ_TYPES.STOP_FTP, this.stopFtp.bind(this));
+        this.messageHandler.registerHandler(FtpConst.FTP_REQ_TYPES.GET_CLIENT_LIST, this.getClientList.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -236,6 +237,12 @@ class FtpWorker {
     startFtp(messageId, ftpConfigData) {
         this.ftpConfig = ftpConfigData.ftpConfig;
         this.userConfig = ftpConfigData.userConfig;
+
+        // 设置日志级别
+        if (this.ftpConfig.logLevel) {
+            logger.raw().transports.file.level = this.ftpConfig.logLevel;
+            logger.info(`Worker log level set to: ${this.ftpConfig.logLevel}`);
+        }
         // 启动tcp服务器
         this.startTcpServer(messageId);
     }
@@ -261,6 +268,14 @@ class FtpWorker {
         });
         this.ftpSessionMap.clear();
         this.messageHandler.sendSuccessResponse(messageId, null, 'ftp协议停止成功');
+    }
+
+    getClientList(messageId) {
+        const clientList = [];
+        this.ftpSessionMap.forEach((session, _) => {
+            clientList.push(session.getClientInfo());
+        });
+        this.messageHandler.sendSuccessResponse(messageId, clientList, '获取客户端列表成功');
     }
 }
 

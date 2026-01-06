@@ -29,6 +29,12 @@ class SnmpWorker {
         try {
             this.snmpConfig = config;
 
+            // 设置日志级别
+            if (this.snmpConfig.logLevel) {
+                logger.raw().transports.file.level = this.snmpConfig.logLevel;
+                logger.info(`Worker log level set to: ${this.snmpConfig.logLevel}`);
+            }
+
             // 启动IPv4服务器
             await this.startUdpServer();
 
@@ -176,8 +182,6 @@ class SnmpWorker {
                 logger.error('无法解析PDU');
                 return null;
             }
-
-            console.log('pduResult', pduResult);
 
             return {
                 version: this.getVersionString(version),

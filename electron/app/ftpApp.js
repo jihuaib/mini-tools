@@ -18,6 +18,8 @@ class FtpApp {
         // 注册IPC处理程序
         this.registerIpcHandlers();
 
+        this.logLevel = null;
+
         this.eventDispatcher = null;
         this.ftpEvtHandler = null;
     }
@@ -33,6 +35,7 @@ class FtpApp {
         this.ipcMain.handle('ftp:getFtpConfig', this.handleGetFtpConfig.bind(this));
         this.ipcMain.handle('ftp:startFtp', this.handleStartFtp.bind(this));
         this.ipcMain.handle('ftp:stopFtp', this.handleStopFtp.bind(this));
+        this.ipcMain.handle('ftp:getClientList', this.handleGetClientList.bind(this));
     }
 
     async handleAddFtpUser(event, user) {
@@ -120,6 +123,11 @@ class FtpApp {
             logger.info(`${JSON.stringify(config)}`);
             logger.info(`${JSON.stringify(user)}`);
 
+            // 获取日志级别配置
+            if (this.logLevel) {
+                config.logLevel = this.logLevel;
+            }
+
             const workerPath = this.isDev
                 ? path.join(__dirname, '../worker/ftpWorker.js')
                 : path.join(process.resourcesPath, 'app', 'electron/worker/ftpWorker.js');
@@ -187,6 +195,21 @@ class FtpApp {
             this.worker = null;
             this.eventDispatcher.cleanup(); // 清理事件发送器
             this.eventDispatcher = null;
+        }
+    }
+
+    async handleGetClientList() {
+        if (null === this.worker) {
+            return successResponse([], 'FTP未启动');
+        }
+
+        try {
+            const result = await this.worker.sendRequest(FtpConst.FTP_REQ_TYPES.GET_CLIENT_LIST, null);
+            logger.info(`获取客户端列表成功 result: ${JSON.stringify(result)}`);
+            return successResponse(result.data, '获取客户端列表成功');
+        } catch (error) {
+            logger.error('Error getting client list:', error.message);
+            return errorResponse(error.message);
         }
     }
 

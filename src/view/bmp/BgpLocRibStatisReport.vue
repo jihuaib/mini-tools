@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onActivated, onBeforeUnmount } from 'vue';
+    import { ref, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import EventBus from '../../utils/eventBus';
     import { BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
@@ -108,15 +108,12 @@
     onActivated(async () => {
         clientList.value = [];
         activeClientKey.value = '';
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onClientListUpdate);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onTerminationHandler);
         await loadClientList();
     });
 
-    onMounted(() => {
-        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onClientListUpdate);
-        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT, onTerminationHandler);
-    });
-
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT);
         EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB_STATIS_REPORT);
     });

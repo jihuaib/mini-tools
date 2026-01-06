@@ -179,12 +179,10 @@
         showNotification.value = false;
     };
 
-    // 组件挂载时监听更新状态
     onMounted(() => {
         EventBus.on('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_NOTIFICATION, handleUpdateStatus);
     });
 
-    // 组件卸载时移除监听
     onBeforeUnmount(() => {
         EventBus.off('updater:update-status', TOOLS_EVENT_PAGE_ID.PAGE_ID_TOOLS_UPDATE_NOTIFICATION);
     });

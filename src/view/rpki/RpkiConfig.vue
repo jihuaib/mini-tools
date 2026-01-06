@@ -164,7 +164,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { FormValidator, createRpkiConfigValidationRules } from '../../utils/validationCommon';
     import { DEFAULT_VALUES, RPKI_EVENT_PAGE_ID } from '../../const/rpkiConst';
@@ -343,15 +343,32 @@
         }
     };
 
-    onMounted(async () => {
-        // 注册事件监听 (必须同步注册以防 async 竞争导致泄露)
-        EventBus.on('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG, onClientConnection);
+    const loadClientList = async () => {
+        try {
+            const clientListResult = await window.rpkiApi.getClientList();
+            if (clientListResult.status === 'success') {
+                clientList.value = clientListResult.data;
+            }
+        } catch (error) {
+            console.error(error);
+            message.error('加载数据失败');
+        }
+    };
 
+    onActivated(async () => {
+        EventBus.on('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG, onClientConnection);
+        await loadClientList();
+    });
+
+    onDeactivated(() => {
+        EventBus.off('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG);
+    });
+
+    onMounted(async () => {
         try {
             // 加载配置
             const result = await window.rpkiApi.loadRpkiConfig();
             if (result.status === 'success' && result.data) {
-                console.log(result.data);
                 rpkiConfig.value.port = result.data.port;
                 rpkiConfig.value.enableAuth = result.data.enableAuth || false;
                 rpkiConfig.value.authMode = result.data.authMode || 'md5';
@@ -377,10 +394,6 @@
         } catch (error) {
             console.error('初始化RPKI配置出错:', error);
         }
-    });
-
-    onBeforeUnmount(() => {
-        EventBus.off('rpki:clientConnection', RPKI_EVENT_PAGE_ID.PAGE_ID_RPKI_CONFIG);
     });
 </script>
 

@@ -167,7 +167,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, onMounted, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { FolderOutlined } from '@ant-design/icons-vue';
     import {
@@ -321,7 +321,6 @@
     };
 
     const onFtpEvt = result => {
-        console.log(result);
         if (result.status === 'success') {
             const data = result.data;
             if (data.type === FTP_SUB_EVT_TYPES.FTP_SUB_EVT_CONNCET) {
@@ -363,10 +362,28 @@
         }
     };
 
-    onMounted(async () => {
-        // 注册客户端连接事件监听 (必须同步注册以防 async 竞争导致泄露)
-        EventBus.on('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG, onFtpEvt);
+    const loadClientList = async () => {
+        try {
+            const clientListResult = await window.ftpApi.getClientList();
+            if (clientListResult.status === 'success') {
+                clientList.value = clientListResult.data;
+            }
+        } catch (error) {
+            console.error(error);
+            message.error('加载数据失败');
+        }
+    };
 
+    onActivated(async () => {
+        EventBus.on('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG, onFtpEvt);
+        await loadClientList();
+    });
+
+    onDeactivated(() => {
+        EventBus.off('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG);
+    });
+
+    onMounted(async () => {
         try {
             // 加载配置
             const result = await window.ftpApi.getFtpConfig();
@@ -381,11 +398,6 @@
         } catch (error) {
             console.error('初始化FTP配置出错:', error);
         }
-    });
-
-    onBeforeUnmount(() => {
-        // 移除事件监听
-        EventBus.off('ftp:event', FTP_EVENT_PAGE_ID.PAGE_ID_FTP_CONFIG);
     });
 
     const addUser = async () => {
@@ -483,9 +495,8 @@
         }
     };
 
-    const viewClientDetails = record => {
+    const viewClientDetails = _record => {
         // todo
-        console.log(record);
     };
 </script>
 

@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-    import { ref, onActivated, onMounted, onBeforeUnmount, watch } from 'vue';
+    import { ref, onActivated, watch, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { BMP_SESSION_TYPE_NAME, BMP_SESSION_STATE_NAME, BMP_EVENT_PAGE_ID } from '../../const/bmpConst';
     import { ADDRESS_FAMILY_NAME } from '../../const/bgpConst';
@@ -337,17 +337,16 @@
         loadBgpInstances();
     });
 
-    onMounted(async () => {
-        EventBus.on('bmp:instanceUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onInstanceUpdate);
-        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onClientListUpdate);
-        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onTerminationHandler);
-        EventBus.on('bmp:instanceRouteUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onInstanceRouteUpdate);
-    });
-
     onActivated(async () => {
         clientList.value = [];
         activeClientKey.value = '';
         bgpInstances.value = [];
+
+        EventBus.on('bmp:instanceUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onInstanceUpdate);
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onClientListUpdate);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onTerminationHandler);
+        EventBus.on('bmp:instanceRouteUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB, onInstanceRouteUpdate);
+
         await loadClientList();
         // 如果有选中的客户端，则加载对应的BGP会话列表
         if (activeClientKey.value) {
@@ -355,7 +354,7 @@
         }
     });
 
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('bmp:instanceUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB);
         EventBus.off('bmp:instanceRouteUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB);
         EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_LOC_RIB);

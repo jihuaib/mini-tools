@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-    import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
+    import { ref, reactive, computed, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue';
     import { SNMP_TRAP_STATUS, SNMP_SUB_EVT_TYPES, SNMP_EVENT_PAGE_ID } from '../../const/snmpConst';
@@ -397,11 +397,11 @@
         }
     };
 
-    onMounted(() => {
+    onActivated(() => {
         EventBus.on('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_TRAP, handleSnmpEvent);
     });
 
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('snmp:event', SNMP_EVENT_PAGE_ID.PAGE_ID_SNMP_TRAP);
     });
 </script>

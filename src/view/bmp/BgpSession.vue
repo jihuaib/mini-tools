@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, onBeforeUnmount, watch, onActivated } from 'vue';
+    import { ref, watch, onActivated, onDeactivated } from 'vue';
     import { message } from 'ant-design-vue';
     import {
         BMP_SESSION_TYPE_NAME,
@@ -338,7 +338,6 @@
 
             const bgpSessionListResult = await window.bmpApi.getBgpSessions(clientInfo);
             if (bgpSessionListResult.status === 'success') {
-                console.log('bgpSessionListResult', bgpSessionListResult);
                 bgpSessionList.value = bgpSessionListResult.data || [];
                 if (bgpSessionList.value.length > 0) {
                     const first = bgpSessionList.value[0];
@@ -377,17 +376,16 @@
         loadBgpSessionList();
     });
 
-    onMounted(async () => {
-        EventBus.on('bmp:sessionUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onSessionUpdate);
-        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onClientListUpdate);
-        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onTerminationHandler);
-        EventBus.on('bmp:routeUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onRouteUpdate);
-    });
-
     onActivated(async () => {
         clientList.value = [];
         activeClientKey.value = '';
         bgpSessionList.value = [];
+
+        EventBus.on('bmp:sessionUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onSessionUpdate);
+        EventBus.on('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onClientListUpdate);
+        EventBus.on('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onTerminationHandler);
+        EventBus.on('bmp:routeUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION, onRouteUpdate);
+
         await loadClientList();
         // 如果有选中的客户端，则加载对应的BGP会话列表
         if (activeClientKey.value) {
@@ -395,7 +393,7 @@
         }
     });
 
-    onBeforeUnmount(() => {
+    onDeactivated(() => {
         EventBus.off('bmp:sessionUpdate', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
         EventBus.off('bmp:initiation', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
         EventBus.off('bmp:termination', BMP_EVENT_PAGE_ID.PAGE_ID_BMP_BGP_SESSION);
