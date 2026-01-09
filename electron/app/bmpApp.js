@@ -19,6 +19,7 @@ class BmpApp {
         this.bmpSessionUpdateHandler = null;
         this.bmpRouteUpdateHandler = null;
         this.bmpTerminationHandler = null;
+        this.bmpStatisticsReportHandler = null;
 
         this.serverDeploymentConfig = null;
         this.keychainManager = keychainManager;
@@ -118,6 +119,10 @@ class BmpApp {
                 this.eventDispatcher.emit('bmp:termination', successResponse(data.data));
             };
 
+            this.bmpStatisticsReportHandler = data => {
+                this.eventDispatcher.emit('bmp:statisticsReport', successResponse(data.data));
+            };
+
             // 注册事件监听器，处理来自worker的事件通知
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.INITIATION, this.bmpInitiationHandler);
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.SESSION_UPDATE, this.bmpSessionUpdateHandler);
@@ -128,6 +133,7 @@ class BmpApp {
                 this.bmpInstanceRouteUpdateHandler
             );
             this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.addEventListener(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, this.bmpStatisticsReportHandler);
 
             if (bmpConfigData.enableAuth) {
                 // 设置 SSH 部署配置
@@ -172,6 +178,7 @@ class BmpApp {
                 this.bmpInstanceRouteUpdateHandler
             );
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, this.bmpStatisticsReportHandler);
             await this.worker.terminate();
             this.worker = null;
             this.eventDispatcher.cleanup(); // 清理事件发送器
@@ -204,6 +211,7 @@ class BmpApp {
                 this.bmpInstanceRouteUpdateHandler
             );
             this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.TERMINATION, this.bmpTerminationHandler);
+            this.worker.removeEventListener(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, this.bmpStatisticsReportHandler);
             await this.worker.terminate();
             this.worker = null;
             this.eventDispatcher.cleanup(); // 清理事件发送器

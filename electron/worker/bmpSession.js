@@ -1409,9 +1409,154 @@ class BmpSession {
         this.bmpWorker.bmpSessionMap.delete(key);
     }
 
-    processStatisticsReport(_message) {
-        const clientInfo = this.getClientInfo();
-        this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, { data: clientInfo });
+    processStatisticsReportGlobal(message) {
+        try {
+            let position = 0;
+            const sessionType = message[position];
+            position += 1;
+            const sessionFlags = message[position];
+            position += 1;
+            const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
+            position += BgpConst.BGP_RD_LEN;
+            const sessionRd = rdBufferToString(rdBuffer);
+
+            let sessionAddress;
+            if (sessionFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+                sessionAddress = ipv6BufferToString(message.subarray(position, position + 16), 128);
+                position += 16;
+            } else {
+                position += 12;
+                sessionAddress = ipv4BufferToString(message.subarray(position, position + 4), 32);
+                position += 4;
+            }
+
+            const sessionAs = message.readUInt32BE(position);
+            position += 4;
+            position += 4; // sessionRouterId
+            position += 4; // sessionTimestamp
+            position += 4; // sessionTimestampMs
+
+            const statsCount = message.readUInt32BE(position);
+            position += 4;
+
+            const statistics = [];
+            for (let i = 0; i < statsCount; i++) {
+                if (position + 4 > message.length) break;
+
+                const statType = message.readUInt16BE(position);
+                position += 2;
+                const statLength = message.readUInt16BE(position);
+                position += 2;
+
+                if (position + statLength > message.length) break;
+
+                let statValue;
+                if (statLength === 4) {
+                    statValue = message.readUInt32BE(position);
+                } else if (statLength === 8) {
+                    statValue = Number(message.readBigUInt64BE(position));
+                } else {
+                    statValue = 0;
+                }
+                position += statLength;
+
+                statistics.push({
+                    type: statType,
+                    value: statValue,
+                    typeName: BmpConst.BMP_STATS_TYPE_NAME[statType] || `Unknown (${statType})`
+                });
+            }
+
+            const bgpSessionKey = BmpBgpSession.makeKey(sessionType, sessionRd, sessionAddress, sessionAs);
+            const bgpSession = this.bgpSessionMap.get(bgpSessionKey);
+
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, {
+                data: {
+                    client: this.getClientInfo(),
+                    session: bgpSession ? bgpSession.getSessionInfo() : null,
+                    statistics: statistics
+                }
+            });
+        } catch (err) {
+            logger.error(`Error processing statistics report (global):`, err);
+        }
+    }
+
+    processStatisticsReportLocalRib(message) {
+        try {
+            let position = 0;
+            const instanceType = message[position];
+            position += 1;
+            const instanceFlags = message[position];
+            position += 1;
+            const rdBuffer = message.subarray(position, position + BgpConst.BGP_RD_LEN);
+            position += BgpConst.BGP_RD_LEN;
+            const instanceRd = rdBufferToString(rdBuffer);
+
+            if (instanceFlags & BmpConst.BMP_SESSION_FLAGS.IPV6) {
+                position += 16;
+            } else {
+                position += 12;
+                position += 4;
+            }
+
+            position += 4; // instanceAs
+            position += 4; // instanceRouterId
+            position += 4; // instanceTimestamp
+            position += 4; // instanceTimestampMs
+
+            const statsCount = message.readUInt32BE(position);
+            position += 4;
+
+            const statistics = [];
+            for (let i = 0; i < statsCount; i++) {
+                if (position + 4 > message.length) break;
+
+                const statType = message.readUInt16BE(position);
+                position += 2;
+                const statLength = message.readUInt16BE(position);
+                position += 2;
+
+                if (position + statLength > message.length) break;
+
+                let statValue;
+                if (statLength === 4) {
+                    statValue = message.readUInt32BE(position);
+                } else if (statLength === 8) {
+                    statValue = Number(message.readBigUInt64BE(position));
+                } else {
+                    statValue = 0;
+                }
+                position += statLength;
+
+                statistics.push({
+                    type: statType,
+                    value: statValue,
+                    typeName: BmpConst.BMP_STATS_TYPE_NAME[statType] || `Unknown (${statType})`
+                });
+            }
+
+            this.messageHandler.sendEvent(BmpConst.BMP_EVT_TYPES.STATISTICS_REPORT, {
+                data: {
+                    client: this.getClientInfo(),
+                    instance: { instanceType, instanceRd },
+                    statistics: statistics
+                }
+            });
+        } catch (err) {
+            logger.error(`Error processing statistics report (local rib):`, err);
+        }
+    }
+
+    processStatisticsReport(message) {
+        const peerType = message[0];
+        if (peerType === BmpConst.BMP_PEER_TYPE.GLOBAL) {
+            this.processStatisticsReportGlobal(message);
+        } else if (peerType === BmpConst.BMP_PEER_TYPE.LOCAL_RIB) {
+            this.processStatisticsReportLocalRib(message);
+        } else {
+            logger.error(`Unknown peer type in statistics report: ${peerType}`);
+        }
     }
 
     processMessage(message) {
