@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
 const SystemApp = require('./app/systemApp');
 const logger = require('./log/logger');
+const { getIconPath } = require('./utils/iconUtils');
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
@@ -41,7 +42,7 @@ function createWindow() {
         center: true, // 窗口居中显示
         backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
         show: false, // 先隐藏窗口，等待启动完成
-        icon: path.join(__dirname, './assets/icon.ico'),
+        icon: getIconPath(),
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
             contextIsolation: true, // 启用 contextIsolation 更好地隔离上下文
@@ -65,7 +66,7 @@ function createWindow() {
         win.destroy();
     });
 
-    new Tray(path.join(__dirname, './assets/icon.ico'));
+    new Tray(getIconPath());
 
     mainWindow = win;
 

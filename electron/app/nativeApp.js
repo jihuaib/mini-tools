@@ -6,7 +6,7 @@ const os = require('os');
 const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
 const iconv = require('iconv-lite');
 const EventDispatcher = require('../utils/eventDispatcher');
-const path = require('path');
+const { getIconPath } = require('../utils/iconUtils');
 class NativeApp {
     constructor(ipc, store) {
         this.isDev = !app.isPackaged;
@@ -399,7 +399,7 @@ class NativeApp {
                     { name: 'PCAP Files', extensions: ['pcap'] },
                     { name: 'All Files', extensions: ['*'] }
                 ],
-                icon: path.join(__dirname, '../assets/icon.ico')
+                icon: getIconPath()
             });
 
             if (result.canceled) {

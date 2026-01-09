@@ -6,6 +6,7 @@ const logger = require('../log/logger');
 const { DEFAULT_LOG_SETTINGS, DEFAULT_TOOLS_SETTINGS, DEFAULT_UPDATE_SETTINGS } = require('../const/toolsConst');
 const fs = require('fs');
 const path = require('path');
+const { getIconPath } = require('../utils/iconUtils');
 const BgpApp = require('./bgpApp');
 const ToolsApp = require('./toolsApp');
 const BmpApp = require('./bmpApp');
@@ -93,7 +94,7 @@ class SystemApp {
                     buttons: ['确定', '取消'],
                     defaultId: 0,
                     cancelId: 1,
-                    icon: path.join(__dirname, '../assets/icon.ico')
+                    icon: getIconPath()
                 });
 
                 if (result === 0) {
@@ -158,7 +159,7 @@ class SystemApp {
                 message: '清除数据时出错',
                 detail: error.message,
                 buttons: ['确定'],
-                icon: path.join(__dirname, '../assets/icon.ico')
+                icon: getIconPath()
             });
         }
     }
@@ -525,7 +526,7 @@ class SystemApp {
                 buttons: ['确定', '取消'],
                 defaultId: 1,
                 cancelId: 1,
-                icon: path.join(__dirname, '../assets/icon.ico')
+                icon: getIconPath()
             });
 
             if (response === 0) {
@@ -562,7 +563,7 @@ class SystemApp {
             const win = BrowserWindow.getFocusedWindow(); // 获取当前窗口
             const result = await dialog.showOpenDialog(win, {
                 properties: ['openDirectory'],
-                icon: path.join(__dirname, '../assets/icon.ico')
+                icon: getIconPath()
             });
             return successResponse(result);
         } catch (error) {
