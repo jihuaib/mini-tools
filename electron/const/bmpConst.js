@@ -112,12 +112,6 @@ const BMP_STATS_TYPE_NAME = {
     [BMP_STATS_TYPE.NUM_DUPLICATE_UPDATE_MESSAGES]: '重复的更新消息数'
 };
 
-// Authentication configuration
-const BMP_AUTH_CONFIG = {
-    DEFAULT_GRPC_PORT: 50051,
-    DEFAULT_GRPC_HOST: 'localhost'
-};
-
 module.exports = {
     BMP_HEADER_LENGTH,
     BMP_MSG_TYPE,
@@ -131,6 +125,5 @@ module.exports = {
     BMP_REQ_TYPES,
     BMP_BGP_RIB_TYPE,
     BMP_STATS_TYPE,
-    BMP_STATS_TYPE_NAME,
-    BMP_AUTH_CONFIG
+    BMP_STATS_TYPE_NAME
 };

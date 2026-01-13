@@ -133,9 +133,11 @@ export const validatePacketData = value => {
  * 通用验证系统
  */
 export class FormValidator {
-    constructor(validationErrors) {
+    constructor(validationErrors, autoClearTimeout = 3000) {
         this.validationErrors = validationErrors;
         this.rules = {};
+        this.autoClearTimeout = autoClearTimeout; // 默认3秒后自动清空
+        this.clearTimers = {}; // 存储每个字段的清空定时器
     }
 
     /**
@@ -173,6 +175,10 @@ export class FormValidator {
                 const result = this.executeRule(rule, value, formData, field);
                 if (result.hasError) {
                     this.validationErrors.value[field] = result.message;
+                    // 启动自动清空定时器
+                    if (this.autoClearTimeout > 0) {
+                        this.startAutoClearTimer(field);
+                    }
                     return true; // 遇到第一个错误就立即返回
                 }
             }
@@ -229,6 +235,44 @@ export class FormValidator {
     clearErrors() {
         Object.keys(this.validationErrors.value).forEach(key => {
             this.validationErrors.value[key] = '';
+        });
+        // 清除所有定时器
+        this.cancelAllTimers();
+    }
+
+    /**
+     * 启动自动清空定时器
+     * @param {string} field 字段名
+     */
+    startAutoClearTimer(field) {
+        // 先清除之前的定时器
+        this.cancelTimer(field);
+
+        // 设置新的定时器
+        this.clearTimers[field] = setTimeout(() => {
+            if (this.validationErrors.value[field]) {
+                this.validationErrors.value[field] = '';
+            }
+        }, this.autoClearTimeout);
+    }
+
+    /**
+     * 取消单个字段的定时器
+     * @param {string} field 字段名
+     */
+    cancelTimer(field) {
+        if (this.clearTimers[field]) {
+            clearTimeout(this.clearTimers[field]);
+            delete this.clearTimers[field];
+        }
+    }
+
+    /**
+     * 取消所有定时器
+     */
+    cancelAllTimers() {
+        Object.keys(this.clearTimers).forEach(field => {
+            this.cancelTimer(field);
         });
     }
 

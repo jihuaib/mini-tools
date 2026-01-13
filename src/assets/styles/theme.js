@@ -3,11 +3,21 @@
  * 定义应用程序的统一视觉风格
  */
 
+// 渐变色定义
+export const gradients = {
+    primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    primaryHover: 'linear-gradient(135deg, #7c8ff0 0%, #8b5cb8 100%)',
+    secondary: 'linear-gradient(135deg, #667eea 0%, #4facfe 100%)',
+    light: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
+};
+
 export const themeConfig = {
     token: {
         // ===== 颜色系统 =====
-        // 主色调 - 与启动界面保持一致的紫蓝色系
+        // 主色调 - 渐变紫蓝色系
         colorPrimary: '#667eea',
+        colorPrimaryBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        colorPrimaryBgHover: 'linear-gradient(135deg, #7c8ff0 0%, #8b5cb8 100%)',
 
         // 成功色
         colorSuccess: '#52c41a',
@@ -75,16 +85,20 @@ export const themeConfig = {
         controlHeightLG: 40,
         controlHeightSM: 24
     },
+    // 全局组件尺寸
+    componentSize: 'small',
 
     components: {
         // ===== 按钮组件 =====
         Button: {
-            primaryShadow: '0 2px 0 rgba(102, 126, 234, 0.1)',
+            primaryShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
             controlHeight: 32,
             controlHeightLG: 40,
             controlHeightSM: 24,
             fontSize: 14,
-            borderRadius: 6
+            borderRadius: 6,
+            colorPrimary: '#667eea',
+            colorPrimaryHover: '#7c8ff0'
         },
 
         // ===== 输入框组件 =====
@@ -129,7 +143,7 @@ export const themeConfig = {
             horizontalMargin: '0 0 16px 0',
             itemColor: 'rgba(0, 0, 0, 0.65)',
             itemSelectedColor: '#667eea',
-            itemHoverColor: '#667eea',
+            itemHoverColor: '#7c8ff0',
             inkBarColor: '#667eea'
         },
 

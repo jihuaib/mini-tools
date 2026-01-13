@@ -80,16 +80,17 @@
         MenuUnfoldOutlined,
         SettingOutlined,
         ToolOutlined,
-        InfoCircleOutlined
+        InfoCircleOutlined,
+        AppstoreOutlined,
+        ApiOutlined,
+        ClusterOutlined,
+        SafetyOutlined,
+        FolderOutlined,
+        CodeOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
-    import BgpIcon from '../assets/bgp.svg';
-    import ToolsIcon from '../assets/tools.svg';
-    import BmpIcon from '../assets/bmp.svg';
-    import RpkiIcon from '../assets/rpki.svg';
-    import FtpIcon from '../assets/ftp.svg';
-    import SnmpIcon from '../assets/snmp.svg';
+    import modalResizeHandler from '../utils/modalResizeHandler';
 
     const router = useRouter();
     const route = useRoute();
@@ -103,42 +104,42 @@
     const items = ref([
         {
             key: 'tools',
-            icon: () => h('img', { src: ToolsIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(AppstoreOutlined),
             label: 'tools',
             title: 'tools',
             route: '/tools'
         },
         {
             key: 'bgp',
-            icon: () => h('img', { src: BgpIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(ApiOutlined),
             label: 'bgp',
             title: 'bgp',
             route: '/bgp'
         },
         {
             key: 'bmp',
-            icon: () => h('img', { src: BmpIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(ClusterOutlined),
             label: 'bmp',
             title: 'bmp',
             route: '/bmp'
         },
         {
             key: 'rpki',
-            icon: () => h('img', { src: RpkiIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(SafetyOutlined),
             label: 'rpki',
             title: 'rpki',
             route: '/rpki'
         },
         {
             key: 'ftp',
-            icon: () => h('img', { src: FtpIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(FolderOutlined),
             label: 'ftp',
             title: 'ftp',
             route: '/ftp'
         },
         {
             key: 'snmp',
-            icon: () => h('img', { src: SnmpIcon, style: { width: '16px', height: '16px' } }),
+            icon: h(CodeOutlined),
             label: 'snmp',
             title: 'snmp',
             route: '/snmp'
@@ -195,26 +196,6 @@
         }
     );
 
-    const handleGlobalClick = event => {
-        // 只有在点击非输入框、非tooltip相关元素时才清空验证错误
-        const target = event.target;
-        const isFormElement =
-            target.closest('.ant-form-item') ||
-            target.closest('.ant-input') ||
-            target.closest('.ant-select') ||
-            target.closest('.ant-tooltip') ||
-            target.tagName === 'INPUT' ||
-            target.tagName === 'TEXTAREA';
-
-        if (
-            !isFormElement &&
-            currentComponent.value &&
-            typeof currentComponent.value.clearValidationErrors === 'function'
-        ) {
-            currentComponent.value.clearValidationErrors();
-        }
-    };
-
     // 组件挂载时初始化缓存
     onMounted(() => {
         // 确保初始路由被正确缓存
@@ -222,14 +203,30 @@
             store.dispatch('addCachedView', route);
         }
 
-        // 添加全局点击事件监听器
-        document.addEventListener('click', handleGlobalClick);
+        // 初始化时检查窗口宽度
+        handleSidebarResize();
+
+        // 注册到 modalResizeHandler 的回调
+        modalResizeHandler.onZoomChange(handleSidebarResize);
     });
 
-    // 组件卸载时移除事件监听器
+    // 组件卸载时移除监听器
     onUnmounted(() => {
-        document.removeEventListener('click', handleGlobalClick);
+        modalResizeHandler.offZoomChange(handleSidebarResize);
     });
+
+    // 处理侧边栏响应式调整
+    const handleSidebarResize = () => {
+        const width = window.innerWidth;
+        // 当窗口宽度小于1200px时自动收缩侧边栏
+        if (width < 1200 && !isCollapsed.value) {
+            isCollapsed.value = true;
+        }
+        // 当窗口宽度大于等于1200px时自动展开侧边栏
+        else if (width >= 1200 && isCollapsed.value) {
+            isCollapsed.value = false;
+        }
+    };
 </script>
 
 <style scoped>
