@@ -270,11 +270,10 @@ class RpkiWorker {
             logger.raw().transports.file.level = this.rpkiConfigData.logLevel;
             logger.info(`Worker log level set to: ${this.rpkiConfigData.logLevel}`);
         }
-        // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
-        if (rpkiConfigData.enableAuth && (rpkiConfigData.md5Password || rpkiConfigData.useTcpAo)) {
+        // 如果启用了认证（MD5），使用SSH隧道
+        if (rpkiConfigData.enableAuth && rpkiConfigData.md5Password) {
             try {
-                const authType = rpkiConfigData.useTcpAo ? 'TCP-AO' : 'TCP MD5';
-                logger.info(`${authType} authentication enabled, creating SSH tunnel...`);
+                logger.info(`TCP MD5 authentication enabled, creating SSH tunnel...`);
 
                 // 提取SSH服务器地址
                 const sshHost = rpkiConfigData.serverAddress;
@@ -289,19 +288,10 @@ class RpkiWorker {
 
                 // 准备代理配置
                 let proxyConfig;
-                if (rpkiConfigData.useTcpAo) {
-                    // TCP-AO 模式
-                    logger.info('Using TCP-AO proxy with keychain');
-                    proxyConfig = {
-                        useTcpAo: true,
-                        tcpAoKeysJson: rpkiConfigData.tcpAoKeysJson
-                    };
-                } else {
-                    // TCP MD5 模式
-                    logger.info('Using TCP MD5 proxy');
-                    const md5Password = rpkiConfigData.md5Password;
-                    proxyConfig = md5Password;
-                }
+                // TCP MD5 模式
+                logger.info('Using TCP MD5 proxy');
+                const md5Password = rpkiConfigData.md5Password;
+                proxyConfig = md5Password;
 
                 // 启动远程代理
                 // 代理监听 rpkiConfigData.port (路由器连接这个端口)
@@ -324,7 +314,7 @@ class RpkiWorker {
                 await this.sshTunnel.startProxy(
                     'rpki', // 协议类型
                     rpkiConfigData.peerIP, // BMP路由器IP（peer IP）
-                    proxyConfig, // 代理配置（MD5密码 或 TCP-AO配置）
+                    proxyConfig, // 代理配置（MD5密码）
                     rpkiConfigData.port, // Linux监听端口（路由器连接）
                     `${windowsIp}:${localPort}` // 转发到 Windows 的 localPort
                 );

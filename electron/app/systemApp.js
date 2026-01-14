@@ -16,7 +16,7 @@ const SnmpApp = require('./snmpApp');
 const AppUpdater = require('./updater');
 const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
-const KeychainManager = require('./keychainManager');
+
 /**
  * 用于系统菜单处理
  */
@@ -47,12 +47,9 @@ class SystemApp {
             cwd: app.getPath('userData')
         });
 
-        // 初始化 KeychainManager
-        this.keychainManager = new KeychainManager(this.store, this.keychainsFileKey);
-
         this.bgpApp = new BgpApp(ipc, this.programStore);
-        this.bmpApp = new BmpApp(ipc, this.programStore, this.keychainManager);
-        this.rpkiApp = new RpkiApp(ipc, this.programStore, this.keychainManager);
+        this.bmpApp = new BmpApp(ipc, this.programStore);
+        this.rpkiApp = new RpkiApp(ipc, this.programStore);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.snmpApp = new SnmpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
