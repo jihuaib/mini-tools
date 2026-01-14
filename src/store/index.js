@@ -1,4 +1,5 @@
 import { createStore } from 'vuex';
+import theme from './modules/theme';
 
 // 用于跟踪缓存视图的状态
 const state = {
@@ -38,5 +39,8 @@ const actions = {
 export default createStore({
     state,
     mutations,
-    actions
+    actions,
+    modules: {
+        theme
+    }
 });
