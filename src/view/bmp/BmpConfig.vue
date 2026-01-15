@@ -69,6 +69,7 @@
                                     <a-form-item label="认证模式" name="authMode">
                                         <a-radio-group v-model:value="bmpConfig.authMode">
                                             <a-radio value="md5">MD5 密钥</a-radio>
+                                            <a-radio value="keychain">Keychain</a-radio>
                                         </a-radio-group>
                                     </a-form-item>
                                 </a-col>
@@ -87,6 +88,19 @@
                                                 :status="validationErrors.md5Password ? 'error' : ''"
                                             />
                                         </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- Keychain 模式 -->
+                            <a-row v-if="bmpConfig.authMode === 'keychain'">
+                                <a-col :span="24">
+                                    <a-form-item label="选择 Keychain" name="keychainId">
+                                        <a-select v-model:value="bmpConfig.keychainId" placeholder="请选择 Keychain">
+                                            <a-select-option v-for="kc in keychains" :key="kc.id" :value="kc.id">
+                                                {{ kc.name }} ({{ kc.keys.length }} 个密钥)
+                                            </a-select-option>
+                                        </a-select>
                                     </a-form-item>
                                 </a-col>
                             </a-row>
@@ -171,14 +185,16 @@
         port: DEFAULT_VALUES.DEFAULT_BMP_PORT,
         localPort: '11019',
         enableAuth: false,
-        authMode: 'md5', // 'md5'
+        authMode: 'md5', // 'md5' or 'keychain'
         peerIP: '',
-        md5Password: ''
+        md5Password: '',
+        keychainId: ''
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
     const serverDeploymentStatus = ref(false);
+    const keychains = ref([]);
 
     // Initiation messages list
     const clientList = ref([]);
@@ -389,8 +405,15 @@
             bmpConfig.value.localPort = savedConfig.data.localPort;
             bmpConfig.value.peerIP = savedConfig.data.peerIP || '';
             bmpConfig.value.md5Password = savedConfig.data.md5Password || '';
+            bmpConfig.value.keychainId = savedConfig.data.keychainId || '';
         } else {
             console.error('配置文件加载失败', savedConfig.msg);
+        }
+
+        // 加载 Keychains
+        const keychainsResult = await window.commonApi.loadKeychains();
+        if (keychainsResult.status === 'success') {
+            keychains.value = keychainsResult.data || [];
         }
 
         // 检查服务器部署状态

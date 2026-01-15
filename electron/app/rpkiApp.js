@@ -8,7 +8,7 @@ const RpkiConst = require('../const/rpkiConst');
 const EventDispatcher = require('../utils/eventDispatcher');
 
 class RpkiApp {
-    constructor(ipcMain, store) {
+    constructor(ipcMain, store, keychainManager) {
         this.ipcMain = ipcMain;
         this.store = store;
         this.rpkiConfigFileKey = 'rpki-config';
@@ -18,6 +18,7 @@ class RpkiApp {
         this.eventDispatcher = null; // 添加事件发送器
 
         this.serverDeploymentConfig = null;
+        this.keychainManager = keychainManager;
 
         this.logLevel = null;
 
@@ -119,6 +120,27 @@ class RpkiApp {
                 rpkiConfigData.serverAddress = this.serverDeploymentConfig.serverAddress;
                 rpkiConfigData.sshUsername = this.serverDeploymentConfig.sshUsername;
                 rpkiConfigData.sshPassword = this.serverDeploymentConfig.sshPassword;
+            }
+
+            // 如果启用认证且使用 keychain 模式，解析当前有效密钥
+            if (rpkiConfigData.authMode === 'keychain' && rpkiConfigData.keychainId) {
+                if (!this.keychainManager) {
+                    throw new Error('KeychainManager not initialized');
+                }
+
+                logger.info(`Using TCP-AO for keychain: ${rpkiConfigData.keychainId}`);
+
+                const tcpAoKeysJson = this.keychainManager.generateTcpAoKeysJson(rpkiConfigData.keychainId);
+
+                if (!tcpAoKeysJson) {
+                    throw new Error('当前时间段没有有效的密钥');
+                }
+
+                // 设置 TCP-AO 配置
+                rpkiConfigData.useTcpAo = true;
+                rpkiConfigData.tcpAoKeysJson = tcpAoKeysJson;
+
+                logger.info(`TCP-AO enabled with ${JSON.parse(tcpAoKeysJson).length} keys`);
             }
 
             const result = await this.worker.sendRequest(RpkiConst.RPKI_REQ_TYPES.START_RPKI, rpkiConfigData);

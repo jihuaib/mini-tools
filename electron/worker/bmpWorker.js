@@ -167,10 +167,11 @@ class BmpWorker {
             logger.info(`Worker log level set to: ${this.bmpConfigData.logLevel}`);
         }
 
-        // 如果启用了认证（MD5），使用SSH隧道
-        if (bmpConfigData.enableAuth && bmpConfigData.md5Password) {
+        // 如果启用了认证（MD5 或 TCP-AO），使用SSH隧道
+        if (bmpConfigData.enableAuth && (bmpConfigData.md5Password || bmpConfigData.useTcpAo)) {
             try {
-                logger.info(`TCP MD5 authentication enabled, creating SSH tunnel...`);
+                const authType = bmpConfigData.useTcpAo ? 'TCP-AO' : 'TCP MD5';
+                logger.info(`${authType} authentication enabled, creating SSH tunnel...`);
 
                 // 提取SSH服务器地址
                 const sshHost = bmpConfigData.serverAddress;
@@ -185,11 +186,19 @@ class BmpWorker {
 
                 // 准备代理配置
                 let proxyConfig;
-
-                // TCP MD5 模式
-                logger.info('Using TCP MD5 proxy');
-                const md5Password = bmpConfigData.md5Password;
-                proxyConfig = md5Password;
+                if (bmpConfigData.useTcpAo) {
+                    // TCP-AO 模式
+                    logger.info('Using TCP-AO proxy with keychain');
+                    proxyConfig = {
+                        useTcpAo: true,
+                        tcpAoKeysJson: bmpConfigData.tcpAoKeysJson
+                    };
+                } else {
+                    // TCP MD5 模式
+                    logger.info('Using TCP MD5 proxy');
+                    const md5Password = bmpConfigData.md5Password;
+                    proxyConfig = md5Password;
+                }
 
                 // 启动远程代理
                 // 代理监听 bmpConfigData.port (路由器连接这个端口)
@@ -212,7 +221,7 @@ class BmpWorker {
                 await this.sshTunnel.startProxy(
                     'bmp', // 协议类型
                     bmpConfigData.peerIP, // BMP路由器IP（peer IP）
-                    proxyConfig, // 代理配置（MD5密码）
+                    proxyConfig, // 代理配置（MD5密码 或 TCP-AO配置）
                     bmpConfigData.port, // Linux监听端口（路由器连接）
                     `${windowsIp}:${localPort}` // 转发到 Windows 的 localPort
                 );

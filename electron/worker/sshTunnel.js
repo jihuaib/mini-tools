@@ -116,34 +116,64 @@ class SshTunnel extends EventEmitter {
     }
 
     /**
-     * Start TCP proxy on remote server (MD5)
+     * Start TCP proxy on remote server (MD5 or TCP-AO)
      */
     async startProxy(protocol, peerIp, config, listenPort, forwardAddr) {
-        // 使用 TCP MD5 代理
-        const md5Password = typeof config === 'string' ? config : config.md5Password;
-        logger.info(`Starting ${protocol.toUpperCase()} TCP MD5 proxy for peer ${peerIp} on port ${listenPort}`);
+        // config 可以是:
+        // - 字符串: MD5 密码（TCP MD5 模式）
+        // - 对象: { useTcpAo: true, tcpAoKeysJson: '[...]' } (TCP-AO 模式)
 
-        // Start the proxy script with protocol parameter
-        const startCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" start`;
+        const useTcpAo = typeof config === 'object' && config.useTcpAo;
 
-        const result = await this.execCommand(startCmd);
-        logger.info(`Proxy start result: ${result}`);
+        if (useTcpAo) {
+            logger.info(`Starting ${protocol.toUpperCase()} TCP-AO proxy for peer ${peerIp} on port ${listenPort}`);
 
-        // Wait a bit for proxy to start
-        await new Promise(resolve => setTimeout(resolve, 1000));
+            // 使用 TCP-AO 代理
+            const tcpAoKeysJson = config.tcpAoKeysJson;
+            const startCmd = `/opt/tcp-ao-proxy/tcp-ao-proxy.sh ${protocol} "${peerIp}" '${tcpAoKeysJson}' ${listenPort} "${forwardAddr}" start`;
 
-        // Verify proxy is running
-        const statusCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" status`;
-        const status = await this.execCommand(statusCmd);
+            const result = await this.execCommand(startCmd);
+            logger.info(`TCP-AO proxy start result: ${result}`);
 
-        if (!status.includes('running')) {
-            throw new Error(`${protocol.toUpperCase()} proxy failed to start`);
+            // Wait a bit for proxy to start
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Verify proxy is running
+            const statusCmd = `/opt/tcp-ao-proxy/tcp-ao-proxy.sh ${protocol} "${peerIp}" '${tcpAoKeysJson}' ${listenPort} "${forwardAddr}" status`;
+            const status = await this.execCommand(statusCmd);
+
+            if (!status.includes('running')) {
+                throw new Error(`${protocol.toUpperCase()} TCP-AO proxy failed to start`);
+            }
+
+            logger.info(`${protocol.toUpperCase()} TCP-AO proxy started successfully`);
+        } else {
+            // 使用 TCP MD5 代理
+            const md5Password = typeof config === 'string' ? config : config.md5Password;
+            logger.info(`Starting ${protocol.toUpperCase()} TCP MD5 proxy for peer ${peerIp} on port ${listenPort}`);
+
+            // Start the proxy script with protocol parameter
+            const startCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" start`;
+
+            const result = await this.execCommand(startCmd);
+            logger.info(`Proxy start result: ${result}`);
+
+            // Wait a bit for proxy to start
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Verify proxy is running
+            const statusCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" status`;
+            const status = await this.execCommand(statusCmd);
+
+            if (!status.includes('running')) {
+                throw new Error(`${protocol.toUpperCase()} proxy failed to start`);
+            }
+
+            logger.info(`${protocol.toUpperCase()} proxy started successfully`);
         }
-
-        logger.info(`${protocol.toUpperCase()} proxy started successfully`);
     }
     /**
-     * Stop TCP proxy on remote server (MD5)
+     * Stop TCP proxy on remote server (MD5 or TCP-AO)
      */
     async stopProxy(protocol, peerIp, config, listenPort, forwardAddr) {
         if (!this.conn) {
@@ -159,11 +189,21 @@ class SshTunnel extends EventEmitter {
         logger.info(`Stopping ${protocol.toUpperCase()} proxy...`);
 
         try {
-            // 停止 TCP MD5 代理
-            const md5Password = typeof config === 'string' ? config : config.md5Password;
-            const stopCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" stop`;
-            const result = await this.execCommand(stopCmd);
-            logger.info(`TCP MD5 proxy stop result: ${result}`);
+            const useTcpAo = typeof config === 'object' && config.useTcpAo;
+
+            if (useTcpAo) {
+                // 停止 TCP-AO 代理
+                const tcpAoKeysJson = config.tcpAoKeysJson;
+                const stopCmd = `/opt/tcp-ao-proxy/tcp-ao-proxy.sh ${protocol} "${peerIp}" '${tcpAoKeysJson}' ${listenPort} "${forwardAddr}" stop`;
+                const result = await this.execCommand(stopCmd);
+                logger.info(`TCP-AO proxy stop result: ${result}`);
+            } else {
+                // 停止 TCP MD5 代理
+                const md5Password = typeof config === 'string' ? config : config.md5Password;
+                const stopCmd = `/opt/tcp-md5-proxy/tcp-md5-proxy.sh ${protocol} "${peerIp}" "${md5Password}" ${listenPort} "${forwardAddr}" stop`;
+                const result = await this.execCommand(stopCmd);
+                logger.info(`TCP MD5 proxy stop result: ${result}`);
+            }
         } catch (error) {
             logger.error(`Error stopping proxy: ${error.message}`);
         }

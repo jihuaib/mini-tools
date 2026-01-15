@@ -68,6 +68,7 @@
                                     <a-form-item label="认证模式" name="authMode">
                                         <a-radio-group v-model:value="rpkiConfig.authMode">
                                             <a-radio value="md5">MD5 密钥</a-radio>
+                                            <a-radio value="keychain">Keychain</a-radio>
                                         </a-radio-group>
                                     </a-form-item>
                                 </a-col>
@@ -86,6 +87,19 @@
                                                 :status="validationErrors.md5Password ? 'error' : ''"
                                             />
                                         </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+
+                            <!-- Keychain 模式 -->
+                            <a-row v-if="rpkiConfig.authMode === 'keychain'">
+                                <a-col :span="24">
+                                    <a-form-item label="选择 Keychain" name="keychainId">
+                                        <a-select v-model:value="rpkiConfig.keychainId" placeholder="请选择 Keychain">
+                                            <a-select-option v-for="kc in keychains" :key="kc.id" :value="kc.id">
+                                                {{ kc.name }} ({{ kc.keys.length }} 个密钥)
+                                            </a-select-option>
+                                        </a-select>
                                     </a-form-item>
                                 </a-col>
                             </a-row>
@@ -169,14 +183,16 @@
         port: DEFAULT_VALUES.DEFAULT_RPKI_PORT,
         localPort: '11019',
         enableAuth: false,
-        authMode: 'md5', // 'md5'
+        authMode: 'md5', // 'md5' or 'keychain'
         peerIP: '',
-        md5Password: ''
+        md5Password: '',
+        keychainId: ''
     });
 
     const serverLoading = ref(false);
     const serverRunning = ref(false);
     const serverDeploymentStatus = ref(false);
+    const keychains = ref([]);
 
     // 客户端列表
     const clientList = ref([]);
@@ -359,8 +375,15 @@
                 rpkiConfig.value.localPort = result.data.localPort;
                 rpkiConfig.value.peerIP = result.data.peerIP || '';
                 rpkiConfig.value.md5Password = result.data.md5Password || '';
+                rpkiConfig.value.keychainId = result.data.keychainId || '';
             } else {
                 console.error('配置文件加载失败', result.msg);
+            }
+
+            // 加载 Keychains
+            const keychainsResult = await window.commonApi.loadKeychains();
+            if (keychainsResult.status === 'success') {
+                keychains.value = keychainsResult.data || [];
             }
 
             // 检查服务器部署状态

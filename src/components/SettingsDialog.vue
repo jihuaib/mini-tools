@@ -27,6 +27,10 @@
                         <template #icon><CloudServerOutlined /></template>
                         <span>服务器部署</span>
                     </a-menu-item>
+                    <a-menu-item key="keychain">
+                        <template #icon><KeyOutlined /></template>
+                        <span>Keychain</span>
+                    </a-menu-item>
                     <a-menu-item key="update">
                         <template #icon><CloudDownloadOutlined /></template>
                         <span>应用更新</span>
@@ -51,13 +55,15 @@
         CodeOutlined,
         CloudDownloadOutlined,
         DownloadOutlined,
-        CloudServerOutlined
+        CloudServerOutlined,
+        KeyOutlined
     } from '@ant-design/icons-vue';
     import GeneralSettings from '../view/settings/GeneralSettings.vue';
     import ToolsSettings from '../view/settings/ToolsSettings.vue';
     import UpdateSettings from '../view/settings/UpdateSettings.vue';
     import FtpSettings from '../view/settings/FtpSettings.vue';
     import ServerDeployment from '../view/settings/ServerDeployment.vue';
+    import KeychainSettings from '../view/settings/KeychainSettings.vue';
 
     const props = defineProps({
         visible: {
@@ -100,6 +106,8 @@
                 return FtpSettings;
             case 'server-deployment':
                 return ServerDeployment;
+            case 'keychain':
+                return KeychainSettings;
             case 'update':
                 return UpdateSettings;
             default:
