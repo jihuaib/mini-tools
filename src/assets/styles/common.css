@@ -1,232 +1,6 @@
-/* ===========================
-   渐变主题色定义
-   ========================== */
-:root {
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-primary-hover: linear-gradient(135deg, #7c8ff0 0%, #8b5cb8 100%);
-    --gradient-secondary: linear-gradient(135deg, #667eea 0%, #4facfe 100%);
-    --gradient-light: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-}
-
-/* 主按钮渐变效果 */
-.ant-btn-primary {
-    background: var(--gradient-primary) !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-    transition: all 0.3s ease !important;
-}
-
-.ant-btn-primary:hover {
-    background: var(--gradient-primary-hover) !important;
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;
-    transform: translateY(-1px);
-}
-
-.ant-btn-primary:active {
-    background: var(--gradient-primary) !important;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
-    transform: translateY(0);
-}
-
-/* 禁用按钮样式 - 移除渐变效果 */
-.ant-btn-primary:disabled,
-.ant-btn-primary[disabled] {
-    background: #f5f5f5 !important;
-    color: rgba(0, 0, 0, 0.25) !important;
-    box-shadow: none !important;
-    cursor: not-allowed !important;
-}
-
-.ant-btn-primary:disabled:hover,
-.ant-btn-primary[disabled]:hover {
-    background: #f5f5f5 !important;
-    transform: none !important;
-}
-
-/* 标签页渐变效果 */
-.ant-tabs-tab-active .ant-tabs-tab-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 600;
-}
-
-.ant-tabs-ink-bar {
-    background: var(--gradient-primary) !important;
-    height: 3px !important;
-}
-
-/* 开关组件渐变效果 */
-.ant-switch-checked {
-    background: var(--gradient-primary) !important;
-}
-
-.ant-switch-checked:hover {
-    background: var(--gradient-primary-hover) !important;
-}
-
-/* 禁用开关样式 - 移除渐变效果 */
-.ant-switch-disabled {
-    background: rgba(0, 0, 0, 0.25) !important;
-    opacity: 0.4 !important;
-}
-
-.ant-switch-checked.ant-switch-disabled {
-    background: #f5f5f5 !important;
-    opacity: 0.6 !important;
-}
-
-/* 复选框渐变效果 */
-.ant-checkbox-checked .ant-checkbox-inner {
-    background: var(--gradient-primary) !important;
-    border-color: #667eea !important;
-}
-
-.ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner {
-    background: var(--gradient-primary-hover) !important;
-}
-
-/* 禁用复选框样式 - 移除渐变效果 */
-.ant-checkbox-disabled .ant-checkbox-inner {
-    background-color: #f5f5f5 !important;
-    border-color: #d9d9d9 !important;
-}
-
-.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner {
-    background: #f5f5f5 !important;
-    border-color: #d9d9d9 !important;
-}
-
-.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
-    border-color: rgba(0, 0, 0, 0.25) !important;
-}
-
-/* 单选框渐变效果 */
-.ant-radio-checked .ant-radio-inner {
-    border-color: #667eea !important;
-}
-
-.ant-radio-checked .ant-radio-inner::after {
-    background: var(--gradient-primary) !important;
-}
-
-.ant-radio-wrapper:hover .ant-radio-checked .ant-radio-inner {
-    border-color: #7c8ff0 !important;
-}
-
-/* 禁用单选框样式 - 移除渐变效果 */
-.ant-radio-disabled .ant-radio-inner {
-    background-color: #f5f5f5 !important;
-    border-color: #d9d9d9 !important;
-}
-
-.ant-radio-disabled.ant-radio-checked .ant-radio-inner {
-    border-color: #d9d9d9 !important;
-}
-
-.ant-radio-disabled.ant-radio-checked .ant-radio-inner::after {
-    background: rgba(0, 0, 0, 0.2) !important;
-}
-
-/* 进度条渐变效果 */
-.ant-progress-bg {
-    background: var(--gradient-primary) !important;
-}
-
-/* 滑块渐变效果 */
-.ant-slider-track {
-    background: var(--gradient-primary) !important;
-}
-
-.ant-slider-handle {
-    border-color: #667eea !important;
-}
-
-.ant-slider-handle:hover,
-.ant-slider-handle:focus {
-    border-color: #7c8ff0 !important;
-    box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.12) !important;
-}
-
-/* 徽标渐变效果 */
-.ant-badge-count {
-    background: var(--gradient-primary) !important;
-}
-
-/* 标签渐变效果 */
-.ant-tag-blue {
-    background: var(--gradient-light) !important;
-    border-color: #667eea !important;
-    color: #667eea !important;
-}
-
-/* 链接渐变文字效果 */
-.ant-btn-link {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.ant-btn-link:hover {
-    background: linear-gradient(135deg, #7c8ff0 0%, #8b5cb8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-/* 菜单选中项渐变效果 */
-.ant-menu-item-selected {
-    background: var(--gradient-light) !important;
-}
-
-.ant-menu-item-selected::after {
-    border-right: 3px solid #667eea !important;
-}
-
-/* 输入框和文本域焦点渐变效果 */
-.ant-input:focus,
-.ant-input-focused,
-.ant-input:hover {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.ant-input-number:focus,
-.ant-input-number-focused,
-.ant-input-number:hover {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.ant-input-textarea-show-count::after {
-    color: rgba(102, 126, 234, 0.7) !important;
-}
-
-/* 密码输入框焦点渐变效果 */
-.ant-input-affix-wrapper:focus,
-.ant-input-affix-wrapper-focused,
-.ant-input-affix-wrapper:hover {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.ant-input-affix-wrapper .ant-input:focus,
-.ant-input-affix-wrapper .ant-input:hover {
-    box-shadow: none !important;
-    border-color: transparent !important;
-}
-
-/* Card 头部渐变效果 */
+/* Card 头部样式 */
 .ant-card-head {
-    background: var(--gradient-primary) !important;
+    background: #1890ff !important;
     border-bottom: none !important;
 }
 
@@ -248,42 +22,79 @@
     background: rgba(255, 255, 255, 0.2) !important;
 }
 
-/* 主菜单图标主题色 */
+/* 侧边栏菜单样式 */
+.main-menu {
+    background: transparent !important;
+}
+
+.main-menu .ant-menu-item {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500 !important;
+}
+
+.main-menu .ant-menu-item-selected {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+}
+
+.main-menu .ant-menu-item:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
 .main-menu .anticon {
-    color: rgba(0, 0, 0, 0.65) !important;
-    transition: color 0.3s ease;
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .main-menu .ant-menu-item-selected .anticon {
-    color: #667eea !important;
+    color: #ffffff !important;
 }
 
 .main-menu .ant-menu-item:hover .anticon {
-    color: #7c8ff0 !important;
+    color: #ffffff !important;
 }
 
-/* 主菜单文字加粗 */
-.main-menu .ant-menu-item {
-    font-weight: 600 !important;
+/* 底部菜单按钮样式 */
+.bottom-menu-btn {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 底部菜单按钮和设置菜单图标主题色 */
-.bottom-menu-btn .anticon,
-.bottom-menu-btn+.ant-dropdown .anticon {
-    color: #667eea !important;
-    transition: color 0.3s ease;
+.bottom-menu-btn .ant-btn {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.bottom-menu-btn .ant-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.bottom-menu-btn .anticon {
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .bottom-menu-btn .ant-btn:hover .anticon {
-    color: #7c8ff0 !important;
+    color: #ffffff !important;
 }
 
-.bottom-menu-btn+.ant-dropdown .ant-dropdown-menu-item:hover .anticon {
-    color: #7c8ff0 !important;
+/* 折叠按钮样式 */
+.toggle-btn .ant-btn {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.toggle-btn .ant-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.toggle-btn .anticon {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.toggle-btn .ant-btn:hover .anticon {
+    color: #ffffff !important;
 }
 
 /* 主页面样式 */
-
 .mt-main-container {
     display: flex;
     flex-direction: column;

@@ -103,45 +103,45 @@
     const current = ref(['tools']);
     const items = ref([
         {
-            key: 'tools',
+            key: '工具集合',
             icon: h(AppstoreOutlined),
-            label: 'tools',
-            title: 'tools',
+            label: '工具集合',
+            title: '工具集合',
             route: '/tools'
         },
         {
-            key: 'bgp',
+            key: 'BGP模拟器',
             icon: h(ApiOutlined),
-            label: 'bgp',
-            title: 'bgp',
+            label: 'BGP模拟器',
+            title: 'BGP模拟器',
             route: '/bgp'
         },
         {
-            key: 'bmp',
+            key: 'BMP服务器',
             icon: h(ClusterOutlined),
-            label: 'bmp',
-            title: 'bmp',
+            label: 'BMP服务器',
+            title: 'BMP服务器',
             route: '/bmp'
         },
         {
-            key: 'rpki',
+            key: 'RPKI服务器',
             icon: h(SafetyOutlined),
-            label: 'rpki',
-            title: 'rpki',
+            label: 'RPKI服务器',
+            title: 'RPKI服务器',
             route: '/rpki'
         },
         {
-            key: 'ftp',
+            key: 'FTP服务器',
             icon: h(FolderOutlined),
-            label: 'ftp',
-            title: 'ftp',
+            label: 'FTP服务器',
+            title: 'FTP服务器',
             route: '/ftp'
         },
         {
-            key: 'snmp',
+            key: 'SNMP服务器',
             icon: h(CodeOutlined),
-            label: 'snmp',
-            title: 'snmp',
+            label: 'SNMP服务器',
+            title: 'SNMP服务器',
             route: '/snmp'
         }
     ]);
@@ -243,10 +243,10 @@
         left: 0;
         top: 0;
         z-index: 1000;
-        background-color: #fff;
+        background-color: #1890ff;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
         transition: all 0.2s;
-        width: 150px;
+        width: 160px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -274,9 +274,9 @@
     }
 
     .content-container {
-        margin-left: 155px;
+        margin-left: 165px;
         transition: all 0.2s;
-        width: calc(100% - 155px);
+        width: calc(100% - 165px);
         display: flex;
         padding-right: 20px;
     }

@@ -63,6 +63,17 @@
                         <a-tag v-if="pagination.total > 0" color="blue">
                             {{ pagination.total }}
                         </a-tag>
+                        <a-button 
+                            v-if="pagination.total > 0" 
+                            type="primary" 
+                            danger 
+                            size="small" 
+                            @click="deleteAllRoutes"
+                            style="margin-left: auto;"
+                        >
+                            <template #icon><DeleteOutlined /></template>
+                            删除所有
+                        </a-button>
                     </div>
                     <a-table
                         :data-source="sentRoutes"
@@ -100,7 +111,7 @@
 <script setup>
     import { onMounted, ref, computed } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
-    import { message } from 'ant-design-vue';
+    import { message, Modal } from 'ant-design-vue';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES } from '../../const/bgpConst';
     import { FormValidator, createBgpIpv4RouteConfigValidationRules } from '../../utils/validationCommon';
@@ -300,6 +311,38 @@
             }
         } catch (e) {
             message.error(`路由删除失败: ${e.message}`);
+        }
+    };
+
+    const deleteAllRoutes = async () => {
+        try {
+            // 显示确认对话框
+            Modal.confirm({
+                title: '确认删除',
+                content: `确定要删除所有 ${pagination.value.total} 条IPv4路由吗？此操作不可恢复。`,
+                okText: '确定',
+                cancelText: '取消',
+                okType: 'danger',
+                onOk: async () => {
+                    try {
+                        // 调用新的批量删除API，只传地址族
+                        const result = await window.bgpApi.deleteAllRoutesByFamily(BGP_ADDR_FAMILY.IPV4_UNC);
+
+                        if (result.status === 'success') {
+                            message.success(result.msg || '成功删除所有路由');
+                            // 刷新路由列表
+                            pagination.value.current = 1;
+                            await refreshRoutes();
+                        } else {
+                            message.error(`删除失败: ${result.msg}`);
+                        }
+                    } catch (e) {
+                        message.error(`批量删除失败: ${e.message}`);
+                    }
+                }
+            });
+        } catch (e) {
+            message.error(`批量删除失败: ${e.message}`);
         }
     };
 </script>

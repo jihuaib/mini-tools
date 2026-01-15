@@ -1,10 +1,7 @@
 <template>
-    <a-config-provider :theme="themeConfig">
-        <!--路由内容-->
-        <router-view />
-    </a-config-provider>
+    <!--路由内容-->
+    <router-view />
 </template>
 
 <script setup>
-    import { themeConfig } from './assets/styles/theme.js';
 </script>

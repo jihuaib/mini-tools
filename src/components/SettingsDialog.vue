@@ -17,11 +17,11 @@
                     </a-menu-item>
                     <a-menu-item key="tools">
                         <template #icon><CodeOutlined /></template>
-                        <span>tools设置</span>
+                        <span>工具集合</span>
                     </a-menu-item>
                     <a-menu-item key="ftp">
                         <template #icon><DownloadOutlined /></template>
-                        <span>ftp设置</span>
+                        <span>FTP服务器</span>
                     </a-menu-item>
                     <a-menu-item key="server-deployment">
                         <template #icon><CloudServerOutlined /></template>
@@ -131,7 +131,7 @@
     }
 
     .settings-sidebar {
-        width: 180px;
+        width: 140px;
         border-right: 1px solid #f0f0f0;
         height: 100%;
     }
@@ -139,7 +139,11 @@
     .settings-menu {
         height: 100%;
         border-right: none;
-        font-size: 0.9rem;
+        font-size: 13px;
+    }
+
+    .settings-menu :deep(.ant-menu-item) {
+        font-size: 13px;
     }
 
     .settings-content {

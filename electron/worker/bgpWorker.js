@@ -43,6 +43,10 @@ class BgpWorker {
             this.generateRoutes.bind(this)
         );
         this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_ROUTES, this.deleteRoute.bind(this));
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.DELETE_ALL_ROUTES_BY_FAMILY,
+            this.deleteAllRoutesByFamily.bind(this)
+        );
         this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.GET_ROUTES, this.getRoutes.bind(this));
 
         // MVPN
@@ -548,6 +552,35 @@ class BgpWorker {
         }
 
         this.messageHandler.sendSuccessResponse(messageId, null, '路由删除成功');
+    }
+
+    deleteAllRoutesByFamily(messageId, queryInfo) {
+        const { addressFamily } = queryInfo;
+        const { afi, safi } = getAfiAndSafi(addressFamily);
+        const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
+        if (!instance) {
+            logger.error('实例不存在');
+            this.messageHandler.sendErrorResponse(messageId, '实例不存在');
+            return;
+        }
+
+        const withdrawnRoutes = [];
+        instance.routeMap.forEach((route, _) => {
+            withdrawnRoutes.push(route);
+        });
+
+        const count = withdrawnRoutes.length;
+
+        // Clear all routes
+        instance.routeMap.clear();
+
+        // Send withdraw message if there were routes
+        if (withdrawnRoutes.length > 0) {
+            instance.withdrawRoute(withdrawnRoutes);
+        }
+
+        logger.info(`Deleted all ${count} routes for address family ${addressFamily}`);
+        this.messageHandler.sendSuccessResponse(messageId, null, `成功删除所有 ${count} 条路由`);
     }
 
     deletePeer(messageId, peerRecord) {

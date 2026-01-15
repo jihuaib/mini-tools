@@ -59,6 +59,9 @@ class BgpApp {
         ipc.handle('bgp:generateIpv6Routes', async (event, config) => this.handleGenerateIpv6Routes(event, config));
         ipc.handle('bgp:deleteIpv4Routes', async (event, config) => this.handleDeleteIpv4Routes(event, config));
         ipc.handle('bgp:deleteIpv6Routes', async (event, config) => this.handleDeleteIpv6Routes(event, config));
+        ipc.handle('bgp:deleteAllRoutesByFamily', async (event, addressFamily) =>
+            this.handleDeleteAllRoutesByFamily(event, addressFamily)
+        );
         ipc.handle('bgp:getRoutes', async (event, addressFamily, page, pageSize) =>
             this.handleGetRoutes(event, addressFamily, page, pageSize)
         );
@@ -426,6 +429,25 @@ class BgpApp {
             return successResponse(result.data, '获取路由信息成功');
         } catch (error) {
             logger.error('Error getting routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteAllRoutesByFamily(event, addressFamily) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        logger.info(`Deleting all routes for address family: ${addressFamily}`);
+
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_ALL_ROUTES_BY_FAMILY, {
+                addressFamily
+            });
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error deleting all routes by family:', error.message);
             return errorResponse(error.message);
         }
     }
