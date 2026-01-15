@@ -243,7 +243,7 @@
         left: 0;
         top: 0;
         z-index: 1000;
-        background: var(--theme-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+        background-color: #fff;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
         transition: all 0.2s;
         width: 150px;
@@ -262,27 +262,13 @@
         padding-right: 16px;
     }
 
-    .toggle-btn .ant-btn {
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    .toggle-btn .ant-btn:hover {
-        color: #ffffff;
-        background: rgba(255, 255, 255, 0.15);
-    }
-
-    .toggle-btn .anticon {
-        font-size: 18px;
-    }
-
     .main-menu {
         border-right: none;
         flex: 1;
-        background: transparent;
     }
 
     .bottom-menu-btn {
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 1px solid #f0f0f0;
         padding: 16px;
         text-align: center;
     }

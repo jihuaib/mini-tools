@@ -142,18 +142,6 @@
         font-size: 0.9rem;
     }
 
-    .settings-menu :deep(.ant-menu-item .anticon) {
-        color: rgba(0, 0, 0, 0.65);
-    }
-
-    .settings-menu :deep(.ant-menu-item-selected .anticon) {
-        color: var(--theme-primary);
-    }
-
-    .settings-menu :deep(.ant-menu-item-selected) {
-        color: var(--theme-primary);
-    }
-
     .settings-content {
         flex: 1;
         padding-left: 16px;
