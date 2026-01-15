@@ -46,13 +46,8 @@
                         配置自定义路由属性
                     </a-button>
                 </a-form-item>
-                <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-                    <a-space size="middle">
-                        <a-button type="primary" @click="generateRoutes">生成IPv6路由</a-button>
-                        <a-button type="primary" danger :disabled="!hasRoutes" @click="deleteRoutes">
-                            删除IPv6路由
-                        </a-button>
-                    </a-space>
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-button type="primary" @click="generateRoutes">生成IPv6路由</a-button>
                 </a-form-item>
 
                 <!-- 路由列表 -->
@@ -63,6 +58,17 @@
                         <a-tag v-if="pagination.total > 0" color="blue">
                             {{ pagination.total }}
                         </a-tag>
+                        <a-button
+                            :disabled="!hasRoutes"
+                            type="primary"
+                            danger
+                            size="small"
+                            style="margin-left: auto"
+                            @click="deleteAllRoutes"
+                        >
+                            <template #icon><DeleteOutlined /></template>
+                            删除所有
+                        </a-button>
                     </div>
                     <a-table
                         :data-source="sentRoutes"
@@ -100,7 +106,7 @@
 <script setup>
     import { onMounted, ref, computed } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
-    import { message } from 'ant-design-vue';
+    import { message, Modal } from 'ant-design-vue';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES } from '../../const/bgpConst';
     import { FormValidator, createBgpIpv6RouteConfigValidationRules } from '../../utils/validationCommon';
@@ -251,35 +257,6 @@
         }
     };
 
-    const deleteRoutes = async () => {
-        try {
-            const hasErrors = validator.validate(ipv6Data.value);
-            if (hasErrors) {
-                message.error('请检查IPv6路由配置信息是否正确');
-                return;
-            }
-
-            const payload = JSON.parse(JSON.stringify(ipv6Data.value));
-            const saveResult = await window.bgpApi.saveIpv6UNCRouteConfig(payload);
-            if (saveResult.status !== 'success') {
-                message.error(saveResult.msg || '配置文件保存失败');
-                return;
-            }
-
-            const result = await window.bgpApi.deleteIpv6Routes(payload);
-
-            if (result.status === 'success') {
-                message.success(`${result.msg}`);
-                pagination.value.current = 1;
-                await refreshRoutes();
-            } else {
-                message.error(`${result.msg}`);
-            }
-        } catch (e) {
-            message.error(`IPv6路由删除失败: ${e.message}`);
-        }
-    };
-
     const deleteSingleRoute = async route => {
         try {
             const config = {
@@ -300,6 +277,38 @@
             }
         } catch (e) {
             message.error(`路由删除失败: ${e.message}`);
+        }
+    };
+
+    const deleteAllRoutes = async () => {
+        try {
+            // 显示确认对话框
+            Modal.confirm({
+                title: '确认删除',
+                content: `确定要删除所有 ${pagination.value.total} 条IPv6路由吗？此操作不可恢复。`,
+                okText: '确定',
+                cancelText: '取消',
+                okType: 'danger',
+                onOk: async () => {
+                    try {
+                        // 调用新的批量删除API，只传地址族
+                        const result = await window.bgpApi.deleteAllRoutesByFamily(BGP_ADDR_FAMILY.IPV6_UNC);
+
+                        if (result.status === 'success') {
+                            message.success(result.msg || '成功删除所有路由');
+                            // 刷新路由列表
+                            pagination.value.current = 1;
+                            await refreshRoutes();
+                        } else {
+                            message.error(`删除失败: ${result.msg}`);
+                        }
+                    } catch (e) {
+                        message.error(`批量删除失败: ${e.message}`);
+                    }
+                }
+            });
+        } catch (e) {
+            message.error(`批量删除失败: ${e.message}`);
         }
     };
 </script>

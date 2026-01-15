@@ -46,13 +46,8 @@
                         配置自定义路由属性
                     </a-button>
                 </a-form-item>
-                <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-                    <a-space size="middle">
-                        <a-button type="primary" @click="generateRoutes">生成IPv4路由</a-button>
-                        <a-button type="primary" danger :disabled="!hasRoutes" @click="deleteRoutes">
-                            删除IPv4路由
-                        </a-button>
-                    </a-space>
+                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
+                    <a-button type="primary" @click="generateRoutes">生成IPv4路由</a-button>
                 </a-form-item>
 
                 <!-- 路由列表 -->
@@ -63,13 +58,13 @@
                         <a-tag v-if="pagination.total > 0" color="blue">
                             {{ pagination.total }}
                         </a-tag>
-                        <a-button 
-                            v-if="pagination.total > 0" 
-                            type="primary" 
-                            danger 
-                            size="small" 
+                        <a-button
+                            :disabled="!hasRoutes"
+                            type="primary"
+                            danger
+                            size="small"
+                            style="margin-left: auto"
                             @click="deleteAllRoutes"
-                            style="margin-left: auto;"
                         >
                             <template #icon><DeleteOutlined /></template>
                             删除所有
@@ -259,35 +254,6 @@
             }
         } catch (e) {
             message.error(`IPv4路由生成失败: ${e.message}`);
-        }
-    };
-
-    const deleteRoutes = async () => {
-        try {
-            const hasErrors = validator.validate(ipv4Data.value);
-            if (hasErrors) {
-                message.error('请检查IPv4路由配置信息是否正确');
-                return;
-            }
-
-            const payload = JSON.parse(JSON.stringify(ipv4Data.value));
-            const saveResult = await window.bgpApi.saveIpv4UNCRouteConfig(payload);
-            if (saveResult.status !== 'success') {
-                message.error(saveResult.msg || '配置文件保存失败');
-                return;
-            }
-
-            const result = await window.bgpApi.deleteIpv4Routes(payload);
-
-            if (result.status === 'success') {
-                message.success(`${result.msg}`);
-                pagination.value.current = 1;
-                await refreshRoutes();
-            } else {
-                message.error(`${result.msg}`);
-            }
-        } catch (e) {
-            message.error(`IPv4路由删除失败: ${e.message}`);
         }
     };
 

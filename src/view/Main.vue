@@ -100,7 +100,7 @@
     const openKeys = ref([]);
     const settingsDialog = ref(null);
 
-    const current = ref(['tools']);
+    const current = ref(['工具集合']);
     const items = ref([
         {
             key: '工具集合',
@@ -243,7 +243,7 @@
         left: 0;
         top: 0;
         z-index: 1000;
-        background-color: #1890ff;
+        background-color: #2c3e50;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
         transition: all 0.2s;
         width: 160px;

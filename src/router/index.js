@@ -7,7 +7,7 @@ import Formatter from '../view/tools/Formatter.vue';
 import PacketCapture from '../view/tools/PacketCapture.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
-import BgpPeerInfo from '../view/bgp/BgpPeerInfo.vue';
+import BgpPeerConfig from '../view/bgp/BgpPeerConfig.vue';
 import RouteIpv4 from '../view/bgp/RouteIpv4.vue';
 import RouteIpv6 from '../view/bgp/RouteIpv6.vue';
 import RouteMvpn from '../view/bgp/RouteMvpn.vue';
@@ -88,9 +88,9 @@ const routes = [
                         meta: { keepAlive: true }
                     },
                     {
-                        path: 'bgp-peer-info',
-                        name: 'BgpPeerInfo',
-                        component: BgpPeerInfo,
+                        path: 'bgp-peer-config',
+                        name: 'BgpPeerConfig',
+                        component: BgpPeerConfig,
                         meta: { keepAlive: true }
                     },
                     {

@@ -33,12 +33,18 @@
 }
 
 .main-menu .ant-menu-item-selected {
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: #1890ff !important;
     color: #ffffff !important;
 }
 
 .main-menu .ant-menu-item:hover {
     background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
+/* 选中状态的菜单项 hover 时保持不变 */
+.main-menu .ant-menu-item-selected:hover {
+    background: #1890ff !important;
     color: #ffffff !important;
 }
 
@@ -170,7 +176,7 @@
 }
 
 /* 表格样式 */
-.ant-table-tbody>tr>td {
+.ant-table-tbody > tr > td {
     height: 15px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -206,7 +212,7 @@
     color: rgba(0, 0, 0, 0.85) !important;
 }
 
-.ant-checkbox-disabled+span {
+.ant-checkbox-disabled + span {
     color: rgba(0, 0, 0, 0.85) !important;
 }
 
