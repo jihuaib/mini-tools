@@ -1047,3 +1047,58 @@ export const createSnmpConfigValidationRules = () => {
         ]
     };
 };
+
+/**
+ * 创建网络信息验证规则
+ */
+export const createNetworkInfoValidationRules = () => {
+    return {
+        ip: [
+            {
+                required: true,
+                message: '请输入IP地址'
+            },
+            {
+                validator: (value, formData) => {
+                    if (formData.family === 'ipv6') {
+                        return validators.ipv6(value);
+                    }
+                    return validators.ipv4(value);
+                },
+                message: '请输入有效的IP地址'
+            }
+        ],
+        mask: [
+            {
+                required: true,
+                message: '请输入掩码/前缀长度'
+            },
+            {
+                validator: (value, formData) => {
+                    if (formData.family === 'ipv6') {
+                        // IPv6 prefix length 1-128
+                        return validators.range(1, 128)(value);
+                    }
+
+                    if (value.includes('.')) {
+                        return validators.ipv4(value); // Rough check for mask format
+                    }
+                    return validators.range(1, 32)(value);
+                },
+                message: '请输入有效的子网掩码或前缀长度'
+            }
+        ],
+        gateway: [
+            {
+                validator: (value, formData) => {
+                    if (!value) return true; // Optional
+                    if (formData.family === 'ipv6') {
+                        return validators.ipv6(value);
+                    }
+                    return validators.ipv4(value);
+                },
+                message: '请输入有效的网关地址'
+            }
+        ]
+    };
+};

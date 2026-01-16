@@ -88,7 +88,7 @@
         </div>
         <template #footer>
             <a-button type="primary" @click="closeHistoryModal">关闭</a-button>
-            <a-button v-if="generateHistory.length > 0" type="danger" @click="clearHistory">清空历史</a-button>
+            <a-button v-if="generateHistory.length > 0" danger @click="clearHistory">清空历史</a-button>
         </template>
     </a-modal>
 </template>

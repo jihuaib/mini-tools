@@ -165,6 +165,8 @@ contextBridge.exposeInMainWorld('snmpApi', {
 contextBridge.exposeInMainWorld('nativeApi', {
     // 抓包工具模块
     getNetworkInterfaces: () => ipcRenderer.invoke('native:getNetworkInterfaces'),
+    getNetworkInfo: () => ipcRenderer.invoke('native:getNetworkInfo'),
+    manageNetwork: config => ipcRenderer.invoke('native:manageNetwork', config),
     startPacketCapture: config => ipcRenderer.invoke('native:startPacketCapture', config),
     stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
     getPacketHistory: () => ipcRenderer.invoke('native:getPacketHistory'),
@@ -173,5 +175,9 @@ contextBridge.exposeInMainWorld('nativeApi', {
     // 格式化工具模块
     formatData: formatterData => ipcRenderer.invoke('native:formatData', formatterData),
     getFormatterHistory: () => ipcRenderer.invoke('native:getFormatterHistory'),
-    clearFormatterHistory: () => ipcRenderer.invoke('native:clearFormatterHistory')
+    clearFormatterHistory: () => ipcRenderer.invoke('native:clearFormatterHistory'),
+
+    // 端口监听工具模块
+    getListeningPorts: () => ipcRenderer.invoke('native:getListeningPorts'),
+    killProcess: pid => ipcRenderer.invoke('native:killProcess', pid)
 });

@@ -5,6 +5,8 @@ import StringGenerator from '../view/tools/StringGenerator.vue';
 import PacketParser from '../view/tools/PacketParser.vue';
 import Formatter from '../view/tools/Formatter.vue';
 import PacketCapture from '../view/tools/PacketCapture.vue';
+import PortMonitor from '../view/tools/PortMonitor.vue';
+import NetworkInfo from '../view/tools/NetworkInfo.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerConfig from '../view/bgp/BgpPeerConfig.vue';
@@ -67,6 +69,18 @@ const routes = [
                         path: 'packet-capture',
                         name: 'PacketCapture',
                         component: PacketCapture,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'port-monitor',
+                        name: 'PortMonitor',
+                        component: PortMonitor,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'network-info',
+                        name: 'NetworkInfo',
+                        component: NetworkInfo,
                         meta: { keepAlive: true }
                     }
                 ]

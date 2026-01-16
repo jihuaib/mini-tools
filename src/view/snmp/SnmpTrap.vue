@@ -3,7 +3,7 @@
         <a-card title="SNMP Trap 监控" class="trap-card">
             <template #extra>
                 <a-space>
-                    <a-button :loading="clearLoading" @click="clearHistory">
+                    <a-button danger :loading="clearLoading" @click="clearHistory">
                         <template #icon><DeleteOutlined /></template>
                         清空历史
                     </a-button>

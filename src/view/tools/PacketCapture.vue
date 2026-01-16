@@ -45,7 +45,10 @@
         <a-card title="抓包数据" class="mt-margin-top-10">
             <template #extra>
                 <a-space>
-                    <a-button :disabled="packets.length === 0" @click="exportPackets">导出数据</a-button>
+                    <a-button v-if="packets.length > 0" @click="exportPackets">
+                        <template #icon><DownloadOutlined /></template>
+                        导出数据
+                    </a-button>
                 </a-space>
             </template>
 
@@ -83,6 +86,7 @@
 <script setup>
     import { ref, onMounted, toRaw, onActivated, onDeactivated } from 'vue';
     import { message, Modal } from 'ant-design-vue';
+    import { DownloadOutlined } from '@ant-design/icons-vue';
     import PacketResultViewer from '../../components/PacketResultViewer.vue';
     import { PROTOCOL_TYPE, START_LAYER, TOOLS_EVENT_PAGE_ID } from '../../const/toolsConst';
     import EventBus from '../../utils/eventBus';

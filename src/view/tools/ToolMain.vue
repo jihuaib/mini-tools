@@ -7,6 +7,8 @@
                 <a-tab-pane key="packet-parser" tab="报文解析" />
                 <a-tab-pane key="formatter" tab="格式化工具" />
                 <a-tab-pane key="packet-capture" tab="网络抓包" />
+                <a-tab-pane key="port-monitor" tab="端口监听" />
+                <a-tab-pane key="network-info" tab="网络信息" />
             </a-tabs>
         </div>
 
