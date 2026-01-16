@@ -171,6 +171,7 @@ contextBridge.exposeInMainWorld('nativeApi', {
     stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
     getPacketHistory: () => ipcRenderer.invoke('native:getPacketHistory'),
     exportPacketsToPcap: packets => ipcRenderer.invoke('native:exportPacketsToPcap', packets),
+    getTrafficStats: () => ipcRenderer.invoke('native:getTrafficStats'),
 
     // 格式化工具模块
     formatData: formatterData => ipcRenderer.invoke('native:formatData', formatterData),

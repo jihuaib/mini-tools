@@ -2,23 +2,31 @@
     <div class="mt-container">
         <!-- 面板头部 -->
         <a-card title="网络信息">
-            <template #extra>
+            <div style="display: flex; align-items: center">
+                <a-select
+                    v-model:value="selectedInterfaceName"
+                    placeholder="选择网络接口"
+                    style="min-width: 280px; margin-right: 12px"
+                    :options="interfaces.map(i => ({ label: i.displayName || i.name, value: i.name }))"
+                    :loading="isLoading"
+                />
                 <a-button :loading="isLoading" @click="loadNetworkInfo">
                     <template #icon>
                         <ReloadOutlined />
                     </template>
                     刷新
                 </a-button>
-            </template>
+            </div>
 
             <a-table
                 :columns="columns"
-                :data-source="interfaces"
+                :data-source="filteredInterfaces"
                 :pagination="false"
-                :scroll="{ y: 600 }"
+                :scroll="{ y: 150 }"
                 size="small"
                 row-key="name"
                 :loading="isLoading"
+                class="mt-margin-top-10"
             >
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'status'">
@@ -125,7 +133,12 @@
         </a-modal>
 
         <!-- 修改 IP 弹窗 -->
-        <a-modal v-model:open="isEditModalVisible" title="修改 IP 地址" :confirm-loading="isUpdating" @ok="handleEditOk">
+        <a-modal
+            v-model:open="isEditModalVisible"
+            title="修改 IP 地址"
+            :confirm-loading="isUpdating"
+            @ok="handleEditOk"
+        >
             <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
                 <a-form-item label="接口名称">
                     <span>{{ currentEditInterfaceName }}</span>
@@ -154,14 +167,18 @@
                 </a-form-item>
             </a-form>
         </a-modal>
+
+        <!-- 流量统计图表 -->
+        <TrafficStatsChart />
     </div>
 </template>
 
 <script setup>
-    import { ref, reactive, onMounted, onActivated } from 'vue';
+    import { ref, reactive, computed, onMounted, onActivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { ReloadOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
     import { FormValidator, createNetworkInfoValidationRules } from '../../utils/validationCommon';
+    import TrafficStatsChart from '../../components/TrafficStatsChart.vue';
 
     defineOptions({
         name: 'NetworkInfo'
@@ -169,6 +186,12 @@
 
     const isLoading = ref(false);
     const interfaces = ref([]);
+    const selectedInterfaceName = ref('');
+
+    const filteredInterfaces = computed(() => {
+        if (!selectedInterfaceName.value) return [];
+        return interfaces.value.filter(i => i.name === selectedInterfaceName.value);
+    });
 
     // Edit Modal State
     const isEditModalVisible = ref(false);
@@ -262,7 +285,15 @@
             const response = await window.nativeApi.getNetworkInfo();
             if (response.status === 'success') {
                 interfaces.value = response.data;
-                // message.success('获取网络信息成功');
+                // Auto-select first interface if none selected or selection no longer exists
+                if (response.data.length > 0) {
+                    const stillExists = response.data.find(i => i.name === selectedInterfaceName.value);
+                    if (!selectedInterfaceName.value || !stillExists) {
+                        selectedInterfaceName.value = response.data[0].name;
+                    }
+                } else {
+                    selectedInterfaceName.value = '';
+                }
             } else {
                 message.error(`获取网络信息失败: ${response.msg}`);
             }
@@ -395,7 +426,7 @@
 
 <style scoped>
     :deep(.ant-table-body) {
-        height: 600px !important;
+        height: 150px !important;
         overflow-y: auto !important;
     }
 

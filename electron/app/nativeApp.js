@@ -77,6 +77,9 @@ class NativeApp {
         // 网络信息工具
         ipc.handle('native:getNetworkInfo', async () => this.handleGetNetworkInfo());
         ipc.handle('native:manageNetwork', async (event, config) => this.handleManageNetwork(event, config));
+
+        // 流量统计
+        ipc.handle('native:getTrafficStats', async () => this.handleGetTrafficStats());
     }
 
     async handleGetPacketHistory() {
@@ -1591,6 +1594,81 @@ class NativeApp {
                 return errorResponse('权限不足，请以管理员身份运行此程序。');
             }
             return errorResponse(`网络配置失败: ${err.message}`);
+        }
+    }
+
+    async handleGetTrafficStats() {
+        try {
+            const platform = os.platform();
+            if (platform !== 'win32') {
+                return errorResponse('目前仅支持 Windows 系统的流量统计功能');
+            }
+
+            const { spawn } = require('child_process');
+
+            // 使用 .NET NetworkInterface API 获取流量统计，这是最鲁棒的方法，支持所有接口（包括回环和虚拟网卡）
+            const psScript = `
+                [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() | ForEach-Object {
+                    try {
+                        $s = $_.GetIPStatistics();
+                        [PSCustomObject]@{
+                            Name = $_.Name;
+                            ReceivedBytes = $s.BytesReceived;
+                            SentBytes = $s.BytesSent;
+                        }
+                    } catch {}
+                } | ConvertTo-Json -Compress
+            `.trim();
+
+            return new Promise(resolve => {
+                const child = spawn('powershell', ['-NoProfile', '-Command', psScript]);
+                let stdout = Buffer.alloc(0);
+
+                child.stdout.on('data', data => {
+                    stdout = Buffer.concat([stdout, data]);
+                });
+
+                child.on('close', code => {
+                    if (code !== 0) {
+                        logger.error(`PowerShell 进程退出，退出码: ${code}`);
+                        resolve(errorResponse(`获取流量统计进程出错: ${code}`));
+                        return;
+                    }
+
+                    try {
+                        const output = iconv.decode(stdout, 'cp936');
+                        if (!output || output.trim() === '') {
+                            resolve(successResponse([], '没有获取到流量统计数据'));
+                            return;
+                        }
+
+                        let stats = JSON.parse(output);
+                        if (!Array.isArray(stats)) {
+                            stats = [stats];
+                        }
+
+                        const result = stats.map(item => ({
+                            name: item.Name,
+                            rxBytes: item.ReceivedBytes,
+                            txBytes: item.SentBytes,
+                            timestamp: Date.now()
+                        }));
+
+                        resolve(successResponse(result, '获取流量统计成功'));
+                    } catch (err) {
+                        logger.error(`解析流量统计数据失败: ${err.message}`);
+                        resolve(errorResponse(`解析流量统计数据失败: ${err.message}`));
+                    }
+                });
+
+                child.on('error', err => {
+                    logger.error(`启动 PowerShell 进程失败: ${err.message}`);
+                    resolve(errorResponse(`启动 PowerShell 进程失败: ${err.message}`));
+                });
+            });
+        } catch (err) {
+            logger.error(`获取流量统计失败: ${err.message}`);
+            return errorResponse(`获取流量统计失败: ${err.message}`);
         }
     }
 }

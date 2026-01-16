@@ -124,7 +124,9 @@
         "vue": "^3.5.13",
         "vue-router": "^4.5.0",
         "vuex": "^4.1.0",
-        "wait-port": "^1.1.0"
+        "wait-port": "^1.1.0",
+        "echarts": "^6.0.0",
+        "vue-echarts": "^8.0.1"
     },
     "dependencies": {
         "cap": "^0.2.1",
