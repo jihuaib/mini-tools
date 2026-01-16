@@ -52,6 +52,10 @@
         const option = {
             tooltip: {
                 trigger: 'axis',
+                confine: true, // 确保提示框限制在图表区域内
+                textStyle: {
+                    fontSize: 7
+                },
                 formatter: params => {
                     let res = params[0].name + '<br/>';
                     params.forEach(item => {

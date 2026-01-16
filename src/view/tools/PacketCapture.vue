@@ -3,40 +3,48 @@
         <!-- 配置面板 -->
         <a-card title="抓包配置">
             <a-form :label-col="labelCol" :wrapper-col="wrapperCol">
-                <a-form-item label="网络接口">
-                    <a-select
-                        v-model:value="selectedInterface"
-                        placeholder="请选择网络接口"
-                        :disabled="isCapturing"
-                        @dropdown-visible-change="onInterfaceDropdownOpen"
-                    >
-                        <a-select-option v-for="iface in interfaces" :key="iface.name" :value="iface.name">
-                            {{ iface.name }} - {{ iface.description }}
-                        </a-select-option>
-                    </a-select>
-                </a-form-item>
-                <a-form-item label="过滤器">
-                    <a-input
-                        v-model:value="captureFilter"
-                        placeholder="BPF过滤器 (例如: tcp port 80, host 192.168.1.1)"
-                        :disabled="isCapturing"
-                    />
-                </a-form-item>
-                <a-form-item :wrapper-col="{ offset: 10, span: 20 }">
-                    <a-space>
-                        <a-button
-                            type="primary"
-                            :loading="isStarting"
-                            :disabled="!selectedInterface || isCapturing"
-                            @click="startCapture"
-                        >
-                            开始抓包
-                        </a-button>
-                        <a-button danger :loading="isStopping" :disabled="!isCapturing" @click="stopCapture">
-                            停止抓包
-                        </a-button>
-                        <a-button :disabled="isCapturing" @click="clearPackets">清空数据</a-button>
-                    </a-space>
+                <a-row>
+                    <a-col :span="12">
+                        <a-form-item label="网络接口">
+                            <a-select
+                                v-model:value="selectedInterface"
+                                placeholder="请选择网络接口"
+                                :disabled="isCapturing"
+                                @dropdown-visible-change="onInterfaceDropdownOpen"
+                            >
+                                <a-select-option v-for="iface in interfaces" :key="iface.name" :value="iface.name">
+                                    {{ iface.name }} - {{ iface.description }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                        <a-form-item label="过滤器">
+                            <a-input
+                                v-model:value="captureFilter"
+                                placeholder="BPF过滤器 (例如: tcp port 80, host 192.168.1.1)"
+                                :disabled="isCapturing"
+                            />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+                <a-form-item :wrapper-col="{ span: 24 }">
+                    <a-row justify="center">
+                        <a-space>
+                            <a-button
+                                type="primary"
+                                :loading="isStarting"
+                                :disabled="!selectedInterface || isCapturing"
+                                @click="startCapture"
+                            >
+                                开始抓包
+                            </a-button>
+                            <a-button danger :loading="isStopping" :disabled="!isCapturing" @click="stopCapture">
+                                停止抓包
+                            </a-button>
+                            <a-button :disabled="isCapturing" @click="clearPackets">清空数据</a-button>
+                        </a-space>
+                    </a-row>
                 </a-form-item>
             </a-form>
         </a-card>

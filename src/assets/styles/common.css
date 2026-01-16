@@ -248,16 +248,17 @@
 
 /* 弹出框主体样式 */
 .ant-modal-content {
-    max-height: 85vh !important;
+    max-height: 91vh !important;
     display: flex !important;
     flex-direction: column !important;
     min-height: 0 !important;
+    padding: 5px 5px !important;
 }
 
 .ant-modal-body {
     flex: 1 !important;
     overflow: auto !important;
-    max-height: calc(85vh - 140px) !important;
+    max-height: calc(91vh - 140px) !important;
     min-height: 150px !important;
     padding: 2px 16px 10px 16px !important;
 }
