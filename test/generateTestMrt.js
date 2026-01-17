@@ -42,8 +42,8 @@ function ipv6ToBytes(ipv6) {
     const bytes = [];
     for (const part of parts) {
         const value = parseInt(part, 16);
-        bytes.push((value >> 8) & 0xFF);
-        bytes.push(value & 0xFF);
+        bytes.push((value >> 8) & 0xff);
+        bytes.push(value & 0xff);
     }
     return Buffer.from(bytes);
 }
@@ -62,7 +62,18 @@ function buildAsPath(asns) {
     return Buffer.concat([segmentType, segmentLength, asNumbers]);
 }
 
-function buildTableDumpEntry(prefix, prefixLen, status, originatedTime, peerIp, peerAs, originAs, nextHop, asPath, isIPv6 = false) {
+function buildTableDumpEntry(
+    prefix,
+    prefixLen,
+    status,
+    originatedTime,
+    peerIp,
+    peerAs,
+    originAs,
+    nextHop,
+    asPath,
+    isIPv6 = false
+) {
     const viewNumber = writeUInt16BE(0);
     const sequenceNumber = writeUInt16BE(0);
     const prefixBytes = isIPv6 ? ipv6ToBytes(prefix) : ipToBytes(prefix);
@@ -125,8 +136,16 @@ function generateTestRoutes() {
         }
 
         const entry = buildTableDumpEntry(
-            prefix, prefixLen, 1, timestamp, peerIp, peerAs,
-            asPath[asPath.length - 1], nextHop, asPath, false
+            prefix,
+            prefixLen,
+            1,
+            timestamp,
+            peerIp,
+            peerAs,
+            asPath[asPath.length - 1],
+            nextHop,
+            asPath,
+            false
         );
 
         const message = buildMrtMessage(MRT_TYPE_TABLE_DUMP, 1, timestamp, entry); // subtype 1 = IPv4
@@ -148,8 +167,16 @@ function generateTestRoutes() {
         }
 
         const entry = buildTableDumpEntry(
-            prefix, prefixLen, 1, timestamp, peerIp, peerAs,
-            asPath[asPath.length - 1], nextHop, asPath, true
+            prefix,
+            prefixLen,
+            1,
+            timestamp,
+            peerIp,
+            peerAs,
+            asPath[asPath.length - 1],
+            nextHop,
+            asPath,
+            true
         );
 
         const message = buildMrtMessage(MRT_TYPE_TABLE_DUMP, 2, timestamp, entry); // subtype 2 = IPv6

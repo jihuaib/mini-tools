@@ -187,12 +187,12 @@ function parseRibEntry(data, afi) {
 
 function parseBgpAttributes(buffer, asnSize = 4) {
     try {
-        const { attributes } = parsePathAttributes(buffer, 0, buffer.length, { asnSize });
+        const { pathAttributes } = parsePathAttributes(buffer, 0, buffer.length, { asnSize });
         const attrs = {};
 
         const formattedParts = [];
 
-        for (const attr of attributes) {
+        for (const attr of pathAttributes) {
             if (attr.typeCode === BgpConst.BGP_PATH_ATTR.AS_PATH && attr.segments) {
                 const asNumbers = attr.segments.flatMap(s => s.asNumbers);
                 attrs.asPath = asNumbers.join(' ');

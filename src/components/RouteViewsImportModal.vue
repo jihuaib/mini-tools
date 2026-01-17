@@ -34,10 +34,10 @@
 
             <!-- 文件来源选择 -->
             <a-form layout="vertical" style="margin-top: 16px">
-                    <a-radio-group v-model:value="fileSource" button-style="solid">
-                        <a-radio-button value="default">默认文件</a-radio-button>
-                        <a-radio-button value="custom">自定义文件</a-radio-button>
-                    </a-radio-group>
+                <a-radio-group v-model:value="fileSource" button-style="solid">
+                    <a-radio-button value="default">默认文件</a-radio-button>
+                    <a-radio-button value="custom">自定义文件</a-radio-button>
+                </a-radio-group>
             </a-form>
 
             <!-- 默认文件选择 -->

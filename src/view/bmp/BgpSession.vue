@@ -23,7 +23,8 @@
                                                 :pagination="false"
                                                 size="small"
                                                 style="margin-bottom: 8px"
-                                                row-key="peerIp",
+                                                row-key="peerIp"
+                                                ,
                                                 :scroll="{ x: 'max-content' }"
                                             >
                                                 <template #bodyCell="{ column, record }">

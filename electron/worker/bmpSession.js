@@ -110,9 +110,9 @@ class BmpSession {
         if (
             sessionFlags === (0x00 | BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT | BmpConst.BMP_SESSION_FLAGS.POST_POLICY) ||
             sessionFlags ===
-            (BmpConst.BMP_SESSION_FLAGS.IPV6 |
-                BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT |
-                BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
+                (BmpConst.BMP_SESSION_FLAGS.IPV6 |
+                    BmpConst.BMP_SESSION_FLAGS.ADJ_RIB_OUT |
+                    BmpConst.BMP_SESSION_FLAGS.POST_POLICY)
         ) {
             ribTypes.push(BmpConst.BMP_BGP_RIB_TYPE.POST_ADJ_RIB_OUT);
         }
