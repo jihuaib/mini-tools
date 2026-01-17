@@ -36,6 +36,18 @@ function ipToBytes(ip) {
     return Buffer.from(ip.split('.').map(x => parseInt(x)));
 }
 
+function ipv6ToBytes(ipv6) {
+    // Simple IPv6 to bytes conversion for test data
+    const parts = ipv6.split(':');
+    const bytes = [];
+    for (const part of parts) {
+        const value = parseInt(part, 16);
+        bytes.push((value >> 8) & 0xFF);
+        bytes.push(value & 0xFF);
+    }
+    return Buffer.from(bytes);
+}
+
 function buildPathAttribute(typeCode, value) {
     const flags = 0x40; // Transitive
     const header = Buffer.concat([writeUInt8(flags), writeUInt8(typeCode), writeUInt8(value.length)]);
@@ -50,21 +62,21 @@ function buildAsPath(asns) {
     return Buffer.concat([segmentType, segmentLength, asNumbers]);
 }
 
-function buildTableDumpEntry(prefix, prefixLen, status, originatedTime, peerIp, peerAs, originAs, nextHop, asPath) {
+function buildTableDumpEntry(prefix, prefixLen, status, originatedTime, peerIp, peerAs, originAs, nextHop, asPath, isIPv6 = false) {
     const viewNumber = writeUInt16BE(0);
     const sequenceNumber = writeUInt16BE(0);
-    const prefixBytes = ipToBytes(prefix);
+    const prefixBytes = isIPv6 ? ipv6ToBytes(prefix) : ipToBytes(prefix);
     const prefixLenByte = writeUInt8(prefixLen);
     const statusByte = writeUInt8(status);
     const originatedTimeBytes = writeUInt32BE(originatedTime);
-    const peerIpBytes = ipToBytes(peerIp);
+    const peerIpBytes = isIPv6 ? ipv6ToBytes(peerIp) : ipToBytes(peerIp);
     const peerAsBytes = writeUInt16BE(peerAs);
 
     // 构建路径属性
     const originAttr = buildPathAttribute(BGP_ATTR_ORIGIN, writeUInt8(0)); // IGP
     const asPathValue = buildAsPath(asPath);
     const asPathAttr = buildPathAttribute(BGP_ATTR_AS_PATH, asPathValue);
-    const nextHopAttr = buildPathAttribute(BGP_ATTR_NEXT_HOP, ipToBytes(nextHop));
+    const nextHopAttr = buildPathAttribute(BGP_ATTR_NEXT_HOP, isIPv6 ? ipv6ToBytes(nextHop) : ipToBytes(nextHop));
 
     const attributes = Buffer.concat([originAttr, asPathAttr, nextHopAttr]);
     const attributeLength = writeUInt16BE(attributes.length);
@@ -98,7 +110,7 @@ function generateTestRoutes() {
     const routes = [];
     const timestamp = Math.floor(Date.now() / 1000);
 
-    // 生成 50 条测试路由，每条路由有不同的 AS Path
+    // 生成 50 条 IPv4 测试路由
     for (let i = 0; i < 50; i++) {
         const prefix = `10.${Math.floor(i / 256)}.${i % 256}.0`;
         const prefixLen = 24;
@@ -106,34 +118,41 @@ function generateTestRoutes() {
         const peerAs = 65000;
         const nextHop = '192.168.1.1';
 
-        // 为每条路由生成不同的 AS Path
-        // AS Path 长度在 2-5 之间随机
         const pathLength = 2 + (i % 4);
-        const asPath = [];
-
-        // 第一个 AS 总是 peer AS
-        asPath.push(peerAs);
-
-        // 添加不同的中间 AS
+        const asPath = [peerAs];
         for (let j = 1; j < pathLength; j++) {
-            // 使用不同的 AS 号段，避免重复
-            const asNumber = 65001 + i * 10 + j;
-            asPath.push(asNumber);
+            asPath.push(65001 + i * 10 + j);
         }
 
         const entry = buildTableDumpEntry(
-            prefix,
-            prefixLen,
-            1, // status
-            timestamp,
-            peerIp,
-            peerAs,
-            asPath[asPath.length - 1], // origin AS 是路径中的最后一个
-            nextHop,
-            asPath
+            prefix, prefixLen, 1, timestamp, peerIp, peerAs,
+            asPath[asPath.length - 1], nextHop, asPath, false
         );
 
-        const message = buildMrtMessage(MRT_TYPE_TABLE_DUMP, 1, timestamp, entry);
+        const message = buildMrtMessage(MRT_TYPE_TABLE_DUMP, 1, timestamp, entry); // subtype 1 = IPv4
+        routes.push(message);
+    }
+
+    // 生成 50 条 IPv6 测试路由
+    for (let i = 0; i < 50; i++) {
+        const prefix = `2001:db8:${i.toString(16)}:0:0:0:0:0`;
+        const prefixLen = 64;
+        const peerIp = '2001:db8:ffff:0:0:0:0:1';
+        const peerAs = 65000;
+        const nextHop = '2001:db8:ffff:0:0:0:0:1';
+
+        const pathLength = 2 + (i % 4);
+        const asPath = [peerAs];
+        for (let j = 1; j < pathLength; j++) {
+            asPath.push(65001 + i * 10 + j);
+        }
+
+        const entry = buildTableDumpEntry(
+            prefix, prefixLen, 1, timestamp, peerIp, peerAs,
+            asPath[asPath.length - 1], nextHop, asPath, true
+        );
+
+        const message = buildMrtMessage(MRT_TYPE_TABLE_DUMP, 2, timestamp, entry); // subtype 2 = IPv6
         routes.push(message);
     }
 
@@ -144,12 +163,11 @@ function generateTestRoutes() {
 function main() {
     const outputDir = path.join(__dirname, '..', 'bgpdata');
 
-    // 确保目录存在
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const outputFile = path.join(outputDir, 'test_routes_50.mrt');
+    const outputFile = path.join(outputDir, 'test_routes_100.mrt');
 
     console.log('正在生成测试 MRT 文件...');
     const data = generateTestRoutes();
@@ -159,7 +177,7 @@ function main() {
     const stats = fs.statSync(outputFile);
     console.log(`✓ 成功生成测试文件: ${outputFile}`);
     console.log(`  文件大小: ${(stats.size / 1024).toFixed(2)} KB`);
-    console.log(`  包含路由: 50 条`);
+    console.log(`  包含路由: 100 条 (50 IPv4 + 50 IPv6)`);
 }
 
 main();

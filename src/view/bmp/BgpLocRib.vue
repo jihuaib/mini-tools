@@ -24,6 +24,7 @@
                                                 size="small"
                                                 style="margin-bottom: 8px"
                                                 row-key="peerIp"
+                                                :scroll="{ x: 'max-content' }"
                                             >
                                                 <template #bodyCell="{ column, record }">
                                                     <template v-if="column.key === 'addPath'">
@@ -46,7 +47,7 @@
                                                 :data-source="bgpRouteList"
                                                 :pagination="bgpRoutePagination"
                                                 size="small"
-                                                :scroll="{ y: 400 }"
+                                                :scroll="{ y: 360 }"
                                             />
                                         </a-tab-pane>
                                     </a-tabs>
@@ -403,7 +404,7 @@
 
 <style scoped>
     :deep(.ant-table-body) {
-        height: 400px !important;
+        height: 360px !important;
         overflow-y: auto !important;
     }
 

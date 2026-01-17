@@ -338,7 +338,7 @@ function parseUpdateMessage(buffer, context) {
  */
 function parsePathAttributes(buffer, startPosition, endPosition, context) {
     let position = startPosition;
-    const attributes = [];
+    const pathAttributes = [];
     const asnSize = (context && context.asnSize) || 4;
 
     while (position < endPosition) {
@@ -450,10 +450,10 @@ function parsePathAttributes(buffer, startPosition, endPosition, context) {
             }
         }
 
-        attributes.push(attribute);
+        pathAttributes.push(attribute);
     }
 
-    return { attributes, nextPosition: position };
+    return { pathAttributes, nextPosition: position };
 }
 
 /**

@@ -4,6 +4,7 @@
         title="导入 BGP MRT 路由文件"
         :confirm-loading="importing"
         width="600px"
+        height="612px"
         ok-text="开始导入"
         cancel-text="取消"
         @ok="handleImport"
@@ -33,12 +34,10 @@
 
             <!-- 文件来源选择 -->
             <a-form layout="vertical" style="margin-top: 16px">
-                <a-form-item label="文件来源">
                     <a-radio-group v-model:value="fileSource" button-style="solid">
                         <a-radio-button value="default">默认文件</a-radio-button>
                         <a-radio-button value="custom">自定义文件</a-radio-button>
                     </a-radio-group>
-                </a-form-item>
             </a-form>
 
             <!-- 默认文件选择 -->

@@ -10,6 +10,35 @@ const {
 const { getAddrFamilyType } = require('../utils/bgpUtils');
 const logger = require('../log/logger');
 const CommonUtils = require('../utils/commonUtils');
+
+function parseRouteAsPath(asPathStr, use4ByteAsn = true) {
+    if (!asPathStr || typeof asPathStr !== 'string') return null;
+    const asNumbers = asPathStr.trim().split(/\s+/).map(asn => parseInt(asn, 10)).filter(asn => !isNaN(asn));
+    if (asNumbers.length === 0) return null;
+    const segments = [0x02, asNumbers.length];
+    if (use4ByteAsn) {
+        for (const asn of asNumbers) segments.push(...writeUInt32(asn));
+    } else {
+        for (const asn of asNumbers) segments.push(...writeUInt16(asn));
+    }
+    return Buffer.from(segments);
+}
+
+function parseRouteCommunities(communities) {
+    if (!Array.isArray(communities) || communities.length === 0) return null;
+    const communityBytes = [];
+    for (const comm of communities) {
+        if (typeof comm === 'string' && comm.includes(':')) {
+            const [asn, value] = comm.split(':').map(x => parseInt(x, 10));
+            if (!isNaN(asn) && !isNaN(value)) {
+                communityBytes.push(...writeUInt16(asn));
+                communityBytes.push(...writeUInt16(value));
+            }
+        }
+    }
+    return communityBytes.length === 0 ? null : Buffer.from(communityBytes);
+}
+
 class BgpPeer {
     constructor(session, instance) {
         this.peerState = BgpConst.BGP_PEER_STATE.IDLE;
@@ -94,8 +123,11 @@ class BgpPeer {
         msgLen += 3;
 
         // Next Hop
+        const isSingleRouteMode = routes.length === 1 && routes[0].nextHop && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP;
+        const nextHopIp = isSingleRouteMode ? routes[0].nextHop : this.session.localIp;
+
         if (CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
-            const nextHopBytes = ipToBytes(`${this.session.localIp}`);
+            const nextHopBytes = ipToBytes(`${nextHopIp}`);
             attr.push(nextHopBytes.length);
             attr.push(...nextHopBytes);
             msgLen += 1 + nextHopBytes.length;
@@ -260,42 +292,64 @@ class BgpPeer {
             const withdrawnRoutesBuf = Buffer.alloc(2);
             withdrawnRoutesBuf.writeUInt16BE(0, 0);
 
+            // 检测是否为单条路由模式且路由包含自定义属性
+            const isSingleRouteMode = routes.length === 1 && routes[0].asPath;
+            const route = routes[routeIndex];
+
             // 构建路径属性
             let asPath = [];
             let localPref = [];
-            if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
-                asPath = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
-                );
-            } else {
-                asPath = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [] // AS_SEQUENCE
-                );
-                localPref = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.LOCAL_PREF,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    writeUInt32(100)
-                );
+            let origin = [0x00];
+            let med = 0;
+            let communities = null;
+
+            if (isSingleRouteMode) {
+                if (route.asPath) {
+                    const use4ByteAsn = CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.FOUR_OCTET_AS);
+                    const asPathBytes = parseRouteAsPath(route.asPath, use4ByteAsn);
+                    if (asPathBytes) {
+                        let finalAsPathBytes;
+                        if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                            const localAsBytes = use4ByteAsn ? writeUInt32(this.session.localAs) : writeUInt16(this.session.localAs);
+                            const existingPath = Array.from(asPathBytes);
+                            finalAsPathBytes = Buffer.from([existingPath[0], existingPath[1] + 1, ...localAsBytes, ...existingPath.slice(2)]);
+                        } else {
+                            finalAsPathBytes = asPathBytes;
+                        }
+                        asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, Array.from(finalAsPathBytes));
+                    }
+                }
+                if (route.origin !== undefined) {
+                    origin = typeof route.origin === 'string' ? [{ 'IGP': 0, 'EGP': 1, 'INCOMPLETE': 2 }[route.origin] || 0] : [route.origin];
+                }
+                if (route.med !== undefined) med = route.med;
+                if (route.localPref !== undefined && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                    localPref = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.LOCAL_PREF, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, writeUInt32(route.localPref));
+                }
+                if (route.communities) {
+                    const communityBytes = parseRouteCommunities(route.communities);
+                    if (communityBytes) communities = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.COMMUNITY, BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL | BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, Array.from(communityBytes));
+                }
+            }
+
+            if (asPath.length === 0) {
+                if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                    asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, [0x02, 0x01, ...writeUInt32(this.session.localAs)]);
+                } else {
+                    asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, []);
+                }
+            }
+            if (localPref.length === 0 && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                localPref = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.LOCAL_PREF, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, writeUInt32(100));
             }
 
             const pathAttr = [
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.ORIGIN,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x00] // IGP
-                ),
+                ...this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.ORIGIN, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, origin),
                 ...asPath,
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.MED,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL,
-                    writeUInt32(0)
-                ),
+                ...this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.MED, BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL, writeUInt32(med)),
                 ...localPref
             ];
+            if (communities) pathAttr.push(...communities);
 
             // 添加自定义属性
             if (this.instance.customAttr?.trim()) {
@@ -327,8 +381,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );
@@ -373,47 +427,60 @@ class BgpPeer {
             const withdrawnRoutesBuf = Buffer.alloc(2);
             withdrawnRoutesBuf.writeUInt16BE(0, 0);
 
-            // 构建路径属性
-            let asPath = [];
-            let localPref = [];
-            if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
-                asPath = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x02, 0x01, ...writeUInt32(this.session.localAs)] // AS_SEQUENCE
-                );
-            } else {
-                asPath = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.AS_PATH,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [] // AS_SEQUENCE
-                );
-                localPref = this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.LOCAL_PREF,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    writeUInt32(100)
-                );
+            const isSingleRouteMode = routes.length === 1 && routes[0].asPath;
+            const route = routes[routeIndex];
+            let asPath = [], localPref = [], origin = [0x00], nextHop = this.session.localIp, med = 0, communities = null;
+
+            if (isSingleRouteMode) {
+                if (route.asPath) {
+                    const use4ByteAsn = CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.FOUR_OCTET_AS);
+                    const asPathBytes = parseRouteAsPath(route.asPath, use4ByteAsn);
+                    if (asPathBytes) {
+                        let finalAsPathBytes;
+                        if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                            const localAsBytes = use4ByteAsn ? writeUInt32(this.session.localAs) : writeUInt16(this.session.localAs);
+                            const existingPath = Array.from(asPathBytes);
+                            finalAsPathBytes = Buffer.from([existingPath[0], existingPath[1] + 1, ...localAsBytes, ...existingPath.slice(2)]);
+                        } else {
+                            finalAsPathBytes = asPathBytes;
+                        }
+                        asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, Array.from(finalAsPathBytes));
+                    }
+                }
+                if (route.nextHop && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                    // Only IBGP can use route's Next Hop, EBGP must use local IP
+                    nextHop = route.nextHop;
+                }
+                if (route.origin !== undefined) origin = typeof route.origin === 'string' ? [{ 'IGP': 0, 'EGP': 1, 'INCOMPLETE': 2 }[route.origin] || 0] : [route.origin];
+                if (route.med !== undefined) med = route.med;
+                if (route.localPref !== undefined && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                    localPref = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.LOCAL_PREF, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, writeUInt32(route.localPref));
+                }
+                if (route.communities) {
+                    const communityBytes = parseRouteCommunities(route.communities);
+                    if (communityBytes) communities = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.COMMUNITY, BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL | BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, Array.from(communityBytes));
+                }
+            }
+
+            if (asPath.length === 0) {
+                if (this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_EBGP) {
+                    asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, [0x02, 0x01, ...writeUInt32(this.session.localAs)]);
+                } else {
+                    asPath = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.AS_PATH, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, []);
+                }
+            }
+            if (localPref.length === 0 && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP) {
+                localPref = this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.LOCAL_PREF, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, writeUInt32(100));
             }
 
             const pathAttr = [
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.ORIGIN,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    [0x00] // IGP
-                ),
+                ...this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.ORIGIN, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, origin),
                 ...asPath,
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.NEXT_HOP,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
-                    ipToBytes(this.session.localIp)
-                ),
-                ...this.buildPathAttribute(
-                    BgpConst.BGP_PATH_ATTR.MED,
-                    BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL,
-                    writeUInt32(0)
-                ),
+                ...this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.NEXT_HOP, BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE, ipToBytes(nextHop)),
+                ...this.buildPathAttribute(BgpConst.BGP_PATH_ATTR.MED, BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL, writeUInt32(med)),
                 ...localPref
             ];
+            if (communities) pathAttr.push(...communities);
 
             // 添加自定义属性
             if (this.instance.customAttr?.trim()) {
@@ -445,8 +512,8 @@ class BgpPeer {
                         ...this.buildPathAttribute(
                             BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES,
                             BgpConst.BGP_PATH_ATTR_FLAGS.OPTIONAL |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
-                                BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
+                            BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH |
+                            BgpConst.BGP_PATH_ATTR_FLAGS.TRANSITIVE,
                             combinedBuffer
                         )
                     );
@@ -461,19 +528,19 @@ class BgpPeer {
             const nlri = [];
             let msgLen = BgpConst.BGP_HEAD_LEN + withdrawnRoutesBuf.length + pathAttrBuf.length;
 
-            let route = routes[routeIndex];
-            let prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+            let curRoute = routes[routeIndex];
+            let prefixLength = Math.ceil(curRoute.mask / 8); // 计算需要的字节数
             let nlriLen = 1 + prefixLength;
             while (msgLen + nlriLen < BgpConst.BGP_MAX_PKT_SIZE && routeIndex < routes.length) {
-                nlri.push(route.mask); // 前缀长度（单位bit）
-                const prefixBytes = ipToBytes(route.ip);
+                nlri.push(curRoute.mask); // 前缀长度（单位bit）
+                const prefixBytes = ipToBytes(curRoute.ip);
                 nlri.push(...prefixBytes.slice(0, prefixLength));
 
                 routeIndex++;
                 msgLen += nlriLen;
                 if (routeIndex < routes.length) {
-                    route = routes[routeIndex];
-                    prefixLength = Math.ceil(route.mask / 8); // 计算需要的字节数
+                    curRoute = routes[routeIndex];
+                    prefixLength = Math.ceil(curRoute.mask / 8); // 计算需要的字节数
                     nlriLen = 1 + prefixLength;
                 } else {
                     break;
@@ -713,49 +780,6 @@ class BgpPeer {
         let routeIndex = 0;
 
         if (this.peerState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
-            return;
-        }
-
-        if (this.instance.singleRouteSend) {
-            withdrawnRoutes.forEach((route, _) => {
-                if (
-                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
-                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
-                ) {
-                    if (
-                        CommonUtils.BIT_TEST(
-                            this.session.localCapFlags,
-                            BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING
-                        )
-                    ) {
-                        const result = this.buildWithdrawMpMsg(route, routeIndex);
-                        if (result.status) {
-                            this.session.sendRoute(result.buffer);
-                        }
-                    } else {
-                        const result = this.buildWithdrawMsgIpv4([route], routeIndex);
-                        if (result.status) {
-                            this.session.sendRoute(result.buffer);
-                        }
-                    }
-                } else if (
-                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 &&
-                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
-                ) {
-                    const result = this.buildWithdrawMpMsg([route], routeIndex);
-                    if (result.status) {
-                        this.session.sendRoute(result.buffer);
-                    }
-                } else if (
-                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
-                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
-                ) {
-                    const result = this.buildWithdrawMpMsg([route], routeIndex);
-                    if (result.status) {
-                        this.session.sendRoute(result.buffer);
-                    }
-                }
-            });
             return;
         }
 

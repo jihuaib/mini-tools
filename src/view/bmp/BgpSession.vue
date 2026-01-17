@@ -23,7 +23,8 @@
                                                 :pagination="false"
                                                 size="small"
                                                 style="margin-bottom: 8px"
-                                                row-key="peerIp"
+                                                row-key="peerIp",
+                                                :scroll="{ x: 'max-content' }"
                                             >
                                                 <template #bodyCell="{ column, record }">
                                                     <template v-if="column.key === 'addPathMap'">
@@ -95,7 +96,7 @@
                                                         `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`
                                                 "
                                                 size="small"
-                                                :scroll="{ y: 400 }"
+                                                :scroll="{ y: 360 }"
                                             />
                                         </a-tab-pane>
                                     </a-tabs>
@@ -475,7 +476,7 @@
 
 <style scoped>
     :deep(.ant-table-body) {
-        height: 400px !important;
+        height: 360px !important;
         overflow-y: auto !important;
     }
 
