@@ -60,54 +60,38 @@
 
         <!-- BGP 状态信息 Card -->
         <a-card title="BGP 状态信息" class="status-card">
-            <a-row :gutter="16">
-                <a-col :span="6">
-                    <div class="status-item">
-                        <div class="status-label">运行状态</div>
-                        <div class="status-value">
-                            <a-tag :color="bgpRunning ? 'success' : 'default'">
-                                {{ bgpRunning ? '运行中' : '已停止' }}
-                            </a-tag>
-                        </div>
-                    </div>
-                </a-col>
-                <a-col :span="6">
-                    <div class="status-item">
-                        <div class="status-label">Local AS</div>
-                        <div class="status-value">{{ bgpConfigData.localAs || '-' }}</div>
-                    </div>
-                </a-col>
-                <a-col :span="6">
-                    <div class="status-item">
-                        <div class="status-label">Router ID</div>
-                        <div class="status-value">{{ bgpConfigData.routerId || '-' }}</div>
-                    </div>
-                </a-col>
-                <a-col :span="6">
-                    <div class="status-item">
-                        <div class="status-label">使能地址族</div>
-                        <div class="status-value">
-                            <a-space v-if="bgpConfigData.addressFamily.length > 0" :size="4" wrap>
-                                <a-tag
-                                    v-for="family in bgpConfigData.addressFamily"
-                                    :key="family"
-                                    color="blue"
-                                    size="small"
-                                >
-                                    {{ getAddressFamilyLabel(family) }}
-                                </a-tag>
-                            </a-space>
-                            <span v-else>-</span>
-                        </div>
-                    </div>
-                </a-col>
-            </a-row>
+            <a-table
+                :columns="instanceColumns"
+                :data-source="instanceInfoList"
+                :pagination="false"
+                size="middle"
+                class="instance-table"
+            >
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'addressFamily'">
+                        <a-tag color="blue">{{ getAddressFamilyLabel(record.addressFamily) }}</a-tag>
+                    </template>
+                    <template v-else-if="column.key === 'singleRouteSend'">
+                        <a-tag :color="record.singleRouteSend ? 'orange' : 'cyan'">
+                            {{ record.singleRouteSend ? '开启' : '关闭' }}
+                        </a-tag>
+                    </template>
+                    <template v-else-if="column.key === 'routeCount'">
+                        <a-badge
+                            :count="record.routeCount"
+                            :overflow-count="999999"
+                            :number-style="{ backgroundColor: '#52c41a' }"
+                            show-zero
+                        />
+                    </template>
+                </template>
+            </a-table>
         </a-card>
     </div>
 </template>
 
 <script setup>
-    import { onMounted, ref } from 'vue';
+    import { onMounted, onActivated, ref } from 'vue';
     import { message } from 'ant-design-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES } from '../../const/bgpConst';
     import { FormValidator, createBgpConfigValidationRules } from '../../utils/validationCommon';
@@ -151,6 +135,25 @@
 
     const bgpLoading = ref(false);
     const bgpRunning = ref(false);
+    const instanceInfoList = ref([]);
+
+    const instanceColumns = [
+        { title: '地址族', dataIndex: 'addressFamily', key: 'addressFamily' },
+        { title: '路由数量', dataIndex: 'routeCount', key: 'routeCount', align: 'center' },
+        { title: '单条发送', dataIndex: 'singleRouteSend', key: 'singleRouteSend', align: 'center' }
+    ];
+
+    const fetchInstanceInfo = async () => {
+        if (!bgpRunning.value) return;
+        try {
+            const result = await window.bgpApi.getInstanceInfo();
+            if (result.status === 'success') {
+                instanceInfoList.value = result.data;
+            }
+        } catch (error) {
+            console.error('获取实例信息失败', error);
+        }
+    };
 
     onMounted(async () => {
         // 加载Bgp保存的配置
@@ -163,6 +166,12 @@
                 : [BGP_ADDR_FAMILY.IPV4_UNC];
         } else {
             console.error('BGP 配置文件加载失败', savedBgpConfig.msg);
+        }
+    });
+
+    onActivated(() => {
+        if (bgpRunning.value) {
+            fetchInstanceInfo();
         }
     });
 
@@ -186,11 +195,10 @@
 
             const result = await window.bgpApi.startBgp(payload);
             if (result.status === 'success') {
-                if (result.msg !== '') {
-                    message.success(result.msg);
-                }
                 bgpLoading.value = false;
                 bgpRunning.value = true;
+                message.success('BGP 启动成功');
+                fetchInstanceInfo();
             } else {
                 bgpLoading.value = false;
                 message.error(result.msg || 'BGP启动失败');
@@ -206,6 +214,7 @@
         if (result.status === 'success') {
             message.success(result.msg);
             bgpRunning.value = false;
+            instanceInfoList.value = [];
         } else {
             message.error(result.msg || 'BGP停止失败');
         }

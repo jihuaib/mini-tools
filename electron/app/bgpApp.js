@@ -5,6 +5,9 @@ const WorkerWithPromise = require('../worker/workerWithPromise');
 const logger = require('../log/logger');
 const BgpConst = require('../const/bgpConst');
 const EventDispatcher = require('../utils/eventDispatcher');
+const { getAfiAndSafi } = require('../utils/bgpUtils');
+const { shell } = require('electron');
+const { importMrtFile } = require('../utils/routeViewsUtils');
 class BgpApp {
     constructor(ipc, store) {
         this.worker = null;
@@ -75,6 +78,13 @@ class BgpApp {
             this.handleGenerateIpv4MvpnRoutes(event, config)
         );
         ipc.handle('bgp:deleteIpv4MvpnRoutes', async (event, config) => this.handleDeleteIpv4MvpnRoutes(event, config));
+
+        // RouteViews 导入
+        ipc.handle('bgp:selectMrtFile', this.handleSelectMrtFile.bind(this));
+        ipc.handle('bgp:importRouteViewsData', this.handleImportRouteViewsData.bind(this));
+        ipc.handle('bgp:getInstanceInfo', this.handleGetInstanceInfo.bind(this));
+        ipc.handle('bgp:getDefaultMrtFiles', this.handleGetDefaultMrtFiles.bind(this));
+        ipc.handle('bgp:openExternal', (event, url) => shell.openExternal(url));
     }
 
     // 保存配置
@@ -329,6 +339,19 @@ class BgpApp {
         }
     }
 
+    async handleGetInstanceInfo() {
+        if (!this.worker) {
+            return errorResponse('BGP worker is not running');
+        }
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GET_INSTANCE_INFO, null);
+            return successResponse(result.data, '实例信息查询成功');
+        } catch (error) {
+            logger.error(`Error getting instance info: ${error}`);
+            return errorResponse(error.message);
+        }
+    }
+
     async handleGetPeerInfo() {
         if (null === this.worker) {
             return successResponse({}, 'bgp协议没有运行');
@@ -505,6 +528,102 @@ class BgpApp {
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error deleting ipv4 mvpn routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSelectMrtFile(_event) {
+        const { dialog } = require('electron');
+        const result = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [
+                { name: 'MRT Files', extensions: ['gz', 'mrt'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return successResponse(null, '取消选择');
+        }
+
+        return successResponse(result.filePaths[0]);
+    }
+
+    async handleImportRouteViewsData(event, filePath, limit, addressFamily) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+
+        logger.info(`Importing MRT file: ${filePath}, limit: ${limit}, AF: ${addressFamily}`);
+
+        try {
+            const { afi } = getAfiAndSafi(addressFamily);
+
+            // Re-using the progress reporting logic
+            const result = await importMrtFile(filePath, limit, afi, msg => {
+                logger.info(`MRT Progress: ${msg}`);
+                // Optional: We could emit an IPC event here to update the UI progress
+                // this.eventSender('bgp:importProgress', msg);
+            });
+
+            if (result.status === 'success') {
+                const workerResult = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.IMPORT_ROUTES, {
+                    addressFamily,
+                    routes: result.data
+                });
+
+                return successResponse(null, workerResult.msg);
+            } else {
+                return errorResponse(result.msg);
+            }
+        } catch (error) {
+            logger.error('Error importing MRT data:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGetDefaultMrtFiles() {
+        const fs = require('fs').promises;
+        const path = require('path');
+
+        try {
+            const bgpDataDir = path.join(__dirname, '../../bgpdata');
+
+            logger.info(`Scanning default MRT files in: ${bgpDataDir}`);
+
+            // Check if directory exists
+            try {
+                await fs.access(bgpDataDir);
+            } catch (err) {
+                logger.warn(`bgpdata directory not found: ${bgpDataDir}`);
+                return successResponse([]);
+            }
+
+            // Read directory contents
+            const files = await fs.readdir(bgpDataDir);
+            const fileList = [];
+
+            for (const file of files) {
+                const filePath = path.join(bgpDataDir, file);
+                try {
+                    const stats = await fs.stat(filePath);
+                    if (stats.isFile()) {
+                        fileList.push({
+                            name: file,
+                            size: stats.size,
+                            path: filePath
+                        });
+                    }
+                } catch (err) {
+                    logger.warn(`Error reading file stats for ${file}:`, err.message);
+                }
+            }
+
+            logger.info(`Found ${fileList.length} default MRT files`);
+            return successResponse(fileList);
+        } catch (error) {
+            logger.error('Error getting default MRT files:', error.message);
             return errorResponse(error.message);
         }
     }

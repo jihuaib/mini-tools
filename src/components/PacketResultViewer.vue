@@ -62,7 +62,7 @@
     });
 
     const props = defineProps({
-        visible: {
+        open: {
             type: Boolean,
             default: false
         },
@@ -76,7 +76,7 @@
         }
     });
 
-    const emit = defineEmits(['update:visible']);
+    const emit = defineEmits(['update:open']);
 
     const hexViewRef = ref(null);
     const treeRef = ref(null);
@@ -86,8 +86,8 @@
 
     // 计算属性处理弹窗显示状态
     const modalVisible = computed({
-        get: () => props.visible,
-        set: value => emit('update:visible', value)
+        get: () => props.open,
+        set: value => emit('update:open', value)
     });
 
     // 将十六进制字符串转换为字节数组
@@ -309,7 +309,7 @@
 
     // 关闭弹窗
     const handleClose = () => {
-        emit('update:visible', false);
+        emit('update:open', false);
         // 清空选中状态
         selectedNode.value = null;
         treeSelectedKeys.value = [];
@@ -330,7 +330,7 @@
 
     // 监听弹窗打开，重置状态
     watch(
-        () => props.visible,
+        () => props.open,
         newVisible => {
             if (newVisible) {
                 selectedNode.value = null;

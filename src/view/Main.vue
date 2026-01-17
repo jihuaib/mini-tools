@@ -166,13 +166,13 @@
         } else if (key === 'about') {
             window.commonApi.openSoftwareInfo();
         } else if (key === 'settings') {
-            settingsDialog.value.open();
+            settingsDialog.value.openDialog();
         }
     };
 
     // Handle opening settings from child components
     const handleOpenSettings = category => {
-        settingsDialog.value.open(category);
+        settingsDialog.value.openDialog(category);
     };
 
     // 切换菜单收缩状态

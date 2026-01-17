@@ -68,7 +68,8 @@
             "dist/**/*",
             "electron/**/*",
             "package.json",
-            "scripts/**/*"
+            "scripts/**/*",
+            "bgpdata/**/*"
         ],
         "electronLanguages": [
             "zh-CN"

@@ -12,6 +12,7 @@ class BgpInstance {
         this.customAttr = '';
         // 扩展团体属性
         this.rt = '';
+        this.singleRouteSend = false;
     }
 
     static makeKey(vrfIndex, afi, safi) {

@@ -53,7 +53,7 @@
 
     <!-- 报文结果查看器弹窗 -->
     <PacketResultViewer
-        v-model:visible="resultViewerVisible"
+        v-model:open="resultViewerVisible"
         :packet-data="formState.packetData"
         :raw-parse-result="rawParseResult"
     />

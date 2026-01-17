@@ -90,11 +90,18 @@ contextBridge.exposeInMainWorld('bgpApi', {
     deleteAllRoutesByFamily: addressFamily => ipcRenderer.invoke('bgp:deleteAllRoutesByFamily', addressFamily),
     getRoutes: (addressFamily, page, pageSize) => ipcRenderer.invoke('bgp:getRoutes', addressFamily, page, pageSize),
 
-    // MVPN route操作
     saveIpv4MvpnRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4MvpnRouteConfig', config),
     loadIpv4MvpnRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv4MvpnRouteConfig'),
     generateIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:generateIpv4MvpnRoutes', config),
-    deleteIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4MvpnRoutes', config)
+    deleteIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4MvpnRoutes', config),
+
+    // RouteViews 导入
+    selectMrtFile: () => ipcRenderer.invoke('bgp:selectMrtFile'),
+    importRouteViewsData: (filePath, limit, addressFamily) =>
+        ipcRenderer.invoke('bgp:importRouteViewsData', filePath, limit, addressFamily),
+    openExternal: url => ipcRenderer.invoke('bgp:openExternal', url),
+    getInstanceInfo: () => ipcRenderer.invoke('bgp:getInstanceInfo'),
+    getDefaultMrtFiles: () => ipcRenderer.invoke('bgp:getDefaultMrtFiles')
 });
 
 // bmp模块

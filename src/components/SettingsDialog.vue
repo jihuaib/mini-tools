@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        v-model:open="isVisible"
+        v-model:open="isOpen"
         title="设置"
         :footer="null"
         class="modal-xlarge"
@@ -66,30 +66,30 @@
     import KeychainSettings from '../view/settings/KeychainSettings.vue';
 
     const props = defineProps({
-        visible: {
+        open: {
             type: Boolean,
             default: false
         }
     });
 
-    const emit = defineEmits(['update:visible', 'close']);
+    const emit = defineEmits(['update:open', 'close']);
 
     // Use a local state instead of relying solely on the computed property
-    const isVisible = ref(props.visible);
+    const isOpen = ref(props.open);
 
-    // Update isVisible when props.visible changes
+    // Update isOpen when props.visible changes
     watch(
-        () => props.visible,
+        () => props.open,
         newValue => {
-            isVisible.value = newValue;
+            isOpen.value = newValue;
         }
     );
 
-    // When isVisible changes, emit the update event
+    // When isOpen changes, emit the update event
     watch(
-        () => isVisible.value,
+        () => isOpen.value,
         newValue => {
-            emit('update:visible', newValue);
+            emit('update:open', newValue);
         }
     );
 
@@ -116,18 +116,18 @@
     });
 
     const onClose = () => {
-        isVisible.value = false;
+        isOpen.value = false;
         emit('close');
     };
 
-    const open = (category = 'general') => {
+    const openDialog = (category = 'general') => {
         selectedCategory.value = [category];
-        isVisible.value = true;
+        isOpen.value = true;
     };
 
     // 暴露方法给父组件
     defineExpose({
-        open
+        openDialog
     });
 </script>
 

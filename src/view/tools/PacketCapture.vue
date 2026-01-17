@@ -85,7 +85,7 @@
 
     <!-- 报文结果查看器弹窗 -->
     <PacketResultViewer
-        v-model:visible="resultViewerVisible"
+        v-model:open="resultViewerVisible"
         :packet-data="selectedPacket?.raw || selectedPacket?.hexData || ''"
         :raw-parse-result="rawParseResult"
     />

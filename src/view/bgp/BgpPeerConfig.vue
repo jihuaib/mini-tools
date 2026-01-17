@@ -336,12 +336,12 @@
 
         <!-- Custom Open Cap Drawers -->
         <CustomPktDrawer
-            v-model:visible="customOpenCapVisible"
+            v-model:open="customOpenCapVisible"
             v-model:input-value="ipv4PeerConfigData.openCapCustom"
             @submit="handleCustomOpenCapSubmit"
         />
         <CustomPktDrawer
-            v-model:visible="customOpenCapIpv6Visible"
+            v-model:open="customOpenCapIpv6Visible"
             v-model:input-value="ipv6PeerConfigData.openCapCustomIpv6"
             @submit="handleCustomOpenCapIpv6Submit"
         />

@@ -1,5 +1,5 @@
 <template>
-    <a-drawer :title="title" placement="right" :open="visible" width="500" @close="onClose">
+    <a-drawer :title="title" placement="right" :open="open" width="500" @close="onClose">
         <a-form layout="vertical">
             <a-form-item :label="inputLabel" :validate-status="validateStatus" :help="validateMessage">
                 <a-textarea v-model:value="localInputValue" :rows="rows" :placeholder="placeholder" />
@@ -19,7 +19,7 @@
     import { validatePacketData } from '../utils/validationCommon';
 
     const props = defineProps({
-        visible: {
+        open: {
             type: Boolean,
             default: false
         },
@@ -49,7 +49,7 @@
         }
     });
 
-    const emit = defineEmits(['update:visible', 'update:inputValue', 'submit']);
+    const emit = defineEmits(['update:open', 'update:inputValue', 'submit']);
 
     const localInputValue = ref(props.inputValue);
 
@@ -64,7 +64,7 @@
     const validateMessage = ref('');
 
     const onClose = () => {
-        emit('update:visible', false);
+        emit('update:open', false);
         validateStatus.value = '';
         validateMessage.value = '';
     };

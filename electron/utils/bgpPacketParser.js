@@ -286,79 +286,9 @@ function parseUpdateMessage(buffer, context) {
     const pathAttributesLength = buffer.readUInt16BE(position);
     position += 2;
 
-    const pathAttributes = [];
     const pathAttributesEnd = position + pathAttributesLength;
-
-    while (position < pathAttributesEnd) {
-        const flags = buffer[position];
-        const typeCode = buffer[position + 1];
-        position += 2;
-
-        const extendedLength = (flags & BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH) !== 0;
-        let attributeLength;
-
-        if (extendedLength) {
-            attributeLength = buffer.readUInt16BE(position);
-            position += 2;
-        } else {
-            attributeLength = buffer[position];
-            position += 1;
-        }
-
-        const attributeValue = buffer.subarray(position, position + attributeLength);
-        position += attributeLength;
-
-        const attribute = {
-            flags,
-            typeCode,
-            length: attributeLength,
-            value: attributeValue
-        };
-
-        // Parse specific attribute types
-        switch (typeCode) {
-            case BgpConst.BGP_PATH_ATTR.ORIGIN: // ORIGIN
-                attribute.origin = getBgpOriginType(attributeValue[0]);
-                break;
-            case BgpConst.BGP_PATH_ATTR.AS_PATH: // AS_PATH
-                attribute.segments = parseAsPath(attributeValue);
-                break;
-            case BgpConst.BGP_PATH_ATTR.NEXT_HOP: // NEXT_HOP
-                attribute.nextHop = `${attributeValue[0]}.${attributeValue[1]}.${attributeValue[2]}.${attributeValue[3]}`;
-                break;
-            case BgpConst.BGP_PATH_ATTR.MED: // MED
-                attribute.med = attributeValue.readUInt32BE(0);
-                break;
-            case BgpConst.BGP_PATH_ATTR.LOCAL_PREF: // LOCAL_PREF
-                attribute.localPref = attributeValue.readUInt32BE(0);
-                break;
-            case BgpConst.BGP_PATH_ATTR.ATOMIC_AGGREGATE: // ATOMIC_AGGREGATE
-                // No value for atomic aggregate
-                break;
-            case BgpConst.BGP_PATH_ATTR.AGGREGATOR: // AGGREGATOR
-                attribute.aggregatorAs = attributeValue.readUInt16BE(0);
-                attribute.aggregatorIp = `${attributeValue[2]}.${attributeValue[3]}.${attributeValue[4]}.${attributeValue[5]}`;
-                break;
-            case BgpConst.BGP_PATH_ATTR.COMMUNITY: // COMMUNITY
-                attribute.communities = parseCommunities(attributeValue);
-                break;
-            case BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES: // EXTENDED_COMMUNITIES
-                attribute.extCommunities = parseExtCommunities(attributeValue);
-                break;
-
-            case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: // MP_REACH_NLRI
-                attribute.mpReach = parseMpReachNlri(attributeValue, context);
-                break;
-            case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: // MP_UNREACH_NLRI
-                attribute.mpUnreach = parseMpUnreachNlri(attributeValue, context);
-                break;
-            case BgpConst.BGP_PATH_ATTR.PATH_OTC: // OTC
-                attribute.otc = attributeValue.readUInt32BE(0);
-                break;
-        }
-
-        pathAttributes.push(attribute);
-    }
+    const { pathAttributes, nextPosition } = parsePathAttributes(buffer, position, pathAttributesEnd, context);
+    position = nextPosition;
 
     // Parse NLRI
     const nlri = [];
@@ -396,6 +326,134 @@ function parseUpdateMessage(buffer, context) {
         pathAttributes,
         nlri
     };
+}
+
+/**
+ * Parses BGP path attributes from a buffer
+ * @param {Buffer} buffer - Raw buffer
+ * @param {number} startPosition - Start position in buffer
+ * @param {number} endPosition - End position in buffer
+ * @param {Object} context - Context object
+ * @returns {Object} { attributes: Array, nextPosition: number }
+ */
+function parsePathAttributes(buffer, startPosition, endPosition, context) {
+    let position = startPosition;
+    const attributes = [];
+    const asnSize = (context && context.asnSize) || 4;
+
+    while (position < endPosition) {
+        if (position + 2 > buffer.length) break;
+        const flags = buffer[position];
+        const typeCode = buffer[position + 1];
+        position += 2;
+
+        const extendedLength = (flags & BgpConst.BGP_PATH_ATTR_FLAGS.EXTENDED_LENGTH) !== 0;
+        let attributeLength;
+
+        if (extendedLength) {
+            if (position + 2 > buffer.length) break;
+            attributeLength = buffer.readUInt16BE(position);
+            position += 2;
+        } else {
+            if (position + 1 > buffer.length) break;
+            attributeLength = buffer[position];
+            position += 1;
+        }
+
+        if (position + attributeLength > buffer.length) break;
+        const attributeValue = buffer.subarray(position, position + attributeLength);
+        position += attributeLength;
+
+        const attribute = {
+            flags,
+            typeCode,
+            length: attributeLength,
+            value: attributeValue
+        };
+
+        // Parse specific attribute types
+        switch (typeCode) {
+            case BgpConst.BGP_PATH_ATTR.ORIGIN: {
+                // ORIGIN
+                if (attributeValue.length >= 1) attribute.origin = getBgpOriginType(attributeValue[0]);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.AS_PATH: {
+                // AS_PATH
+                // Heuristic to detect ASN size if not provided
+                let effectiveAsnSize = asnSize;
+                if (!context || !context.asnSize) {
+                    // Check if total length matches 2-byte or 4-byte ASNs
+                    // Very simple check: header is 2 bytes (Type, Count).
+                    if (attributeValue.length >= 2) {
+                        const count = attributeValue[1];
+                        if (attributeValue.length === 2 + count * 2) effectiveAsnSize = 2;
+                        else if (attributeValue.length === 2 + count * 4) effectiveAsnSize = 4;
+                    }
+                }
+                attribute.segments = parseAsPath(attributeValue, effectiveAsnSize);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.NEXT_HOP: {
+                // NEXT_HOP
+                if (attributeValue.length === 4) {
+                    attribute.nextHop = `${attributeValue[0]}.${attributeValue[1]}.${attributeValue[2]}.${attributeValue[3]}`;
+                }
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.MED: {
+                // MED
+                if (attributeValue.length >= 4) attribute.med = attributeValue.readUInt32BE(0);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.LOCAL_PREF: {
+                // LOCAL_PREF
+                if (attributeValue.length >= 4) attribute.localPref = attributeValue.readUInt32BE(0);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.ATOMIC_AGGREGATE: {
+                // ATOMIC_AGGREGATE
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.AGGREGATOR: {
+                // AGGREGATOR
+                if (attributeValue.length >= 6) {
+                    attribute.aggregatorAs = attributeValue.readUInt16BE(0);
+                    attribute.aggregatorIp = `${attributeValue[2]}.${attributeValue[3]}.${attributeValue[4]}.${attributeValue[5]}`;
+                }
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.COMMUNITY: {
+                // COMMUNITY
+                attribute.communities = parseCommunities(attributeValue);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.EXTENDED_COMMUNITIES: {
+                // EXTENDED_COMMUNITIES
+                attribute.extCommunities = parseExtCommunities(attributeValue);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.MP_REACH_NLRI: {
+                // MP_REACH_NLRI
+                attribute.mpReach = parseMpReachNlri(attributeValue, context);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI: {
+                // MP_UNREACH_NLRI
+                attribute.mpUnreach = parseMpUnreachNlri(attributeValue, context);
+                break;
+            }
+            case BgpConst.BGP_PATH_ATTR.PATH_OTC: {
+                // OTC
+                if (attributeValue.length >= 4) attribute.otc = attributeValue.readUInt32BE(0);
+                break;
+            }
+        }
+
+        attributes.push(attribute);
+    }
+
+    return { attributes, nextPosition: position };
 }
 
 /**
@@ -442,21 +500,28 @@ function parseRouteRefreshMessage(buffer) {
 /**
  * Parse AS_PATH attribute
  * @param {Buffer} buffer - AS_PATH attribute value
+ * @param {number} asnSize - 2 or 4 byte ASNs
  * @returns {Array} Array of AS path segments
  */
-function parseAsPath(buffer) {
+function parseAsPath(buffer, asnSize = 4) {
     const segments = [];
     let position = 0;
 
     while (position < buffer.length) {
+        if (position + 2 > buffer.length) break;
         const segmentType = buffer[position];
         const segmentLength = buffer[position + 1];
         position += 2;
 
         const asNumbers = [];
         for (let i = 0; i < segmentLength; i++) {
-            asNumbers.push(buffer.readUInt32BE(position));
-            position += 4;
+            if (position + asnSize > buffer.length) break;
+            if (asnSize === 4) {
+                asNumbers.push(buffer.readUInt32BE(position));
+            } else {
+                asNumbers.push(buffer.readUInt16BE(position));
+            }
+            position += asnSize;
         }
 
         segments.push({
@@ -945,5 +1010,6 @@ function getBgpPacketSummary(parsedPacket) {
 
 module.exports = {
     parseBgpPacket,
-    getBgpPacketSummary
+    getBgpPacketSummary,
+    parsePathAttributes
 };

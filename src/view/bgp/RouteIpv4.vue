@@ -69,6 +69,9 @@
                             <template #icon><DeleteOutlined /></template>
                             删除所有
                         </a-button>
+                        <a-button size="small" type="primary" style="margin-left: 8px" @click="showRouteViewsImport">
+                            从 RouteViews 导入
+                        </a-button>
                     </div>
                     <a-table
                         :data-source="sentRoutes"
@@ -89,6 +92,15 @@
                             <template v-else-if="column.key === 'ip'">
                                 <div>{{ record.ip }}/{{ record.mask }}</div>
                             </template>
+                            <template v-else-if="column.key === 'communities'">
+                                <div>
+                                    {{
+                                        Array.isArray(record.communities)
+                                            ? record.communities.join(', ')
+                                            : record.communities
+                                    }}
+                                </div>
+                            </template>
                         </template>
                     </a-table>
                 </div>
@@ -96,9 +108,15 @@
         </a-card>
 
         <CustomPktDrawer
-            v-model:visible="customRouteAttrVisible"
+            v-model:open="customRouteAttrVisible"
             v-model:input-value="ipv4Data.customAttr"
             @submit="handleCustomRouteAttrSubmit"
+        />
+
+        <RouteViewsImportModal
+            v-model:open="routeViewsImportVisible"
+            :address-family="BGP_ADDR_FAMILY.IPV4_UNC"
+            @imported="refreshRoutes"
         />
     </div>
 </template>
@@ -106,6 +124,7 @@
 <script setup>
     import { onMounted, ref, computed } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
+    import RouteViewsImportModal from '../../components/RouteViewsImportModal.vue';
     import { message, Modal } from 'ant-design-vue';
     import { SettingOutlined, UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES } from '../../const/bgpConst';
@@ -159,12 +178,37 @@
         ipv4Data.value.customAttr = data;
     };
 
+    const routeViewsImportVisible = ref(false);
+
+    const showRouteViewsImport = () => {
+        routeViewsImportVisible.value = true;
+    };
+
     const routeColumns = [
         {
             title: '前缀',
             dataIndex: 'ip',
             key: 'ip',
-            width: 80
+            width: 140
+        },
+        {
+            title: 'origin',
+            dataIndex: 'origin',
+            key: 'origin',
+            width: 50
+        },
+        {
+            title: 'AS 路径',
+            dataIndex: 'asPath',
+            key: 'asPath',
+            width: 150,
+            ellipsis: true
+        },
+        {
+            title: '下一跳',
+            dataIndex: 'nextHop',
+            key: 'nextHop',
+            width: 130
         },
         {
             title: 'MED',
@@ -173,10 +217,18 @@
             width: 80
         },
         {
-            title: 'RT',
-            dataIndex: 'rt',
-            key: 'rt',
-            width: 80
+            title: 'communities',
+            dataIndex: 'communities',
+            key: 'communities',
+            width: 150,
+            ellipsis: true
+        },
+        {
+            title: 'localPref',
+            dataIndex: 'localPref',
+            key: 'localPref',
+            width: 100,
+            ellipsis: true
         },
         {
             title: '操作',

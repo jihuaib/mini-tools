@@ -6,6 +6,8 @@ class BgpRoute {
         this.mask = null;
         this.asPath = null;
         this.med = 0;
+        this.localPref = 100;
+        this.communities = [];
         this.nextHop = null;
         this.origin = null;
         this.customAttr = null;
@@ -36,10 +38,12 @@ class BgpRoute {
             mask: this.mask,
             asPath: this.asPath,
             med: this.med,
+            localPref: this.localPref,
+            communities: this.communities,
             nextHop: this.nextHop,
             origin: this.origin,
-            customAttr: this.bgpInstance.customAttr,
-            rt: this.bgpInstance.rt,
+            customAttr: this.customAttr,
+            rt: this.rt,
             routeType: this.routeType,
             rd: this.rd,
             originatingRouterIp: this.originatingRouterIp,

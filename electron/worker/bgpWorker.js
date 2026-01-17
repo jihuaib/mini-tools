@@ -2,7 +2,7 @@ const net = require('net');
 const util = require('util');
 const BgpConst = require('../const/bgpConst');
 const { genRouteIps } = require('../utils/ipUtils');
-const { getAfiAndSafi } = require('../utils/bgpUtils');
+const { getAfiAndSafi, getAddrFamilyType } = require('../utils/bgpUtils');
 const logger = require('../log/logger');
 const WorkerMessageHandler = require('./workerMessageHandler');
 const BgpSession = require('./bgpSession');
@@ -58,6 +58,8 @@ class BgpWorker {
             BgpConst.BGP_REQ_TYPES.DELETE_IPV4_MVPN_ROUTES,
             this.deleteMvpnRoutes.bind(this)
         );
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.IMPORT_ROUTES, this.importRoutes.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.GET_INSTANCE_INFO, this.getInstanceInfo.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -394,6 +396,19 @@ class BgpWorker {
         this.messageHandler.sendSuccessResponse(messageId, null, `ipv6 邻居配置成功`);
     }
 
+    getInstanceInfo(messageId) {
+        const instanceInfoList = [];
+        this.bgpInstanceMap.forEach((instance, _) => {
+            const addressFamily = getAddrFamilyType(instance.afi, instance.safi);
+            instanceInfoList.push({
+                addressFamily,
+                routeCount: instance.routeMap ? instance.routeMap.size : 0,
+                singleRouteSend: !!instance.singleRouteSend
+            });
+        });
+        this.messageHandler.sendSuccessResponse(messageId, instanceInfoList, '实例信息查询成功');
+    }
+
     getPeerInfo(messageId) {
         const ipv4PeerInfoList = [];
         const ipv6PeerInfoList = [];
@@ -551,6 +566,10 @@ class BgpWorker {
             instance.withdrawRoute(withdrawnRoutes);
         }
 
+        if (instance.routeMap.size === 0) {
+            instance.singleRouteSend = false;
+        }
+
         this.messageHandler.sendSuccessResponse(messageId, null, '路由删除成功');
     }
 
@@ -578,6 +597,8 @@ class BgpWorker {
         if (withdrawnRoutes.length > 0) {
             instance.withdrawRoute(withdrawnRoutes);
         }
+
+        instance.singleRouteSend = false;
 
         logger.info(`Deleted all ${count} routes for address family ${addressFamily}`);
         this.messageHandler.sendSuccessResponse(messageId, null, `成功删除所有 ${count} 条路由`);
@@ -851,6 +872,41 @@ class BgpWorker {
         }
 
         this.messageHandler.sendSuccessResponse(messageId, null, 'MVPN路由删除成功');
+    }
+
+    importRoutes(messageId, config) {
+        const { addressFamily, routes } = config;
+        const { afi, safi } = getAfiAndSafi(addressFamily);
+        const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
+        if (!instance) {
+            logger.error('实例不存在');
+            this.messageHandler.sendErrorResponse(messageId, '实例不存在');
+            return;
+        }
+
+        if (routes.length !== 0) {
+            instance.singleRouteSend = true;
+        }
+
+        let hasRouteChanged = false;
+        routes.forEach(route => {
+            const key = BgpRoute.makeKey(route.ip, route.mask);
+            if (!instance.routeMap.has(key)) {
+                const bgpRoute = new BgpRoute(instance);
+                // 解析出来有啥就复制啥 - Use Object.assign for generic attribute mapping
+                Object.assign(bgpRoute, route);
+                bgpRoute.customAttr = route.formatted; // Map formatted to customAttr
+
+                instance.routeMap.set(key, bgpRoute);
+                hasRouteChanged = true;
+            }
+        });
+
+        if (hasRouteChanged) {
+            instance.sendRoute();
+        }
+
+        this.messageHandler.sendSuccessResponse(messageId, null, '路由导入成功');
     }
 }
 

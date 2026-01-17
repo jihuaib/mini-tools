@@ -604,11 +604,55 @@ class BgpPeer {
             return;
         }
 
+        const ipType = getIpType(this.session.peerIp);
+
+        if (this.instance.singleRouteSend) {
+            this.instance.routeMap.forEach((route, _) => {
+                if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                ) {
+                    if (
+                        CommonUtils.BIT_TEST(
+                            this.session.localCapFlags,
+                            BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING
+                        )
+                    ) {
+                        const result = this.buildUpdateMpMsg([route], routeIndex);
+                        if (result.status) {
+                            this.session.sendRoute(result.buffer);
+                        }
+                    } else if (ipType === BgpConst.IP_TYPE.IPV4) {
+                        // 没使能EXTENDED_NEXT_HOP_ENCODING的话，需要ipv4邻居才发送
+                        const result = this.buildUpdateMsgIpv4([route], routeIndex);
+                        if (result.status) {
+                            this.session.sendRoute(result.buffer);
+                        }
+                    }
+                } else if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                ) {
+                    const result = this.buildUpdateMpMsg([route], routeIndex);
+                    if (result.status) {
+                        this.session.sendRoute(result.buffer);
+                    }
+                } else if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+                ) {
+                    const result = this.buildUpdateMpMsg([route], routeIndex);
+                    if (result.status) {
+                        this.session.sendRoute(result.buffer);
+                    }
+                }
+            });
+            return;
+        }
+
         this.instance.routeMap.forEach((route, _) => {
             routes.push(route);
         });
-
-        const ipType = getIpType(this.session.peerIp);
 
         if (
             this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
@@ -669,6 +713,49 @@ class BgpPeer {
         let routeIndex = 0;
 
         if (this.peerState !== BgpConst.BGP_PEER_STATE.ESTABLISHED) {
+            return;
+        }
+
+        if (this.instance.singleRouteSend) {
+            withdrawnRoutes.forEach((route, _) => {
+                if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                ) {
+                    if (
+                        CommonUtils.BIT_TEST(
+                            this.session.localCapFlags,
+                            BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING
+                        )
+                    ) {
+                        const result = this.buildWithdrawMpMsg(route, routeIndex);
+                        if (result.status) {
+                            this.session.sendRoute(result.buffer);
+                        }
+                    } else {
+                        const result = this.buildWithdrawMsgIpv4([route], routeIndex);
+                        if (result.status) {
+                            this.session.sendRoute(result.buffer);
+                        }
+                    }
+                } else if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV6 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST
+                ) {
+                    const result = this.buildWithdrawMpMsg([route], routeIndex);
+                    if (result.status) {
+                        this.session.sendRoute(result.buffer);
+                    }
+                } else if (
+                    this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
+                    this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
+                ) {
+                    const result = this.buildWithdrawMpMsg([route], routeIndex);
+                    if (result.status) {
+                        this.session.sendRoute(result.buffer);
+                    }
+                }
+            });
             return;
         }
 
