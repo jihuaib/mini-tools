@@ -139,6 +139,7 @@
 
     const instanceColumns = [
         { title: '地址族', dataIndex: 'addressFamily', key: 'addressFamily' },
+        { title: 'PEER数量', dataIndex: 'peerCount', key: 'peerCount', align: 'center' },
         { title: '路由数量', dataIndex: 'routeCount', key: 'routeCount', align: 'center' },
         { title: '单条发送', dataIndex: 'singleRouteSend', key: 'singleRouteSend', align: 'center' }
     ];

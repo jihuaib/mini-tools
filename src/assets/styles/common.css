@@ -237,7 +237,7 @@
 /* 通用弹出框样式 */
 .ant-modal {
     max-width: 95vw !important;
-    max-height: 95vh !important;
+    max-height: 92vh !important;
     margin: 0 auto !important;
     transform-origin: center center !important;
 }
@@ -248,23 +248,23 @@
 
 /* 弹出框主体样式 */
 .ant-modal-content {
-    max-height: 91vh !important;
+    max-height: 92vh !important;
     display: flex !important;
     flex-direction: column !important;
     min-height: 0 !important;
-    padding: 5px 5px !important;
+    padding: 8px 8px !important;
 }
 
 .ant-modal-body {
     flex: 1 !important;
     overflow: auto !important;
-    max-height: calc(91vh - 140px) !important;
+    max-height: calc(92vh - 140px) !important;
     min-height: 150px !important;
-    padding: 2px 16px 10px 16px !important;
+    padding: 8px 8px !important;
 }
 
 .ant-modal-header {
-    padding: 8px 16px 6px 16px !important;
+    padding: 8px 8px !important;
     flex-shrink: 0 !important;
     min-height: 50px !important;
     display: flex !important;
@@ -273,7 +273,7 @@
 }
 
 .ant-modal-footer {
-    padding: 2px 16px 10px 16px !important;
+    padding: 8px 8px !important;
     flex-shrink: 0 !important;
     min-height: 50px !important;
     display: flex !important;

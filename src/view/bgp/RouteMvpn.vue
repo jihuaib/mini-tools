@@ -232,7 +232,7 @@
 </template>
 
 <script setup>
-    import { onMounted, ref, computed, watch } from 'vue';
+    import { onMounted, ref, computed, watch, onActivated } from 'vue';
     import { message } from 'ant-design-vue';
     import { UnorderedListOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { BGP_ADDR_FAMILY, DEFAULT_VALUES, BGP_MVPN_ROUTE_TYPE } from '../../const/bgpConst';
@@ -399,7 +399,9 @@
         if (savedConfig.status === 'success' && savedConfig.data) {
             Object.assign(ipv4MvpnData.value, savedConfig.data);
         }
+    });
 
+    onActivated(async () => {
         // 加载已生成的路由列表
         pagination.value.current = 1;
         await refreshRoutes();
@@ -411,11 +413,12 @@
             pagination.value.current,
             pagination.value.pageSize
         );
-        if (result.status === 'success' && result.data) {
+        if (result.status === 'success') {
             sentRoutes.value = result.data.list;
             pagination.value.total = result.data.total;
         } else {
             console.error(result.msg);
+            sentRoutes.value = [];
         }
     };
 

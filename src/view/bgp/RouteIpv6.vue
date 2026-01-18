@@ -122,7 +122,7 @@
 </template>
 
 <script setup>
-    import { onMounted, ref, computed } from 'vue';
+    import { onMounted, ref, computed, onActivated } from 'vue';
     import CustomPktDrawer from '../../components/CustomPktDrawer.vue';
     import RouteViewsImportModal from '../../components/RouteViewsImportModal.vue';
     import { message, Modal } from 'ant-design-vue';
@@ -255,7 +255,9 @@
         } else {
             console.error('IPv6-UNC路由配置文件加载失败', savedConfig.msg);
         }
+    });
 
+    onActivated(async () => {
         // 加载已生成的路由列表
         pagination.value.current = 1;
         await refreshRoutes();
@@ -273,11 +275,12 @@
             pagination.value.current,
             pagination.value.pageSize
         );
-        if (result.status === 'success' && result.data) {
+        if (result.status === 'success') {
             sentRoutes.value = result.data.list;
             pagination.value.total = result.data.total;
         } else {
             console.error(result.msg);
+            sentRoutes.value = [];
         }
     };
 

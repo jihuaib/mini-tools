@@ -403,6 +403,7 @@ class BgpWorker {
             instanceInfoList.push({
                 addressFamily,
                 routeCount: instance.routeMap ? instance.routeMap.size : 0,
+                peerCount: instance.peerMap ? instance.peerMap.size : 0,
                 singleRouteSend: !!instance.singleRouteSend
             });
         });
