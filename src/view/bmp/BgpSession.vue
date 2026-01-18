@@ -97,7 +97,7 @@
                                                         `${record.addrFamilyType}|${record.rd}|${record.ip}|${record.mask}`
                                                 "
                                                 size="small"
-                                                :scroll="{ y: 360 }"
+                                                :scroll="{ y: 320 }"
                                             />
                                         </a-tab-pane>
                                     </a-tabs>
@@ -477,7 +477,7 @@
 
 <style scoped>
     :deep(.ant-table-body) {
-        height: 360px !important;
+        height: 320px !important;
         overflow-y: auto !important;
     }
 

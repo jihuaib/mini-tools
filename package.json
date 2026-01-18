@@ -63,7 +63,7 @@
     "build": {
         "appId": "NetNexus",
         "productName": "NetNexus",
-        "copyright": "Copyright © 2025 ${author}",
+        "copyright": "Copyright © 2026 ${author}",
         "files": [
             "dist/**/*",
             "electron/**/*",
