@@ -75,7 +75,7 @@
                 :pagination="pagination"
                 :scroll="{ y: 400 }"
                 row-key="id"
-                class="mt-margin-top-10"
+                class="mt-margin-top-10 trap-list-table"
                 @change="handleTableChange"
             >
                 <template #bodyCell="{ column, record }">
@@ -146,8 +146,9 @@
                     :data-source="selectedTrap.varbinds || []"
                     size="small"
                     row-key="oid"
-                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
-                    :scroll="{ y: 250, x: 700 }"
+                    class="varbind-detail-table"
+                    :pagination="{ pageSize: 5, showSizeChanger: false, position: ['bottomCenter'] }"
+                    :scroll="{ y: 180, x: 700 }"
                 >
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'value'">
@@ -411,8 +412,15 @@
         width: 100px;
     }
 
-    :deep(.ant-table-body) {
-        height: 250px !important;
+    /* Trap 列表表格样式 */
+    .trap-list-table :deep(.ant-table-body) {
+        height: 400px !important;
+        overflow-y: auto !important;
+    }
+
+    /* 变量绑定详情表格样式 */
+    .varbind-detail-table :deep(.ant-table-body) {
+        height: 180px !important;
         overflow-y: auto !important;
     }
 </style>
