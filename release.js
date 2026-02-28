@@ -7,6 +7,11 @@ const https = require('https');
 const args = process.argv.slice(2);
 const giteeOnly = args.includes('--gitee-only');
 const showHelp = args.includes('--help') || args.includes('-h');
+const isMac = args.includes('--mac');
+const isWin = args.includes('--win');
+const isArm64 = args.includes('--arm64');
+const isX64 = args.includes('--x64');
+const isUniversal = args.includes('--universal');
 
 // Show help
 if (showHelp) {
@@ -18,9 +23,17 @@ Usage: node release.js [options]
 Options:
   --help, -h          显示帮助信息
   --gitee-only        只发布到 Gitee（不编译，需要先有 tag 和 dist 文件）
+  --win               构建 Windows 版本
+  --mac               构建 macOS 版本
+  --x64               构建 x64 架构
+  --arm64             构建 arm64 架构（仅 macOS）
+  --universal         构建 universal 架构（仅 macOS，同时包含 x64 和 arm64）
 
 Examples:
-  node release.js                    # 编译并发布到 GitHub 和 Gitee（默认）
+  node release.js                    # 编译 Windows x64 并发布到 GitHub 和 Gitee（默认）
+  node release.js --mac --x64        # 编译 macOS x64 并发布
+  node release.js --mac --arm64      # 编译 macOS arm64 并发布
+  node release.js --mac --universal  # 编译 macOS universal 并发布
   node release.js --gitee-only       # 只发布到 Gitee（不编译）
 `);
     process.exit(0);
@@ -216,6 +229,31 @@ async function createGiteeRelease() {
     }
 }
 
+// Build command based on platform and architecture
+function getBuildCommand() {
+    const customArgs = ['--gitee-only', '--help', '-h', '--win', '--mac', '--x64', '--arm64', '--universal'];
+    const extraArgs = args.filter(arg => !customArgs.includes(arg)).join(' ');
+
+    let platform = '--win';
+    let arch = '--x64';
+
+    if (isMac) {
+        platform = '--mac';
+        if (isUniversal) {
+            arch = '--universal';
+        } else if (isArm64) {
+            arch = '--arm64';
+        } else {
+            arch = '--x64';
+        }
+    } else if (isWin) {
+        platform = '--win';
+        arch = '--x64';
+    }
+
+    return `electron-builder ${platform} ${arch} ${extraArgs}`.trim();
+}
+
 // Run electron-builder
 async function build() {
     try {
@@ -227,16 +265,23 @@ async function build() {
             // 默认模式：编译并发布到 GitHub 和 Gitee
             console.log('\n🔨 Starting electron-builder...');
 
-            // Filter out our custom arguments
-            const builderArgs = args
-                .filter(arg => arg !== '--gitee-only' && arg !== '--help' && arg !== '-h')
-                .join(' ');
+            const command = getBuildCommand();
+            console.log(`   Command: ${command}`);
 
-            const command = `electron-builder ${builderArgs || '--win --x64'}`;
+            // macOS 特定检查
+            if (isMac && process.platform !== 'darwin') {
+                console.log('\n⚠️  Warning: Building macOS app on non-macOS platform');
+                console.log('   Code signing will be disabled');
+                console.log('   For best results, build on macOS');
+            }
 
             execSync(command, {
                 stdio: 'inherit',
-                env: process.env
+                env: {
+                    ...process.env,
+                    // 如果没有证书，禁用代码签名
+                    CSC_IDENTITY_AUTO_DISCOVERY: process.env.CSC_IDENTITY_AUTO_DISCOVERY || 'false'
+                }
             });
 
             console.log('\n✅ Build completed successfully');

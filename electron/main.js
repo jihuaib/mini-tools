@@ -12,13 +12,26 @@ let systemApp = null;
 app.commandLine.appendSwitch('lang', 'zh-CN');
 
 function createSplashWindow() {
+    // 计算 splash 窗口在工作区域内的居中位置
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const workArea = primaryDisplay.workArea;
+    const splashWidth = 600;
+    const splashHeight = 500;
+    const x = Math.round(workArea.x + (workArea.width - splashWidth) / 2);
+    const y = Math.round(workArea.y + (workArea.height - splashHeight) / 2);
+
     const splash = new BrowserWindow({
-        width: 600,
-        height: 500,
+        width: splashWidth,
+        height: splashHeight,
+        x: x,
+        y: y,
         transparent: true,
         frame: false,
         resizable: false,
-        center: true,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        hasShadow: false,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -32,16 +45,17 @@ function createSplashWindow() {
 
 function createWindow() {
     const win = new BrowserWindow({
-        minWidth: 1000, // 最小宽度
-        minHeight: 800, // 最小高度
-        resizable: true, // 允许调整大小
-        maximizable: true, // 允许最大化
-        fullscreen: false, // 取消全屏启动
-        autoHideMenuBar: true, // 显示菜单栏
-        frame: true, // 保持原生边框
-        center: true, // 窗口居中显示
-        backgroundColor: '#ffffff', // 设置背景色，避免加载时闪烁
-        show: false, // 先隐藏窗口，等待启动完成
+        width: 1000,
+        height: 800,
+        minWidth: 1000,
+        minHeight: 800,
+        resizable: true,
+        maximizable: true,
+        fullscreen: false,
+        autoHideMenuBar: true,
+        frame: true,
+        backgroundColor: '#ffffff',
+        show: false, // 关键：先隐藏窗口
         icon: getIconPath(),
         webPreferences: {
             nodeIntegration: false, // 禁用 nodeIntegration 提高安全性
@@ -66,6 +80,11 @@ function createWindow() {
         win.destroy();
     });
 
+    // 窗口销毁后重置引用
+    win.on('closed', () => {
+        mainWindow = null;
+    });
+
     new Tray(getIconPath());
 
     mainWindow = win;
@@ -85,16 +104,32 @@ function updateSplashProgress(progress, text) {
 // 完成启动，显示主窗口
 function finishStartup() {
     if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.maximize();
-        mainWindow.show();
+        // macOS 上使用工作区域大小，Windows/Linux 上直接最大化
+        if (process.platform === 'darwin') {
+            // macOS: 设置窗口大小为屏幕工作区域大小（排除菜单栏和 Dock）
+            const { screen } = require('electron');
+            const primaryDisplay = screen.getPrimaryDisplay();
+            const workArea = primaryDisplay.workArea;
+            // 先设置位置和大小（窗口仍然隐藏）
+            mainWindow.setBounds({
+                x: workArea.x,
+                y: workArea.y,
+                width: workArea.width,
+                height: workArea.height
+            });
+        } else {
+            mainWindow.maximize();
+        }
 
-        // 延迟关闭启动窗口，确保主窗口已完全显示
-        setTimeout(() => {
-            if (splashWindow && !splashWindow.isDestroyed()) {
-                splashWindow.close();
-                splashWindow = null;
-            }
-        }, 500);
+        // 关闭 splash 窗口（使用 destroy 同步关闭）
+        if (splashWindow && !splashWindow.isDestroyed()) {
+            splashWindow.destroy();
+            splashWindow = null;
+        }
+
+        // 显示主窗口
+        mainWindow.show();
+        mainWindow.focus();
     }
 }
 
@@ -110,7 +145,18 @@ app.whenReady().then(async () => {
     updateSplashProgress(20, '正在加载主窗口...');
 
     app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
+        // macOS: 点击 dock 图标时，如果没有窗口则重新创建
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+            if (mainWindow) {
+                mainWindow.show();
+                mainWindow.focus();
+            }
+        } else if (mainWindow) {
+            // 窗口存在但可能被隐藏，重新显示
+            mainWindow.show();
+            mainWindow.focus();
+        }
     });
 
     // 启动应用

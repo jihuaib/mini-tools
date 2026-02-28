@@ -44,21 +44,37 @@
         "url": "https://github.com/jihuaib/NetNexus.git"
     },
     "scripts": {
-        "install-x64": "electron-builder install-app-deps --arch x64",
+        "install-deps:arch": "electron-builder install-app-deps",
         "build": "vite build",
         "start": "vite",
         "dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"wait-port 3000 && electron .\"",
         "pack": "electron-builder --win --x64 --dir",
+        "pack:mac": "electron-builder --mac --x64 --dir",
+        "pack:mac:arm64": "electron-builder --mac --arm64 --dir",
         "dist": "electron-builder --win --x64",
+        "dist:mac": "electron-builder --mac --x64",
+        "dist:mac:arm64": "electron-builder --mac --arm64",
+        "dist:mac:universal": "electron-builder --mac --universal",
         "prepack": "npm run build",
+        "prepack:mac": "npm run build",
+        "prepack:mac:arm64": "npm run build",
         "predist": "npm run build",
+        "predist:mac": "npm run build",
+        "predist:mac:arm64": "npm run build",
+        "predist:mac:universal": "npm run build",
         "format": "prettier --write .",
         "release": "node release.js",
+        "release:mac": "node release.js --mac --x64",
+        "release:mac:arm64": "node release.js --mac --arm64",
+        "release:mac:universal": "node release.js --mac --universal",
         "prerelease": "npm run build",
+        "prerelease:mac": "npm run build",
+        "prerelease:mac:arm64": "npm run build",
+        "prerelease:mac:universal": "npm run build",
         "lint": "eslint --ext .js,.vue src electron",
         "lint:fix": "eslint --fix --ext .js,.vue src electron",
-        "postinstall": "electron-rebuild --arch x64 && npm run install-deps",
-        "install-deps": "npm run install-x64"
+        "postinstall": "electron-rebuild && npm run install-deps:arch && node scripts/patch-electron-builder.js",
+        "make-icns": "node scripts/make-icns.js"
     },
     "build": {
         "appId": "NetNexus",
@@ -75,6 +91,7 @@
             "zh-CN"
         ],
         "asar": false,
+        "npmRebuild": false,
         "publish": {
             "provider": "github",
             "owner": "jihuaib",
@@ -103,6 +120,53 @@
             "oneClick": false,
             "perMachine": false,
             "differentialPackage": false
+        },
+        "mac": {
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                },
+                {
+                    "target": "zip",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "icon": "icon.icns",
+            "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+            "category": "public.app-category.developer-tools",
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false,
+            "entitlements": "electron/assets/entitlements.mac.plist",
+            "entitlementsInherit": "electron/assets/entitlements.mac.plist",
+            "extendInfo": {
+                "NSMicrophoneUsageDescription": "此应用不需要麦克风权限",
+                "NSCameraUsageDescription": "此应用不需要摄像头权限"
+            }
+        },
+        "dmg": {
+            "contents": [
+                {
+                    "x": 130,
+                    "y": 220
+                },
+                {
+                    "x": 410,
+                    "y": 220,
+                    "type": "link",
+                    "path": "/Applications"
+                }
+            ],
+            "window": {
+                "width": 540,
+                "height": 380
+            }
         }
     },
     "devDependencies": {
@@ -112,6 +176,7 @@
         "ant-design-vue": "^4.2.6",
         "concurrently": "^7.6.0",
         "cross-env": "^7.0.3",
+        "echarts": "^6.0.0",
         "electron": "^15.5.7",
         "electron-builder": "^24.6.0",
         "electron-rebuild": "^3.2.9",
@@ -123,11 +188,10 @@
         "prettier": "^3.5.3",
         "vite": "^4.4.0",
         "vue": "^3.5.13",
+        "vue-echarts": "^8.0.1",
         "vue-router": "^4.5.0",
         "vuex": "^4.1.0",
-        "wait-port": "^1.1.0",
-        "echarts": "^6.0.0",
-        "vue-echarts": "^8.0.1"
+        "wait-port": "^1.1.0"
     },
     "dependencies": {
         "cap": "^0.2.1",
