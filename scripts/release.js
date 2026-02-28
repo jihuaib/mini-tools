@@ -45,8 +45,8 @@ if (giteeOnly) {
     console.log('\n📦 NetNexus Release Script - Full Release Mode');
 }
 
-// Load .env file
-const envPath = path.resolve(__dirname, '.env');
+// Load .env file (从项目根目录加载)
+const envPath = path.resolve(__dirname, '../.env');
 
 if (fs.existsSync(envPath)) {
     const envConfig = fs.readFileSync(envPath, 'utf-8');
@@ -141,7 +141,7 @@ async function createGiteeRelease() {
     }
 
     // Step 2: Upload files
-    const distPath = path.join(__dirname, 'dist');
+    const distPath = path.join(__dirname, '../dist');
     if (!fs.existsSync(distPath)) {
         console.log('⚠️  dist directory not found, skipping file upload');
         return;

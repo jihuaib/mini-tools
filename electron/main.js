@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray } = require('electron');
 const path = require('path');
 const SystemApp = require('./app/systemApp');
 const logger = require('./log/logger');
-const { getIconPath } = require('./utils/iconUtils');
+const { getIconPath, getTrayIconPath } = require('./utils/iconUtils');
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
@@ -85,7 +85,7 @@ function createWindow() {
         mainWindow = null;
     });
 
-    new Tray(getIconPath());
+    new Tray(getTrayIconPath());
 
     mainWindow = win;
 

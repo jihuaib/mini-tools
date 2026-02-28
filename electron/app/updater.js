@@ -1,4 +1,5 @@
 const { autoUpdater } = require('electron-updater');
+const { parseVersion } = require('electron-updater/out/providers/Provider');
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -60,8 +61,8 @@ class AppUpdater {
                 try {
                     const packageJsonPath = path.join(__dirname, '../../package.json');
                     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-                    // 设置当前版本用于开发环境测试
-                    autoUpdater.currentVersion = packageJson.version;
+                    // 设置当前版本用于开发环境测试，需要使用 parseVersion 转换为 SemVer 对象
+                    autoUpdater.currentVersion = parseVersion(packageJson.version);
                     logger.info('macOS 开发环境：设置当前版本为', packageJson.version);
                 } catch (err) {
                     logger.warn('macOS 开发环境：读取 package.json 版本失败', err.message);
