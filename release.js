@@ -251,7 +251,7 @@ function getBuildCommand() {
         arch = '--x64';
     }
 
-    return `electron-builder ${platform} ${arch} ${extraArgs}`.trim();
+    return `electron-builder ${platform} ${arch} --publish always ${extraArgs}`.trim();
 }
 
 // Run electron-builder

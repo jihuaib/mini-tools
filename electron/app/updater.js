@@ -53,6 +53,21 @@ class AppUpdater {
                 logger.info('开发环境：使用本地配置文件', devConfigPath);
             }
 
+            // macOS 开发环境额外配置
+            if (process.platform === 'darwin') {
+                // macOS 开发环境需要明确设置当前版本，否则无法正确比较版本
+                // 从 package.json 读取版本号
+                try {
+                    const packageJsonPath = path.join(__dirname, '../../package.json');
+                    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+                    // 设置当前版本用于开发环境测试
+                    autoUpdater.currentVersion = packageJson.version;
+                    logger.info('macOS 开发环境：设置当前版本为', packageJson.version);
+                } catch (err) {
+                    logger.warn('macOS 开发环境：读取 package.json 版本失败', err.message);
+                }
+            }
+
             logger.info('开发环境：已启用更新检查，forceDevUpdateConfig = true');
         } else {
             // 生产环境配置
@@ -118,8 +133,20 @@ class AppUpdater {
 
         // 更新错误时
         this.eventListeners.error = err => {
-            logger.error('更新过程中出现错误:', err);
-            this.sendUpdateStatus('update-error', { error: err.message });
+            // 检查是否是找不到更新文件的 404 错误
+            const is404Error =
+                err.message &&
+                (err.message.includes('latest-mac.yml') || err.message.includes('latest.yml')) &&
+                err.message.includes('404');
+
+            if (is404Error) {
+                // 服务端没有对应平台的更新文件，只记录简洁日志
+                logger.warn('更新检查：服务端暂无当前平台的更新包');
+                this.sendUpdateStatus('update-error', { error: '服务端暂无当前平台的更新包' });
+            } else {
+                logger.error('更新过程中出现错误:', err);
+                this.sendUpdateStatus('update-error', { error: err.message });
+            }
         };
         autoUpdater.on('error', this.eventListeners.error);
 
@@ -161,11 +188,21 @@ class AppUpdater {
                     : null
             };
         } catch (error) {
-            logger.error('检查更新失败:', error);
-            this.sendUpdateStatus('update-error', { error: error.message });
+            // 检查是否是找不到更新文件的 404 错误
+            const is404Error =
+                error.message &&
+                (error.message.includes('latest-mac.yml') || error.message.includes('latest.yml')) &&
+                error.message.includes('404');
+
+            if (is404Error) {
+                logger.warn('检查更新：服务端暂无当前平台的更新包');
+            } else {
+                logger.error('检查更新失败:', error);
+            }
+            // 事件已由 error 监听器处理，这里不再重复发送
             return {
                 success: false,
-                error: error.message
+                error: is404Error ? '服务端暂无当前平台的更新包' : error.message
             };
         }
     }
@@ -185,6 +222,12 @@ class AppUpdater {
     // 退出并安装更新
     quitAndInstall() {
         if (this.updateDownloaded) {
+            // macOS 开发环境下，只记录日志，不执行实际安装
+            if (this.isDev && process.platform === 'darwin') {
+                logger.info('macOS 开发环境：已下载更新，但开发环境下无法执行自动安装');
+                logger.info('请使用打包后的应用测试完整的更新安装流程');
+                return;
+            }
             logger.info('退出应用并安装更新');
             autoUpdater.quitAndInstall();
         } else {
