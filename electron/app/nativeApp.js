@@ -77,9 +77,6 @@ class NativeApp {
         // 网络信息工具
         ipc.handle('native:getNetworkInfo', async () => this.handleGetNetworkInfo());
         ipc.handle('native:manageNetwork', async (event, config) => this.handleManageNetwork(event, config));
-
-        // 流量统计
-        ipc.handle('native:getTrafficStats', async () => this.handleGetTrafficStats());
     }
 
     async handleGetPacketHistory() {
@@ -986,8 +983,8 @@ class NativeApp {
 
             if (platform === 'win32') {
                 ports = await this.getWindowsListeningPorts();
-            } else if (platform === 'linux' || platform === 'darwin') {
-                ports = await this.getLinuxListeningPorts();
+            } else if (platform === 'darwin') {
+                ports = await this.getDarwinListeningPorts();
             } else {
                 return errorResponse(`不支持的操作系统: ${platform}`);
             }
@@ -1127,128 +1124,90 @@ class NativeApp {
         }
     }
 
-    async getLinuxListeningPorts() {
+    async getDarwinListeningPorts() {
         const { exec } = require('child_process');
         const { promisify } = require('util');
         const execAsync = promisify(exec);
 
         try {
-            let output;
-            let useSs = true;
+            // lsof -i: 网络连接  -n: 不解析主机名  -P: 不解析端口名（保持数字）
+            const { stdout } = await execAsync('lsof -i -n -P 2>/dev/null', { maxBuffer: 10 * 1024 * 1024 });
+            const lines = stdout.split('\n');
+            const portsMap = new Map();
 
-            // 优先使用 ss 命令
-            try {
-                const { stdout } = await execAsync('ss -tunp 2>/dev/null');
-                output = stdout;
-            } catch (err) {
-                // 如果 ss 不可用，回退到 netstat
-                logger.info('ss 命令不可用，使用 netstat');
-                useSs = false;
-                const { stdout } = await execAsync('netstat -tunp 2>/dev/null || netstat -tun 2>/dev/null');
-                output = stdout;
-            }
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
 
-            const lines = output.split('\n');
-            const ports = [];
+                // lsof 列: COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME
+                const parts = line.split(/\s+/);
+                if (parts.length < 9) continue;
 
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (
-                    !trimmed ||
-                    trimmed.startsWith('Netid') ||
-                    trimmed.startsWith('Proto') ||
-                    trimmed.startsWith('Active')
-                ) {
-                    continue;
-                }
+                const processName = parts[0];
+                const pid = parts[1];
+                const nodeType = parts[7]; // TCP, UDP, TCP6, UDP6
 
-                let port = null;
+                if (!nodeType.startsWith('TCP') && !nodeType.startsWith('UDP')) continue;
+                const protocol = nodeType.startsWith('TCP') ? 'TCP' : 'UDP';
 
-                if (useSs) {
-                    // ss 输出格式: tcp   ESTAB  0  0  192.168.1.1:80  192.168.1.2:12345  users:(("nginx",pid=1234,fd=6))
-                    // IPv6: tcp   ESTAB  0  0  [::1]:8080  [::1]:54321  users:(("node",pid=5678,fd=10))
-                    const match = trimmed.match(/^(tcp|udp)\s+(\S+)\s+\S+\s+\S+\s+(\S+)\s+(\S+)/);
-                    if (match) {
-                        const protocol = match[1].toUpperCase();
-                        const state = match[2];
-                        const localAddressPort = match[3];
-                        const remoteAddressPort = match[4];
+                // NAME 从第9列开始，可能含空格
+                const namePart = parts.slice(8).join(' ');
 
-                        // 显示 LISTEN, ESTAB 状态的端口
-                        if (state === 'LISTEN' || state === 'ESTAB' || state === 'UNCONN') {
-                            const local = this.parseAddressPort(localAddressPort);
-                            const remote = this.parseAddressPort(remoteAddressPort);
+                // 提取括号内的状态，如 (LISTEN) (ESTABLISHED)
+                const stateMatch = namePart.match(/\(([^)]+)\)$/);
+                const rawState = stateMatch ? stateMatch[1].toUpperCase() : '';
+                const connPart = namePart.replace(/\s*\([^)]+\)$/, '').trim();
 
-                            // 提取进程信息
-                            let process = '-';
-                            let pid = '-';
-                            const processMatch = trimmed.match(/users:\(\("([^"]+)",pid=(\d+)/);
-                            if (processMatch) {
-                                process = processMatch[1];
-                                pid = processMatch[2];
-                            }
+                // TCP 只展示 LISTEN 和 ESTABLISHED，UDP 全部展示
+                if (protocol === 'TCP' && rawState !== 'LISTEN' && rawState !== 'ESTABLISHED') continue;
 
-                            port = {
-                                protocol,
-                                address: local.address === '*' ? '0.0.0.0' : local.address,
-                                port: local.port === '*' ? '*' : parseInt(local.port),
-                                remoteAddress: remote.address === '*' ? '-' : remote.address,
-                                remotePort: remote.port === '*' ? '-' : remote.port,
-                                state: state === 'LISTEN' ? 'LISTENING' : state === 'ESTAB' ? 'ESTABLISHED' : state,
-                                pid,
-                                process
-                            };
-                        }
-                    }
+                // NAME 格式：
+                //   LISTEN:      *:3000  或  127.0.0.1:3000
+                //   ESTABLISHED: 127.0.0.1:3000->192.168.1.2:54321
+                let localAddrStr, remoteAddrStr;
+                const arrowIdx = connPart.indexOf('->');
+                if (arrowIdx !== -1) {
+                    localAddrStr = connPart.substring(0, arrowIdx);
+                    remoteAddrStr = connPart.substring(arrowIdx + 2);
                 } else {
-                    // netstat 输出格式: tcp  0  0  0.0.0.0:80  192.168.1.2:12345  ESTABLISHED  1234/nginx
-                    // IPv6: tcp6  0  0  :::8080  :::*  LISTEN  1234/node
-                    const match = trimmed.match(/^(tcp6?|udp6?)\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s*(.+)?$/);
-                    if (match) {
-                        const protocol = match[1].replace('6', '').toUpperCase(); // tcp6 -> TCP
-                        const localAddressPort = match[2];
-                        const remoteAddressPort = match[3];
-                        const state = match[4];
-                        const processInfo = match[5] || '';
-
-                        // 显示 LISTEN 和 ESTABLISHED 状态的端口
-                        if (state === 'LISTEN' || state === 'ESTABLISHED' || protocol === 'UDP') {
-                            const local = this.parseAddressPort(localAddressPort);
-                            const remote = this.parseAddressPort(remoteAddressPort);
-
-                            // 提取进程信息
-                            let process = '-';
-                            let pid = '-';
-                            const processMatch = processInfo.match(/(\d+)\/(.+)/);
-                            if (processMatch) {
-                                pid = processMatch[1];
-                                process = processMatch[2];
-                            }
-
-                            port = {
-                                protocol,
-                                address:
-                                    local.address === '*' ? '0.0.0.0' : local.address === ':::' ? '::' : local.address,
-                                port: local.port === '*' ? '*' : parseInt(local.port),
-                                remoteAddress:
-                                    remote.address === '*' ? '-' : remote.address === ':::' ? '::' : remote.address,
-                                remotePort: remote.port === '*' ? '-' : remote.port,
-                                state: state === 'LISTEN' ? 'LISTENING' : state,
-                                pid,
-                                process
-                            };
-                        }
-                    }
+                    localAddrStr = connPart;
+                    remoteAddrStr = '';
                 }
 
-                if (port) {
-                    ports.push(port);
+                // *:port 转换为 0.0.0.0:port 以便 parseAddressPort 正常处理
+                if (localAddrStr.startsWith('*:')) localAddrStr = '0.0.0.0' + localAddrStr.substring(1);
+                if (remoteAddrStr.startsWith('*:')) remoteAddrStr = '0.0.0.0' + remoteAddrStr.substring(1);
+
+                const local = this.parseAddressPort(localAddrStr);
+                let remoteAddress = '-';
+                let remotePort = '-';
+                if (remoteAddrStr) {
+                    const remote = this.parseAddressPort(remoteAddrStr);
+                    remoteAddress = remote.address;
+                    remotePort = remote.port;
+                }
+
+                const state = rawState === 'LISTEN' ? 'LISTENING' : rawState || (protocol === 'UDP' ? 'UDP' : '-');
+
+                // lsof 每个 fd 都输出一行，用复合 key 去重
+                const key = `${protocol}-${local.address}-${local.port}-${remoteAddress}-${remotePort}-${pid}`;
+                if (!portsMap.has(key)) {
+                    portsMap.set(key, {
+                        protocol,
+                        address: local.address,
+                        port: local.port === '*' ? '*' : parseInt(local.port) || local.port,
+                        remoteAddress,
+                        remotePort,
+                        state,
+                        pid,
+                        process: processName
+                    });
                 }
             }
 
-            return ports;
+            return Array.from(portsMap.values());
         } catch (err) {
-            logger.error('Linux 端口检测错误:', err.message);
+            logger.error('macOS 端口检测错误:', err.message);
             throw err;
         }
     }
@@ -1440,7 +1399,7 @@ class NativeApp {
     }
 
     // 管理网络接口
-    async handleManageNetwork(event, config) {
+    async handleManageNetwork(_event, config) {
         const { interfaceName, family, type, ip, mask, gateway } = config;
 
         logger.info('管理网络接口:', config);
@@ -1594,81 +1553,6 @@ class NativeApp {
                 return errorResponse('权限不足，请以管理员身份运行此程序。');
             }
             return errorResponse(`网络配置失败: ${err.message}`);
-        }
-    }
-
-    async handleGetTrafficStats() {
-        try {
-            const platform = os.platform();
-            if (platform !== 'win32') {
-                return errorResponse('目前仅支持 Windows 系统的流量统计功能');
-            }
-
-            const { spawn } = require('child_process');
-
-            // 使用 .NET NetworkInterface API 获取流量统计，这是最鲁棒的方法，支持所有接口（包括回环和虚拟网卡）
-            const psScript = `
-                [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() | ForEach-Object {
-                    try {
-                        $s = $_.GetIPStatistics();
-                        [PSCustomObject]@{
-                            Name = $_.Name;
-                            ReceivedBytes = $s.BytesReceived;
-                            SentBytes = $s.BytesSent;
-                        }
-                    } catch {}
-                } | ConvertTo-Json -Compress
-            `.trim();
-
-            return new Promise(resolve => {
-                const child = spawn('powershell', ['-NoProfile', '-Command', psScript]);
-                let stdout = Buffer.alloc(0);
-
-                child.stdout.on('data', data => {
-                    stdout = Buffer.concat([stdout, data]);
-                });
-
-                child.on('close', code => {
-                    if (code !== 0) {
-                        logger.error(`PowerShell 进程退出，退出码: ${code}`);
-                        resolve(errorResponse(`获取流量统计进程出错: ${code}`));
-                        return;
-                    }
-
-                    try {
-                        const output = iconv.decode(stdout, 'cp936');
-                        if (!output || output.trim() === '') {
-                            resolve(successResponse([], '没有获取到流量统计数据'));
-                            return;
-                        }
-
-                        let stats = JSON.parse(output);
-                        if (!Array.isArray(stats)) {
-                            stats = [stats];
-                        }
-
-                        const result = stats.map(item => ({
-                            name: item.Name,
-                            rxBytes: item.ReceivedBytes,
-                            txBytes: item.SentBytes,
-                            timestamp: Date.now()
-                        }));
-
-                        resolve(successResponse(result, '获取流量统计成功'));
-                    } catch (err) {
-                        logger.error(`解析流量统计数据失败: ${err.message}`);
-                        resolve(errorResponse(`解析流量统计数据失败: ${err.message}`));
-                    }
-                });
-
-                child.on('error', err => {
-                    logger.error(`启动 PowerShell 进程失败: ${err.message}`);
-                    resolve(errorResponse(`启动 PowerShell 进程失败: ${err.message}`));
-                });
-            });
-        } catch (err) {
-            logger.error(`获取流量统计失败: ${err.message}`);
-            return errorResponse(`获取流量统计失败: ${err.message}`);
         }
     }
 }

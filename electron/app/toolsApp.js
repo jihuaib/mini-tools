@@ -1,5 +1,6 @@
 const { app } = require('electron');
 const path = require('path');
+const crypto = require('crypto');
 const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
@@ -32,6 +33,9 @@ class ToolsApp {
         );
         ipc.handle('tools:getPacketParserHistory', async () => this.handleGetPacketParserHistory());
         ipc.handle('tools:clearPacketParserHistory', async () => this.handleClearPacketParserHistory());
+
+        // TCP-AO MAC 计算器
+        ipc.handle('tools:calculateTcpAoMac', async (event, data) => this.handleCalculateTcpAoMac(event, data));
     }
 
     async handleGetGenerateStringHistory() {
@@ -181,6 +185,80 @@ class ToolsApp {
         }
 
         return successResponse(config, '获取报文解析历史记录成功');
+    }
+
+    hexToBuffer(hex) {
+        const cleaned = hex.replace(/\s+/g, '').replace(/:/g, '');
+        if (cleaned.length === 0) return Buffer.alloc(0);
+        if (cleaned.length % 2 !== 0) throw new Error(`十六进制字符串长度不合法: "${hex}"`);
+        if (!/^[0-9a-fA-F]+$/.test(cleaned)) throw new Error(`十六进制字符串包含非法字符: "${hex}"`);
+        return Buffer.from(cleaned, 'hex');
+    }
+
+    parseIpv4Packet(buf) {
+        if (buf.length < 20) throw new Error('IP 报文长度不足（最少 20 字节）');
+        const version = buf[0] >> 4;
+        if (version !== 4) throw new Error(`仅支持 IPv4，当前版本号: ${version}`);
+
+        const ihl = (buf[0] & 0x0f) * 4;
+        if (ihl < 20) throw new Error(`IP 头部长度非法: ${ihl}`);
+
+        const totalLength = buf.readUInt16BE(2);
+        if (buf.length < totalLength)
+            throw new Error(`报文实际长度 ${buf.length} 小于 Total Length 字段 ${totalLength}`);
+
+        const protocol = buf[9];
+        const srcIp = buf.subarray(12, 16);
+        const dstIp = buf.subarray(16, 20);
+
+        const tcpLength = totalLength - ihl;
+        if (tcpLength < 20) throw new Error(`TCP 段长度不足（最少 20 字节）: ${tcpLength}`);
+
+        // 复制 TCP 段并清零校验和字段（RFC 5925 Section 5.1 要求）
+        const tcpSegment = Buffer.from(buf.subarray(ihl, totalLength));
+        tcpSegment[16] = 0;
+        tcpSegment[17] = 0;
+
+        // IPv4 伪头部：源IP(4) + 目的IP(4) + 00(1) + 协议(1) + TCP段长度(2)
+        const pseudoHeader = Buffer.alloc(12);
+        srcIp.copy(pseudoHeader, 0);
+        dstIp.copy(pseudoHeader, 4);
+        pseudoHeader[8] = 0;
+        pseudoHeader[9] = protocol;
+        pseudoHeader.writeUInt16BE(tcpLength, 10);
+
+        return { pseudoHeader, tcpSegment };
+    }
+
+    async handleCalculateTcpAoMac(_event, { key, sne, ipPacket }) {
+        try {
+            const keyBuf = Buffer.from(key, 'utf8');
+            const sneBuf = this.hexToBuffer(sne);
+            const ipBuf = this.hexToBuffer(ipPacket);
+
+            const { pseudoHeader, tcpSegment } = this.parseIpv4Packet(ipBuf);
+
+            // OpenSSL MD5_Update 风格：MD5(key || SNE || 伪头部 || TCP段)
+            const msgBuf = Buffer.concat([sneBuf, pseudoHeader, tcpSegment]);
+
+            const hash = crypto.createHash('md5');
+            hash.update(keyBuf);
+            hash.update(msgBuf);
+            const macFull = hash.digest();
+
+            return successResponse(
+                {
+                    pseudoHeaderHex: pseudoHeader.toString('hex').toUpperCase(),
+                    messageHex: msgBuf.toString('hex').toUpperCase(),
+                    mac: macFull.toString('hex').toUpperCase(),
+                    mac96: macFull.subarray(0, 12).toString('hex').toUpperCase()
+                },
+                'TCP-AO MAC 计算成功'
+            );
+        } catch (err) {
+            logger.error('TCP-AO MAC 计算错误:', err.message);
+            return errorResponse(err.message);
+        }
     }
 
     setMaxMessageHistory(maxMessageHistory) {

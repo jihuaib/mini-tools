@@ -167,9 +167,6 @@
                 </a-form-item>
             </a-form>
         </a-modal>
-
-        <!-- 流量统计图表 -->
-        <TrafficStatsChart />
     </div>
 </template>
 
@@ -178,7 +175,6 @@
     import { message } from 'ant-design-vue';
     import { ReloadOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
     import { FormValidator, createNetworkInfoValidationRules } from '../../utils/validationCommon';
-    import TrafficStatsChart from '../../components/TrafficStatsChart.vue';
 
     defineOptions({
         name: 'NetworkInfo'

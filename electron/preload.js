@@ -55,7 +55,8 @@ contextBridge.exposeInMainWorld('toolsApi', {
     parsePacket: packetData => ipcRenderer.invoke('tools:parsePacket', packetData),
     parsePacketNoSaveHistory: packetData => ipcRenderer.invoke('tools:parsePacketNoSaveHistory', packetData),
     getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
-    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory')
+    clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory'),
+    calculateTcpAoMac: data => ipcRenderer.invoke('tools:calculateTcpAoMac', data)
 });
 
 // bgp模块
@@ -178,7 +179,6 @@ contextBridge.exposeInMainWorld('nativeApi', {
     stopPacketCapture: () => ipcRenderer.invoke('native:stopPacketCapture'),
     getPacketHistory: () => ipcRenderer.invoke('native:getPacketHistory'),
     exportPacketsToPcap: packets => ipcRenderer.invoke('native:exportPacketsToPcap', packets),
-    getTrafficStats: () => ipcRenderer.invoke('native:getTrafficStats'),
 
     // 格式化工具模块
     formatData: formatterData => ipcRenderer.invoke('native:formatData', formatterData),

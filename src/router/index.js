@@ -7,6 +7,7 @@ import Formatter from '../view/tools/Formatter.vue';
 import PacketCapture from '../view/tools/PacketCapture.vue';
 import PortMonitor from '../view/tools/PortMonitor.vue';
 import NetworkInfo from '../view/tools/NetworkInfo.vue';
+import TcpAoMac from '../view/tools/TcpAoMac.vue';
 import BgpMain from '../view/bgp/BgpMain.vue';
 import BgpConfig from '../view/bgp/BgpConfig.vue';
 import BgpPeerConfig from '../view/bgp/BgpPeerConfig.vue';
@@ -81,6 +82,12 @@ const routes = [
                         path: 'network-info',
                         name: 'NetworkInfo',
                         component: NetworkInfo,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'tcp-ao-mac',
+                        name: 'TcpAoMac',
+                        component: TcpAoMac,
                         meta: { keepAlive: true }
                     }
                 ]

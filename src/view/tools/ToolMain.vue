@@ -9,6 +9,7 @@
                 <a-tab-pane key="packet-capture" tab="网络抓包" />
                 <a-tab-pane key="port-monitor" tab="端口监听" />
                 <a-tab-pane key="network-info" tab="网络信息" />
+                <a-tab-pane key="tcp-ao-mac" tab="TCP-AO MAC" />
             </a-tabs>
         </div>
 
