@@ -9,9 +9,6 @@ const giteeOnly = args.includes('--gitee-only');
 const showHelp = args.includes('--help') || args.includes('-h');
 const isMac = args.includes('--mac');
 const isWin = args.includes('--win');
-const isArm64 = args.includes('--arm64');
-const isX64 = args.includes('--x64');
-const isUniversal = args.includes('--universal');
 
 // Show help
 if (showHelp) {
@@ -25,15 +22,9 @@ Options:
   --gitee-only        只发布到 Gitee（不编译，需要先有 tag 和 dist 文件）
   --win               构建 Windows 版本
   --mac               构建 macOS 版本
-  --x64               构建 x64 架构
-  --arm64             构建 arm64 架构（仅 macOS）
-  --universal         构建 universal 架构（仅 macOS，同时包含 x64 和 arm64）
-
 Examples:
   node release.js                    # 编译 Windows x64 并发布到 GitHub 和 Gitee（默认）
-  node release.js --mac --x64        # 编译 macOS x64 并发布
-  node release.js --mac --arm64      # 编译 macOS arm64 并发布
-  node release.js --mac --universal  # 编译 macOS universal 并发布
+  node release.js --mac              # 编译 macOS 并发布
   node release.js --gitee-only       # 只发布到 Gitee（不编译）
 `);
     process.exit(0);
@@ -239,19 +230,13 @@ function getBuildCommand() {
 
     if (isMac) {
         platform = '--mac';
-        if (isUniversal) {
-            arch = '--universal';
-        } else if (isArm64) {
-            arch = '--arm64';
-        } else {
-            arch = '--x64';
-        }
+        arch = '';
     } else if (isWin) {
         platform = '--win';
         arch = '--x64';
     }
 
-    return `electron-builder ${platform} ${arch} --publish always ${extraArgs}`.trim();
+    return ['electron-builder', platform, arch, '--publish always', extraArgs].filter(Boolean).join(' ').trim();
 }
 
 // Run electron-builder
