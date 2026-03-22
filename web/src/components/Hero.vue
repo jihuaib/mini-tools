@@ -1,18 +1,24 @@
 <template>
     <section class="hero">
         <div class="hero-content container">
+            <div class="hero-badge animate-fade-in">免费开源 · 跨平台 · 专业级</div>
             <h1 class="hero-title animate-fade-in">
-                专业的网络工具集
+                <span class="gradient-text">NetNexus</span>
                 <br />
-                <span class="gradient-text">重新定义</span>
+                专业网络工具集
             </h1>
             <p class="hero-desc animate-fade-in" style="animation-delay: 0.2s">
-                Mini Tools 是一个基于 Vue3 + Electron 开发的专业网络和开发辅助工具集。 集成 BGP 模拟器、BMP 监控器、RPKI
-                验证器等多种功能于一体。
+                基于 Vue3 + Electron 构建的一站式网络协议工具集，集成 BGP 模拟器、BMP 监控器、RPKI 验证器、SNMP
+                管理器、FTP 服务器以及报文解析、TCP-AO MAC 计算等多种实用开发工具，助力网络协议研发与调试。
             </p>
             <div class="hero-actions animate-fade-in" style="animation-delay: 0.4s">
-                <button class="btn btn-primary" @click="download">立即下载</button>
-                <button class="btn btn-secondary" @click="learnMore">了解更多</button>
+                <button class="btn btn-primary" @click="learnMore">了解更多</button>
+            </div>
+            <div class="hero-platforms animate-fade-in" style="animation-delay: 0.6s">
+                <span>支持平台：</span>
+                <span class="platform-tag">Windows x64</span>
+                <span class="platform-tag">macOS x64</span>
+                <span class="platform-tag">macOS arm64</span>
             </div>
         </div>
         <div class="hero-background">
@@ -23,10 +29,6 @@
 </template>
 
 <script setup>
-    const download = () => {
-        window.open('https://github.com/jihuaib/NetNexus/releases', '_blank');
-    };
-
     const learnMore = () => {
         document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -143,6 +145,39 @@
         100% {
             transform: translate(50px, 50px);
         }
+    }
+
+    .hero-badge {
+        display: inline-block;
+        padding: 0.35rem 1rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--accent-secondary);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        letter-spacing: 0.03em;
+    }
+
+    .hero-platforms {
+        margin-top: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        flex-wrap: wrap;
+    }
+
+    .platform-tag {
+        padding: 0.2rem 0.75rem;
+        border-radius: 9999px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        font-size: 0.8rem;
     }
 
     @media (max-width: 768px) {

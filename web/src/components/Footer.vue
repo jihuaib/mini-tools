@@ -1,10 +1,11 @@
 <template>
     <footer class="footer">
         <div class="container footer-content">
-            <div class="copyright">© 2026 Mini Tools. All Rights Reserved.</div>
+            <div class="copyright">© 2026 NetNexus. All Rights Reserved.</div>
             <div class="links">
                 <a href="https://github.com/jihuaib/NetNexus" target="_blank" rel="noopener">GitHub</a>
-                <a href="https://github.com/jihuaib/NetNexus/issues" target="_blank" rel="noopener">Support</a>
+                <a href="https://github.com/jihuaib/NetNexus/tree/master/docs" target="_blank" rel="noopener">文档</a>
+                <a href="https://github.com/jihuaib/NetNexus/issues" target="_blank" rel="noopener">反馈</a>
             </div>
         </div>
     </footer>

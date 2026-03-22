@@ -2,8 +2,12 @@
     <header class="header">
         <div class="container header-container">
             <div class="logo">
-                <span class="logo-text">Mini Tools</span>
+                <span class="logo-text">NetNexus</span>
             </div>
+            <nav class="nav-links">
+                <a href="#features" @click.prevent="scrollTo('features')">功能</a>
+                <a href="#download" @click.prevent="scrollTo('download')">下载</a>
+            </nav>
             <div class="github-info">
                 <a href="https://github.com/jihuaib/NetNexus" target="_blank" class="github-link">
                     <svg
@@ -28,11 +32,7 @@
                             alt="GitHub stars"
                         />
                     </a>
-                    <a
-                        href="https://github.com/jihuaib/NetNexus/network/members"
-                        target="_blank"
-                        style="margin-left: 8px"
-                    >
+                    <a href="https://github.com/jihuaib/NetNexus/network/members" target="_blank">
                         <img
                             src="https://img.shields.io/github/forks/jihuaib/NetNexus?style=flat-square&color=1890ff&label=Forks"
                             alt="GitHub forks"
@@ -43,6 +43,12 @@
         </div>
     </header>
 </template>
+
+<script setup>
+    const scrollTo = id => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    };
+</script>
 
 <style scoped>
     .header {
@@ -98,10 +104,17 @@
     .stats {
         display: flex;
         align-items: center;
+        gap: 8px;
+    }
+
+    .stats a {
+        display: flex;
+        align-items: center;
     }
 
     .stats img {
         height: 20px;
+        display: block;
     }
 
     @media (max-width: 640px) {
@@ -109,6 +122,28 @@
             gap: 0.5rem;
         }
         .repo-name {
+            display: none;
+        }
+    }
+    .nav-links {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .nav-links a {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+        color: var(--accent-primary);
+    }
+
+    @media (max-width: 640px) {
+        .nav-links {
             display: none;
         }
     }

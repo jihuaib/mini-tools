@@ -1049,6 +1049,83 @@ export const createSnmpConfigValidationRules = () => {
 };
 
 /**
+ * 创建 TCP-AO MAC 计算验证规则
+ */
+export const createTcpAoMacValidationRules = () => {
+    const isValidHex = str => {
+        const cleaned = str.replace(/\s+/g, '').replace(/:/g, '');
+        return cleaned.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(cleaned);
+    };
+
+    return {
+        key: [
+            {
+                required: true,
+                message: '密钥不能为空'
+            }
+        ],
+        sne: [
+            {
+                validator: value => {
+                    if (!value || !value.trim()) return true;
+                    return isValidHex(value);
+                },
+                message: '必须为合法的十六进制字符串'
+            }
+        ],
+        ipPacket: [
+            {
+                required: true,
+                message: 'IP 报文不能为空'
+            },
+            {
+                validator: value => isValidHex(value),
+                message: '必须为合法的十六进制字符串'
+            }
+        ]
+    };
+};
+
+/**
+ * 创建 TCP-AO MAC 反推验证规则
+ */
+export const createTcpAoMacFindValidationRules = () => {
+    const isValidHex = str => {
+        const cleaned = str.replace(/\s+/g, '').replace(/:/g, '');
+        return cleaned.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(cleaned);
+    };
+
+    return {
+        key: [
+            {
+                required: true,
+                message: '密钥不能为空'
+            }
+        ],
+        ipPacket: [
+            {
+                required: true,
+                message: 'IP 报文不能为空'
+            },
+            {
+                validator: value => isValidHex(value),
+                message: '必须为合法的十六进制字符串'
+            }
+        ],
+        knownMac96: [
+            {
+                required: true,
+                message: '已知 MAC 不能为空'
+            },
+            {
+                validator: value => isValidHex(value),
+                message: '必须为合法的十六进制字符串'
+            }
+        ]
+    };
+};
+
+/**
  * 创建网络信息验证规则
  */
 export const createNetworkInfoValidationRules = () => {

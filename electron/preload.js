@@ -56,7 +56,10 @@ contextBridge.exposeInMainWorld('toolsApi', {
     parsePacketNoSaveHistory: packetData => ipcRenderer.invoke('tools:parsePacketNoSaveHistory', packetData),
     getPacketParserHistory: () => ipcRenderer.invoke('tools:getPacketParserHistory'),
     clearPacketParserHistory: () => ipcRenderer.invoke('tools:clearPacketParserHistory'),
-    calculateTcpAoMac: data => ipcRenderer.invoke('tools:calculateTcpAoMac', data)
+    calculateTcpAoMac: data => ipcRenderer.invoke('tools:calculateTcpAoMac', data),
+    findTcpAoMacVariant: data => ipcRenderer.invoke('tools:findTcpAoMacVariant', data),
+    saveTcpAoMacState: state => ipcRenderer.invoke('tools:saveTcpAoMacState', state),
+    getTcpAoMacState: () => ipcRenderer.invoke('tools:getTcpAoMacState')
 });
 
 // bgp模块
