@@ -1,50 +1,86 @@
 <template>
     <div class="mt-container">
-        <a-row :gutter="12" class="tcpao-row">
-            <!-- 左：MAC 计算器 -->
-            <a-col :span="12">
-                <a-card title="TCP-AO MAC 计算器" class="tcpao-card">
-                    <a-form
-                        :model="formState"
-                        :label-col="labelCol"
-                        :wrapper-col="wrapperCol"
-                        @finish="handleCalculate"
-                    >
-                        <a-form-item label="密钥 (Key)" name="key">
-                            <a-tooltip :title="validationErrors.key" :open="!!validationErrors.key">
-                                <a-input
-                                    v-model:value="formState.key"
-                                    placeholder="如: mypassword"
-                                    :status="validationErrors.key ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
+        <a-card title="TCP-AO MAC 计算器" class="tcpao-card">
+            <a-form :model="formState" layout="vertical" class="tcpao-form" @finish="handleCalculate">
+                <div class="tcpao-layout">
+                    <div class="tcpao-main">
+                        <div class="panel-block">
+                            <div class="panel-title">输入上下文</div>
+                            <a-row :gutter="12">
+                                <a-col :xs="24" :lg="12">
+                                    <a-form-item label="密钥 (Key)" name="key" class="compact-item">
+                                        <a-tooltip :title="validationErrors.key" :open="!!validationErrors.key">
+                                            <a-input
+                                                v-model:value="formState.key"
+                                                placeholder="如: mypassword"
+                                                :status="validationErrors.key ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :xs="24" :lg="12">
+                                    <a-form-item label="SNE（可选）" name="sne" class="compact-item">
+                                        <a-tooltip :title="validationErrors.sne" :open="!!validationErrors.sne">
+                                            <ScrollTextarea
+                                                v-model:model-value="formState.sne"
+                                                :height="44"
+                                                placeholder="SNE（4字节hex）"
+                                                :status="validationErrors.sne ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
 
-                        <a-form-item label="SNE（可选）" name="sne">
-                            <a-tooltip :title="validationErrors.sne" :open="!!validationErrors.sne">
-                                <ScrollTextarea
-                                    v-model:model-value="formState.sne"
-                                    :height="52"
-                                    placeholder="SNE（4字节hex），留空则不含"
-                                    :status="validationErrors.sne ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
+                            <a-row v-if="showKdfIsnInputs" :gutter="12">
+                                <a-col :xs="24" :md="12">
+                                    <a-form-item label="ISN A（可选）" name="isnA" class="compact-item">
+                                        <a-tooltip :title="validationErrors.isnA" :open="!!validationErrors.isnA">
+                                            <a-input
+                                                v-model:value="formState.isnA"
+                                                placeholder="留空取报文 Seq"
+                                                :status="validationErrors.isnA ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :xs="24" :md="12">
+                                    <a-form-item label="ISN B（可选）" name="isnB" class="compact-item">
+                                        <a-tooltip :title="validationErrors.isnB" :open="!!validationErrors.isnB">
+                                            <a-input
+                                                v-model:value="formState.isnB"
+                                                placeholder="留空取报文 Ack"
+                                                :status="validationErrors.isnB ? 'error' : ''"
+                                            />
+                                        </a-tooltip>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                            <div v-if="showKdfIsnInputs" class="field-hint">
+                                仅覆盖 KDF 使用的 ISN，上层报文里的 Seq/Ack 不会被修改。
+                            </div>
+                        </div>
 
-                        <a-form-item label="IP 报文" name="ipPacket">
-                            <a-tooltip :title="validationErrors.ipPacket" :open="!!validationErrors.ipPacket">
-                                <ScrollTextarea
-                                    v-model:model-value="formState.ipPacket"
-                                    :height="100"
-                                    placeholder="完整 IPv4 报文（hex）"
-                                    :status="validationErrors.ipPacket ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
+                        <div class="panel-block panel-block-grow">
+                            <div class="panel-title">报文输入</div>
+                            <a-form-item label="IP 报文" name="ipPacket" class="compact-item">
+                                <a-tooltip :title="validationErrors.ipPacket" :open="!!validationErrors.ipPacket">
+                                    <ScrollTextarea
+                                        v-model:model-value="formState.ipPacket"
+                                        :height="184"
+                                        placeholder="完整 IPv4 报文（hex）"
+                                        :status="validationErrors.ipPacket ? 'error' : ''"
+                                    />
+                                </a-tooltip>
+                            </a-form-item>
+                        </div>
+                    </div>
 
-                        <a-form-item label="MAC 算法">
-                            <a-radio-group v-model:value="algorithm">
-                                <a-space direction="vertical" :size="2">
+                    <div class="tcpao-side">
+                        <div class="panel-block">
+                            <div class="panel-title">算法</div>
+                            <a-form-item label="MAC 算法" class="compact-item">
+                                <a-radio-group v-model:value="algorithm" class="choice-grid algo-grid">
                                     <a-radio value="hmac-md5">HMAC-MD5</a-radio>
                                     <a-radio value="hmac-sha1">HMAC-SHA1-12</a-radio>
                                     <a-radio value="hmac-sha1-20">HMAC-SHA1-20</a-radio>
@@ -54,119 +90,37 @@
                                     <a-radio value="sha1">SHA-1</a-radio>
                                     <a-radio value="sha256">SHA-256</a-radio>
                                     <a-radio value="sm3">SM3</a-radio>
-                                </a-space>
-                            </a-radio-group>
-                        </a-form-item>
+                                </a-radio-group>
+                            </a-form-item>
+                        </div>
 
-                        <a-form-item v-if="isHmacAlgo" label=" " :colon="false">
-                            <a-checkbox v-model:checked="skipKdf">跳过 KDF（直接用 master key）</a-checkbox>
-                        </a-form-item>
+                        <div class="panel-block">
+                            <div class="panel-title">KDF 与消息构造</div>
 
-                        <a-form-item label="TCP 选项">
-                            <a-space direction="vertical" :size="2">
-                                <a-checkbox v-model:checked="includeOtherOptions">包含其他 TCP 选项</a-checkbox>
-                                <a-checkbox v-model:checked="zeroFullAoOption">TCP-AO option 整体清零</a-checkbox>
-                                <a-checkbox v-model:checked="includePseudoHeader">包含 IP 伪头部</a-checkbox>
-                            </a-space>
-                        </a-form-item>
+                            <a-form-item v-if="isKdfAlgo" class="compact-item compact-flag">
+                                <a-checkbox v-model:checked="skipKdf">跳过 KDF（直接用 master key）</a-checkbox>
+                            </a-form-item>
+                            <div v-if="isPlainAlgo && !skipKdf" class="field-hint mode-note">
+                                非 H 算法固定使用 `hash(kdfInput ‖ key)` 派生 Traffic Key，MAC 固定使用 `hash(msg ‖
+                                key)`。
+                            </div>
 
-                        <a-form-item v-if="isPlainAlgo" label="key 位置">
-                            <a-radio-group v-model:value="keyPos">
-                                <a-space direction="vertical" :size="2">
-                                    <a-radio value="end">hash(msg ‖ key)</a-radio>
-                                    <a-radio value="start">hash(key ‖ msg)</a-radio>
-                                    <a-radio value="both">hash(key ‖ msg ‖ key)</a-radio>
-                                </a-space>
-                            </a-radio-group>
-                        </a-form-item>
+                            <a-form-item label="TCP 选项" class="compact-item">
+                                <div class="stacked-checks">
+                                    <a-checkbox v-model:checked="includeOtherOptions">包含其他 TCP 选项</a-checkbox>
+                                    <a-checkbox v-model:checked="includePseudoHeader">包含 IP 伪头部</a-checkbox>
+                                </div>
+                            </a-form-item>
+                        </div>
 
-                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-                            <a-space>
-                                <a-button type="primary" html-type="submit">计算 MAC</a-button>
-                                <a-button @click="clearAll">清空</a-button>
-                            </a-space>
-                        </a-form-item>
-                    </a-form>
-                </a-card>
-            </a-col>
-
-            <!-- 右：反推 -->
-            <a-col :span="12">
-                <a-card title="反推消息构造" class="tcpao-card">
-                    <a-form :label-col="labelCol" :wrapper-col="wrapperCol">
-                        <a-form-item label="密钥 (Key)">
-                            <a-tooltip :title="findValidationErrors.key" :open="!!findValidationErrors.key">
-                                <a-input
-                                    v-model:value="findState.key"
-                                    placeholder="与计算器相同的密钥"
-                                    :status="findValidationErrors.key ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                        <a-form-item label="IP 报文">
-                            <a-tooltip :title="findValidationErrors.ipPacket" :open="!!findValidationErrors.ipPacket">
-                                <ScrollTextarea
-                                    v-model:model-value="findState.ipPacket"
-                                    :height="100"
-                                    placeholder="完整 IPv4 报文（hex）"
-                                    :status="findValidationErrors.ipPacket ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                        </a-form-item>
-                        <a-form-item label="已知 MAC-96">
-                            <a-tooltip
-                                :title="findValidationErrors.knownMac96"
-                                :open="!!findValidationErrors.knownMac96"
-                            >
-                                <a-input
-                                    v-model:value="findState.knownMac96"
-                                    placeholder="如: 0a59bd1be2d330de4c7c584b"
-                                    style="font-family: monospace"
-                                    :status="findValidationErrors.knownMac96 ? 'error' : ''"
-                                />
-                            </a-tooltip>
-                            <div class="field-hint">穷举全部算法 × 消息构造组合（含 SM3 视 OpenSSL 支持情况）</div>
-                        </a-form-item>
-                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-                            <a-button type="primary" :loading="finding" @click="handleFind">开始反推</a-button>
-                        </a-form-item>
-
-                        <template v-if="findResult !== null">
-                            <a-divider>反推结果</a-divider>
-                            <a-alert v-if="findResult.length === 0" type="warning" message="未找到匹配组合" show-icon />
-                            <template v-else>
-                                <a-alert
-                                    type="success"
-                                    :message="`找到 ${findResult.length} 个匹配组合`"
-                                    show-icon
-                                    style="margin-bottom: 8px"
-                                />
-                                <a-collapse size="small">
-                                    <a-collapse-panel
-                                        v-for="(m, i) in findResult"
-                                        :key="i"
-                                        :header="`#${i + 1} ${m.algo} | ${m.sne} | ${m.pseudo} | ${m.checksum} | ${m.zero} | ${m.options}`"
-                                    >
-                                        <p>
-                                            <b>消息体：</b>
-                                            <span
-                                                style="font-family: monospace; word-break: break-all; font-size: 11px"
-                                            >
-                                                {{ m.messageHex }}
-                                            </span>
-                                        </p>
-                                        <p>
-                                            <b>完整 MAC：</b>
-                                            <span style="font-family: monospace">{{ m.mac }}</span>
-                                        </p>
-                                    </a-collapse-panel>
-                                </a-collapse>
-                            </template>
-                        </template>
-                    </a-form>
-                </a-card>
-            </a-col>
-        </a-row>
+                        <div class="action-bar">
+                            <a-button type="primary" html-type="submit">计算 MAC</a-button>
+                            <a-button @click="clearAll">清空</a-button>
+                        </div>
+                    </div>
+                </div>
+            </a-form>
+        </a-card>
 
         <!-- 计算结果弹出框 -->
         <a-modal v-model:open="showResultModal" title="MAC 计算结果" :footer="null" width="680px">
@@ -223,47 +177,34 @@
     import ScrollTextarea from '../../components/ScrollTextarea.vue';
     import { ref, computed, onMounted } from 'vue';
     import { message } from 'ant-design-vue';
-    import {
-        FormValidator,
-        createTcpAoMacValidationRules,
-        createTcpAoMacFindValidationRules
-    } from '../../utils/validationCommon';
+    import { FormValidator, createTcpAoMacValidationRules } from '../../utils/validationCommon';
 
     defineOptions({
         name: 'TcpAoMac'
     });
 
-    const labelCol = { style: { width: '100px' } };
-    const wrapperCol = { span: 24 };
-
-    const validationErrors = ref({ key: '', sne: '', ipPacket: '' });
+    const validationErrors = ref({ key: '', sne: '', ipPacket: '', isnA: '', isnB: '' });
     const validator = new FormValidator(validationErrors);
     validator.addRules(createTcpAoMacValidationRules());
-
-    const findValidationErrors = ref({ key: '', ipPacket: '', knownMac96: '' });
-    const findValidator = new FormValidator(findValidationErrors);
-    findValidator.addRules(createTcpAoMacFindValidationRules());
 
     defineExpose({
         clearValidationErrors: () => {
             validator.clearErrors();
-            findValidator.clearErrors();
         }
     });
     const result = ref(null);
     const showResultModal = ref(false);
-    const formState = ref({ key: '', sne: '', ipPacket: '' });
-    const findState = ref({ key: '', ipPacket: '', knownMac96: '' });
+    const formState = ref({ key: '', sne: '', ipPacket: '', isnA: '', isnB: '' });
     const includeOtherOptions = ref(true);
     const algorithm = ref('hmac-sha1');
     const skipKdf = ref(false);
-    const keyPos = ref('end');
 
     const PLAIN_ALGOS = ['md5', 'sha1', 'sha256', 'sm3'];
     const HMAC_ALGOS = ['hmac-sha1', 'hmac-sha1-20', 'hmac-md5', 'hmac-sha256', 'aes-cmac'];
     const isPlainAlgo = computed(() => PLAIN_ALGOS.includes(algorithm.value));
     const isHmacAlgo = computed(() => HMAC_ALGOS.includes(algorithm.value));
-    const zeroFullAoOption = ref(false);
+    const isKdfAlgo = computed(() => isHmacAlgo.value || isPlainAlgo.value);
+    const showKdfIsnInputs = computed(() => isKdfAlgo.value && !skipKdf.value);
     const includePseudoHeader = ref(true);
 
     const saveState = () => {
@@ -271,11 +212,8 @@
             formState: { ...formState.value },
             algorithm: algorithm.value,
             skipKdf: skipKdf.value,
-            keyPos: keyPos.value,
             includeOtherOptions: includeOtherOptions.value,
-            zeroFullAoOption: zeroFullAoOption.value,
-            includePseudoHeader: includePseudoHeader.value,
-            findState: { ...findState.value }
+            includePseudoHeader: includePseudoHeader.value
         });
     };
 
@@ -286,11 +224,8 @@
             if (s.formState) formState.value = s.formState;
             if (s.algorithm) algorithm.value = s.algorithm;
             if (s.skipKdf !== undefined) skipKdf.value = s.skipKdf;
-            if (s.keyPos) keyPos.value = s.keyPos;
             if (s.includeOtherOptions !== undefined) includeOtherOptions.value = s.includeOtherOptions;
-            if (s.zeroFullAoOption !== undefined) zeroFullAoOption.value = s.zeroFullAoOption;
             if (s.includePseudoHeader !== undefined) includePseudoHeader.value = s.includePseudoHeader;
-            if (s.findState) findState.value = s.findState;
         }
     });
 
@@ -308,8 +243,8 @@
                 includeOtherOptions: includeOtherOptions.value,
                 algorithm: algorithm.value,
                 skipKdf: skipKdf.value,
-                keyPos: keyPos.value,
-                zeroFullAoOption: zeroFullAoOption.value,
+                isnA: formState.value.isnA,
+                isnB: formState.value.isnB,
                 includePseudoHeader: includePseudoHeader.value
             });
 
@@ -328,47 +263,14 @@
     };
 
     const clearAll = () => {
-        formState.value = { key: '', sne: '', ipPacket: '' };
+        formState.value = { key: '', sne: '', ipPacket: '', isnA: '', isnB: '' };
         validator.clearErrors();
         includeOtherOptions.value = true;
         algorithm.value = 'hmac-sha1';
         skipKdf.value = false;
-        keyPos.value = 'end';
-        zeroFullAoOption.value = false;
         includePseudoHeader.value = true;
         result.value = null;
         showResultModal.value = false;
-    };
-
-    const findResult = ref(null);
-    const finding = ref(false);
-
-    const handleFind = async () => {
-        if (findValidator.validate(findState.value)) {
-            message.error('请检查输入是否正确');
-            return;
-        }
-        finding.value = true;
-        findResult.value = null;
-        try {
-            const resp = await window.toolsApi.findTcpAoMacVariant({
-                key: findState.value.key,
-                ipPacket: findState.value.ipPacket,
-                knownMac96: findState.value.knownMac96
-            });
-            if (resp.status === 'success') {
-                findResult.value = resp.data.matches;
-                if (resp.data.matches.length > 0) message.success(resp.msg);
-                else message.warning('未找到匹配组合');
-                saveState();
-            } else {
-                message.error(resp.msg || '反推失败');
-            }
-        } catch (e) {
-            message.error(e.message || String(e));
-        } finally {
-            finding.value = false;
-        }
     };
 
     const copyToClipboard = text => {
@@ -389,18 +291,128 @@
 </script>
 
 <style scoped>
-    .tcpao-row {
-        align-items: flex-start;
-    }
-
     .tcpao-card {
         height: 100%;
     }
 
+    .tcpao-card :deep(.ant-card-head) {
+        min-height: 38px !important;
+    }
+
+    .tcpao-card :deep(.ant-card-head-title) {
+        padding: 8px 0 !important;
+    }
+
+    .tcpao-card :deep(.ant-card-body) {
+        padding: 8px !important;
+    }
+
+    .tcpao-form :deep(.ant-form-item) {
+        margin-bottom: 10px;
+    }
+
+    .tcpao-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.9fr);
+        gap: 12px;
+    }
+
+    .tcpao-main,
+    .tcpao-side {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .panel-block {
+        padding: 12px;
+        border: 1px solid #e8edf3;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fcfdff 0%, #f7f9fc 100%);
+    }
+
+    .panel-block-grow {
+        flex: 1;
+    }
+
+    .panel-title {
+        margin-bottom: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        letter-spacing: 0.01em;
+    }
+
+    .compact-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .compact-flag {
+        margin-bottom: 8px;
+    }
+
+    .choice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        width: 100%;
+    }
+
+    .algo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .choice-grid :deep(.ant-radio-wrapper) {
+        margin-inline-end: 0;
+        min-height: 34px;
+        padding: 6px 8px;
+        border: 1px solid #d7dee8;
+        border-radius: 10px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        line-height: 1.35;
+        transition:
+            border-color 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .choice-grid :deep(.ant-radio-wrapper:hover) {
+        border-color: #91caff;
+    }
+
+    .choice-grid :deep(.ant-radio-wrapper-checked) {
+        border-color: #1677ff;
+        background: #eff6ff;
+        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.08);
+    }
+
+    .stacked-checks {
+        display: grid;
+        gap: 8px;
+    }
+
+    .stacked-checks :deep(.ant-checkbox-wrapper) {
+        margin-inline-start: 0;
+    }
+
+    .action-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 2px 0 0;
+    }
+
     .field-hint {
         font-size: 12px;
-        color: #888;
+        color: #64748b;
         margin-top: 4px;
+    }
+
+    .mode-note {
+        margin-bottom: 10px;
     }
 
     .result-row {
@@ -409,9 +421,31 @@
         gap: 8px;
     }
 
-    .algo-group-label {
-        font-size: 11px;
-        color: #aaa;
-        margin-top: 4px;
+    @media (max-width: 960px) {
+        .tcpao-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .algo-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 860px) {
+        .algo-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .panel-block {
+            padding: 12px;
+        }
+
+        .action-bar {
+            justify-content: stretch;
+        }
+
+        .action-bar :deep(.ant-btn) {
+            flex: 1;
+        }
     }
 </style>

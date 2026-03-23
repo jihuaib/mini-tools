@@ -5,6 +5,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
+const { createHashCompat } = require('../utils/hashUtils');
 
 class ToolsApp {
     constructor(ipc, store) {
@@ -37,7 +38,6 @@ class ToolsApp {
 
         // TCP-AO MAC 计算器
         ipc.handle('tools:calculateTcpAoMac', async (event, data) => this.handleCalculateTcpAoMac(event, data));
-        ipc.handle('tools:findTcpAoMacVariant', async (event, data) => this.handleFindTcpAoMacVariant(event, data));
         ipc.handle('tools:saveTcpAoMacState', async (_event, state) => this.handleSaveTcpAoMacState(state));
         ipc.handle('tools:getTcpAoMacState', async () => this.handleGetTcpAoMacState());
     }
@@ -218,11 +218,7 @@ class ToolsApp {
         const tcpLength = totalLength - ihl;
         if (tcpLength < 20) throw new Error(`TCP 段长度不足（最少 20 字节）: ${tcpLength}`);
 
-        // rawTcpSegment：保留原始校验和；tcpSegment：校验和清零（RFC 5925 §5.1）
         const rawTcpSegment = Buffer.from(buf.subarray(ihl, totalLength));
-        const tcpSegment = Buffer.from(rawTcpSegment);
-        tcpSegment[16] = 0;
-        tcpSegment[17] = 0;
 
         // IPv4 伪头部：源IP(4) + 目的IP(4) + 00(1) + 协议(1) + TCP段长度(2)
         const pseudoHeader = Buffer.alloc(12);
@@ -232,31 +228,49 @@ class ToolsApp {
         pseudoHeader[9] = protocol;
         pseudoHeader.writeUInt16BE(tcpLength, 10);
 
-        return { pseudoHeader, tcpSegment, rawTcpSegment };
+        return { pseudoHeader, rawTcpSegment };
     }
 
-    zeroNonTcpAoOptions(tcpSegment) {
+    extractTcpAoOptions(tcpSegment) {
         const dataOffset = (tcpSegment[12] >> 4) * 4;
-        if (dataOffset <= 20 || dataOffset > tcpSegment.length) return tcpSegment;
-        const result = Buffer.from(tcpSegment);
+        if (dataOffset <= 20 || dataOffset > tcpSegment.length) return Buffer.alloc(0);
+        const options = [];
         let i = 20;
         while (i < dataOffset) {
-            const kind = result[i];
+            const kind = tcpSegment[i];
             if (kind === 0) break;
             if (kind === 1) {
-                result[i] = 0;
                 i++;
                 continue;
             }
             if (i + 1 >= dataOffset) break;
-            const len = result[i + 1];
+            const len = tcpSegment[i + 1];
             if (len < 2 || i + len > dataOffset) break;
-            if (kind !== 29) {
-                result.fill(0, i, i + len);
+            if (kind === 29) {
+                options.push(Buffer.from(tcpSegment.subarray(i, i + len)));
             }
             i += len;
         }
-        return result;
+        return Buffer.concat(options);
+    }
+
+    buildTcpSegmentForMac(rawTcpSegment, includeOtherOptions) {
+        const normalized = Buffer.from(rawTcpSegment);
+        normalized[16] = 0;
+        normalized[17] = 0;
+
+        const dataOffset = (normalized[12] >> 4) * 4;
+        if (dataOffset < 20 || dataOffset > rawTcpSegment.length) {
+            throw new Error(`TCP Data Offset 非法: ${dataOffset}`);
+        }
+
+        const header = Buffer.from(normalized.subarray(0, 20));
+        const options = includeOtherOptions
+            ? Buffer.from(normalized.subarray(20, dataOffset))
+            : this.extractTcpAoOptions(normalized);
+        const payload = Buffer.from(normalized.subarray(dataOffset));
+
+        return Buffer.concat([header, options, payload]);
     }
 
     // RFC 4615: 将任意长度的 master key 规范化为 16 字节 AES 密钥
@@ -309,9 +323,9 @@ class ToolsApp {
         return aesBlock(xor16(X, last));
     }
 
-    zeroTcpAoMacField(tcpSegment, fullOption = false) {
+    zeroTcpAoMacField(tcpSegment) {
         const result = Buffer.from(tcpSegment);
-        const dataOffset = (result[12] >> 4) * 4;
+        const dataOffset = Math.min((result[12] >> 4) * 4, result.length);
         let i = 20;
         while (i < dataOffset) {
             const kind = result[i];
@@ -324,22 +338,46 @@ class ToolsApp {
             const len = result[i + 1];
             if (len < 2 || i + len > dataOffset) break;
             if (kind === 29 && len >= 4) {
-                // fullOption=true: 整个 AO option 清零（含 kind/len/keyid/rnextkeyid）
-                // fullOption=false: 仅清零 MAC 字段（跳过前 4 字节）
-                const start = fullOption ? i : i + 4;
-                result.fill(0, start, i + len);
+                result.fill(0, i + 4, i + len);
             }
             i += len;
         }
         return result;
     }
 
-    deriveTrafficKey(masterKeyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, hashAlgo) {
-        // RFC 5926 §3.1 KDF_HMAC_MD5 / §3.2 KDF_HMAC_SHA1
-        // T1 = HMAC-<algo>(Master_Key, "TCP-AO" \x00 Context Length(2) \x01)
-        // Context = SrcIP(4) || DstIP(4) || SrcPort(2) || DstPort(2) || ISN_A(4) || ISN_B(4)
-        // RFC 5926 §3.1 PRF+ 构造：T1 = PRF(Master_Key, 0x01 || Label || 0x00 || Context || Length)
-        // Context = SrcIP(4) || DstIP(4) || SrcPort(2) || DstPort(2) || ISN_A(4) || ISN_B(4)
+    getTcpAoMacFieldLength(tcpSegment) {
+        const dataOffset = Math.min((tcpSegment[12] >> 4) * 4, tcpSegment.length);
+        let i = 20;
+        while (i < dataOffset) {
+            const kind = tcpSegment[i];
+            if (kind === 0) break;
+            if (kind === 1) {
+                i++;
+                continue;
+            }
+            if (i + 1 >= dataOffset) break;
+            const len = tcpSegment[i + 1];
+            if (len < 2 || i + len > dataOffset) break;
+            if (kind === 29 && len >= 4) {
+                return len - 4;
+            }
+            i += len;
+        }
+        return null;
+    }
+
+    extractTcpAoKdfContext(ipBuf, rawTcpSegment) {
+        return {
+            srcIp: ipBuf.subarray(12, 16),
+            dstIp: ipBuf.subarray(16, 20),
+            srcPort: rawTcpSegment.readUInt16BE(0),
+            dstPort: rawTcpSegment.readUInt16BE(2),
+            isnA: rawTcpSegment.readUInt32BE(4),
+            isnB: rawTcpSegment.readUInt32BE(8)
+        };
+    }
+
+    buildTcpAoKdfInput(srcIp, dstIp, srcPort, dstPort, isnA, isnB, outputBits) {
         const label = Buffer.from('TCP-AO', 'ascii');
         const context = Buffer.alloc(20);
         srcIp.copy(context, 0);
@@ -348,34 +386,84 @@ class ToolsApp {
         context.writeUInt16BE(dstPort, 10);
         context.writeUInt32BE(isnA, 12);
         context.writeUInt32BE(isnB, 16);
-        // RFC 5926: Output_Length in bits — sha1=160, md5/aes-cmac=128, sha256=256
-        const lengthBitsMap = { sha1: 0x00a0, md5: 0x0080, sha256: 0x0100, 'aes-cmac': 0x0080 };
+
         const length = Buffer.alloc(2);
-        length.writeUInt16BE(lengthBitsMap[hashAlgo] || 0x0080, 0);
-        // RFC 5926 §3.1.1: i || Label || Context || Output_Length（无分隔符）
-        const kdfInput = Buffer.concat([Buffer.from([0x01]), label, context, length]);
+        length.writeUInt16BE(outputBits, 0);
+        return Buffer.concat([Buffer.from([0x01]), label, context, length]);
+    }
+
+    computePlainHashWithKey(algorithm, keyBuf, msgBuf) {
+        const hash = createHashCompat(algorithm);
+        hash.update(msgBuf);
+        hash.update(keyBuf);
+        return hash.digest();
+    }
+
+    parseOptionalUint32Input(value, fieldName) {
+        if (value === undefined || value === null) return null;
+        const text = String(value).trim();
+        if (!text) return null;
+
+        let num;
+        if (/^0x[0-9a-fA-F]+$/.test(text)) {
+            num = Number.parseInt(text.slice(2), 16);
+        } else if (/^\d+$/.test(text)) {
+            num = Number.parseInt(text, 10);
+        } else {
+            throw new Error(`${fieldName} 必须是十进制或 0x 十六进制的 32 位无符号整数`);
+        }
+
+        if (!Number.isInteger(num) || num < 0 || num > 0xffffffff) {
+            throw new Error(`${fieldName} 超出 32 位无符号整数范围`);
+        }
+        return num >>> 0;
+    }
+
+    deriveTrafficKey(masterKeyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, hashAlgo) {
+        // RFC 5926 标准定义了 HMAC-SHA1 / AES-128-CMAC。
+        // 这里保留 SHA-256 / HMAC-MD5 这类实验性 PRF，方便和厂商实现做比对。
+        const lengthBitsMap = { sha1: 0x00a0, md5: 0x0080, sha256: 0x0100, 'aes-cmac': 0x0080 };
+        const outputBits = lengthBitsMap[hashAlgo];
+        if (!outputBits) {
+            throw new Error(`Unsupported TCP-AO KDF algorithm: ${hashAlgo}`);
+        }
+
+        const kdfInput = this.buildTcpAoKdfInput(srcIp, dstIp, srcPort, dstPort, isnA, isnB, outputBits);
         if (hashAlgo === 'aes-cmac') {
             return this.computeAesCmac(this.normalizeAesKey(masterKeyBuf), kdfInput);
         }
+
         const prfMap = { sha1: 'sha1', md5: 'md5', sha256: 'sha256' };
-        return crypto
-            .createHmac(prfMap[hashAlgo] || 'sha1', masterKeyBuf)
-            .update(kdfInput)
-            .digest();
+        const prfAlgo = prfMap[hashAlgo];
+        if (!prfAlgo) {
+            throw new Error(`Unsupported TCP-AO PRF algorithm: ${hashAlgo}`);
+        }
+
+        return crypto.createHmac(prfAlgo, masterKeyBuf).update(kdfInput).digest();
+    }
+
+    derivePlainTrafficKey(masterKeyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, algorithm) {
+        const outputBitsMap = { md5: 0x0080, sha1: 0x00a0, sha256: 0x0100, sm3: 0x0100 };
+        const outputBits = outputBitsMap[algorithm];
+        if (!outputBits) {
+            throw new Error(`Unsupported plain KDF algorithm: ${algorithm}`);
+        }
+
+        const kdfInput = this.buildTcpAoKdfInput(srcIp, dstIp, srcPort, dstPort, isnA, isnB, outputBits);
+        return this.computePlainHashWithKey(algorithm, masterKeyBuf, kdfInput);
     }
 
     async handleCalculateTcpAoMac(
         _event,
-        { key, sne, ipPacket, includeOtherOptions, algorithm, skipKdf, keyPos, zeroFullAoOption, includePseudoHeader }
+        { key, sne, ipPacket, includeOtherOptions, algorithm, skipKdf, isnA, isnB, includePseudoHeader }
     ) {
         try {
             const keyBuf = Buffer.from(key, 'utf8');
             const sneBuf = sne && sne.trim() ? this.hexToBuffer(sne) : Buffer.alloc(0);
             const ipBuf = this.hexToBuffer(ipPacket);
 
-            const { pseudoHeader, tcpSegment: rawTcpSegment } = this.parseIpv4Packet(ipBuf);
-            let tcpSegment = includeOtherOptions ? rawTcpSegment : this.zeroNonTcpAoOptions(rawTcpSegment);
-            tcpSegment = this.zeroTcpAoMacField(tcpSegment, !!zeroFullAoOption);
+            const { pseudoHeader, rawTcpSegment } = this.parseIpv4Packet(ipBuf);
+            const tcpSegment = this.buildTcpSegmentForMac(this.zeroTcpAoMacField(rawTcpSegment), includeOtherOptions);
 
             const pseudoPart = includePseudoHeader ? pseudoHeader : Buffer.alloc(0);
             const msgBuf = Buffer.concat([sneBuf, pseudoPart, tcpSegment]);
@@ -394,16 +482,29 @@ class ToolsApp {
                 sha256: 32,
                 sm3: 32
             };
-            const macLen = macLenMap[algorithm] || 12;
+            const packetMacLen = this.getTcpAoMacFieldLength(rawTcpSegment);
+            const macLen = packetMacLen ?? macLenMap[algorithm] ?? 12;
+            const kdfContext = this.extractTcpAoKdfContext(ipBuf, rawTcpSegment);
+            const effectiveIsnA = this.parseOptionalUint32Input(isnA, 'ISN A') ?? kdfContext.isnA;
+            const effectiveIsnB = this.parseOptionalUint32Input(isnB, 'ISN B') ?? kdfContext.isnB;
 
             const PLAIN_ALGOS = ['md5', 'sha1', 'sha256', 'sm3'];
             if (PLAIN_ALGOS.includes(algorithm)) {
-                // 纯哈希：hash(key? || msg || key?)
-                const hash = crypto.createHash(algorithm);
-                if (keyPos === 'start' || keyPos === 'both') hash.update(keyBuf);
-                hash.update(msgBuf);
-                if (keyPos !== 'start') hash.update(keyBuf);
-                macFull = hash.digest();
+                let plainKeyBuf = keyBuf;
+                if (!skipKdf) {
+                    plainKeyBuf = this.derivePlainTrafficKey(
+                        keyBuf,
+                        kdfContext.srcIp,
+                        kdfContext.dstIp,
+                        kdfContext.srcPort,
+                        kdfContext.dstPort,
+                        effectiveIsnA,
+                        effectiveIsnB,
+                        algorithm
+                    );
+                    trafficKeyHex = plainKeyBuf.toString('hex').toUpperCase();
+                }
+                macFull = this.computePlainHashWithKey(algorithm, plainKeyBuf, msgBuf);
             } else {
                 // HMAC / AES-128-CMAC
                 const kdfAlgoMap = {
@@ -417,20 +518,14 @@ class ToolsApp {
                 if (skipKdf) {
                     hmacKey = keyBuf;
                 } else {
-                    const srcIp = ipBuf.subarray(12, 16);
-                    const dstIp = ipBuf.subarray(16, 20);
-                    const srcPort = rawTcpSegment.readUInt16BE(0);
-                    const dstPort = rawTcpSegment.readUInt16BE(2);
-                    const isnA = rawTcpSegment.readUInt32BE(4);
-                    const isnB = rawTcpSegment.readUInt32BE(8);
                     hmacKey = this.deriveTrafficKey(
                         keyBuf,
-                        srcIp,
-                        dstIp,
-                        srcPort,
-                        dstPort,
-                        isnA,
-                        isnB,
+                        kdfContext.srcIp,
+                        kdfContext.dstIp,
+                        kdfContext.srcPort,
+                        kdfContext.dstPort,
+                        effectiveIsnA,
+                        effectiveIsnB,
                         kdfAlgoMap[algorithm]
                     );
                     trafficKeyHex = hmacKey.toString('hex').toUpperCase();
@@ -462,148 +557,6 @@ class ToolsApp {
             );
         } catch (err) {
             logger.error('TCP-AO MAC 计算错误:', err.message);
-            return errorResponse(err.message);
-        }
-    }
-
-    computeOneMac(keyBuf, sneBuf, pseudoHeader, tcpSegment, algorithm, keyPos) {
-        if (algorithm === 'hmac-md5' || algorithm === 'hmac-sha1') {
-            const hashAlgo = algorithm === 'hmac-sha1' ? 'sha1' : 'md5';
-            const msgBuf = Buffer.concat([sneBuf, pseudoHeader, tcpSegment]);
-            return { mac: crypto.createHmac(hashAlgo, keyBuf).update(msgBuf).digest(), msgBuf };
-        }
-        // plain MD5
-        const msgBuf = Buffer.concat([sneBuf, pseudoHeader, tcpSegment]);
-        const hash = crypto.createHash('md5');
-        if (keyPos === 'start' || keyPos === 'both') hash.update(keyBuf);
-        hash.update(msgBuf);
-        if (keyPos !== 'start') hash.update(keyBuf);
-        return { mac: hash.digest(), msgBuf };
-    }
-
-    async handleFindTcpAoMacVariant(_event, { key, ipPacket, knownMac96 }) {
-        try {
-            const keyBuf = Buffer.from(key, 'utf8');
-            const ipBuf = this.hexToBuffer(ipPacket);
-            const target = this.hexToBuffer(knownMac96);
-
-            const { pseudoHeader, tcpSegment: tcpChecksumZeroed, rawTcpSegment } = this.parseIpv4Packet(ipBuf);
-
-            const srcIp = ipBuf.subarray(12, 16);
-            const dstIp = ipBuf.subarray(16, 20);
-            const srcPort = rawTcpSegment.readUInt16BE(0);
-            const dstPort = rawTcpSegment.readUInt16BE(2);
-            const isnA = rawTcpSegment.readUInt32BE(4);
-            const isnB = rawTcpSegment.readUInt32BE(8);
-
-            // 派生各算法 Traffic Key
-            const tkMd5 = this.deriveTrafficKey(keyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, 'md5');
-            const tkSha1 = this.deriveTrafficKey(keyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, 'sha1');
-            const tkSha256 = this.deriveTrafficKey(keyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, 'sha256');
-            const tkCmac = this.deriveTrafficKey(keyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, 'aes-cmac');
-
-            const matches = [];
-
-            const sneVariants = [
-                { label: '无SNE', buf: Buffer.alloc(0) },
-                { label: 'SNE=0', buf: Buffer.alloc(4) }
-            ];
-            const pseudoVariants = [
-                { label: '含伪头部', buf: pseudoHeader },
-                { label: '无伪头部', buf: Buffer.alloc(0) }
-            ];
-            const checksumVariants = [
-                { label: '校验和清零', tcp: tcpChecksumZeroed },
-                { label: '校验和原值', tcp: rawTcpSegment }
-            ];
-            const zeroVariants = [
-                { label: 'MAC字段清零', full: false },
-                { label: 'AO整体清零', full: true }
-            ];
-            const optionVariants = [
-                { label: '含其他选项', includeOther: true },
-                { label: '其他选项清零', includeOther: false }
-            ];
-
-            // 算法变体：plain 类用 keyPos，HMAC/CMAC 类用 hmacKey
-            const plainAlgos = ['md5', 'sha1', 'sha256'];
-            try {
-                crypto.createHash('sm3').digest();
-                plainAlgos.push('sm3');
-            } catch (_) {
-                /* SM3 not available */
-            }
-
-            const algoVariants = [
-                ...plainAlgos.flatMap(a => {
-                    const macLen = a === 'md5' ? 16 : a === 'sha1' ? 20 : 32;
-                    return [
-                        { label: `${a.toUpperCase()} key尾`, type: 'plain', algo: a, keyPos: 'end', macLen },
-                        { label: `${a.toUpperCase()} key首`, type: 'plain', algo: a, keyPos: 'start', macLen },
-                        { label: `${a.toUpperCase()} key首尾`, type: 'plain', algo: a, keyPos: 'both', macLen }
-                    ];
-                }),
-                { label: 'HMAC-MD5 无KDF', type: 'hmac', algo: 'md5', hmacKey: keyBuf, macLen: 12 },
-                { label: 'HMAC-MD5 KDF', type: 'hmac', algo: 'md5', hmacKey: tkMd5, macLen: 12 },
-                { label: 'HMAC-SHA1-12 无KDF', type: 'hmac', algo: 'sha1', hmacKey: keyBuf, macLen: 12 },
-                { label: 'HMAC-SHA1-12 KDF', type: 'hmac', algo: 'sha1', hmacKey: tkSha1, macLen: 12 },
-                { label: 'HMAC-SHA1-20 无KDF', type: 'hmac', algo: 'sha1', hmacKey: keyBuf, macLen: 20 },
-                { label: 'HMAC-SHA1-20 KDF', type: 'hmac', algo: 'sha1', hmacKey: tkSha1, macLen: 20 },
-                { label: 'HMAC-SHA256 无KDF', type: 'hmac', algo: 'sha256', hmacKey: keyBuf, macLen: 12 },
-                { label: 'HMAC-SHA256 KDF', type: 'hmac', algo: 'sha256', hmacKey: tkSha256, macLen: 12 },
-                { label: 'AES-128-CMAC 无KDF', type: 'cmac', hmacKey: this.normalizeAesKey(keyBuf), macLen: 12 },
-                { label: 'AES-128-CMAC KDF', type: 'cmac', hmacKey: this.normalizeAesKey(tkCmac), macLen: 12 }
-            ];
-
-            for (const sneV of sneVariants) {
-                for (const pseudoV of pseudoVariants) {
-                    for (const csV of checksumVariants) {
-                        for (const zeroV of zeroVariants) {
-                            for (const optV of optionVariants) {
-                                let tcp = optV.includeOther ? csV.tcp : this.zeroNonTcpAoOptions(csV.tcp);
-                                tcp = this.zeroTcpAoMacField(tcp, zeroV.full);
-                                const msgBuf = Buffer.concat([sneV.buf, pseudoV.buf, tcp]);
-
-                                for (const algoV of algoVariants) {
-                                    let mac;
-                                    if (algoV.type === 'plain') {
-                                        const h = crypto.createHash(algoV.algo);
-                                        if (algoV.keyPos === 'start' || algoV.keyPos === 'both') h.update(keyBuf);
-                                        h.update(msgBuf);
-                                        if (algoV.keyPos !== 'start') h.update(keyBuf);
-                                        mac = h.digest();
-                                    } else if (algoV.type === 'cmac') {
-                                        mac = this.computeAesCmac(algoV.hmacKey, msgBuf);
-                                    } else {
-                                        mac = crypto.createHmac(algoV.algo, algoV.hmacKey).update(msgBuf).digest();
-                                    }
-
-                                    const cmpLen = Math.min(algoV.macLen || mac.length, target.length);
-                                    if (mac.subarray(0, cmpLen).equals(target.subarray(0, cmpLen))) {
-                                        matches.push({
-                                            algo: algoV.label,
-                                            sne: sneV.label,
-                                            pseudo: pseudoV.label,
-                                            checksum: csV.label,
-                                            zero: zeroV.label,
-                                            options: optV.label,
-                                            messageHex: msgBuf.toString('hex').toUpperCase(),
-                                            mac: mac.toString('hex').toUpperCase()
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return successResponse(
-                { matches },
-                matches.length > 0 ? `找到 ${matches.length} 个匹配` : '未找到匹配组合'
-            );
-        } catch (err) {
-            logger.error('TCP-AO 反推错误:', err.message);
             return errorResponse(err.message);
         }
     }

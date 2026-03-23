@@ -1056,6 +1056,19 @@ export const createTcpAoMacValidationRules = () => {
         const cleaned = str.replace(/\s+/g, '').replace(/:/g, '');
         return cleaned.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(cleaned);
     };
+    const isValidUint32Input = value => {
+        if (!value || !String(value).trim()) return true;
+        const text = String(value).trim();
+        let num;
+        if (/^0x[0-9a-fA-F]+$/.test(text)) {
+            num = Number.parseInt(text.slice(2), 16);
+        } else if (/^\d+$/.test(text)) {
+            num = Number.parseInt(text, 10);
+        } else {
+            return false;
+        }
+        return Number.isInteger(num) && num >= 0 && num <= 4294967295;
+    };
 
     return {
         key: [
@@ -1082,44 +1095,17 @@ export const createTcpAoMacValidationRules = () => {
                 validator: value => isValidHex(value),
                 message: '必须为合法的十六进制字符串'
             }
-        ]
-    };
-};
-
-/**
- * 创建 TCP-AO MAC 反推验证规则
- */
-export const createTcpAoMacFindValidationRules = () => {
-    const isValidHex = str => {
-        const cleaned = str.replace(/\s+/g, '').replace(/:/g, '');
-        return cleaned.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(cleaned);
-    };
-
-    return {
-        key: [
+        ],
+        isnA: [
             {
-                required: true,
-                message: '密钥不能为空'
+                validator: isValidUint32Input,
+                message: '必须是十进制或0x十六进制的32位无符号整数'
             }
         ],
-        ipPacket: [
+        isnB: [
             {
-                required: true,
-                message: 'IP 报文不能为空'
-            },
-            {
-                validator: value => isValidHex(value),
-                message: '必须为合法的十六进制字符串'
-            }
-        ],
-        knownMac96: [
-            {
-                required: true,
-                message: '已知 MAC 不能为空'
-            },
-            {
-                validator: value => isValidHex(value),
-                message: '必须为合法的十六进制字符串'
+                validator: isValidUint32Input,
+                message: '必须是十进制或0x十六进制的32位无符号整数'
             }
         ]
     };
