@@ -1,0 +1,116 @@
+<template>
+    <div class="mt-container">
+        <a-row>
+            <a-col :span="24">
+                <a-card title="租约列表">
+                    <template #extra>
+                        <a-button size="small" @click="loadLeaseList">刷新</a-button>
+                    </template>
+                    <a-table
+                        :columns="columns"
+                        :data-source="leaseList"
+                        :row-key="record => record.macAddr"
+                        :pagination="{ pageSize: 20, showSizeChanger: false, position: ['bottomCenter'] }"
+                        :scroll="{ y: 500 }"
+                        size="small"
+                    >
+                        <template #bodyCell="{ column, record }">
+                            <template v-if="column.key === 'status'">
+                                <a-tag :color="record.status === 'active' ? 'success' : 'default'">
+                                    {{ record.status === 'active' ? '有效' : '已过期' }}
+                                </a-tag>
+                            </template>
+                            <template v-if="column.key === 'action'">
+                                <a-popconfirm
+                                    title="确认释放此租约？"
+                                    ok-text="确认"
+                                    cancel-text="取消"
+                                    @confirm="releaseLease(record)"
+                                >
+                                    <a-button type="link" danger size="small">释放</a-button>
+                                </a-popconfirm>
+                            </template>
+                        </template>
+                    </a-table>
+                </a-card>
+            </a-col>
+        </a-row>
+    </div>
+</template>
+
+<script setup>
+    import { ref, onActivated, onDeactivated } from 'vue';
+    import { message } from 'ant-design-vue';
+    import { DHCP_SUB_EVT_TYPES, DHCP_EVENT_PAGE_ID } from '../../const/dhcpConst';
+    import EventBus from '../../utils/eventBus';
+
+    defineOptions({ name: 'DhcpLeaseList' });
+
+    const leaseList = ref([]);
+
+    const columns = [
+        { title: 'MAC地址', dataIndex: 'macAddr', key: 'macAddr', ellipsis: true },
+        { title: 'IP地址', dataIndex: 'ip', key: 'ip', width: 140 },
+        { title: '主机名', dataIndex: 'hostname', key: 'hostname', ellipsis: true },
+        { title: '租约时间(秒)', dataIndex: 'leaseTime', key: 'leaseTime', width: 110 },
+        { title: '分配时间', dataIndex: 'startTime', key: 'startTime', ellipsis: true },
+        { title: '到期时间', dataIndex: 'expiresAt', key: 'expiresAt', ellipsis: true },
+        { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
+        { title: '操作', key: 'action', width: 80 }
+    ];
+
+    const loadLeaseList = async () => {
+        try {
+            const result = await window.dhcpApi.getLeaseList();
+            if (result.status === 'success') {
+                leaseList.value = result.data || [];
+            }
+        } catch (error) {
+            console.error('加载租约列表失败:', error);
+        }
+    };
+
+    const releaseLease = async record => {
+        try {
+            const result = await window.dhcpApi.releaseLease(record.macAddr);
+            if (result.status === 'success') {
+                message.success(`租约 ${record.macAddr} 已释放`);
+            } else {
+                message.error(result.msg || '租约释放失败');
+            }
+        } catch (error) {
+            message.error(`租约释放出错: ${error.message}`);
+        }
+    };
+
+    const onDhcpEvt = result => {
+        if (result.status !== 'success') return;
+        const data = result.data;
+
+        if (data.type === DHCP_SUB_EVT_TYPES.DHCP_SUB_EVT_LEASE) {
+            if (data.opType === 'add') {
+                leaseList.value = [...leaseList.value, data.data];
+            } else if (data.opType === 'remove') {
+                leaseList.value = leaseList.value.filter(l => l.macAddr !== data.data.macAddr);
+            } else if (data.opType === 'update') {
+                const idx = leaseList.value.findIndex(l => l.macAddr === data.data.macAddr);
+                if (idx !== -1) {
+                    const newList = [...leaseList.value];
+                    newList[idx] = data.data;
+                    leaseList.value = newList;
+                }
+            }
+        }
+    };
+
+    onActivated(async () => {
+        EventBus.on('dhcp:event', DHCP_EVENT_PAGE_ID.PAGE_ID_DHCP_LEASE, onDhcpEvt);
+        await loadLeaseList();
+    });
+
+    onDeactivated(() => {
+        EventBus.off('dhcp:event', DHCP_EVENT_PAGE_ID.PAGE_ID_DHCP_LEASE);
+    });
+</script>
+
+<style scoped></style>

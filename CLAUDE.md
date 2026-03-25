@@ -101,13 +101,17 @@ npm run release:mac:universal # 构建并发布 macOS universal 版本
 - `ftpApp.js`: FTP 服务器管理
 - `snmpApp.js`: SNMP 管理器
 - `toolsApp.js`: 开发工具协调
+- `nativeApp.js`: 原生功能（报文抓包使用 `cap` 模块、XML 解析使用 `libxmljs2`），两者均为动态加载的 native 模块，加载时会去除 Windows UNC 路径前缀 `\\?\`
+- `sshDeployer.js`: 通过 SSH 将 BMP MD5 代理部署到 Linux 服务器
 - `updater.js`: 自动更新功能
 - `keychainManager.js`: 管理 BMP/RPKI 的认证密钥链
 
 **工作进程** (`electron/worker/`):
 - 每个协议都有专用的 worker 文件来处理会话、实例和路由
-- Workers 使用 `workerMessageHandler.js` 进行 IPC 通信
-- 示例：`bgpSession.js`、`bmpSession.js`、`rpkiSession.js`、`ftpSession.js`、`snmpSession.js`
+- Workers 在主线程侧使用 `workerWithPromise.js` 进行管理，在 worker 侧使用 `workerMessageHandler.js` 注册处理器
+- 长期运行模式（`createLongRunningWorker()`）：用于协议 worker（BGP、BMP、RPKI、FTP、SNMP），支持请求-响应和事件推送
+- 一次性模式（`runWorkerWithPromise()`）：用于单次任务，执行完毕后自动终止
+- 示例：`bgpSession.js`、`bmpSession.js`、`rpkiSession.js`、`ftpSession.js`、`snmpSession.js`、`sshTunnel.js`、`stringGeneratorWorker.js`
 
 **报文解析器** (`electron/pktParser/`):
 - 协议特定的解析器：`bgpPacketParser.js`、`tcpPacketParser.js`、`udpPacketParser.js`、`ipPacketParser.js`、`ethernetPacketParser.js`、`arpPacketParser.js`
@@ -156,7 +160,11 @@ npm run release:mac:universal # 构建并发布 macOS universal 版本
 
 ### IPC 通信模式
 
-前端通过预加载脚本中暴露的 IPC API 与 Electron 主进程通信。每个应用模块在 SystemApp 构造函数中注册处理程序。Workers 通过 `workerMessageHandler.js` 进行通信。
+前端通过预加载脚本中暴露的 IPC API 与 Electron 主进程通信。每个应用模块在 SystemApp 构造函数中注册处理程序。
+
+**响应格式**：所有 IPC 处理器统一返回 `{ status: 'success'|'error', msg, data }` 格式（来自 `electron/utils/responseUtils.js` 的 `successResponse` / `errorResponse`）。
+
+**事件推送**：主进程通过 `unified-event` IPC 频道向渲染进程推送异步事件（`eventDispatcher.js`）；渲染进程中的 EventBus 负责接收并分发这些事件。`preload.js` 通过 `commonApi.onUnifiedEvent` 统一订阅此频道。
 
 ## 代码风格
 

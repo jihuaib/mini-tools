@@ -13,6 +13,7 @@ const BmpApp = require('./bmpApp');
 const RpkiApp = require('./rpkiApp');
 const FtpApp = require('./ftpApp');
 const SnmpApp = require('./snmpApp');
+const DhcpApp = require('./dhcpApp');
 const AppUpdater = require('./updater');
 const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
@@ -55,6 +56,7 @@ class SystemApp {
         this.rpkiApp = new RpkiApp(ipc, this.programStore, this.keychainManager);
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.snmpApp = new SnmpApp(ipc, this.programStore);
+        this.dhcpApp = new DhcpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
         this.nativeApp = new NativeApp(ipc, this.programStore);
         this.toolsApp = new ToolsApp(ipc, this.programStore);

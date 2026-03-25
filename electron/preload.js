@@ -160,6 +160,16 @@ contextBridge.exposeInMainWorld('ftpApi', {
     getClientList: () => ipcRenderer.invoke('ftp:getClientList')
 });
 
+// dhcp模块
+contextBridge.exposeInMainWorld('dhcpApi', {
+    saveDhcpConfig: config => ipcRenderer.invoke('dhcp:saveDhcpConfig', config),
+    getDhcpConfig: () => ipcRenderer.invoke('dhcp:getDhcpConfig'),
+    startDhcp: config => ipcRenderer.invoke('dhcp:startDhcp', config),
+    stopDhcp: () => ipcRenderer.invoke('dhcp:stopDhcp'),
+    getLeaseList: () => ipcRenderer.invoke('dhcp:getLeaseList'),
+    releaseLease: macAddr => ipcRenderer.invoke('dhcp:releaseLease', macAddr)
+});
+
 // snmp模块
 contextBridge.exposeInMainWorld('snmpApi', {
     // 配置相关

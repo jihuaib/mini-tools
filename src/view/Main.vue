@@ -86,7 +86,8 @@
         ClusterOutlined,
         SafetyOutlined,
         FolderOutlined,
-        CodeOutlined
+        CodeOutlined,
+        WifiOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
@@ -143,6 +144,13 @@
             label: 'SNMP服务器',
             title: 'SNMP服务器',
             route: '/snmp'
+        },
+        {
+            key: 'DHCP服务器',
+            icon: h(WifiOutlined),
+            label: 'DHCP服务器',
+            title: 'DHCP服务器',
+            route: '/dhcp'
         }
     ]);
 

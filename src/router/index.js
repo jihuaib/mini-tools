@@ -28,6 +28,9 @@ import FtpConfig from '../view/ftp/FtpConfig.vue';
 import SnmpMain from '../view/snmp/SnmpMain.vue';
 import SnmpConfig from '../view/snmp/SnmpConfig.vue';
 import SnmpTrap from '../view/snmp/SnmpTrap.vue';
+import DhcpMain from '../view/dhcp/DhcpMain.vue';
+import DhcpConfig from '../view/dhcp/DhcpConfig.vue';
+import DhcpLeaseList from '../view/dhcp/DhcpLeaseList.vue';
 import store from '../store';
 
 const routes = [
@@ -238,6 +241,30 @@ const routes = [
                         path: 'snmp-trap',
                         name: 'SnmpTrap',
                         component: SnmpTrap,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/dhcp',
+                name: 'DhcpMain',
+                component: DhcpMain,
+                meta: { keepAlive: true },
+                children: [
+                    {
+                        path: '/',
+                        redirect: '/dhcp/dhcp-config'
+                    },
+                    {
+                        path: 'dhcp-config',
+                        name: 'DhcpConfig',
+                        component: DhcpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'dhcp-lease',
+                        name: 'DhcpLeaseList',
+                        component: DhcpLeaseList,
                         meta: { keepAlive: true }
                     }
                 ]
