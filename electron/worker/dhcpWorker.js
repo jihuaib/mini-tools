@@ -23,9 +23,7 @@ const MAGIC_COOKIE = Buffer.from([99, 130, 83, 99]);
 
 // IP工具函数
 function ipToNum(ip) {
-    return ip
-        .split('.')
-        .reduce((acc, oct) => (acc << 8) | parseInt(oct, 10), 0) >>> 0;
+    return ip.split('.').reduce((acc, oct) => (acc << 8) | parseInt(oct, 10), 0) >>> 0;
 }
 
 function numToIp(num) {
@@ -315,12 +313,7 @@ class DhcpWorker {
 
         this.pendingOffers.delete(packet.xid);
 
-        const ack = this.buildDhcpResponse(
-            packet,
-            DhcpConst.DHCP_MSG_TYPES.ACK,
-            requestedIp,
-            this.config.serverIp
-        );
+        const ack = this.buildDhcpResponse(packet, DhcpConst.DHCP_MSG_TYPES.ACK, requestedIp, this.config.serverIp);
         this.sendResponse(ack, packet, rinfo);
     }
 
@@ -359,6 +352,9 @@ class DhcpWorker {
 
     startDhcp(messageId, config) {
         this.config = config;
+        const listenPort = Number.isInteger(Number(this.config.serverPort))
+            ? Number(this.config.serverPort)
+            : DhcpConst.DEFAULT_DHCP_CONFIG.serverPort;
         // 未配置 serverIp 时自动探测本机 IP，和其他协议一样绑定 0.0.0.0 即可
         if (!this.config.serverIp) {
             this.config.serverIp = detectLocalIp();
@@ -376,10 +372,12 @@ class DhcpWorker {
                 logger.error(`DHCP服务器错误: ${err.message}`);
                 if (!started) {
                     // 绑定/启动阶段失败，通知 app
-                    const hint =
-                        err.code === 'EACCES' || err.code === 'EPERM'
-                            ? '（绑定 UDP 67 端口需要管理员/root 权限）'
-                            : '';
+                    let hint = '';
+                    if (err.code === 'EACCES' || err.code === 'EPERM') {
+                        hint = `（绑定 UDP ${listenPort} 端口需要管理员/root 权限）`;
+                    } else if (err.code === 'EADDRINUSE') {
+                        hint = `（UDP ${listenPort} 端口已被占用，可修改监听端口后重试）`;
+                    }
                     this.messageHandler.sendErrorResponse(messageId, `DHCP服务器启动失败: ${err.message}${hint}`);
                     this.server = null;
                 }
@@ -410,11 +408,15 @@ class DhcpWorker {
                 }
             });
 
-            this.server.bind({ port: 67, address: '0.0.0.0' }, () => {
+            this.server.bind({ port: listenPort, address: '0.0.0.0' }, () => {
                 started = true;
                 this.server.setBroadcast(true);
-                logger.info('DHCP服务器启动成功，监听 0.0.0.0:67');
-                this.messageHandler.sendSuccessResponse(messageId, null, 'DHCP服务器启动成功');
+                logger.info(`DHCP服务器启动成功，监听 0.0.0.0:${listenPort}`);
+                this.messageHandler.sendSuccessResponse(
+                    messageId,
+                    null,
+                    `DHCP服务器启动成功，监听 0.0.0.0:${listenPort}`
+                );
 
                 // 每60秒检查过期租约
                 this.leaseTimer = setInterval(() => {

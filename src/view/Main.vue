@@ -87,7 +87,8 @@
         SafetyOutlined,
         FolderOutlined,
         CodeOutlined,
-        WifiOutlined
+        WifiOutlined,
+        ClockCircleOutlined
     } from '@ant-design/icons-vue';
     import SettingsDialog from '../components/SettingsDialog.vue';
     import UpdateNotification from '../components/UpdateNotification.vue';
@@ -151,6 +152,13 @@
             label: 'DHCP服务器',
             title: 'DHCP服务器',
             route: '/dhcp'
+        },
+        {
+            key: 'NTP服务器',
+            icon: h(ClockCircleOutlined),
+            label: 'NTP服务器',
+            title: 'NTP服务器',
+            route: '/ntp'
         }
     ]);
 

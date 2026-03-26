@@ -31,6 +31,7 @@ const DHCP_MSG_TYPES = {
 
 // 默认DHCP配置（serverIp 留空，由 worker 自动探测本机 IP）
 const DEFAULT_DHCP_CONFIG = {
+    serverPort: 67,
     serverIp: '',
     poolStart: '192.168.1.100',
     poolEnd: '192.168.1.200',

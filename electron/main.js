@@ -8,6 +8,7 @@ const isDev = !app.isPackaged;
 let mainWindow = null;
 let splashWindow = null;
 let systemApp = null;
+let tray = null;
 
 app.commandLine.appendSwitch('lang', 'zh-CN');
 
@@ -85,13 +86,20 @@ function createWindow() {
         mainWindow = null;
     });
 
-    new Tray(getTrayIconPath());
-
     mainWindow = win;
 
     if (isDev) {
         win.webContents.openDevTools();
     }
+}
+
+function createTray() {
+    if (process.platform === 'darwin' || tray) {
+        return;
+    }
+
+    tray = new Tray(getTrayIconPath());
+    tray.setToolTip('NetNexus');
 }
 
 // 更新启动进度
@@ -141,6 +149,7 @@ app.whenReady().then(async () => {
     // 延迟创建主窗口，让启动窗口先显示
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    createTray();
     createWindow();
     updateSplashProgress(20, '正在加载主窗口...');
 
@@ -185,6 +194,13 @@ app.whenReady().then(async () => {
 
     // 完成启动
     finishStartup();
+});
+
+app.on('before-quit', () => {
+    if (tray) {
+        tray.destroy();
+        tray = null;
+    }
 });
 
 app.on('window-all-closed', () => {

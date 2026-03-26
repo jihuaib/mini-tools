@@ -4,6 +4,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const DhcpConst = require('../const/dhcpConst');
+const Dhcp6Const = require('../const/dhcp6Const');
 const EventDispatcher = require('../utils/eventDispatcher');
 
 class DhcpApp {
@@ -12,9 +13,11 @@ class DhcpApp {
         this.store = store;
         this.dhcpConfigFileKey = 'dhcp-config';
         this.worker = null;
+        this.worker6 = null;
         this.isDev = !app.isPackaged;
         this.eventDispatcher = null;
         this.dhcpEvtHandler = null;
+        this.dhcp6EvtHandler = null;
 
         this.registerIpcHandlers();
     }
@@ -26,6 +29,7 @@ class DhcpApp {
         this.ipcMain.handle('dhcp:stopDhcp', this.handleStopDhcp.bind(this));
         this.ipcMain.handle('dhcp:getLeaseList', this.handleGetLeaseList.bind(this));
         this.ipcMain.handle('dhcp:releaseLease', this.handleReleaseLease.bind(this));
+        this.ipcMain.handle('dhcp:releaseDhcp6Lease', this.handleReleaseDhcp6Lease.bind(this));
     }
 
     async handleSaveDhcpConfig(event, config) {
@@ -63,19 +67,24 @@ class DhcpApp {
             this.eventDispatcher.setWebContents(webContents);
 
             this.dhcpEvtHandler = data => {
-                this.eventDispatcher.emit('dhcp:event', successResponse(data));
+                this.eventDispatcher.emit('dhcp:event', successResponse({ ...data, version: 4 }));
             };
 
             this.worker.addEventListener(DhcpConst.DHCP_EVT_TYPES.DHCP_EVT, this.dhcpEvtHandler);
 
             const result = await this.worker.sendRequest(DhcpConst.DHCP_REQ_TYPES.START_DHCP, config);
 
-            if (result.status === 'success') {
-                logger.info(`DHCP启动成功: ${result.msg}`);
-                return successResponse(null, result.msg);
-            } else {
+            if (result.status !== 'success') {
                 throw new Error(result.msg);
             }
+            logger.info(`DHCPv4启动成功: ${result.msg}`);
+
+            // 启动 DHCPv6（可选，失败不影响 DHCPv4）
+            if (config.v6) {
+                await this._startDhcp6(webContents, config.v6);
+            }
+
+            return successResponse(null, result.msg);
         } catch (error) {
             if (this.worker) {
                 this.worker.removeEventListener(DhcpConst.DHCP_EVT_TYPES.DHCP_EVT, this.dhcpEvtHandler);
@@ -88,6 +97,39 @@ class DhcpApp {
             }
             logger.error('启动DHCP出错:', error.message);
             return errorResponse(error.message);
+        }
+    }
+
+    async _startDhcp6(webContents, v6Config) {
+        try {
+            const worker6Path = this.isDev
+                ? path.join(__dirname, '../worker/dhcp6Worker.js')
+                : path.join(process.resourcesPath, 'app', 'electron/worker/dhcp6Worker.js');
+
+            const worker6Factory = new WorkerWithPromise(worker6Path);
+            this.worker6 = worker6Factory.createLongRunningWorker();
+
+            this.dhcp6EvtHandler = data => {
+                if (this.eventDispatcher) {
+                    this.eventDispatcher.emit('dhcp:event', successResponse({ ...data, version: 6 }));
+                }
+            };
+
+            this.worker6.addEventListener(Dhcp6Const.DHCP6_EVT_TYPES.DHCP6_EVT, this.dhcp6EvtHandler);
+
+            const result6 = await this.worker6.sendRequest(Dhcp6Const.DHCP6_REQ_TYPES.START_DHCP6, v6Config);
+            if (result6.status === 'success') {
+                logger.info(`DHCPv6启动成功: ${result6.msg}`);
+            } else {
+                throw new Error(result6.msg);
+            }
+        } catch (error) {
+            logger.error('启动DHCPv6出错（不影响DHCPv4）:', error.message);
+            if (this.worker6) {
+                this.worker6.removeEventListener(Dhcp6Const.DHCP6_EVT_TYPES.DHCP6_EVT, this.dhcp6EvtHandler);
+                await this.worker6.terminate();
+                this.worker6 = null;
+            }
         }
     }
 
@@ -110,6 +152,16 @@ class DhcpApp {
                 await this.worker.terminate();
                 this.worker = null;
             }
+            if (this.worker6) {
+                try {
+                    await this.worker6.sendRequest(Dhcp6Const.DHCP6_REQ_TYPES.STOP_DHCP6, null);
+                } catch (_) {
+                    /* ignore */
+                }
+                this.worker6.removeEventListener(Dhcp6Const.DHCP6_EVT_TYPES.DHCP6_EVT, this.dhcp6EvtHandler);
+                await this.worker6.terminate();
+                this.worker6 = null;
+            }
             if (this.eventDispatcher) {
                 this.eventDispatcher.cleanup();
                 this.eventDispatcher = null;
@@ -122,8 +174,20 @@ class DhcpApp {
             return successResponse([], 'DHCP服务器未启动');
         }
         try {
-            const result = await this.worker.sendRequest(DhcpConst.DHCP_REQ_TYPES.GET_LEASE_LIST, null);
-            return successResponse(result.data, '获取租约列表成功');
+            const v4Result = await this.worker.sendRequest(DhcpConst.DHCP_REQ_TYPES.GET_LEASE_LIST, null);
+            const v4Leases = (v4Result.data || []).map(l => ({ ...l, version: 4, id: l.macAddr }));
+
+            let v6Leases = [];
+            if (this.worker6) {
+                try {
+                    const v6Result = await this.worker6.sendRequest(Dhcp6Const.DHCP6_REQ_TYPES.GET_LEASE_LIST, null);
+                    v6Leases = (v6Result.data || []).map(l => ({ ...l, version: 6, id: l.duid }));
+                } catch (_) {
+                    /* ignore */
+                }
+            }
+
+            return successResponse([...v4Leases, ...v6Leases], '获取租约列表成功');
         } catch (error) {
             logger.error('获取租约列表出错:', error.message);
             return errorResponse(error.message);
@@ -139,6 +203,19 @@ class DhcpApp {
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('释放租约出错:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleReleaseDhcp6Lease(event, duid) {
+        if (null === this.worker6) {
+            return errorResponse('DHCPv6服务器未启动');
+        }
+        try {
+            const result = await this.worker6.sendRequest(Dhcp6Const.DHCP6_REQ_TYPES.RELEASE_LEASE, duid);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('释放DHCPv6租约出错:', error.message);
             return errorResponse(error.message);
         }
     }

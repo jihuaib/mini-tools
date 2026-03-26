@@ -31,6 +31,9 @@ import SnmpTrap from '../view/snmp/SnmpTrap.vue';
 import DhcpMain from '../view/dhcp/DhcpMain.vue';
 import DhcpConfig from '../view/dhcp/DhcpConfig.vue';
 import DhcpLeaseList from '../view/dhcp/DhcpLeaseList.vue';
+import NtpMain from '../view/ntp/NtpMain.vue';
+import NtpConfig from '../view/ntp/NtpConfig.vue';
+import NtpRequestLog from '../view/ntp/NtpRequestLog.vue';
 import store from '../store';
 
 const routes = [
@@ -265,6 +268,30 @@ const routes = [
                         path: 'dhcp-lease',
                         name: 'DhcpLeaseList',
                         component: DhcpLeaseList,
+                        meta: { keepAlive: true }
+                    }
+                ]
+            },
+            {
+                path: '/ntp',
+                name: 'NtpMain',
+                component: NtpMain,
+                meta: { keepAlive: true },
+                children: [
+                    {
+                        path: '/',
+                        redirect: '/ntp/ntp-config'
+                    },
+                    {
+                        path: 'ntp-config',
+                        name: 'NtpConfig',
+                        component: NtpConfig,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'ntp-request-log',
+                        name: 'NtpRequestLog',
+                        component: NtpRequestLog,
                         meta: { keepAlive: true }
                     }
                 ]

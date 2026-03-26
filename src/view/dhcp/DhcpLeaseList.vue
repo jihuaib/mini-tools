@@ -9,12 +9,17 @@
                     <a-table
                         :columns="columns"
                         :data-source="leaseList"
-                        :row-key="record => record.macAddr"
+                        :row-key="record => `${record.version}-${record.id}`"
                         :pagination="{ pageSize: 20, showSizeChanger: false, position: ['bottomCenter'] }"
                         :scroll="{ y: 500 }"
                         size="small"
                     >
                         <template #bodyCell="{ column, record }">
+                            <template v-if="column.key === 'version'">
+                                <a-tag :color="record.version === 6 ? 'blue' : 'green'">
+                                    {{ record.version === 6 ? 'IPv6' : 'IPv4' }}
+                                </a-tag>
+                            </template>
                             <template v-if="column.key === 'status'">
                                 <a-tag :color="record.status === 'active' ? 'success' : 'default'">
                                     {{ record.status === 'active' ? '有效' : '已过期' }}
@@ -49,10 +54,21 @@
     const leaseList = ref([]);
 
     const columns = [
-        { title: 'MAC地址', dataIndex: 'macAddr', key: 'macAddr', ellipsis: true },
-        { title: 'IP地址', dataIndex: 'ip', key: 'ip', width: 140 },
-        { title: '主机名', dataIndex: 'hostname', key: 'hostname', ellipsis: true },
-        { title: '租约时间(秒)', dataIndex: 'leaseTime', key: 'leaseTime', width: 110 },
+        { title: '版本', key: 'version', width: 70 },
+        { title: '标识(MAC/DUID)', dataIndex: 'id', key: 'id', ellipsis: true },
+        { title: 'IP地址', dataIndex: 'ip', key: 'ip', width: 160 },
+        {
+            title: '详情',
+            key: 'detail',
+            ellipsis: true,
+            customRender: ({ record }) => record.hostname || record.iaid || '-'
+        },
+        {
+            title: '生命周期(秒)',
+            key: 'lifetime',
+            width: 110,
+            customRender: ({ record }) => record.leaseTime ?? record.validLifetime ?? '-'
+        },
         { title: '分配时间', dataIndex: 'startTime', key: 'startTime', ellipsis: true },
         { title: '到期时间', dataIndex: 'expiresAt', key: 'expiresAt', ellipsis: true },
         { title: '状态', dataIndex: 'status', key: 'status', width: 80 },
@@ -72,9 +88,14 @@
 
     const releaseLease = async record => {
         try {
-            const result = await window.dhcpApi.releaseLease(record.macAddr);
+            let result;
+            if (record.version === 6) {
+                result = await window.dhcpApi.releaseDhcp6Lease(record.duid);
+            } else {
+                result = await window.dhcpApi.releaseLease(record.macAddr);
+            }
             if (result.status === 'success') {
-                message.success(`租约 ${record.macAddr} 已释放`);
+                message.success(`租约 ${record.id} 已释放`);
             } else {
                 message.error(result.msg || '租约释放失败');
             }
@@ -88,15 +109,17 @@
         const data = result.data;
 
         if (data.type === DHCP_SUB_EVT_TYPES.DHCP_SUB_EVT_LEASE) {
+            const version = data.version || 4;
+            const lease = { ...data.data, version, id: version === 6 ? data.data.duid : data.data.macAddr };
             if (data.opType === 'add') {
-                leaseList.value = [...leaseList.value, data.data];
+                leaseList.value = [...leaseList.value, lease];
             } else if (data.opType === 'remove') {
-                leaseList.value = leaseList.value.filter(l => l.macAddr !== data.data.macAddr);
+                leaseList.value = leaseList.value.filter(l => !(l.id === lease.id && l.version === version));
             } else if (data.opType === 'update') {
-                const idx = leaseList.value.findIndex(l => l.macAddr === data.data.macAddr);
+                const idx = leaseList.value.findIndex(l => l.id === lease.id && l.version === version);
                 if (idx !== -1) {
                     const newList = [...leaseList.value];
-                    newList[idx] = data.data;
+                    newList[idx] = lease;
                     leaseList.value = newList;
                 }
             }

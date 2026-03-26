@@ -167,7 +167,8 @@ contextBridge.exposeInMainWorld('dhcpApi', {
     startDhcp: config => ipcRenderer.invoke('dhcp:startDhcp', config),
     stopDhcp: () => ipcRenderer.invoke('dhcp:stopDhcp'),
     getLeaseList: () => ipcRenderer.invoke('dhcp:getLeaseList'),
-    releaseLease: macAddr => ipcRenderer.invoke('dhcp:releaseLease', macAddr)
+    releaseLease: macAddr => ipcRenderer.invoke('dhcp:releaseLease', macAddr),
+    releaseDhcp6Lease: duid => ipcRenderer.invoke('dhcp:releaseDhcp6Lease', duid)
 });
 
 // snmp模块
@@ -179,6 +180,16 @@ contextBridge.exposeInMainWorld('snmpApi', {
     // snmp服务
     startSnmp: config => ipcRenderer.invoke('snmp:startSnmp', config),
     stopSnmp: () => ipcRenderer.invoke('snmp:stopSnmp')
+});
+
+// ntp模块
+contextBridge.exposeInMainWorld('ntpApi', {
+    saveNtpConfig: config => ipcRenderer.invoke('ntp:saveNtpConfig', config),
+    getNtpConfig: () => ipcRenderer.invoke('ntp:getNtpConfig'),
+    startNtp: config => ipcRenderer.invoke('ntp:startNtp', config),
+    stopNtp: () => ipcRenderer.invoke('ntp:stopNtp'),
+    getRequestList: () => ipcRenderer.invoke('ntp:getRequestList'),
+    clearRequestHistory: () => ipcRenderer.invoke('ntp:clearRequestHistory')
 });
 
 // 依赖本地工具模块

@@ -14,6 +14,7 @@ const RpkiApp = require('./rpkiApp');
 const FtpApp = require('./ftpApp');
 const SnmpApp = require('./snmpApp');
 const DhcpApp = require('./dhcpApp');
+const NtpApp = require('./ntpApp');
 const AppUpdater = require('./updater');
 const NativeApp = require('./nativeApp');
 const FtpConst = require('../const/ftpConst');
@@ -57,6 +58,7 @@ class SystemApp {
         this.ftpApp = new FtpApp(ipc, this.programStore);
         this.snmpApp = new SnmpApp(ipc, this.programStore);
         this.dhcpApp = new DhcpApp(ipc, this.programStore);
+        this.ntpApp = new NtpApp(ipc, this.programStore);
         this.updaterApp = new AppUpdater(ipc, win);
         this.nativeApp = new NativeApp(ipc, this.programStore);
         this.toolsApp = new ToolsApp(ipc, this.programStore);
@@ -518,9 +520,18 @@ class SystemApp {
         const isRpkiRunning = this.rpkiApp.getRpkiRunning();
         const isFtpRunning = this.ftpApp.getFtpRunning();
         const isSnmpRunning = this.snmpApp.getSnmpRunning();
+        const isNtpRunning = this.ntpApp.getNtpRunning();
         const isNativeRunning = this.nativeApp.getPacketCaptureRunning();
 
-        if (isBgpRunning || isBmpRunning || isRpkiRunning || isFtpRunning || isSnmpRunning || isNativeRunning) {
+        if (
+            isBgpRunning ||
+            isBmpRunning ||
+            isRpkiRunning ||
+            isFtpRunning ||
+            isSnmpRunning ||
+            isNtpRunning ||
+            isNativeRunning
+        ) {
             const { response } = await dialog.showMessageBox(this.win, {
                 type: 'warning',
                 title: '确认关闭',
@@ -547,6 +558,9 @@ class SystemApp {
                 }
                 if (isSnmpRunning) {
                     await this.snmpApp.handleStopSnmp();
+                }
+                if (isNtpRunning) {
+                    await this.ntpApp.handleStopNtp();
                 }
                 if (isNativeRunning) {
                     await this.nativeApp.handleStopPacketCapture();

@@ -1,0 +1,25 @@
+export const DEFAULT_VALUES = {
+    DEFAULT_NTP_PORT: 123,
+    DEFAULT_NTP_STRATUM: 8,
+    DEFAULT_REFERENCE_ID: 'LOCL',
+    DEFAULT_TIME_OFFSET_MS: 0,
+    DEFAULT_ROOT_DELAY_MS: 0,
+    DEFAULT_ROOT_DISPERSION_MS: 0
+};
+
+export const NTP_SUB_EVT_TYPES = {
+    REQUEST_RECEIVED: 1,
+    SERVER_STATUS: 2,
+    HISTORY_CLEARED: 3
+};
+
+export const NTP_EVENT_PAGE_ID = {
+    PAGE_ID_NTP_CONFIG: 1,
+    PAGE_ID_NTP_REQUEST_LOG: 2
+};
+
+export const NTP_REQUEST_STATUS = {
+    REPLIED: 'replied',
+    IGNORED: 'ignored',
+    ERROR: 'error'
+};
