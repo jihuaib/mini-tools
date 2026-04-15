@@ -611,6 +611,12 @@ function parseMpReachNlri(buffer, context) {
             // IPv6
             nextHop = ipv6BufferToString(buffer.subarray(tmpPosition, tmpPosition + 16), BgpConst.IPV6_HOST_LEN);
         }
+    } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+        if (nextHopLength === BgpConst.IPV6_HOST_BYTE_LEN) {
+            nextHop = ipv6BufferToString(buffer.subarray(position, position + 16), BgpConst.IPV6_HOST_LEN);
+        } else if (nextHopLength === BgpConst.IP_HOST_BYTE_LEN) {
+            nextHop = ipv4BufferToString(buffer.subarray(position, position + 4), BgpConst.IP_HOST_LEN);
+        }
     }
 
     position += nextHopLength;
@@ -698,6 +704,32 @@ function parseMpReachNlri(buffer, context) {
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            const nlriStart = position;
+            // TLV 1: DQPN
+            position += 1; // skip type byte (=1)
+            const dqpnLen = buffer[position];
+            position += 1;
+            let dqpn = 0;
+            for (let i = 0; i < dqpnLen; i++) {
+                dqpn = (dqpn * 256) + buffer[position + i];
+            }
+            position += dqpnLen;
+            // TLV 2: prefix
+            position += 1; // skip type byte (=2)
+            prefixLength = buffer[position]; // bits
+            position += 1;
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            const nlriTotalBits = (position - nlriStart) * 8;
+            if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
+                prefix = ipv4BufferToString(prefixBuffer, prefixLength);
+            } else {
+                prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+            }
+            nlri.push({ pathId, prefix, rd, length: prefixLength, dqpn, dqpnBits: nlriTotalBits });
+            continue;
         } else {
             // 不支持，按照16进制解析存储
             prefixLength = 0;
@@ -821,6 +853,32 @@ function parseMpUnreachNlri(buffer, context) {
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+        } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            const nlriStart = position;
+            // TLV 1: DQPN
+            position += 1; // skip type byte (=1)
+            const dqpnLen = buffer[position];
+            position += 1;
+            let dqpn = 0;
+            for (let i = 0; i < dqpnLen; i++) {
+                dqpn = (dqpn * 256) + buffer[position + i];
+            }
+            position += dqpnLen;
+            // TLV 2: prefix
+            position += 1; // skip type byte (=2)
+            prefixLength = buffer[position]; // bits
+            position += 1;
+            const prefixBytes = Math.ceil(prefixLength / 8);
+            const prefixBuffer = buffer.subarray(position, position + prefixBytes);
+            position += prefixBytes;
+            const nlriTotalBits = (position - nlriStart) * 8;
+            if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
+                prefix = ipv4BufferToString(prefixBuffer, prefixLength);
+            } else {
+                prefix = ipv6BufferToString(prefixBuffer, prefixLength);
+            }
+            withdrawnRoutes.push({ pathId, prefix, rd, length: prefixLength, dqpn, dqpnBits: nlriTotalBits });
+            continue;
         } else {
             prefixLength = 0;
             let _routeType = buffer[position];
@@ -955,7 +1013,11 @@ function getBgpPacketSummary(parsedPacket) {
                         if (attr.mpReach.nlri && attr.mpReach.nlri.length > 0) {
                             summary += '\n    - Routes:';
                             attr.mpReach.nlri.forEach(route => {
-                                summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
+                                if (route.dqpn !== undefined) {
+                                    summary += `\n      - DIP:${route.prefix}/${route.length}, DQPN:=${route.dqpn}/${route.dqpnBits}`;
+                                } else {
+                                    summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
+                                }
                             });
                         }
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.MP_UNREACH_NLRI) {
@@ -965,7 +1027,11 @@ function getBgpPacketSummary(parsedPacket) {
                         if (attr.mpUnreach.withdrawnRoutes && attr.mpUnreach.withdrawnRoutes.length > 0) {
                             summary += '\n    - Routes:';
                             attr.mpUnreach.withdrawnRoutes.forEach(route => {
-                                summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
+                                if (route.dqpn !== undefined) {
+                                    summary += `\n      - DIP:${route.prefix}/${route.length}, DQPN:=${route.dqpn}/${route.dqpnBits}`;
+                                } else {
+                                    summary += `\n      - ${route.pathId} ${route.prefix}/${route.length}`;
+                                }
                             });
                         }
                     } else if (attr.typeCode === BgpConst.BGP_PATH_ATTR.PATH_OTC) {

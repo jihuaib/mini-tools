@@ -28,7 +28,9 @@ export const BGP_ADDR_FAMILY = {
     VPNV4: 4,
     VPNV6: 5,
     IPV4_MVPN: 6,
-    IPV6_MVPN: 7
+    IPV6_MVPN: 7,
+    IPV4_QP: 8,
+    IPV6_QP: 9
 };
 
 // IP Type Values, 需要和后台定义保持一致, 后台会
@@ -52,7 +54,9 @@ export const ADDRESS_FAMILY_NAME = {
     [BGP_ADDR_FAMILY.L2VPN_EVPN]: 'L2VPN EVPN',
     [BGP_ADDR_FAMILY.VPNV4]: 'VPNV4',
     [BGP_ADDR_FAMILY.VPNV6]: 'VPNV6',
-    [BGP_ADDR_FAMILY.IPV4_MVPN]: 'IPv4 MVPN'
+    [BGP_ADDR_FAMILY.IPV4_MVPN]: 'IPv4 MVPN',
+    [BGP_ADDR_FAMILY.IPV4_QP]: 'IPv4 QP',
+    [BGP_ADDR_FAMILY.IPV6_QP]: 'IPv6 QP'
 };
 
 // Default Values

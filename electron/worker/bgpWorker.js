@@ -60,6 +60,18 @@ class BgpWorker {
         );
         this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.IMPORT_ROUTES, this.importRoutes.bind(this));
         this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.GET_INSTANCE_INFO, this.getInstanceInfo.bind(this));
+
+        // QP
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.GENERATE_IPV4_QP_ROUTES,
+            this.generateQpRoutes.bind(this)
+        );
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.GENERATE_IPV6_QP_ROUTES,
+            this.generateQpRoutes.bind(this)
+        );
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_QP_ROUTES, this.deleteQpRoute.bind(this));
+        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_QP_ROUTES, this.deleteQpRoute.bind(this));
     }
 
     async startTcpServer(messageId) {
@@ -246,6 +258,16 @@ class BgpWorker {
                             bgpSession.localAddrFamilyFlags,
                             BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN
                         );
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV4_QP) {
+                        bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
+                            bgpSession.localAddrFamilyFlags,
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP
+                        );
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV6_QP) {
+                        bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
+                            bgpSession.localAddrFamilyFlags,
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP
+                        );
                     }
                 });
             } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
@@ -356,6 +378,16 @@ class BgpWorker {
                             bgpSession.localAddrFamilyFlags,
                             BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN
                         );
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV4_QP) {
+                        bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
+                            bgpSession.localAddrFamilyFlags,
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP
+                        );
+                    } else if (family === BgpConst.BGP_ADDR_FAMILY.IPV6_QP) {
+                        bgpSession.localAddrFamilyFlags = CommonUtils.BIT_SET(
+                            bgpSession.localAddrFamilyFlags,
+                            BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP
+                        );
                     }
                 });
             } else if (cap === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
@@ -415,6 +447,8 @@ class BgpWorker {
         const ipv6PeerInfoList = [];
         const ipv4MvpnPeerInfoList = [];
         const ipv6MvpnPeerInfoList = [];
+        const ipv4QpPeerInfoList = [];
+        const ipv6QpPeerInfoList = [];
         this.bgpInstanceMap.forEach((instance, instanceKey) => {
             if (instance.peerMap && instance.peerMap.size > 0) {
                 instance.peerMap.forEach((peer, _) => {
@@ -427,6 +461,10 @@ class BgpWorker {
                         ipv4MvpnPeerInfoList.push(peerInfo);
                     } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN) {
                         ipv6MvpnPeerInfoList.push(peerInfo);
+                    } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP) {
+                        ipv4QpPeerInfoList.push(peerInfo);
+                    } else if (peerInfo.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV6_QP) {
+                        ipv6QpPeerInfoList.push(peerInfo);
                     }
                 });
             } else {
@@ -438,7 +476,9 @@ class BgpWorker {
             [BgpConst.BGP_ADDR_FAMILY.IPV4_UNC]: [...ipv4PeerInfoList],
             [BgpConst.BGP_ADDR_FAMILY.IPV6_UNC]: [...ipv6PeerInfoList],
             [BgpConst.BGP_ADDR_FAMILY.IPV4_MVPN]: [...ipv4MvpnPeerInfoList],
-            [BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN]: [...ipv6MvpnPeerInfoList]
+            [BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN]: [...ipv6MvpnPeerInfoList],
+            [BgpConst.BGP_ADDR_FAMILY.IPV4_QP]: [...ipv4QpPeerInfoList],
+            [BgpConst.BGP_ADDR_FAMILY.IPV6_QP]: [...ipv6QpPeerInfoList]
         };
         this.messageHandler.sendSuccessResponse(messageId, peerInfoList, '邻居信息查询成功');
     }
@@ -603,6 +643,103 @@ class BgpWorker {
 
         logger.info(`Deleted all ${count} routes for address family ${addressFamily}`);
         this.messageHandler.sendSuccessResponse(messageId, null, `成功删除所有 ${count} 条路由`);
+    }
+
+    generateQpRoutes(messageId, config) {
+        const { afi, safi } = getAfiAndSafi(config.addressFamily);
+        const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
+        if (!instance) {
+            logger.error('实例不存在');
+            this.messageHandler.sendErrorResponse(messageId, '实例不存在');
+            return;
+        }
+
+        // 更新实例的 BSID
+        if (config.bsid !== undefined) {
+            instance.bsid = config.bsid;
+        }
+
+        // 生成路由：IPv4 QP 使用 IPv4 前缀格式，IPv6 QP 使用 IPv6 前缀格式
+        const ipType =
+            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP
+                ? BgpConst.IP_TYPE.IPV4
+                : BgpConst.IP_TYPE.IPV6;
+        const { genRouteIps } = require('../utils/ipUtils');
+        const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
+        if (routes.length === 0) {
+            this.messageHandler.sendSuccessResponse(messageId, null, 'QP路由生成成功');
+            return;
+        }
+
+        let hasRouteChanged = false;
+        const startDqpn = parseInt(config.startDqpn) || 0;
+        routes.forEach((route, index) => {
+            const dqpn = startDqpn + index;
+            const key = BgpRoute.makeQpKey(dqpn, route.ip, route.mask);
+            if (!instance.routeMap.has(key)) {
+                const bgpRoute = new BgpRoute(instance);
+                bgpRoute.ip = route.ip;
+                bgpRoute.mask = route.mask;
+                bgpRoute.dqpn = dqpn;
+                bgpRoute.nextHop = instance.bsid;
+                instance.routeMap.set(key, bgpRoute);
+                hasRouteChanged = true;
+            }
+        });
+
+        if (instance.customAttr !== config.customAttr) {
+            instance.customAttr = config.customAttr;
+            hasRouteChanged = true;
+        }
+
+        if (hasRouteChanged) {
+            instance.sendRoute();
+        }
+
+        this.messageHandler.sendSuccessResponse(messageId, null, 'QP路由生成成功');
+    }
+
+    deleteQpRoute(messageId, config) {
+        const { afi, safi } = getAfiAndSafi(config.addressFamily);
+        const instance = this.bgpInstanceMap.get(BgpInstance.makeKey(0, afi, safi));
+        if (!instance) {
+            logger.error('实例不存在');
+            this.messageHandler.sendErrorResponse(messageId, '实例不存在');
+            return;
+        }
+
+        const ipType =
+            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP
+                ? BgpConst.IP_TYPE.IPV4
+                : BgpConst.IP_TYPE.IPV6;
+        const { genRouteIps } = require('../utils/ipUtils');
+        const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
+        if (routes.length === 0) {
+            this.messageHandler.sendSuccessResponse(messageId, null, 'QP路由删除成功');
+            return;
+        }
+
+        const withdrawnRoutes = [];
+        const startDqpn = parseInt(config.startDqpn) || 0;
+        routes.forEach((route, index) => {
+            const dqpn = startDqpn + index;
+            const key = BgpRoute.makeQpKey(dqpn, route.ip, route.mask);
+            if (instance.routeMap.has(key)) {
+                const bgpRoute = instance.routeMap.get(key);
+                instance.routeMap.delete(key);
+                withdrawnRoutes.push(bgpRoute);
+            }
+        });
+
+        if (withdrawnRoutes.length > 0) {
+            instance.withdrawRoute(withdrawnRoutes);
+        }
+
+        if (instance.routeMap.size === 0) {
+            instance.singleRouteSend = false;
+        }
+
+        this.messageHandler.sendSuccessResponse(messageId, null, 'QP路由删除成功');
     }
 
     deletePeer(messageId, peerRecord) {

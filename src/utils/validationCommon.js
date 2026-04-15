@@ -798,6 +798,114 @@ export const createBgpMvpnRouteConfigValidationRules = () => {
     };
 };
 
+export const createBgpIpv4QpRouteConfigValidationRules = () => {
+    return {
+        prefix: [
+            {
+                required: true,
+                message: '请输入前缀'
+            },
+            {
+                validator: validators.ipv4,
+                message: '请输入有效的IPv4地址'
+            }
+        ],
+        mask: [
+            {
+                required: true,
+                message: '请输入掩码'
+            },
+            {
+                validator: validators.ipv4Mask,
+                message: '请输入有效的IPv4掩码'
+            }
+        ],
+        count: [
+            {
+                required: true,
+                message: '请输入数量'
+            }
+        ],
+        startDqpn: [
+            {
+                required: true,
+                message: '请输入起始DQPN'
+            },
+            {
+                validator: value => {
+                    const n = parseInt(value, 10);
+                    return !isNaN(n) && n >= 0 && n <= 0xffffff;
+                },
+                message: 'DQPN范围为 0 ~ 16777215（3字节）'
+            }
+        ],
+        bsid: [
+            {
+                required: true,
+                message: '请输入BSID'
+            },
+            {
+                validator: validators.ipv6,
+                message: '请输入有效的IPv6地址'
+            }
+        ]
+    };
+};
+
+export const createBgpIpv6QpRouteConfigValidationRules = () => {
+    return {
+        prefix: [
+            {
+                required: true,
+                message: '请输入前缀'
+            },
+            {
+                validator: validators.ipv6,
+                message: '请输入有效的IPv6地址'
+            }
+        ],
+        mask: [
+            {
+                required: true,
+                message: '请输入掩码'
+            },
+            {
+                validator: validators.ipv6Mask,
+                message: '请输入有效的IPv6掩码'
+            }
+        ],
+        count: [
+            {
+                required: true,
+                message: '请输入数量'
+            }
+        ],
+        startDqpn: [
+            {
+                required: true,
+                message: '请输入起始DQPN'
+            },
+            {
+                validator: value => {
+                    const n = parseInt(value, 10);
+                    return !isNaN(n) && n >= 0 && n <= 0xffffff;
+                },
+                message: 'DQPN范围为 0 ~ 16777215（3字节）'
+            }
+        ],
+        bsid: [
+            {
+                required: true,
+                message: '请输入BSID'
+            },
+            {
+                validator: validators.ipv6,
+                message: '请输入有效的IPv6地址'
+            }
+        ]
+    };
+};
+
 /**
  * 创建BMP工具验证规则
  */

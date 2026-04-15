@@ -8,6 +8,8 @@
                 <a-tab-pane key="route-ipv4" tab="IPv4路由" />
                 <a-tab-pane key="route-ipv6" tab="IPv6路由" />
                 <a-tab-pane key="route-mvpn" tab="MVPN路由" />
+                <a-tab-pane key="route-ipv4-qp" tab="IPv4 QP路由" />
+                <a-tab-pane key="route-ipv6-qp" tab="IPv6 QP路由" />
             </a-tabs>
         </div>
 

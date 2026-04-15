@@ -93,6 +93,15 @@ contextBridge.exposeInMainWorld('bgpApi', {
     deleteAllRoutesByFamily: addressFamily => ipcRenderer.invoke('bgp:deleteAllRoutesByFamily', addressFamily),
     getRoutes: (addressFamily, page, pageSize) => ipcRenderer.invoke('bgp:getRoutes', addressFamily, page, pageSize),
 
+    saveIpv4QpRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4QpRouteConfig', config),
+    loadIpv4QpRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv4QpRouteConfig'),
+    saveIpv6QpRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv6QpRouteConfig', config),
+    loadIpv6QpRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv6QpRouteConfig'),
+    generateIpv4QpRoutes: config => ipcRenderer.invoke('bgp:generateIpv4QpRoutes', config),
+    generateIpv6QpRoutes: config => ipcRenderer.invoke('bgp:generateIpv6QpRoutes', config),
+    deleteIpv4QpRoutes: config => ipcRenderer.invoke('bgp:deleteIpv4QpRoutes', config),
+    deleteIpv6QpRoutes: config => ipcRenderer.invoke('bgp:deleteIpv6QpRoutes', config),
+
     saveIpv4MvpnRouteConfig: config => ipcRenderer.invoke('bgp:saveIpv4MvpnRouteConfig', config),
     loadIpv4MvpnRouteConfig: () => ipcRenderer.invoke('bgp:loadIpv4MvpnRouteConfig'),
     generateIpv4MvpnRoutes: config => ipcRenderer.invoke('bgp:generateIpv4MvpnRoutes', config),

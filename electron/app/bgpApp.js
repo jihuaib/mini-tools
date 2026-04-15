@@ -17,6 +17,8 @@ class BgpApp {
         this.ipv4UNCRouteConfigFileKey = 'ipv4-unc-route-config';
         this.ipv6UNCRouteConfigFileKey = 'ipv6-unc-route-config';
         this.ipv4MvpnRouteConfigFileKey = 'ipv4-mvpn-route-config';
+        this.ipv4QpRouteConfigFileKey = 'ipv4-qp-route-config';
+        this.ipv6QpRouteConfigFileKey = 'ipv6-qp-route-config';
         this.isDev = !app.isPackaged;
         this.peerChangeHandler = null;
         this.store = store;
@@ -68,6 +70,20 @@ class BgpApp {
         ipc.handle('bgp:getRoutes', async (event, addressFamily, page, pageSize) =>
             this.handleGetRoutes(event, addressFamily, page, pageSize)
         );
+
+        // qp route
+        ipc.handle('bgp:saveIpv4QpRouteConfig', async (event, config) =>
+            this.handleSaveIpv4QpRouteConfig(event, config)
+        );
+        ipc.handle('bgp:loadIpv4QpRouteConfig', async () => this.handleLoadIpv4QpRouteConfig());
+        ipc.handle('bgp:saveIpv6QpRouteConfig', async (event, config) =>
+            this.handleSaveIpv6QpRouteConfig(event, config)
+        );
+        ipc.handle('bgp:loadIpv6QpRouteConfig', async () => this.handleLoadIpv6QpRouteConfig());
+        ipc.handle('bgp:generateIpv4QpRoutes', async (event, config) => this.handleGenerateIpv4QpRoutes(event, config));
+        ipc.handle('bgp:generateIpv6QpRoutes', async (event, config) => this.handleGenerateIpv6QpRoutes(event, config));
+        ipc.handle('bgp:deleteIpv4QpRoutes', async (event, config) => this.handleDeleteIpv4QpRoutes(event, config));
+        ipc.handle('bgp:deleteIpv6QpRoutes', async (event, config) => this.handleDeleteIpv6QpRoutes(event, config));
 
         // mvpn route
         ipc.handle('bgp:saveIpv4MvpnRouteConfig', async (event, config) =>
@@ -528,6 +544,108 @@ class BgpApp {
             return successResponse(null, result.msg);
         } catch (error) {
             logger.error('Error deleting ipv4 mvpn routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSaveIpv4QpRouteConfig(event, config) {
+        try {
+            this.store.set(this.ipv4QpRouteConfigFileKey, config);
+            return successResponse(null, 'IPv4 QP Route配置文件保存成功');
+        } catch (error) {
+            logger.error('Error saving ipv4 qp route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadIpv4QpRouteConfig() {
+        try {
+            const config = this.store.get(this.ipv4QpRouteConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv4 QP Route配置文件不存在');
+            }
+            return successResponse(config, 'IPv4 QP Route配置文件加载成功');
+        } catch (error) {
+            logger.error('Error loading ipv4 qp route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleSaveIpv6QpRouteConfig(event, config) {
+        try {
+            this.store.set(this.ipv6QpRouteConfigFileKey, config);
+            return successResponse(null, 'IPv6 QP Route配置文件保存成功');
+        } catch (error) {
+            logger.error('Error saving ipv6 qp route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleLoadIpv6QpRouteConfig() {
+        try {
+            const config = this.store.get(this.ipv6QpRouteConfigFileKey);
+            if (!config) {
+                return successResponse(null, 'IPv6 QP Route配置文件不存在');
+            }
+            return successResponse(config, 'IPv6 QP Route配置文件加载成功');
+        } catch (error) {
+            logger.error('Error loading ipv6 qp route config:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGenerateIpv4QpRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GENERATE_IPV4_QP_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error generating ipv4 qp routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleGenerateIpv6QpRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.GENERATE_IPV6_QP_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error generating ipv6 qp routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteIpv4QpRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_QP_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error deleting ipv4 qp routes:', error.message);
+            return errorResponse(error.message);
+        }
+    }
+
+    async handleDeleteIpv6QpRoutes(event, config) {
+        if (null === this.worker) {
+            logger.error('bgp协议没有运行');
+            return errorResponse('bgp协议没有运行');
+        }
+        try {
+            const result = await this.worker.sendRequest(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_QP_ROUTES, config);
+            return successResponse(null, result.msg);
+        } catch (error) {
+            logger.error('Error deleting ipv6 qp routes:', error.message);
             return errorResponse(error.message);
         }
     }

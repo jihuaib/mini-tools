@@ -155,6 +155,12 @@ class BgpPeer {
                 attr.push(...nextHopBytes);
                 msgLen += 1 + nextHopBytes.length;
             }
+        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            // QP Next Hop: 固定 BSID（用户配置）
+            const bsidBytes = ipToBytes(this.instance.bsid || this.session.localIp);
+            attr.push(bsidBytes.length);
+            attr.push(...bsidBytes);
+            msgLen += 1 + bsidBytes.length;
         } else {
             const nextHopBytes = ipToBytes(`::ffff:${this.session.localIp}`);
             attr.push(nextHopBytes.length);
@@ -182,6 +188,26 @@ class BgpPeer {
                     }
                 }
                 nlriBuf.push(...mvpnNlri);
+
+                routeIndex++;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                } else {
+                    break;
+                }
+            }
+            attr.push(...nlriBuf);
+            msgLen += nlriBuf.length;
+        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            // QP NLRI: DQPN(4字节) + 前缀长度(1字节) + 前缀(变长)
+            while (routeIndex < routes.length) {
+                const qpNlri = this.buildQpNlri(route);
+                if (msgLen + nlriBuf.length + qpNlri.length > BgpConst.BGP_MAX_PKT_SIZE) {
+                    if (nlriBuf.length > 0) {
+                        break;
+                    }
+                }
+                nlriBuf.push(...qpNlri);
 
                 routeIndex++;
                 if (routeIndex < routes.length) {
@@ -251,6 +277,27 @@ class BgpPeer {
                     }
                 }
                 nlriBuf.push(...mvpnNlri);
+
+                routeIndex++;
+                if (routeIndex < routes.length) {
+                    route = routes[routeIndex];
+                } else {
+                    break;
+                }
+            }
+            attr.push(...nlriBuf);
+            msgLen += nlriBuf.length;
+        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            // QP Withdraw NLRI: DQPN(4字节) + 前缀长度(1字节) + 前缀(变长)
+            let nlriBuf = [];
+            while (routeIndex < routes.length) {
+                const qpNlri = this.buildQpNlri(route);
+                if (msgLen + nlriBuf.length + qpNlri.length > BgpConst.BGP_MAX_PKT_SIZE) {
+                    if (nlriBuf.length > 0) {
+                        break;
+                    }
+                }
+                nlriBuf.push(...qpNlri);
 
                 routeIndex++;
                 if (routeIndex < routes.length) {
@@ -819,6 +866,11 @@ class BgpPeer {
                     if (result.status) {
                         this.session.sendRoute(result.buffer);
                     }
+                } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+                    const result = this.buildUpdateMpMsg([route], routeIndex);
+                    if (result.status) {
+                        this.session.sendRoute(result.buffer);
+                    }
                 }
             });
             return;
@@ -871,6 +923,16 @@ class BgpPeer {
             this.instance.afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4 &&
             this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_MVPN
         ) {
+            while (routeIndex < routes.length) {
+                const result = this.buildUpdateMpMsg(routes, routeIndex);
+                if (result.status) {
+                    this.session.sendRoute(result.buffer);
+                    routeIndex = result.index;
+                } else {
+                    break;
+                }
+            }
+        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
             while (routeIndex < routes.length) {
                 const result = this.buildUpdateMpMsg(routes, routeIndex);
                 if (result.status) {
@@ -941,7 +1003,41 @@ class BgpPeer {
                     break;
                 }
             }
+        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            while (routeIndex < withdrawnRoutes.length) {
+                const result = this.buildWithdrawMpMsg(withdrawnRoutes, routeIndex);
+                if (result.status) {
+                    this.session.sendRoute(result.buffer);
+                    routeIndex = result.index;
+                } else {
+                    break;
+                }
+            }
         }
+    }
+
+    buildQpNlri(route) {
+        const nlri = [];
+        // TLV 1: DQPN，变长 1-3 字节
+        const dqpn = route.dqpn || 0;
+        let dqpnBytes;
+        if (dqpn <= 0xff) {
+            dqpnBytes = [dqpn];
+        } else if (dqpn <= 0xffff) {
+            dqpnBytes = [(dqpn >> 8) & 0xff, dqpn & 0xff];
+        } else {
+            dqpnBytes = [(dqpn >> 16) & 0xff, (dqpn >> 8) & 0xff, dqpn & 0xff];
+        }
+        nlri.push(1);                // type = 1
+        nlri.push(dqpnBytes.length); // length（字节数）
+        nlri.push(...dqpnBytes);     // DQPN 值
+        // TLV 2: prefix，length 为 bit 数，value 为 ceil(mask/8) 字节
+        const prefixBytes = ipToBytes(route.ip);
+        const prefixLength = Math.ceil(route.mask / 8);
+        nlri.push(2);              // type = 2
+        nlri.push(route.mask);     // length（bit 数）
+        nlri.push(...prefixBytes.slice(0, prefixLength)); // 前缀字节
+        return Buffer.from(nlri);
     }
 
     buildMvpnNlri(route) {

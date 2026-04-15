@@ -14,6 +14,8 @@ import BgpPeerConfig from '../view/bgp/BgpPeerConfig.vue';
 import RouteIpv4 from '../view/bgp/RouteIpv4.vue';
 import RouteIpv6 from '../view/bgp/RouteIpv6.vue';
 import RouteMvpn from '../view/bgp/RouteMvpn.vue';
+import RouteIpv4Qp from '../view/bgp/RouteIpv4Qp.vue';
+import RouteIpv6Qp from '../view/bgp/RouteIpv6Qp.vue';
 import BmpMain from '../view/bmp/BmpMain.vue';
 import BmpConfig from '../view/bmp/BmpConfig.vue';
 import BgpSession from '../view/bmp/BgpSession.vue';
@@ -136,6 +138,18 @@ const routes = [
                         path: 'route-mvpn',
                         name: 'RouteMvpn',
                         component: RouteMvpn,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'route-ipv4-qp',
+                        name: 'RouteIpv4Qp',
+                        component: RouteIpv4Qp,
+                        meta: { keepAlive: true }
+                    },
+                    {
+                        path: 'route-ipv6-qp',
+                        name: 'RouteIpv6Qp',
+                        component: RouteIpv6Qp,
                         meta: { keepAlive: true }
                     }
                 ]

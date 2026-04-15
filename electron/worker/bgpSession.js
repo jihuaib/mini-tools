@@ -172,6 +172,16 @@ class BgpSession {
                                 this.peerAddrFamilyFlags,
                                 BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_MVPN
                             );
+                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV4_QP) {
+                            this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
+                                this.peerAddrFamilyFlags,
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP
+                            );
+                        } else if (addrFamilyType === BgpConst.BGP_ADDR_FAMILY.IPV6_QP) {
+                            this.peerAddrFamilyFlags = CommonUtils.BIT_SET(
+                                this.peerAddrFamilyFlags,
+                                BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP
+                            );
                         }
                     } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ROUTE_REFRESH) {
                         this.peerCapFlags = CommonUtils.BIT_SET(
@@ -244,6 +254,34 @@ class BgpSession {
                     )
                 ) {
                     const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV6_MVPN);
+                    const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
+                    if (instance) {
+                        this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
+                    }
+                }
+
+                // 同样检查IPv4 QP地址族
+                if (
+                    !CommonUtils.BIT_TEST(
+                        this.peerAddrFamilyFlags,
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP
+                    )
+                ) {
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV4_QP);
+                    const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
+                    if (instance) {
+                        this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
+                    }
+                }
+
+                // 同样检查IPv6 QP地址族
+                if (
+                    !CommonUtils.BIT_TEST(
+                        this.peerAddrFamilyFlags,
+                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP
+                    )
+                ) {
+                    const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV6_QP);
                     const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
                     if (instance) {
                         this.changePeerState(instance, BgpConst.BGP_PEER_STATE.NO_NEG);
@@ -378,6 +416,38 @@ class BgpSession {
                         [
                             ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
                             ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_MVPN)
+                        ]
+                    )
+                );
+            }
+            if (
+                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)
+            ) {
+                optParams.push(
+                    ...this.buildBgpCapability(
+                        BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
+                        0x06,
+                        BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
+                        0x04,
+                        [
+                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4),
+                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)
+                        ]
+                    )
+                );
+            }
+            if (
+                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP)
+            ) {
+                optParams.push(
+                    ...this.buildBgpCapability(
+                        BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
+                        0x06,
+                        BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
+                        0x04,
+                        [
+                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
+                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)
                         ]
                     )
                 );

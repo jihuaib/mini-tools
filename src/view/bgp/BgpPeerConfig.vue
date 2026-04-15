@@ -328,6 +328,64 @@
                                     </template>
                                 </a-table>
                             </a-tab-pane>
+                            <a-tab-pane :key="BGP_ADDR_FAMILY.IPV4_QP" tab="IPv4-QP邻居">
+                                <div class="bgp-peer-info-header">
+                                    <UnorderedListOutlined />
+                                    <span class="bgp-peer-info-header-text">IPv4-QP邻居列表</span>
+                                    <a-tag v-if="ipv4QpPeerList.length > 0" color="blue">
+                                        {{ ipv4QpPeerList.length }}
+                                    </a-tag>
+                                </div>
+                                <a-table
+                                    :columns="PeerInfoColumns"
+                                    :data-source="ipv4QpPeerList"
+                                    :row-key="
+                                        record =>
+                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
+                                    "
+                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                    :scroll="{ y: 140 }"
+                                    size="small"
+                                >
+                                    <template #bodyCell="{ column, record }">
+                                        <template v-if="column.key === 'action'">
+                                            <a-button type="primary" danger size="small" @click="deletePeer(record)">
+                                                <template #icon><DeleteOutlined /></template>
+                                                删除
+                                            </a-button>
+                                        </template>
+                                    </template>
+                                </a-table>
+                            </a-tab-pane>
+                            <a-tab-pane :key="BGP_ADDR_FAMILY.IPV6_QP" tab="IPv6-QP邻居">
+                                <div class="bgp-peer-info-header">
+                                    <UnorderedListOutlined />
+                                    <span class="bgp-peer-info-header-text">IPv6-QP邻居列表</span>
+                                    <a-tag v-if="ipv6QpPeerList.length > 0" color="blue">
+                                        {{ ipv6QpPeerList.length }}
+                                    </a-tag>
+                                </div>
+                                <a-table
+                                    :columns="PeerInfoColumns"
+                                    :data-source="ipv6QpPeerList"
+                                    :row-key="
+                                        record =>
+                                            `${record.vrfIndex || ''}-${record.peerIp || ''}-${record.addressFamily || ''}`
+                                    "
+                                    :pagination="{ pageSize: 10, showSizeChanger: false, position: ['bottomCenter'] }"
+                                    :scroll="{ y: 140 }"
+                                    size="small"
+                                >
+                                    <template #bodyCell="{ column, record }">
+                                        <template v-if="column.key === 'action'">
+                                            <a-button type="primary" danger size="small" @click="deletePeer(record)">
+                                                <template #icon><DeleteOutlined /></template>
+                                                删除
+                                            </a-button>
+                                        </template>
+                                    </template>
+                                </a-table>
+                            </a-tab-pane>
                         </a-tabs>
                     </div>
                 </a-card>
@@ -404,14 +462,18 @@
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
         { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC },
         { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
-        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN },
+        { label: 'IPv4-QP', value: BGP_ADDR_FAMILY.IPV4_QP },
+        { label: 'IPv6-QP', value: BGP_ADDR_FAMILY.IPV6_QP }
     ];
 
     const addressFamilyOptionsIpv6 = [
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC },
         { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC, disabled: true },
         { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
-        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN },
+        { label: 'IPv4-QP', value: BGP_ADDR_FAMILY.IPV4_QP },
+        { label: 'IPv6-QP', value: BGP_ADDR_FAMILY.IPV6_QP }
     ];
 
     // Peer configuration data
@@ -563,6 +625,8 @@
     const ipv6UncPeerList = ref([]);
     const ipv4MvpnPeerList = ref([]);
     const ipv6MvpnPeerList = ref([]);
+    const ipv4QpPeerList = ref([]);
+    const ipv6QpPeerList = ref([]);
     const activePeerInfoTabKey = ref(BGP_ADDR_FAMILY.IPV4_UNC);
     const PeerInfoColumns = [
         {
@@ -656,6 +720,24 @@
                 if (index !== -1) {
                     ipv6MvpnPeerList.value[index] = { ...ipv6MvpnPeerList.value[index], ...data };
                 }
+            } else if (data.addressFamily === BGP_ADDR_FAMILY.IPV4_QP) {
+                const index = ipv4QpPeerList.value.findIndex(
+                    peer =>
+                        `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                        `${data.vrfIndex || ''}-${data.peerIp || ''}-${data.addressFamily || ''}`
+                );
+                if (index !== -1) {
+                    ipv4QpPeerList.value[index] = { ...ipv4QpPeerList.value[index], ...data };
+                }
+            } else if (data.addressFamily === BGP_ADDR_FAMILY.IPV6_QP) {
+                const index = ipv6QpPeerList.value.findIndex(
+                    peer =>
+                        `${peer.vrfIndex || ''}-${peer.peerIp || ''}-${peer.addressFamily || ''}` ===
+                        `${data.vrfIndex || ''}-${data.peerIp || ''}-${data.addressFamily || ''}`
+                );
+                if (index !== -1) {
+                    ipv6QpPeerList.value[index] = { ...ipv6QpPeerList.value[index], ...data };
+                }
             }
         } else {
             message.error(data.msg);
@@ -684,12 +766,24 @@
             ipv6MvpnPeerList.value = Array.isArray(peerInfo.data[BGP_ADDR_FAMILY.IPV6_MVPN])
                 ? [...peerInfo.data[BGP_ADDR_FAMILY.IPV6_MVPN]]
                 : [];
+
+            // 处理 IPv4-QP 邻居信息
+            ipv4QpPeerList.value = Array.isArray(peerInfo.data[BGP_ADDR_FAMILY.IPV4_QP])
+                ? [...peerInfo.data[BGP_ADDR_FAMILY.IPV4_QP]]
+                : [];
+
+            // 处理 IPv6-QP 邻居信息
+            ipv6QpPeerList.value = Array.isArray(peerInfo.data[BGP_ADDR_FAMILY.IPV6_QP])
+                ? [...peerInfo.data[BGP_ADDR_FAMILY.IPV6_QP]]
+                : [];
         } else {
             console.error(peerInfo.msg || 'Peer信息查询失败');
             ipv4UncPeerList.value = [];
             ipv6UncPeerList.value = [];
             ipv4MvpnPeerList.value = [];
             ipv6MvpnPeerList.value = [];
+            ipv4QpPeerList.value = [];
+            ipv6QpPeerList.value = [];
         }
     };
 

@@ -107,7 +107,9 @@
         { label: 'Ipv4-UNC', value: BGP_ADDR_FAMILY.IPV4_UNC, disabled: true },
         { label: 'Ipv6-UNC', value: BGP_ADDR_FAMILY.IPV6_UNC },
         { label: 'IPv4-MVPN', value: BGP_ADDR_FAMILY.IPV4_MVPN },
-        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN }
+        { label: 'IPv6-MVPN', value: BGP_ADDR_FAMILY.IPV6_MVPN },
+        { label: 'IPv4-QP', value: BGP_ADDR_FAMILY.IPV4_QP },
+        { label: 'IPv6-QP', value: BGP_ADDR_FAMILY.IPV6_QP }
     ];
 
     const bgpConfigData = ref({

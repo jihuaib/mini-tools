@@ -20,10 +20,17 @@ class BgpRoute {
         this.sourceIp = null;
         this.groupIp = null;
         this.sourceAs = null;
+
+        // QP
+        this.dqpn = null;
     }
 
     static makeKey(ip, mask) {
         return `${ip}|${mask}`;
+    }
+
+    static makeQpKey(dqpn, ip, mask) {
+        return `${dqpn}|${ip}|${mask}`;
     }
 
     static parseKey(key) {
@@ -50,6 +57,7 @@ class BgpRoute {
             sourceIp: this.sourceIp,
             groupIp: this.groupIp,
             sourceAs: this.sourceAs,
+            dqpn: this.dqpn,
             addressFamily: addressFamily
         };
     }

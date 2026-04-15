@@ -13,6 +13,8 @@ class BgpInstance {
         // 扩展团体属性
         this.rt = '';
         this.singleRouteSend = false;
+        // QP路由下一跳 BSID
+        this.bsid = '';
     }
 
     static makeKey(vrfIndex, afi, safi) {
