@@ -1031,13 +1031,26 @@ class BgpPeer {
         nlri.push(1);                // type = 1
         nlri.push(dqpnBytes.length); // length（字节数）
         nlri.push(...dqpnBytes);     // DQPN 值
+
         // TLV 2: prefix，length 为 bit 数，value 为 ceil(mask/8) 字节
         const prefixBytes = ipToBytes(route.ip);
         const prefixLength = Math.ceil(route.mask / 8);
         nlri.push(2);              // type = 2
         nlri.push(route.mask);     // length（bit 数）
         nlri.push(...prefixBytes.slice(0, prefixLength)); // 前缀字节
-        return Buffer.from(nlri);
+
+        // 计算总长度（1字节长度字段 + 实际数据长度）
+        const totalLength = nlri.length;
+
+        // 检查长度是否超过255
+        if (totalLength > 255) {
+            throw new Error(`NLRIs total length ${totalLength} exceeds 255`);
+        }
+
+        // 在最前面加上总长度（1字节）
+        const result = [totalLength, ...nlri];
+
+        return Buffer.from(result);
     }
 
     buildMvpnNlri(route) {

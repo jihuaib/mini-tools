@@ -705,8 +705,9 @@ function parseMpReachNlri(buffer, context) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            const nlriStart = position;
+            let nlriTotalBits = buffer[position];
             // TLV 1: DQPN
+            position += 1
             position += 1; // skip type byte (=1)
             const dqpnLen = buffer[position];
             position += 1;
@@ -722,7 +723,7 @@ function parseMpReachNlri(buffer, context) {
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
-            const nlriTotalBits = (position - nlriStart) * 8;
+            nlriTotalBits = nlriTotalBits * 8;
             if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
                 prefix = ipv4BufferToString(prefixBuffer, prefixLength);
             } else {
@@ -854,8 +855,9 @@ function parseMpUnreachNlri(buffer, context) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            const nlriStart = position;
             // TLV 1: DQPN
+            let nlriTotalBits = buffer[position]
+            position += 1;
             position += 1; // skip type byte (=1)
             const dqpnLen = buffer[position];
             position += 1;
@@ -871,7 +873,7 @@ function parseMpUnreachNlri(buffer, context) {
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
-            const nlriTotalBits = (position - nlriStart) * 8;
+            nlriTotalBits = nlriTotalBits * 8;
             if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
                 prefix = ipv4BufferToString(prefixBuffer, prefixLength);
             } else {
