@@ -68,7 +68,7 @@
                                     <ScrollTextarea
                                         v-model:model-value="formState.ipPacket"
                                         :height="184"
-                                        placeholder="完整 IPv4 报文（hex）"
+                                        placeholder="完整 IPv4 / IPv6 报文（hex），自动识别版本"
                                         :status="validationErrors.ipPacket ? 'error' : ''"
                                     />
                                 </a-tooltip>
@@ -85,6 +85,9 @@
                                     <a-radio value="hmac-sha1">HMAC-SHA1-12</a-radio>
                                     <a-radio value="hmac-sha1-20">HMAC-SHA1-20</a-radio>
                                     <a-radio value="hmac-sha256">HMAC-SHA-256</a-radio>
+                                    <a-radio value="hmac-sha384">HMAC-SHA-384</a-radio>
+                                    <a-radio value="hmac-sha512">HMAC-SHA-512</a-radio>
+                                    <a-radio value="hmac-sm3">HMAC-SM3</a-radio>
                                     <a-radio value="aes-cmac">AES-128-CMAC</a-radio>
                                     <a-radio value="md5">MD5</a-radio>
                                     <a-radio value="sha1">SHA-1</a-radio>
@@ -126,14 +129,14 @@
         <a-modal v-model:open="showResultModal" title="MAC 计算结果" :footer="null" width="680px">
             <template v-if="result">
                 <a-descriptions :column="1" bordered size="small">
-                    <a-descriptions-item label="IP 伪头部">
+                    <a-descriptions-item :label="pseudoHeaderLabel">
                         <div class="result-row">
                             <span style="font-family: monospace; word-break: break-all">
                                 {{ result.pseudoHeaderHex }}
                             </span>
                             <a-button size="small" @click="copyToClipboard(result.pseudoHeaderHex)">复制</a-button>
                         </div>
-                        <div class="field-hint">源IP(4) + 目的IP(4) + 00 + 协议(1) + TCP段长度(2)</div>
+                        <div class="field-hint">{{ pseudoHeaderHint }}</div>
                     </a-descriptions-item>
                     <a-descriptions-item
                         v-if="result.trafficKeyHex !== undefined && result.trafficKeyHex !== null"
@@ -200,12 +203,30 @@
     const skipKdf = ref(false);
 
     const PLAIN_ALGOS = ['md5', 'sha1', 'sha256', 'sm3'];
-    const HMAC_ALGOS = ['hmac-sha1', 'hmac-sha1-20', 'hmac-md5', 'hmac-sha256', 'aes-cmac'];
+    const HMAC_ALGOS = [
+        'hmac-sha1',
+        'hmac-sha1-20',
+        'hmac-md5',
+        'hmac-sha256',
+        'hmac-sha384',
+        'hmac-sha512',
+        'hmac-sm3',
+        'aes-cmac'
+    ];
     const isPlainAlgo = computed(() => PLAIN_ALGOS.includes(algorithm.value));
     const isHmacAlgo = computed(() => HMAC_ALGOS.includes(algorithm.value));
     const isKdfAlgo = computed(() => isHmacAlgo.value || isPlainAlgo.value);
     const showKdfIsnInputs = computed(() => isKdfAlgo.value && !skipKdf.value);
     const includePseudoHeader = ref(true);
+
+    const pseudoHeaderLabel = computed(() =>
+        result.value?.ipVersion === 6 ? 'IPv6 伪头部' : 'IPv4 伪头部'
+    );
+    const pseudoHeaderHint = computed(() =>
+        result.value?.ipVersion === 6
+            ? '源IP(16) + 目的IP(16) + 上层包长度(4) + 零(3) + Next Header(1)'
+            : '源IP(4) + 目的IP(4) + 00(1) + 协议(1) + TCP段长度(2)'
+    );
 
     const saveState = () => {
         window.toolsApi.saveTcpAoMacState({

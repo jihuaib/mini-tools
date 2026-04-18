@@ -133,6 +133,15 @@ function isHashSupported(algorithm) {
     return crypto.getHashes().some(name => name.toLowerCase() === target);
 }
 
+function isHmacSupported(algorithm) {
+    try {
+        crypto.createHmac(algorithm, Buffer.alloc(1));
+        return true;
+    } catch (_e) {
+        return false;
+    }
+}
+
 function createHashCompat(algorithm) {
     const target = String(algorithm).toLowerCase();
     if (target === 'sm3' && !isHashSupported(target)) {
@@ -141,8 +150,58 @@ function createHashCompat(algorithm) {
     return crypto.createHash(algorithm);
 }
 
+const SM3_BLOCK_SIZE = 64;
+
+class Sm3Hmac {
+    constructor(key) {
+        const keyBuf = toBuffer(key);
+        let normalized = keyBuf;
+        if (keyBuf.length > SM3_BLOCK_SIZE) {
+            normalized = sm3Digest(keyBuf);
+        }
+        const padded = Buffer.alloc(SM3_BLOCK_SIZE);
+        normalized.copy(padded, 0);
+
+        this.innerKey = Buffer.alloc(SM3_BLOCK_SIZE);
+        this.outerKey = Buffer.alloc(SM3_BLOCK_SIZE);
+        for (let i = 0; i < SM3_BLOCK_SIZE; i++) {
+            this.innerKey[i] = padded[i] ^ 0x36;
+            this.outerKey[i] = padded[i] ^ 0x5c;
+        }
+        this.chunks = [this.innerKey];
+        this.result = null;
+    }
+
+    update(data, encoding) {
+        if (this.result) {
+            throw new Error('Digest already called');
+        }
+        this.chunks.push(toBuffer(data, encoding));
+        return this;
+    }
+
+    digest(encoding) {
+        if (!this.result) {
+            const inner = sm3Digest(Buffer.concat(this.chunks));
+            this.result = sm3Digest(Buffer.concat([this.outerKey, inner]));
+            this.chunks = [];
+        }
+        return encoding ? this.result.toString(encoding) : Buffer.from(this.result);
+    }
+}
+
+function createHmacCompat(algorithm, key) {
+    const target = String(algorithm).toLowerCase();
+    if (target === 'sm3' && !isHmacSupported(target)) {
+        return new Sm3Hmac(key);
+    }
+    return crypto.createHmac(algorithm, key);
+}
+
 module.exports = {
     createHashCompat,
+    createHmacCompat,
     isHashSupported,
+    isHmacSupported,
     sm3Digest
 };

@@ -5,7 +5,7 @@ const { successResponse, errorResponse } = require('../utils/responseUtils');
 const logger = require('../log/logger');
 const WorkerWithPromise = require('../worker/workerWithPromise');
 const { DEFAULT_TOOLS_SETTINGS } = require('../const/toolsConst');
-const { createHashCompat } = require('../utils/hashUtils');
+const { createHashCompat, createHmacCompat } = require('../utils/hashUtils');
 
 class ToolsApp {
     constructor(ipc, store) {
@@ -199,10 +199,16 @@ class ToolsApp {
         return Buffer.from(cleaned, 'hex');
     }
 
-    parseIpv4Packet(buf) {
-        if (buf.length < 20) throw new Error('IP 报文长度不足（最少 20 字节）');
+    parseIpPacket(buf) {
+        if (buf.length < 1) throw new Error('IP 报文长度不足');
         const version = buf[0] >> 4;
-        if (version !== 4) throw new Error(`仅支持 IPv4，当前版本号: ${version}`);
+        if (version === 4) return this.parseIpv4Packet(buf);
+        if (version === 6) return this.parseIpv6Packet(buf);
+        throw new Error(`不支持的 IP 版本号: ${version}`);
+    }
+
+    parseIpv4Packet(buf) {
+        if (buf.length < 20) throw new Error('IPv4 报文长度不足（最少 20 字节）');
 
         const ihl = (buf[0] & 0x0f) * 4;
         if (ihl < 20) throw new Error(`IP 头部长度非法: ${ihl}`);
@@ -212,8 +218,10 @@ class ToolsApp {
             throw new Error(`报文实际长度 ${buf.length} 小于 Total Length 字段 ${totalLength}`);
 
         const protocol = buf[9];
-        const srcIp = buf.subarray(12, 16);
-        const dstIp = buf.subarray(16, 20);
+        if (protocol !== 6) throw new Error(`IPv4 协议字段不是 TCP，实际: ${protocol}`);
+
+        const srcIp = Buffer.from(buf.subarray(12, 16));
+        const dstIp = Buffer.from(buf.subarray(16, 20));
 
         const tcpLength = totalLength - ihl;
         if (tcpLength < 20) throw new Error(`TCP 段长度不足（最少 20 字节）: ${tcpLength}`);
@@ -228,7 +236,60 @@ class ToolsApp {
         pseudoHeader[9] = protocol;
         pseudoHeader.writeUInt16BE(tcpLength, 10);
 
-        return { pseudoHeader, rawTcpSegment };
+        return { version: 4, pseudoHeader, rawTcpSegment, srcIp, dstIp };
+    }
+
+    parseIpv6Packet(buf) {
+        if (buf.length < 40) throw new Error('IPv6 报文长度不足（最少 40 字节）');
+
+        const payloadLength = buf.readUInt16BE(4);
+        let nextHeader = buf[6];
+        const srcIp = Buffer.from(buf.subarray(8, 24));
+        const dstIp = Buffer.from(buf.subarray(24, 40));
+
+        const declaredEnd = 40 + payloadLength;
+        if (buf.length < declaredEnd) {
+            throw new Error(`报文实际长度 ${buf.length} 小于 IPv6 Payload Length+40 字段 ${declaredEnd}`);
+        }
+
+        // 需要按 Next Header 链逐级跳过扩展头，直到遇到 TCP(6)。
+        // 0:HBH, 43:Routing, 44:Fragment(定长 8B), 51:AH(长度单位为 4B), 60:DstOpts, 135:Mobility, 139:HIP, 140:Shim6
+        const EXT_HEADERS = new Set([0, 43, 44, 51, 60, 135, 139, 140]);
+        let offset = 40;
+        while (EXT_HEADERS.has(nextHeader)) {
+            if (offset + 2 > declaredEnd) throw new Error('IPv6 扩展头部解析越界');
+            const kind = nextHeader;
+            nextHeader = buf[offset];
+            let extLen;
+            if (kind === 44) {
+                extLen = 8; // Fragment header
+            } else if (kind === 51) {
+                extLen = (buf[offset + 1] + 2) * 4; // AH: Payload Length 以 4 字节为单位，再 +2
+            } else {
+                extLen = (buf[offset + 1] + 1) * 8; // 其它扩展头: Hdr Ext Len 以 8 字节为单位，再 +1
+            }
+            offset += extLen;
+            if (offset > declaredEnd) throw new Error('IPv6 扩展头部超出 Payload Length');
+        }
+
+        if (nextHeader !== 6) throw new Error(`IPv6 上层协议不是 TCP，实际: ${nextHeader}`);
+
+        const tcpLength = declaredEnd - offset;
+        if (tcpLength < 20) throw new Error(`TCP 段长度不足（最少 20 字节）: ${tcpLength}`);
+
+        const rawTcpSegment = Buffer.from(buf.subarray(offset, declaredEnd));
+
+        // IPv6 伪头部 (RFC 8200 §8.1)：源IP(16) + 目的IP(16) + 上层包长度(4) + 零(3) + Next Header(1)
+        const pseudoHeader = Buffer.alloc(40);
+        srcIp.copy(pseudoHeader, 0);
+        dstIp.copy(pseudoHeader, 16);
+        pseudoHeader.writeUInt32BE(tcpLength, 32);
+        pseudoHeader[36] = 0;
+        pseudoHeader[37] = 0;
+        pseudoHeader[38] = 0;
+        pseudoHeader[39] = 6;
+
+        return { version: 6, pseudoHeader, rawTcpSegment, srcIp, dstIp };
     }
 
     extractTcpAoOptions(tcpSegment) {
@@ -366,10 +427,10 @@ class ToolsApp {
         return null;
     }
 
-    extractTcpAoKdfContext(ipBuf, rawTcpSegment) {
+    extractTcpAoKdfContext(parsed, rawTcpSegment) {
         return {
-            srcIp: ipBuf.subarray(12, 16),
-            dstIp: ipBuf.subarray(16, 20),
+            srcIp: parsed.srcIp,
+            dstIp: parsed.dstIp,
             srcPort: rawTcpSegment.readUInt16BE(0),
             dstPort: rawTcpSegment.readUInt16BE(2),
             isnA: rawTcpSegment.readUInt32BE(4),
@@ -378,14 +439,20 @@ class ToolsApp {
     }
 
     buildTcpAoKdfInput(srcIp, dstIp, srcPort, dstPort, isnA, isnB, outputBits) {
+        // RFC 5926 §3.1.1.2: CONTEXT = src_IP || dst_IP || src_port || dst_port || src_ISN || dst_ISN
+        // IPv4 地址占 4 字节、IPv6 地址占 16 字节，上层端口和 ISN 字段宽度不变。
+        if (srcIp.length !== dstIp.length) {
+            throw new Error(`TCP-AO KDF context 中源/目的地址长度不一致: ${srcIp.length} vs ${dstIp.length}`);
+        }
         const label = Buffer.from('TCP-AO', 'ascii');
-        const context = Buffer.alloc(20);
+        const ipLen = srcIp.length;
+        const context = Buffer.alloc(ipLen * 2 + 12);
         srcIp.copy(context, 0);
-        dstIp.copy(context, 4);
-        context.writeUInt16BE(srcPort, 8);
-        context.writeUInt16BE(dstPort, 10);
-        context.writeUInt32BE(isnA, 12);
-        context.writeUInt32BE(isnB, 16);
+        dstIp.copy(context, ipLen);
+        context.writeUInt16BE(srcPort, ipLen * 2);
+        context.writeUInt16BE(dstPort, ipLen * 2 + 2);
+        context.writeUInt32BE(isnA, ipLen * 2 + 4);
+        context.writeUInt32BE(isnB, ipLen * 2 + 8);
 
         const length = Buffer.alloc(2);
         length.writeUInt16BE(outputBits, 0);
@@ -422,7 +489,15 @@ class ToolsApp {
     deriveTrafficKey(masterKeyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, hashAlgo) {
         // RFC 5926 标准定义了 HMAC-SHA1 / AES-128-CMAC。
         // 这里保留 SHA-256 / HMAC-MD5 这类实验性 PRF，方便和厂商实现做比对。
-        const lengthBitsMap = { sha1: 0x00a0, md5: 0x0080, sha256: 0x0100, 'aes-cmac': 0x0080 };
+        const lengthBitsMap = {
+            sha1: 0x00a0,
+            md5: 0x0080,
+            sha256: 0x0100,
+            sha384: 0x0180,
+            sha512: 0x0200,
+            sm3: 0x0100,
+            'aes-cmac': 0x0080
+        };
         const outputBits = lengthBitsMap[hashAlgo];
         if (!outputBits) {
             throw new Error(`Unsupported TCP-AO KDF algorithm: ${hashAlgo}`);
@@ -433,13 +508,20 @@ class ToolsApp {
             return this.computeAesCmac(this.normalizeAesKey(masterKeyBuf), kdfInput);
         }
 
-        const prfMap = { sha1: 'sha1', md5: 'md5', sha256: 'sha256' };
+        const prfMap = {
+            sha1: 'sha1',
+            md5: 'md5',
+            sha256: 'sha256',
+            sha384: 'sha384',
+            sha512: 'sha512',
+            sm3: 'sm3'
+        };
         const prfAlgo = prfMap[hashAlgo];
         if (!prfAlgo) {
             throw new Error(`Unsupported TCP-AO PRF algorithm: ${hashAlgo}`);
         }
 
-        return crypto.createHmac(prfAlgo, masterKeyBuf).update(kdfInput).digest();
+        return createHmacCompat(prfAlgo, masterKeyBuf).update(kdfInput).digest();
     }
 
     derivePlainTrafficKey(masterKeyBuf, srcIp, dstIp, srcPort, dstPort, isnA, isnB, algorithm) {
@@ -462,7 +544,8 @@ class ToolsApp {
             const sneBuf = sne && sne.trim() ? this.hexToBuffer(sne) : Buffer.alloc(0);
             const ipBuf = this.hexToBuffer(ipPacket);
 
-            const { pseudoHeader, rawTcpSegment } = this.parseIpv4Packet(ipBuf);
+            const parsed = this.parseIpPacket(ipBuf);
+            const { pseudoHeader, rawTcpSegment } = parsed;
             const tcpSegment = this.buildTcpSegmentForMac(this.zeroTcpAoMacField(rawTcpSegment), includeOtherOptions);
 
             const pseudoPart = includePseudoHeader ? pseudoHeader : Buffer.alloc(0);
@@ -476,6 +559,9 @@ class ToolsApp {
                 'hmac-sha1-20': 20,
                 'hmac-md5': 12,
                 'hmac-sha256': 12,
+                'hmac-sha384': 12,
+                'hmac-sha512': 12,
+                'hmac-sm3': 12,
                 'aes-cmac': 12,
                 md5: 16,
                 sha1: 20,
@@ -484,7 +570,7 @@ class ToolsApp {
             };
             const packetMacLen = this.getTcpAoMacFieldLength(rawTcpSegment);
             const macLen = packetMacLen ?? macLenMap[algorithm] ?? 12;
-            const kdfContext = this.extractTcpAoKdfContext(ipBuf, rawTcpSegment);
+            const kdfContext = this.extractTcpAoKdfContext(parsed, rawTcpSegment);
             const effectiveIsnA = this.parseOptionalUint32Input(isnA, 'ISN A') ?? kdfContext.isnA;
             const effectiveIsnB = this.parseOptionalUint32Input(isnB, 'ISN B') ?? kdfContext.isnB;
 
@@ -512,6 +598,9 @@ class ToolsApp {
                     'hmac-sha1-20': 'sha1',
                     'hmac-md5': 'md5',
                     'hmac-sha256': 'sha256',
+                    'hmac-sha384': 'sha384',
+                    'hmac-sha512': 'sha512',
+                    'hmac-sm3': 'sm3',
                     'aes-cmac': 'aes-cmac'
                 };
                 let hmacKey;
@@ -537,15 +626,22 @@ class ToolsApp {
                         'hmac-sha1': 'sha1',
                         'hmac-sha1-20': 'sha1',
                         'hmac-md5': 'md5',
-                        'hmac-sha256': 'sha256'
+                        'hmac-sha256': 'sha256',
+                        'hmac-sha384': 'sha384',
+                        'hmac-sha512': 'sha512',
+                        'hmac-sm3': 'sm3'
                     }[algorithm];
-                    macFull = crypto.createHmac(nodeAlgo, hmacKey).update(msgBuf).digest();
+                    if (!nodeAlgo) {
+                        throw new Error(`Unsupported TCP-AO MAC algorithm: ${algorithm}`);
+                    }
+                    macFull = createHmacCompat(nodeAlgo, hmacKey).update(msgBuf).digest();
                 }
             }
 
             const mac96 = macFull.subarray(0, macLen).toString('hex').toUpperCase();
             return successResponse(
                 {
+                    ipVersion: parsed.version,
                     pseudoHeaderHex: pseudoHeader.toString('hex').toUpperCase(),
                     messageHex: msgBuf.toString('hex').toUpperCase(),
                     trafficKeyHex,
