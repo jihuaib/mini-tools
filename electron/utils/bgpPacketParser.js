@@ -182,13 +182,21 @@ function parseOpenMessage(buffer) {
                             }
                             break;
                         case BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING: // Extended Next Hop Encoding
-                            if (capLen >= 6) {
-                                capability.afi = buffer.readUInt16BE(tempPosition);
+                            capability.nextHops = [];
+                            while (tempPosition + 6 <= capPosition + capLen) {
+                                const afi = buffer.readUInt16BE(tempPosition);
                                 tempPosition += 2;
-                                capability.safi = buffer.readUInt16BE(tempPosition);
+                                const safi = buffer.readUInt16BE(tempPosition);
                                 tempPosition += 2;
-                                capability.ipType = buffer.readUInt16BE(tempPosition);
+                                const ipType = buffer.readUInt16BE(tempPosition);
                                 tempPosition += 2;
+                                capability.nextHops.push({ afi, safi, ipType });
+                            }
+
+                            if (capability.nextHops.length > 0) {
+                                capability.afi = capability.nextHops[0].afi;
+                                capability.safi = capability.nextHops[0].safi;
+                                capability.ipType = capability.nextHops[0].ipType;
                             }
                             break;
                         case BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH: // ADD-PATH
@@ -948,10 +956,19 @@ function getBgpPacketSummary(parsedPacket) {
                         summary += ` (${roleName})`;
                     } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING) {
                         // Extended Next Hop Encoding
-                        const afiName = getBgpAfiName(cap.afi);
-                        const safiName = getBgpSafiName(cap.safi);
-                        const ipTypeName = getIpTypeName(cap.ipType);
-                        summary += ` (${afiName}/${safiName}/${ipTypeName})`;
+                        if (cap.nextHops && cap.nextHops.length > 0) {
+                            cap.nextHops.forEach(nextHop => {
+                                const afiName = getBgpAfiName(nextHop.afi);
+                                const safiName = getBgpSafiName(nextHop.safi);
+                                const ipTypeName = getIpTypeName(nextHop.ipType);
+                                summary += `\n    - ${afiName}/${safiName}/${ipTypeName}`;
+                            });
+                        } else {
+                            const afiName = getBgpAfiName(cap.afi);
+                            const safiName = getBgpSafiName(cap.safi);
+                            const ipTypeName = getIpTypeName(cap.ipType);
+                            summary += ` (${afiName}/${safiName}/${ipTypeName})`;
+                        }
                     } else if (cap.code === BgpConst.BGP_OPEN_CAP_CODE.ADD_PATH) {
                         // ADD-PATH
                         if (cap.addPaths && cap.addPaths.length > 0) {

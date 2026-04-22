@@ -684,6 +684,12 @@ class BgpWorker {
                 bgpRoute.nextHop = instance.bsid;
                 instance.routeMap.set(key, bgpRoute);
                 hasRouteChanged = true;
+            } else {
+                const bgpRoute = instance.routeMap.get(key);
+                if (bgpRoute.nextHop !== instance.bsid) {
+                    bgpRoute.nextHop = instance.bsid;
+                    hasRouteChanged = true;
+                }
             }
         });
 

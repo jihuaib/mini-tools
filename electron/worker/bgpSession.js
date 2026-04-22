@@ -488,21 +488,40 @@ class BgpSession {
             );
         }
 
-        // IPv4 Unicast 路由使用 IPv6 nexthop
+        // 按已启用的 IPv4 地址族逐条追加扩展下一跳能力
         if (CommonUtils.BIT_TEST(this.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
-            optParams.push(
-                ...this.buildBgpCapability(
-                    BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
-                    0x08,
-                    BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING,
-                    0x06,
-                    [
+            const extNextHopFamilies = [];
+
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC)) {
+                extNextHopFamilies.push(BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST);
+            }
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN)) {
+                extNextHopFamilies.push(BgpConst.BGP_SAFI_TYPE.SAFI_MVPN);
+            }
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)) {
+                extNextHopFamilies.push(BgpConst.BGP_SAFI_TYPE.SAFI_QP);
+            }
+
+            if (extNextHopFamilies.length > 0) {
+                const capInfo = [];
+                extNextHopFamilies.forEach(safi => {
+                    capInfo.push(
                         ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4),
-                        ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST),
+                        ...writeUInt16(safi),
                         ...writeUInt16(BgpConst.IP_TYPE.IPV6)
-                    ]
-                )
-            );
+                    );
+                });
+
+                optParams.push(
+                    ...this.buildBgpCapability(
+                        BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
+                        capInfo.length + 2,
+                        BgpConst.BGP_OPEN_CAP_CODE.EXTENDED_NEXT_HOP_ENCODING,
+                        capInfo.length,
+                        capInfo
+                    )
+                );
+            }
         }
 
         if (this.openCapCustom && this.openCapCustom.trim() !== '') {

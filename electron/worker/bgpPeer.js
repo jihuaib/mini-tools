@@ -127,11 +127,21 @@ class BgpPeer {
         msgLen += 3;
 
         // Next Hop
+        let route = routes[routeIndex];
         const isSingleRouteMode =
             routes.length === 1 && routes[0].nextHop && this.session.peerType === BgpConst.BGP_PEER_TYPE.PEER_TYPE_IBGP;
         const nextHopIp = isSingleRouteMode ? routes[0].nextHop : this.session.localIp;
 
-        if (CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)) {
+        if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
+            // QP Next Hop 始终优先使用 BSID，避免被扩展下一跳逻辑覆盖
+            const qpNextHop = route.nextHop || this.instance.bsid || this.session.localIp;
+            const nextHopBytes = ipToBytes(`${qpNextHop}`);
+            attr.push(nextHopBytes.length);
+            attr.push(...nextHopBytes);
+            msgLen += 1 + nextHopBytes.length;
+        } else if (
+            CommonUtils.BIT_TEST(this.session.localCapFlags, BgpConst.BGP_CAP_FLAGS.EXTENDED_NEXT_HOP_ENCODING)
+        ) {
             const nextHopBytes = ipToBytes(`${nextHopIp}`);
             attr.push(nextHopBytes.length);
             attr.push(...nextHopBytes);
@@ -155,12 +165,6 @@ class BgpPeer {
                 attr.push(...nextHopBytes);
                 msgLen += 1 + nextHopBytes.length;
             }
-        } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            // QP Next Hop: 固定 BSID（用户配置）
-            const bsidBytes = ipToBytes(this.instance.bsid || this.session.localIp);
-            attr.push(bsidBytes.length);
-            attr.push(...bsidBytes);
-            msgLen += 1 + bsidBytes.length;
         } else {
             const nextHopBytes = ipToBytes(`::ffff:${this.session.localIp}`);
             attr.push(nextHopBytes.length);
@@ -173,7 +177,6 @@ class BgpPeer {
         msgLen += 1;
 
         // NLRI
-        let route = routes[routeIndex];
         let nlriBuf = [];
 
         if (
