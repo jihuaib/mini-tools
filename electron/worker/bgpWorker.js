@@ -70,8 +70,14 @@ class BgpWorker {
             BgpConst.BGP_REQ_TYPES.GENERATE_IPV6_QP_ROUTES,
             this.generateQpRoutes.bind(this)
         );
-        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV4_QP_ROUTES, this.deleteQpRoute.bind(this));
-        this.messageHandler.registerHandler(BgpConst.BGP_REQ_TYPES.DELETE_IPV6_QP_ROUTES, this.deleteQpRoute.bind(this));
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.DELETE_IPV4_QP_ROUTES,
+            this.deleteQpRoute.bind(this)
+        );
+        this.messageHandler.registerHandler(
+            BgpConst.BGP_REQ_TYPES.DELETE_IPV6_QP_ROUTES,
+            this.deleteQpRoute.bind(this)
+        );
     }
 
     async startTcpServer(messageId) {
@@ -661,9 +667,7 @@ class BgpWorker {
 
         // 生成路由：IPv4 QP 使用 IPv4 前缀格式，IPv6 QP 使用 IPv6 前缀格式
         const ipType =
-            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP
-                ? BgpConst.IP_TYPE.IPV4
-                : BgpConst.IP_TYPE.IPV6;
+            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP ? BgpConst.IP_TYPE.IPV4 : BgpConst.IP_TYPE.IPV6;
         const { genRouteIps } = require('../utils/ipUtils');
         const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
         if (routes.length === 0) {
@@ -715,9 +719,7 @@ class BgpWorker {
         }
 
         const ipType =
-            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP
-                ? BgpConst.IP_TYPE.IPV4
-                : BgpConst.IP_TYPE.IPV6;
+            config.addressFamily === BgpConst.BGP_ADDR_FAMILY.IPV4_QP ? BgpConst.IP_TYPE.IPV4 : BgpConst.IP_TYPE.IPV6;
         const { genRouteIps } = require('../utils/ipUtils');
         const routes = genRouteIps(ipType, config.prefix, config.mask, config.count);
         if (routes.length === 0) {

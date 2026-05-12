@@ -262,10 +262,7 @@ class BgpSession {
 
                 // 同样检查IPv4 QP地址族
                 if (
-                    !CommonUtils.BIT_TEST(
-                        this.peerAddrFamilyFlags,
-                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP
-                    )
+                    !CommonUtils.BIT_TEST(this.peerAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)
                 ) {
                     const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV4_QP);
                     const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
@@ -276,10 +273,7 @@ class BgpSession {
 
                 // 同样检查IPv6 QP地址族
                 if (
-                    !CommonUtils.BIT_TEST(
-                        this.peerAddrFamilyFlags,
-                        BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP
-                    )
+                    !CommonUtils.BIT_TEST(this.peerAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP)
                 ) {
                     const { afi, safi } = getAfiAndSafi(BgpConst.BGP_ADDR_FAMILY.IPV6_QP);
                     const instance = this.instanceMap.get(BgpInstance.makeKey(0, afi, safi));
@@ -420,35 +414,25 @@ class BgpSession {
                     )
                 );
             }
-            if (
-                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)
-            ) {
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)) {
                 optParams.push(
                     ...this.buildBgpCapability(
                         BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
                         0x06,
                         BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
                         0x04,
-                        [
-                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4),
-                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)
-                        ]
+                        [...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV4), ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)]
                     )
                 );
             }
-            if (
-                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP)
-            ) {
+            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV6_QP)) {
                 optParams.push(
                     ...this.buildBgpCapability(
                         BgpConst.BGP_OPEN_OPT_TYPE.OPT_TYPE,
                         0x06,
                         BgpConst.BGP_OPEN_CAP_CODE.MULTIPROTOCOL_EXTENSIONS,
                         0x04,
-                        [
-                            ...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6),
-                            ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)
-                        ]
+                        [...writeUInt16(BgpConst.BGP_AFI_TYPE.AFI_IPV6), ...writeUInt16(BgpConst.BGP_SAFI_TYPE.SAFI_QP)]
                     )
                 );
             }
@@ -495,7 +479,9 @@ class BgpSession {
             if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_UNC)) {
                 extNextHopFamilies.push(BgpConst.BGP_SAFI_TYPE.SAFI_UNICAST);
             }
-            if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN)) {
+            if (
+                CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_MVPN)
+            ) {
                 extNextHopFamilies.push(BgpConst.BGP_SAFI_TYPE.SAFI_MVPN);
             }
             if (CommonUtils.BIT_TEST(this.localAddrFamilyFlags, BgpConst.BGP_MULTIPROTOCOL_EXTENSIONS_FLAGS.IPV4_QP)) {

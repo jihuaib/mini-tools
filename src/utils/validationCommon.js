@@ -836,7 +836,7 @@ export const createBgpIpv4QpRouteConfigValidationRules = () => {
                     const n = parseInt(value, 10);
                     return !isNaN(n) && n >= 0 && n <= 0xffffff;
                 },
-                message: 'DQPN范围为 0 ~ 16777215（3字节）'
+                message: 'DQPN范围为 0 ~ 16777215（24bit）'
             }
         ],
         bsid: [
@@ -890,7 +890,7 @@ export const createBgpIpv6QpRouteConfigValidationRules = () => {
                     const n = parseInt(value, 10);
                     return !isNaN(n) && n >= 0 && n <= 0xffffff;
                 },
-                message: 'DQPN范围为 0 ~ 16777215（3字节）'
+                message: 'DQPN范围为 0 ~ 16777215（24bit）'
             }
         ],
         bsid: [

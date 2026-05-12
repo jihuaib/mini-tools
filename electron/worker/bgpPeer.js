@@ -43,6 +43,31 @@ function parseRouteCommunities(communities) {
     return communityBytes.length === 0 ? null : Buffer.from(communityBytes);
 }
 
+function encodeQpDqpn(dqpn) {
+    if (!Number.isInteger(dqpn) || dqpn < 0 || dqpn > 0xffffff) {
+        throw new Error(`DQPN ${dqpn} exceeds supported 24-bit range`);
+    }
+
+    if (dqpn <= 0xff) {
+        return {
+            bitLength: 8,
+            bytes: [dqpn]
+        };
+    }
+
+    if (dqpn <= 0xffff) {
+        return {
+            bitLength: 16,
+            bytes: [(dqpn >> 8) & 0xff, dqpn & 0xff]
+        };
+    }
+
+    return {
+        bitLength: 24,
+        bytes: [(dqpn >> 16) & 0xff, (dqpn >> 8) & 0xff, dqpn & 0xff]
+    };
+}
+
 class BgpPeer {
     constructor(session, instance) {
         this.peerState = BgpConst.BGP_PEER_STATE.IDLE;
@@ -202,7 +227,7 @@ class BgpPeer {
             attr.push(...nlriBuf);
             msgLen += nlriBuf.length;
         } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            // QP NLRI: DQPN(4字节) + 前缀长度(1字节) + 前缀(变长)
+            // QP NLRI: [总长度][DQPN TLV][Prefix TLV]
             while (routeIndex < routes.length) {
                 const qpNlri = this.buildQpNlri(route);
                 if (msgLen + nlriBuf.length + qpNlri.length > BgpConst.BGP_MAX_PKT_SIZE) {
@@ -291,7 +316,7 @@ class BgpPeer {
             attr.push(...nlriBuf);
             msgLen += nlriBuf.length;
         } else if (this.instance.safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            // QP Withdraw NLRI: DQPN(4字节) + 前缀长度(1字节) + 前缀(变长)
+            // QP Withdraw NLRI: [总长度][DQPN TLV][Prefix TLV]
             let nlriBuf = [];
             while (routeIndex < routes.length) {
                 const qpNlri = this.buildQpNlri(route);
@@ -1021,26 +1046,19 @@ class BgpPeer {
 
     buildQpNlri(route) {
         const nlri = [];
-        // TLV 1: DQPN，变长 1-3 字节
-        const dqpn = route.dqpn || 0;
-        let dqpnBytes;
-        if (dqpn <= 0xff) {
-            dqpnBytes = [dqpn];
-        } else if (dqpn <= 0xffff) {
-            dqpnBytes = [(dqpn >> 8) & 0xff, dqpn & 0xff];
-        } else {
-            dqpnBytes = [(dqpn >> 16) & 0xff, (dqpn >> 8) & 0xff, dqpn & 0xff];
-        }
-        nlri.push(1);                // type = 1
-        nlri.push(dqpnBytes.length); // length（字节数）
-        nlri.push(...dqpnBytes);     // DQPN 值
+        // TLV 1: DQPN，length 字段单位为 bit，value 使用最少 1-3 字节编码
+        const dqpn = Number(route.dqpn || 0);
+        const { bitLength: dqpnBitLength, bytes: dqpnBytes } = encodeQpDqpn(dqpn);
+        nlri.push(1); // type = 1
+        nlri.push(dqpnBitLength); // length（bit 数）
+        nlri.push(...dqpnBytes); // DQPN 值
 
         // TLV 2: prefix，length 为 bit 数，value 为 ceil(mask/8) 字节
         const prefixBytes = ipToBytes(route.ip);
-        const prefixLength = Math.ceil(route.mask / 8);
-        nlri.push(2);              // type = 2
-        nlri.push(route.mask);     // length（bit 数）
-        nlri.push(...prefixBytes.slice(0, prefixLength)); // 前缀字节
+        const prefixByteLength = Math.ceil(route.mask / 8);
+        nlri.push(2); // type = 2
+        nlri.push(route.mask); // length（bit 数）
+        nlri.push(...prefixBytes.slice(0, prefixByteLength)); // 前缀字节
 
         // 计算总长度（1字节长度字段 + 实际数据长度）
         const totalLength = nlri.length;

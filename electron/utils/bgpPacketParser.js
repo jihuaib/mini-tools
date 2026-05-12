@@ -103,6 +103,24 @@ function parseBgpPacket(buffer, context) {
     }
 }
 
+function parseQpDqpn(buffer, position, bitLength) {
+    const byteLength = Math.ceil(bitLength / 8);
+    let dqpn = 0;
+
+    for (let i = 0; i < byteLength; i++) {
+        dqpn = dqpn * 256 + buffer[position + i];
+    }
+
+    if (bitLength > 0 && bitLength % 8 !== 0) {
+        dqpn &= (1 << bitLength % 8) - 1;
+    }
+
+    return {
+        dqpn,
+        byteLength
+    };
+}
+
 /**
  * Parse BGP OPEN message
  * @param {Buffer} buffer - Raw BGP packet buffer
@@ -713,17 +731,14 @@ function parseMpReachNlri(buffer, context) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            let nlriTotalBits = buffer[position];
-            // TLV 1: DQPN
-            position += 1
-            position += 1; // skip type byte (=1)
-            const dqpnLen = buffer[position];
+            const nlriTotalLength = buffer[position];
+            // TLV 1: DQPN，length 字段单位为 bit
             position += 1;
-            let dqpn = 0;
-            for (let i = 0; i < dqpnLen; i++) {
-                dqpn = (dqpn * 256) + buffer[position + i];
-            }
-            position += dqpnLen;
+            position += 1; // skip type byte (=1)
+            const dqpnBitLength = buffer[position];
+            position += 1;
+            const { dqpn, byteLength: dqpnByteLength } = parseQpDqpn(buffer, position, dqpnBitLength);
+            position += dqpnByteLength;
             // TLV 2: prefix
             position += 1; // skip type byte (=2)
             prefixLength = buffer[position]; // bits
@@ -731,13 +746,20 @@ function parseMpReachNlri(buffer, context) {
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
-            nlriTotalBits = nlriTotalBits * 8;
             if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
                 prefix = ipv4BufferToString(prefixBuffer, prefixLength);
             } else {
                 prefix = ipv6BufferToString(prefixBuffer, prefixLength);
             }
-            nlri.push({ pathId, prefix, rd, length: prefixLength, dqpn, dqpnBits: nlriTotalBits });
+            nlri.push({
+                pathId,
+                prefix,
+                rd,
+                length: prefixLength,
+                dqpn,
+                dqpnBits: dqpnBitLength,
+                nlriBits: nlriTotalLength * 8
+            });
             continue;
         } else {
             // 不支持，按照16进制解析存储
@@ -863,17 +885,14 @@ function parseMpUnreachNlri(buffer, context) {
             position += prefixBytes;
             prefix = ipv6BufferToString(prefixBuffer, prefixLength);
         } else if (safi === BgpConst.BGP_SAFI_TYPE.SAFI_QP) {
-            // TLV 1: DQPN
-            let nlriTotalBits = buffer[position]
+            // TLV 1: DQPN，length 字段单位为 bit
+            const nlriTotalLength = buffer[position];
             position += 1;
             position += 1; // skip type byte (=1)
-            const dqpnLen = buffer[position];
+            const dqpnBitLength = buffer[position];
             position += 1;
-            let dqpn = 0;
-            for (let i = 0; i < dqpnLen; i++) {
-                dqpn = (dqpn * 256) + buffer[position + i];
-            }
-            position += dqpnLen;
+            const { dqpn, byteLength: dqpnByteLength } = parseQpDqpn(buffer, position, dqpnBitLength);
+            position += dqpnByteLength;
             // TLV 2: prefix
             position += 1; // skip type byte (=2)
             prefixLength = buffer[position]; // bits
@@ -881,13 +900,20 @@ function parseMpUnreachNlri(buffer, context) {
             const prefixBytes = Math.ceil(prefixLength / 8);
             const prefixBuffer = buffer.subarray(position, position + prefixBytes);
             position += prefixBytes;
-            nlriTotalBits = nlriTotalBits * 8;
             if (afi === BgpConst.BGP_AFI_TYPE.AFI_IPV4) {
                 prefix = ipv4BufferToString(prefixBuffer, prefixLength);
             } else {
                 prefix = ipv6BufferToString(prefixBuffer, prefixLength);
             }
-            withdrawnRoutes.push({ pathId, prefix, rd, length: prefixLength, dqpn, dqpnBits: nlriTotalBits });
+            withdrawnRoutes.push({
+                pathId,
+                prefix,
+                rd,
+                length: prefixLength,
+                dqpn,
+                dqpnBits: dqpnBitLength,
+                nlriBits: nlriTotalLength * 8
+            });
             continue;
         } else {
             prefixLength = 0;

@@ -219,9 +219,7 @@
     const showKdfIsnInputs = computed(() => isKdfAlgo.value && !skipKdf.value);
     const includePseudoHeader = ref(true);
 
-    const pseudoHeaderLabel = computed(() =>
-        result.value?.ipVersion === 6 ? 'IPv6 伪头部' : 'IPv4 伪头部'
-    );
+    const pseudoHeaderLabel = computed(() => (result.value?.ipVersion === 6 ? 'IPv6 伪头部' : 'IPv4 伪头部'));
     const pseudoHeaderHint = computed(() =>
         result.value?.ipVersion === 6
             ? '源IP(16) + 目的IP(16) + 上层包长度(4) + 零(3) + Next Header(1)'
